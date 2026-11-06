@@ -8,6 +8,7 @@ const MAX_REAGENTS := 2
 const BASE_CHALK := 4
 
 var seed_value := 0
+var cue := "maple"
 var rng := RandomNumberGenerator.new()
 var table_index := 0
 var money := 4
@@ -37,13 +38,16 @@ var best_shot := 0
 var tables_cleared := 0
 
 
-func start(s: int) -> void:
+func start(s: int, cue_id: String = "maple") -> void:
 	seed_value = s
 	rng.seed = s
+	cue = cue_id
+	var c: Dictionary = Catalog.CUES.get(cue, Catalog.CUES.maple)
 	table_index = 0
-	money = 4
+	money = c.money
 	formulas.clear()
-	reagents = ["bluechalk"]
+	formulas.assign(c.formulas)
+	reagents.assign(c.reagents)
 	isotopes.clear()
 	catalyst = 0.0
 	total_pots = 0
@@ -98,10 +102,16 @@ func begin_table() -> void:
 	racks_cleared = 0
 	bluechalk = false
 	forecast = false
-	chalk = BASE_CHALK + (1 if formulas.has("chalk") else 0)
-	if current().anomaly == "dry":
-		chalk -= 1
+	chalk = max_chalk()
 	roll_hot_pocket(-1)
+
+
+func max_chalk() -> int:
+	var c := BASE_CHALK + (1 if formulas.has("chalk") else 0)
+	c += int(Catalog.CUES.get(cue, Catalog.CUES.maple).chalk)
+	if current().anomaly == "dry":
+		c -= 1
+	return maxi(c, 1)
 
 
 func roll_hot_pocket(avoid: int) -> void:
@@ -325,7 +335,7 @@ func to_dict() -> Dictionary:
 	for k in isotopes:
 		iso[str(k)] = isotopes[k]
 	return {
-		"v": 1, "seed": seed_value, "rng_state": str(rng.state), "table_index": table_index,
+		"v": 1, "seed": seed_value, "cue": cue, "rng_state": str(rng.state), "table_index": table_index,
 		"money": money, "formulas": formulas, "reagents": reagents, "isotopes": iso,
 		"catalyst": catalyst, "plan": plan, "endless": endless, "total_pots": total_pots,
 		"best_shot": best_shot, "tables_cleared": tables_cleared, "best_streak": best_streak,
@@ -355,6 +365,7 @@ func load_save() -> bool:
 	if typeof(d) != TYPE_DICTIONARY or int(d.get("v", 0)) != 1:
 		return false
 	seed_value = int(d.seed)
+	cue = str(d.get("cue", "maple"))
 	rng.seed = seed_value
 	rng.state = int(d.rng_state)
 	table_index = int(d.table_index)

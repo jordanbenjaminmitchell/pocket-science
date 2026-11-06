@@ -33,6 +33,7 @@ var hot_mult := 2
 var preview_text := ""
 var preview_pocket := -1
 var cue_visible := false
+var cue_colors: Dictionary = {}
 var cue_pos := Vector2.ZERO
 var cue_dir := Vector2.RIGHT
 var cue_pull := 0.0
@@ -444,14 +445,17 @@ func _draw_cue() -> void:
 	# Shadow on the cloth.
 	var so := Vector2(10, 16)
 	c.draw_colored_polygon(PackedVector2Array([tip + so + s * tip_w, tip + so - s * tip_w, butt + so - s * butt_w, butt + so + s * butt_w]), Color(0, 0, 0, 0.22))
+	var shaft: Color = cue_colors.get("shaft", Color(0.86, 0.72, 0.5))
+	var buttc: Color = cue_colors.get("butt", Color(0.32, 0.14, 0.07))
+	var accent: Color = cue_colors.get("accent", Color(0.82, 0.78, 0.7))
 	var segs := [
 		[0.0, 0.012, Color(0.25, 0.5, 0.85)],     # chalked tip
 		[0.012, 0.035, Color(0.95, 0.93, 0.86)],  # ferrule
-		[0.035, 0.58, Color(0.86, 0.72, 0.5)],    # maple shaft
-		[0.58, 0.6, Color(0.82, 0.78, 0.7)],      # joint ring
-		[0.6, 0.78, Color(0.32, 0.14, 0.07)],     # forearm
+		[0.035, 0.58, shaft],                     # shaft
+		[0.58, 0.6, accent],                      # joint ring
+		[0.6, 0.78, buttc],                       # forearm
 		[0.78, 0.93, Color(0.07, 0.07, 0.08)],    # wrap
-		[0.93, 1.0, Color(0.32, 0.14, 0.07)],     # butt sleeve
+		[0.93, 1.0, buttc],                       # butt sleeve
 	]
 	for sg in segs:
 		var a := tip - d * length * float(sg[0])
@@ -464,7 +468,7 @@ func _draw_cue() -> void:
 		var a := tip - d * length * 0.6
 		var b := tip - d * length * (0.66 + k * 0.025)
 		var w0 := lerpf(tip_w, butt_w, 0.6)
-		c.draw_colored_polygon(PackedVector2Array([a + s * w0 * 0.9, a - s * w0 * 0.9, b]), Color(0.9, 0.85, 0.7, 0.85) if k % 2 == 0 else Color(0.1, 0.35, 0.4, 0.9))
+		c.draw_colored_polygon(PackedVector2Array([a + s * w0 * 0.9, a - s * w0 * 0.9, b]), Color(accent, 0.85) if k % 2 == 0 else Color(0.1, 0.35, 0.4, 0.9))
 	# Specular stripe along the stick.
 	c.draw_line(tip + s * tip_w * 0.4, butt + s * butt_w * 0.4, Color(1, 1, 1, 0.22), 1.4)
 

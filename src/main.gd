@@ -170,10 +170,16 @@ func _cue_index() -> int:
 
 
 ## ================================================================ main loop
+var paused := false
+
+
 func _process(delta: float) -> void:
+	if paused:
+		return
 	match state:
 		S.TITLE:
 			_update_demo(delta)
+			view.cue_colors = Catalog.CUES.maple
 		S.AIM:
 			_update_aim(delta)
 		S.PLACE:
@@ -685,6 +691,8 @@ func _table_cleared() -> void:
 	var rows := run.payout()
 	_refresh_hud()
 	await get_tree().create_timer(1.6).timeout
+	if state != S.CLEAR:
+		return
 	if final and not run.endless:
 		_show_victory(rows)
 	else:
@@ -696,13 +704,21 @@ func _game_over() -> void:
 	sfx.play("bad", 1.0, 0.7)
 	_flash_banner("OUT OF CHALK", Color(1, 0.35, 0.3), 2.0)
 	await get_tree().create_timer(1.4).timeout
+	if state != S.OVER:
+		return
 	_show_game_over()
 
 
 ## ================================================================ input
 func _unhandled_input(e: InputEvent) -> void:
 	if e is InputEventKey and e.pressed and not e.echo:
+		if paused:
+			if e.keycode == KEY_ESCAPE:
+				_resume()
+			return
 		_key(e.keycode)
+		return
+	if paused:
 		return
 	if e is InputEventMouseButton:
 		_mouse_button(e)
@@ -1110,7 +1126,7 @@ func _refresh_hud() -> void:
 	else:
 		lbl_boss.visible = false
 	lbl_target.text = str(run.target())
-	chalk_pips.set_count(run.chalk, RunState.BASE_CHALK + (1 if run.formulas.has("chalk") else 0))
+	chalk_pips.set_count(run.chalk, run.max_chalk())
 	var per := 2.0 if run.formulas.has("streak") else 1.0
 	lbl_streak.text = "%d  (+%s Mult)" % [run.streak, _fmt(run.streak * per)] if run.streak > 0 else "0"
 	lbl_money.text = "$%d" % run.money
@@ -1285,7 +1301,7 @@ func _show_title() -> void:
 		c.custom_minimum_size = Vector2(0, 54)
 		c.add_theme_font_size_override("font_size", 24)
 		v.add_child(c)
-	var b := _button("New Run", _new_run)
+	var b := _button("New Run", _show_cue_select)
 	b.custom_minimum_size = Vector2(0, 54)
 	b.add_theme_font_size_override("font_size", 24)
 	v.add_child(b)
@@ -1313,10 +1329,55 @@ func _show_title() -> void:
 	v.add_child(foot)
 
 
+var chosen_cue := "maple"
+
+
+func _show_cue_select() -> void:
+	_clear_overlay()
+	_dim(0.6)
+	var v := _center_panel(1100, 420)
+	v.add_child(_label("CHOOSE YOUR CUE", 30, Color(0.98, 0.8, 0.4), F_PIXB))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	v.add_child(row)
+	for id in Catalog.CUES:
+		var c: Dictionary = Catalog.CUES[id]
+		var sh := _card_shell(c.accent, 200, 260)
+		var p: PanelContainer = sh[0]
+		var cv: VBoxContainer = sh[1]
+		var stick := Control.new()
+		stick.custom_minimum_size = Vector2(0, 40)
+		stick.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		stick.draw.connect(func():
+			var y := 20.0
+			var x0 := 6.0
+			var x1 := stick.size.x - 6.0
+			var mid := lerpf(x0, x1, 0.45)
+			stick.draw_colored_polygon(PackedVector2Array([Vector2(x0, y - 2), Vector2(mid, y - 3.5), Vector2(mid, y + 3.5), Vector2(x0, y + 2)]), c.shaft)
+			stick.draw_colored_polygon(PackedVector2Array([Vector2(mid, y - 3.5), Vector2(x1, y - 6), Vector2(x1, y + 6), Vector2(mid, y + 3.5)]), c.butt)
+			stick.draw_rect(Rect2(Vector2(mid - 2, y - 4), Vector2(4, 8)), c.accent)
+			stick.draw_rect(Rect2(Vector2(x0 - 3, y - 2), Vector2(4, 4)), Color(0.25, 0.5, 0.85)))
+		cv.add_child(stick)
+		var n := _label(c.name, 20, Color.WHITE)
+		cv.add_child(n)
+		var d := _label(c.desc, 14, Color(0.8, 0.82, 0.85), F_REG)
+		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		d.custom_minimum_size = Vector2(176, 0)
+		d.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		cv.add_child(d)
+		var pick := _button("Choose", func():
+			chosen_cue = id
+			_new_run(), c.accent)
+		cv.add_child(pick)
+		row.add_child(p)
+	v.add_child(_button("Back", _show_title))
+
+
 func _new_run() -> void:
 	demo = false
 	_clear_overlay()
-	run.start(randi())
+	run.start(randi(), chosen_cue)
+	view.cue_colors = Catalog.CUES.get(chosen_cue, Catalog.CUES.maple)
 	run.save()
 	run.begin_table()
 	_setup_table()
@@ -1358,20 +1419,39 @@ Every third table is a boss with an Anomaly. Clear all 9 tables to win, then kee
 	v.add_child(_button("Back", func():
 		if state == S.TITLE:
 			_show_title()
+		elif paused:
+			_show_pause_again()
 		else:
 			_clear_overlay()))
 
 
+func _show_pause_again() -> void:
+	paused = false
+	_show_pause()
+
+
+func _resume() -> void:
+	paused = false
+	_clear_overlay()
+
+
 func _show_pause() -> void:
-	if state == S.SHOP or state == S.OVER:
+	if state == S.SHOP or state == S.OVER or state == S.CLEAR:
 		return
+	paused = true
 	_clear_overlay()
 	_dim(0.6)
 	var v := _center_panel(420, 380)
 	v.add_child(_label("PAUSED", 30, Color(0.98, 0.8, 0.4), F_PIXB))
-	v.add_child(_button("Resume", _clear_overlay))
+	v.add_child(_button("Resume", _resume))
 	v.add_child(_button("How to Play", _show_help))
-	v.add_child(_button("Abandon run", _show_title, Color(0.9, 0.4, 0.3)))
+	v.add_child(_button("Save & quit to title", func():
+		paused = false
+		_show_title(), Color(0.6, 0.75, 0.9)))
+	v.add_child(_button("Abandon run", func():
+		paused = false
+		RunState.clear_save()
+		_show_title(), Color(0.9, 0.4, 0.3)))
 	v.add_child(_button("Quit game", func(): get_tree().quit(), Color(0.9, 0.4, 0.3)))
 
 
@@ -1517,6 +1597,7 @@ func _continue_run() -> void:
 	if not run.load_save():
 		_new_run()
 		return
+	view.cue_colors = Catalog.CUES.get(run.cue, Catalog.CUES.maple)
 	run.begin_table()
 	_setup_table()
 	spin_w.set_spin(0, 0)

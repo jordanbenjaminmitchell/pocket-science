@@ -19,6 +19,9 @@ func _go() -> void:
 	match scenario:
 		"title":
 			await _frames(200)
+		"cues":
+			game._show_cue_select()
+			await _frames(4)
 		"pot", "potfx":
 			game._new_run()
 			game.run.formulas.append_array(["bank", "lens"])

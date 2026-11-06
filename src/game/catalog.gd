@@ -67,6 +67,20 @@ const ISOTOPES := {
 	"glass": {"name": "Glass", "cost": 5, "color": Color(0.7, 0.85, 1.0), "desc": "×2 Mult when potted, but 1 in 4 chance it shatters (enhancement lost)."},
 }
 
+## Starting cues: each run begins by choosing one. "shaft"/"butt"/"accent" colour the stick.
+const CUES := {
+	"maple": {"name": "Classic Maple", "desc": "The all-rounder. $4 and a Blue Chalk to start.", "money": 4, "formulas": [], "reagents": ["bluechalk"], "chalk": 0,
+		"shaft": Color(0.86, 0.72, 0.5), "butt": Color(0.32, 0.14, 0.07), "accent": Color(0.9, 0.85, 0.7)},
+	"optic": {"name": "Optic Cue", "desc": "Starts with Long Lens: see banks and the full cue-ball path. $2.", "money": 2, "formulas": ["lens"], "reagents": [], "chalk": 0,
+		"shaft": Color(0.8, 0.86, 0.9), "butt": Color(0.1, 0.25, 0.4), "accent": Color(0.4, 0.85, 1.0)},
+	"hotrod": {"name": "Hot Rod", "desc": "Starts with Heat Sink (hot pocket ×3), but every table has 1 less Chalk. $4.", "money": 4, "formulas": ["heat"], "reagents": [], "chalk": -1,
+		"shaft": Color(0.85, 0.7, 0.5), "butt": Color(0.6, 0.12, 0.05), "accent": Color(1.0, 0.55, 0.1)},
+	"momentum": {"name": "Momentum Cue", "desc": "Starts with Momentum (+2 Mult per streak step). Run-outs explode. $0.", "money": 0, "formulas": ["streak"], "reagents": [], "chalk": 0,
+		"shaft": Color(0.88, 0.78, 0.6), "butt": Color(0.12, 0.12, 0.14), "accent": Color(0.6, 1.0, 0.5)},
+	"gilded": {"name": "Gilded Cue", "desc": "Starts rich: $12 and Compound Interest. No chalk cube.", "money": 12, "formulas": ["interest"], "reagents": [], "chalk": 0,
+		"shaft": Color(0.92, 0.82, 0.55), "butt": Color(0.45, 0.32, 0.08), "accent": Color(1.0, 0.85, 0.3)},
+}
+
 ## Labs set the table physics and cloth. "felt" is the cloth colour.
 const LABS := {
 	"standard": {"name": "Standard Felt", "felt": Color(0.06, 0.42, 0.28), "desc": "A clean, fast cloth. Pure pool."},
