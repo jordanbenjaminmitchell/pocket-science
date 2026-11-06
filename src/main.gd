@@ -284,18 +284,14 @@ func _update_coach() -> void:
 		return
 	var cue: Vector2 = sim.pos[_cue_index()]
 	if run.shots_taken == 0:
-		view.coach_text = "Press on the table, drag BACK and release to shoot.
-Further = harder. Break the rack!"
+		view.coach_text = "Press on the table, drag BACK and release to shoot.\nFurther = harder. Break the rack!"
 	elif view.guide.get("obj_pot", false) or view.guide.get("obj2_pot", false):
 		coach_seen_pot = true
-		view.coach_text = "GOLD line = that ball is going in.
-The tag on the pocket shows the points."
+		view.coach_text = "GOLD line = that ball is going in.\nThe tag on the pocket shows the points."
 	elif not coach_seen_pot:
-		view.coach_text = "Swing your aim until a line turns GOLD.
-The ring shows where the cue ball hits."
+		view.coach_text = "Swing your aim until a line turns GOLD.\nThe ring shows where the cue ball hits."
 	elif run.streak >= 1:
-		view.coach_text = "Streak! Each scoring shot in a row adds +1 Mult.
-The glowing pocket gives ×2."
+		view.coach_text = "Streak! Each scoring shot in a row adds +1 Mult.\nThe glowing pocket gives ×2."
 	else:
 		view.coach_text = ""
 	view.coach_pos = cue + Vector2(0, 50 if cue.y < TableLayout.H * 0.6 else -110)
