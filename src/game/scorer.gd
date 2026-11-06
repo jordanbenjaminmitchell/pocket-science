@@ -139,7 +139,8 @@ static func score(ctx: Dictionary) -> Dictionary:
 		if formulas.has("kick"):
 			lines.append(_l("Kick Drum", "xmult", 2))
 	if formulas.has("elastic") and collisions > 0:
-		lines.append(_l("Elastic ×%d" % collisions, "chips", 4 * collisions))
+		var counted := mini(collisions, 12)
+		lines.append(_l("Elastic ×%d" % counted, "chips", 4 * counted))
 	if lab == "cyclotron" and bumpers > 0:
 		lines.append(_l("Bumper ×%d" % bumpers, "chips", 10 * bumpers))
 	var power: float = ctx.get("power", 0.5)

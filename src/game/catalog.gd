@@ -17,7 +17,7 @@ const PRIMES := [2, 3, 5, 7, 11, 13]
 
 ## Formulas. "r": rarity 0 common, 1 uncommon, 2 rare.
 const FORMULAS := {
-	"elastic": {"name": "Elastic Collision", "r": 0, "cost": 4, "icon": "⚛", "desc": "+4 Chips for every ball-to-ball collision in a scoring shot."},
+	"elastic": {"name": "Elastic Collision", "r": 0, "cost": 4, "icon": "⚛", "desc": "+4 Chips for every ball-to-ball collision in a scoring shot (max 12)."},
 	"odd": {"name": "Odd Hypothesis", "r": 0, "cost": 4, "icon": "1", "desc": "Odd-numbered balls give +15 Chips."},
 	"even": {"name": "Even Hypothesis", "r": 0, "cost": 4, "icon": "2", "desc": "Even-numbered balls give +2 Mult."},
 	"stripes": {"name": "Stripe Theory", "r": 0, "cost": 5, "icon": "≡", "desc": "Striped balls (9-15) give +3 Mult."},
@@ -115,8 +115,8 @@ const BOUNTIES := {
 }
 
 const TABLES := [
-	{"target": 100, "rack": "nine"},
-	{"target": 220, "rack": "nine"},
+	{"target": 80, "rack": "nine"},
+	{"target": 190, "rack": "nine"},
 	{"target": 340, "rack": "nine", "boss": true},
 	{"target": 550, "rack": "ten"},
 	{"target": 800, "rack": "ten"},
