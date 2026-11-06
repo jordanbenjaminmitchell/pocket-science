@@ -360,7 +360,7 @@ func _step_forecast() -> void:
 		if fc_sim.num[i] == 0:
 			c = Color(1, 1, 1)
 		var done := not fc_sim.moving() or fc_sim.time >= fc_limit
-		out.append({"points": fc_paths[i], "color": c.lightened(0.25), "end": done and fc_sim.alive[i] == 1})
+		out.append({"points": fc_paths[i], "color": c.lightened(0.25), "end": done and fc_sim.alive[i] == 1, "potted": fc_sim.alive[i] == 0})
 	view.forecast_paths = out
 	if not fc_sim.moving() or fc_sim.time >= fc_limit:
 		fc_sim = null

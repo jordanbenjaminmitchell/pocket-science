@@ -393,11 +393,16 @@ func _draw_overlay() -> void:
 	for path in forecast_paths:
 		var pts: PackedVector2Array = path.points
 		var col: Color = path.color
-		for i in range(0, pts.size(), 3):
+		for i in range(0, pts.size(), 2):
 			var a := 1.0 - float(i) / maxf(1.0, pts.size())
-			o.draw_circle(pts[i], 1.8, Color(col, 0.25 + 0.55 * a))
-		if pts.size() > 0 and path.get("end", false):
-			o.draw_arc(pts[pts.size() - 1], R, 0, TAU, 24, Color(col, 0.7), 1.5)
+			o.draw_circle(pts[i], 2.6, Color(0, 0, 0, 0.35 * (0.4 + 0.6 * a)))
+			o.draw_circle(pts[i], 2.0, Color(col, 0.45 + 0.5 * a))
+		if pts.size() > 0:
+			var endp := pts[pts.size() - 1]
+			if path.get("end", false):
+				o.draw_arc(endp, R, 0, TAU, 24, Color(col, 0.85), 2.0)
+			elif path.get("potted", false):
+				o.draw_circle(endp, 5.0, Color(1.0, 0.85, 0.3, 0.9))
 	if placing:
 		var col := Color(1, 1, 1, 0.55) if place_ok else Color(1, 0.3, 0.3, 0.6)
 		o.draw_circle(place_pos, R, Color(1, 1, 1, 0.25 if place_ok else 0.1))
