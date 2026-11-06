@@ -3,6 +3,7 @@
 GODOT="${GODOT:-/c/Users/JordanMitchell/Documents/Codex/2026-09-08/can/work/godot/Godot_v4.7.2-stable_win64_console.exe}"
 cd "$(dirname "$0")"
 status=0
+"$GODOT" --headless --path . --import >/dev/null 2>&1
 for t in tests/test_*.gd; do
   out=$(timeout 300 "$GODOT" --headless --fixed-fps 60 --path . --script "res://$t" 2>&1)
   code=$?

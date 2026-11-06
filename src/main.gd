@@ -88,6 +88,7 @@ var flags_label: Label
 var log_label: Label
 var left_panel: Control
 var lbl_bounty: Label
+var tray: BallTray
 var bottom_bar: Control
 var shot_log: Array[String] = []
 
@@ -550,6 +551,7 @@ func _consume_events() -> void:
 				b.visible = true
 				b.position = e.at
 				view.sink(idx, e.pocket)
+				_refresh_tray()
 				var pp: Vector2 = layout.pockets[e.pocket].pos
 				sfx.play("pocket", clampf(0.5 + e.speed / 2000.0, 0.4, 1.0), 0.95 + randf() * 0.1)
 				if demo:
@@ -1063,6 +1065,9 @@ func _build_ui() -> void:
 	flags_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	flags_label.custom_minimum_size = Vector2(290, 0)
 	lv.add_child(flags_label)
+	tray = BallTray.new()
+	tray.font = F_SEMI
+	lv.add_child(tray)
 	lv.add_child(_label("RECENT SHOTS", 12, Color(0.5, 0.5, 0.55)))
 	log_label = _label("", 13, Color(0.8, 0.82, 0.85), F_REG)
 	log_label.custom_minimum_size = Vector2(290, 70)
@@ -1215,10 +1220,27 @@ func _refresh_hud() -> void:
 	if run.hot_pocket >= 0:
 		flags.append("Hot pocket: %s (×%d)" % [TableLayout.pocket_name(run.hot_pocket), 3 if run.formulas.has("heat") else 2])
 	flags_label.text = "\n".join(flags)
+	_refresh_tray()
 	if score_t >= 1.0:
 		shown_score = run.score
 		_set_score_label()
 	_rebuild_cards()
+
+
+func _refresh_tray() -> void:
+	if sim == null or tray == null:
+		return
+	var rack: Array = []
+	var down := {}
+	for i in sim.count():
+		var n: int = sim.num[i]
+		if n == 0:
+			continue
+		rack.append(n)
+		if sim.alive[i] == 0:
+			down[n] = true
+	rack.sort()
+	tray.set_state(rack, down, run.isotopes)
 
 
 func _rebuild_cards() -> void:
