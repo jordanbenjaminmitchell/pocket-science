@@ -919,7 +919,7 @@ func _build_ui() -> void:
 	left_panel = left
 	left.position = Vector2(14, 14)
 	left.size = Vector2(330, 872)
-	left.add_theme_stylebox_override("panel", _style(Color(0.075, 0.07, 0.075, 0.97), Color(0.55, 0.42, 0.22), 2, 14))
+	left.add_theme_stylebox_override("panel", _style(Color(0.075, 0.07, 0.075, 1.0), Color(0.55, 0.42, 0.22), 2, 14))
 	root.add_child(left)
 	var lv := VBoxContainer.new()
 	lv.add_theme_constant_override("separation", 8)
@@ -1055,7 +1055,7 @@ func _build_ui() -> void:
 	root.add_child(bottom)
 	var fpanel := PanelContainer.new()
 	fpanel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	fpanel.add_theme_stylebox_override("panel", _style(Color(0.075, 0.07, 0.075, 0.95), Color(0.35, 0.3, 0.25), 1, 12))
+	fpanel.add_theme_stylebox_override("panel", _style(Color(0.075, 0.07, 0.075, 1.0), Color(0.35, 0.3, 0.25), 1, 12))
 	bottom.add_child(fpanel)
 	var fv := VBoxContainer.new()
 	fpanel.add_child(fv)
@@ -1065,7 +1065,7 @@ func _build_ui() -> void:
 	fv.add_child(formula_row)
 	var rpanel := PanelContainer.new()
 	rpanel.custom_minimum_size = Vector2(300, 0)
-	rpanel.add_theme_stylebox_override("panel", _style(Color(0.075, 0.07, 0.075, 0.95), Color(0.3, 0.35, 0.45), 1, 12))
+	rpanel.add_theme_stylebox_override("panel", _style(Color(0.075, 0.07, 0.075, 1.0), Color(0.3, 0.35, 0.45), 1, 12))
 	bottom.add_child(rpanel)
 	var rv := VBoxContainer.new()
 	rpanel.add_child(rv)
@@ -1363,6 +1363,11 @@ func _show_title() -> void:
 		_save_settings())
 	row.add_child(mus)
 	v.add_child(_button("Quit", func(): get_tree().quit()))
+	var best := _load_best()
+	if best.tables > 0 or best.shot > 0:
+		var bl := _label("Best run: %d tables cleared  ·  best shot %d  ·  best streak %d" % [best.tables, best.shot, best.streak], 15, Color(1.0, 0.85, 0.45), F_REG)
+		bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		v.add_child(bl)
 	var foot := _label("Real pool physics · exact guideline · 30 Formulas · 9 tables + endless", 13, Color(0.55, 0.55, 0.6), F_REG)
 	foot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(foot)
@@ -1650,8 +1655,24 @@ func _continue_run() -> void:
 	_flash_banner("TABLE %d  ·  TARGET %d" % [run.table_index + 1, run.target()], Color(1, 0.85, 0.4), 1.6)
 
 
+func _load_best() -> Dictionary:
+	var c := ConfigFile.new()
+	c.load("user://settings.cfg")
+	return {"tables": int(c.get_value("best", "tables", 0)), "shot": int(c.get_value("best", "shot", 0)), "streak": int(c.get_value("best", "streak", 0))}
+
+
+func _record_best() -> void:
+	var c := ConfigFile.new()
+	c.load("user://settings.cfg")
+	c.set_value("best", "tables", maxi(int(c.get_value("best", "tables", 0)), run.tables_cleared))
+	c.set_value("best", "shot", maxi(int(c.get_value("best", "shot", 0)), run.best_shot))
+	c.set_value("best", "streak", maxi(int(c.get_value("best", "streak", 0)), run.best_streak))
+	c.save("user://settings.cfg")
+
+
 func _save_settings() -> void:
 	var c := ConfigFile.new()
+	c.load("user://settings.cfg")
 	c.set_value("audio", "sfx", sfx.volume)
 	c.set_value("audio", "music", sfx.music_volume)
 	c.save("user://settings.cfg")
@@ -1684,6 +1705,7 @@ func _next_table() -> void:
 
 func _show_game_over() -> void:
 	RunState.clear_save()
+	_record_best()
 	_clear_overlay()
 	_dim(0.7)
 	var v := _center_panel(560, 460, Color(0.9, 0.35, 0.3))
@@ -1697,6 +1719,7 @@ func _show_game_over() -> void:
 
 
 func _show_victory(rows: Array) -> void:
+	_record_best()
 	_clear_overlay()
 	_dim(0.6)
 	var v := _center_panel(620, 470, Color(1.0, 0.85, 0.35))
