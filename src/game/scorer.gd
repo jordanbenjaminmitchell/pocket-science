@@ -166,6 +166,11 @@ static func score(ctx: Dictionary) -> Dictionary:
 	if ctx.get("bluechalk", false):
 		lines.append(_l("Blue Chalk", "xmult", 2))
 
+	# Additive bonuses first, then multipliers: Mult = (1 + bonuses) × multipliers.
+	var additive: Array = lines.filter(func(l): return l.kind == "chips" or l.kind == "mult" or l.kind == "money")
+	var multiplicative: Array = lines.filter(func(l): return l.kind == "xmult" or l.kind == "xchips")
+	lines = additive + multiplicative
+	out.lines = lines
 	var chips := 0.0
 	var mult := 1.0
 	var money := 0

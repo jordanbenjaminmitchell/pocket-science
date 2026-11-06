@@ -566,10 +566,8 @@ static func compute_guide(sim: PoolSim, aim: Vector2, follow: float, side: float
 		if sp < 1.0:
 			break
 		var step_len := sp * dt
-		var ch := sim.cast(cpos, vc / sp, ci, step_len)
-		# Ignore the ball we just struck for the first moment after contact.
-		if ch.kind == "ball" and ch.hit == obj and i < 3:
-			ch = {"kind": "none", "point": cpos + vc * dt}
+		# The struck ball moves away along the line of centres, so ignore it.
+		var ch := sim.cast(cpos, vc / sp, ci, step_len, obj)
 		cpos = ch.point
 		cp.append(cpos)
 		travelled += cpos.distance_to(cp[cp.size() - 2])

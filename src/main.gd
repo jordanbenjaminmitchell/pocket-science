@@ -100,6 +100,7 @@ func _ready() -> void:
 	view.scale = Vector2(TABLE_SCALE, TABLE_SCALE)
 	add_child(view)
 	_build_ui()
+	_load_settings()
 	_show_title()
 
 
@@ -117,6 +118,13 @@ func _setup_table() -> void:
 	shot_log.clear()
 	if log_label:
 		log_label.text = ""
+	if state != S.TITLE:
+		if run.endless:
+			sfx.play_music("endless")
+		elif t.anomaly != "":
+			sfx.play_music("boss")
+		else:
+			sfx.play_music(lab)
 	view.hot_mult = 3 if run.formulas.has("heat") else 2
 	view.hot_pocket = run.hot_pocket
 	_refresh_hud()
@@ -1018,11 +1026,15 @@ func _build_ui() -> void:
 	rv.add_child(reagent_row)
 
 	# ---------------- banner + overlay
-	banner = _label("", 38, Color.WHITE, F_PIXB)
+	banner = _label("", 34, Color.WHITE, F_PIXB)
+	var bsb := _style(Color(0.02, 0.02, 0.03, 0.72), Color(1, 1, 1, 0.12), 1, 12)
+	bsb.content_margin_top = 10
+	bsb.content_margin_bottom = 10
+	banner.add_theme_stylebox_override("normal", bsb)
 	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	banner.position = Vector2(445, 330)
-	banner.size = Vector2(1050, 80)
-	banner.pivot_offset = Vector2(525, 40)
+	banner.position = Vector2(545, 320)
+	banner.size = Vector2(850, 70)
+	banner.pivot_offset = Vector2(425, 35)
 	banner.add_theme_constant_override("outline_size", 12)
 	banner.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	banner.visible = false
@@ -1239,13 +1251,14 @@ func _center_panel(w: float, h: float, accent: Color = Color(0.85, 0.65, 0.3), a
 func _show_title() -> void:
 	state = S.TITLE
 	demo_timer = 1.2
+	sfx.play_music("title")
 	_clear_overlay()
 	# A static rack on the standard table behind the title.
 	run.start(randi())
 	_setup_table()
 	view.show_guide = false
 	_dim(0.35)
-	var v := _center_panel(560, 500)
+	var v := _center_panel(560, 560)
 	var t := _label("POCKET SCIENCE", 52, Color(0.98, 0.8, 0.4), F_PIXB)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(t)
@@ -1256,16 +1269,33 @@ func _show_title() -> void:
 	var sp := Control.new()
 	sp.custom_minimum_size = Vector2(0, 20)
 	v.add_child(sp)
+	if RunState.has_save():
+		var c := _button("Continue run", _continue_run, Color(0.4, 0.9, 0.6))
+		c.custom_minimum_size = Vector2(0, 54)
+		c.add_theme_font_size_override("font_size", 24)
+		v.add_child(c)
 	var b := _button("New Run", _new_run)
 	b.custom_minimum_size = Vector2(0, 54)
 	b.add_theme_font_size_override("font_size", 24)
 	v.add_child(b)
 	v.add_child(_button("How to Play", _show_help))
-	var snd := _button("Sound: On", func(): pass)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	v.add_child(row)
+	var snd := _button("Sound: %s" % ("On" if sfx.volume > 0.0 else "Off"), func(): pass)
+	snd.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	snd.pressed.connect(func():
 		sfx.volume = 0.0 if sfx.volume > 0.0 else 0.8
-		snd.text = "Sound: Off" if sfx.volume == 0.0 else "Sound: On")
-	v.add_child(snd)
+		snd.text = "Sound: Off" if sfx.volume == 0.0 else "Sound: On"
+		_save_settings())
+	row.add_child(snd)
+	var mus := _button("Music: %s" % ("On" if sfx.music_volume > 0.0 else "Off"), func(): pass)
+	mus.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mus.pressed.connect(func():
+		sfx.set_music_volume(0.0 if sfx.music_volume > 0.0 else 0.55)
+		mus.text = "Music: Off" if sfx.music_volume == 0.0 else "Music: On"
+		_save_settings())
+	row.add_child(mus)
 	v.add_child(_button("Quit", func(): get_tree().quit()))
 	var foot := _label("Real pool physics · exact guideline · 30 Formulas · 9 tables + endless", 13, Color(0.55, 0.55, 0.6), F_REG)
 	foot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1276,6 +1306,7 @@ func _new_run() -> void:
 	demo = false
 	_clear_overlay()
 	run.start(randi())
+	run.save()
 	run.begin_table()
 	_setup_table()
 	spin_w.set_spin(0, 0)
@@ -1296,7 +1327,7 @@ func _show_help() -> void:
 [b]Guideline:[/b] The white line shows the cue ball's path, and the ring is where it will touch the object ball. The [color=#ffd060]gold line[/color] means that ball is heading into a pocket, and the tag on the pocket shows what the pot is worth. The blue dashes show where the cue ball goes after contact, including spin.
 [b]Spin:[/b] Click the big cue ball (W/S/A/D). Hitting it high gives follow and low gives draw; the sides add english off the cushions.
 
-[b]Score:[/b] Every pot adds [color=#70d0ff]Chips[/color] (10 + the ball's number). Bonuses add [color=#ff9a40]Mult[/color]. Your shot is worth Chips × Mult.
+[b]Score:[/b] Every pot adds [color=#70d0ff]Chips[/color] (10 + the ball's number). Bonuses add [color=#ff9a40]Mult[/color]. Your shot is worth Chips × Mult, where all +Mult bonuses are added first and then every ×Mult multiplies.
 Mult bonuses: streak (+1 per consecutive scoring shot), bank pots (+1 per cushion), combinations (+2), extra balls in one shot (+1 each), kick shots (+2). The [color=#ff8a30]hot pocket[/color] gives ×2. The black 8 also gives ×2.
 
 [b]Chalk:[/b] As in real pool, you keep shooting while you pot. A miss, a scratch or no contact costs 1 chalk. A dry break is free. Run out of chalk before reaching the target and the run is over. Clearing the whole rack gives +1 chalk and a fresh rack.
@@ -1340,6 +1371,7 @@ var payout_rows: Array = []
 func _show_shop(rows: Array) -> void:
 	payout_rows = rows
 	state = S.SHOP
+	sfx.play_music("shop")
 	run.roll_shop()
 	_refresh_shop()
 	_refresh_hud()
@@ -1467,9 +1499,41 @@ func _offer_card(i: int) -> Control:
 	return p
 
 
+func _continue_run() -> void:
+	demo = false
+	_clear_overlay()
+	if not run.load_save():
+		_new_run()
+		return
+	run.begin_table()
+	_setup_table()
+	spin_w.set_spin(0, 0)
+	_animate_score(0, 0)
+	shown_score = 0
+	_set_chips_mult(0, 1)
+	lbl_line.text = "Pot balls to score Chips × Mult"
+	_enter_aim()
+	_flash_banner("TABLE %d  ·  TARGET %d" % [run.table_index + 1, run.target()], Color(1, 0.85, 0.4), 1.6)
+
+
+func _save_settings() -> void:
+	var c := ConfigFile.new()
+	c.set_value("audio", "sfx", sfx.volume)
+	c.set_value("audio", "music", sfx.music_volume)
+	c.save("user://settings.cfg")
+
+
+func _load_settings() -> void:
+	var c := ConfigFile.new()
+	if c.load("user://settings.cfg") == OK:
+		sfx.volume = c.get_value("audio", "sfx", 0.8)
+		sfx.set_music_volume(c.get_value("audio", "music", 0.55))
+
+
 func _next_table() -> void:
 	_clear_overlay()
 	run.advance_table()
+	run.save()
 	run.begin_table()
 	_setup_table()
 	_animate_score(0, 0)
@@ -1485,6 +1549,7 @@ func _next_table() -> void:
 
 
 func _show_game_over() -> void:
+	RunState.clear_save()
 	_clear_overlay()
 	_dim(0.7)
 	var v := _center_panel(560, 460, Color(0.9, 0.35, 0.3))

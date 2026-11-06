@@ -9,10 +9,24 @@ var streams := {}
 var players: Array[AudioStreamPlayer] = []
 var next := 0
 var volume := 0.8
-var music: AudioStreamPlayer
+var music_a: AudioStreamPlayer
+var music_b: AudioStreamPlayer
+var music_volume := 0.55
+var current_track := ""
+const TRACKS := {
+	"title": "velvet-orbit", "standard": "prism-pocket-jazz", "cryo": "cryo-cool",
+	"cyclotron": "cyclotron-bounce", "spring": "bumper-ballet", "gravity": "event-horizon-jam",
+	"boss": "last-pocket", "shop": "static-picnic", "endless": "mass-driver-groove", "drift": "crystal-drift",
+}
 
 
 func _ready() -> void:
+	music_a = AudioStreamPlayer.new()
+	music_b = AudioStreamPlayer.new()
+	add_child(music_a)
+	add_child(music_b)
+	music_a.volume_db = -80
+	music_b.volume_db = -80
 	for i in 14:
 		var p := AudioStreamPlayer.new()
 		add_child(p)
@@ -31,6 +45,42 @@ func _ready() -> void:
 	streams["clear"] = _render(1.4, _fanfare)
 	streams["ui"] = _render(0.05, func(t): return sin(TAU * 1200.0 * t) * exp(-t * 80.0) * 0.3)
 	streams["bumper"] = _render(0.25, func(t): return sin(TAU * (300.0 + 500.0 * exp(-t * 20.0)) * t) * exp(-t * 12.0) * 0.5)
+
+
+## Crossfades to the named mood ("title", a lab id, "boss", "shop"...).
+func play_music(mood: String) -> void:
+	var file: String = TRACKS.get(mood, "prism-pocket-jazz")
+	if file == current_track:
+		return
+	current_track = file
+	var path := "res://assets/music/%s.mp3" % file
+	if not ResourceLoader.exists(path):
+		return
+	var stream: AudioStream = load(path)
+	if stream is AudioStreamMP3:
+		(stream as AudioStreamMP3).loop = true
+	var incoming := music_b if music_a.playing else music_a
+	var outgoing := music_a if incoming == music_b else music_b
+	incoming.stream = stream
+	incoming.volume_db = -60
+	incoming.play()
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(incoming, "volume_db", _music_db(), 1.2)
+	if outgoing.playing:
+		tw.tween_property(outgoing, "volume_db", -60.0, 1.2)
+		tw.chain().tween_callback(outgoing.stop)
+
+
+func _music_db() -> float:
+	return linear_to_db(maxf(music_volume, 0.0001))
+
+
+func set_music_volume(v: float) -> void:
+	music_volume = v
+	for p in [music_a, music_b]:
+		if p.playing:
+			p.volume_db = _music_db()
 
 
 func play(id: String, vol: float = 1.0, pitch: float = 1.0) -> void:

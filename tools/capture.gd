@@ -18,7 +18,27 @@ func _go() -> void:
 	await _frames(5)
 	match scenario:
 		"title":
-			pass
+			await _frames(200)
+		"pot", "potfx":
+			game._new_run()
+			game.run.formulas.append_array(["bank", "lens"])
+			game.run.streak = 2
+			var s: PoolSim = game.sim
+			s.strike((Rack.FOOT - s.pos[0]).normalized(), 2250.0, 0.0, 0.0)
+			s.settle()
+			game.is_break = false
+			game.view.update_balls(s)
+			var c := AutoPlayer.candidates(s, game.run)
+			if c.size() > 0:
+				game.aim_dir = c[0].dir
+			game.fine_aim = true
+			game.guide_dirty = true
+			game.power = 0.6
+			game._refresh_hud()
+			await _frames(6)
+			if scenario == "potfx":
+				game._shoot(0.6)
+				await _frames(75)
 		"aim", "cut", "roll", "tally", "shop":
 			game._new_run()
 			await _frames(3)

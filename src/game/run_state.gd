@@ -314,3 +314,65 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		chalk += 1
 		out.rack_cleared = true
 	return out
+
+
+## ---------------------------------------------------------------- persistence
+const SAVE_PATH := "user://pocket_science_run.json"
+
+
+func to_dict() -> Dictionary:
+	var iso := {}
+	for k in isotopes:
+		iso[str(k)] = isotopes[k]
+	return {
+		"v": 1, "seed": seed_value, "rng_state": str(rng.state), "table_index": table_index,
+		"money": money, "formulas": formulas, "reagents": reagents, "isotopes": iso,
+		"catalyst": catalyst, "plan": plan, "endless": endless, "total_pots": total_pots,
+		"best_shot": best_shot, "tables_cleared": tables_cleared, "best_streak": best_streak,
+	}
+
+
+func save() -> void:
+	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(to_dict()))
+
+
+static func has_save() -> bool:
+	return FileAccess.file_exists(SAVE_PATH)
+
+
+static func clear_save() -> void:
+	if FileAccess.file_exists(SAVE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+
+
+func load_save() -> bool:
+	if not has_save():
+		return false
+	var txt := FileAccess.get_file_as_string(SAVE_PATH)
+	var d = JSON.parse_string(txt)
+	if typeof(d) != TYPE_DICTIONARY or int(d.get("v", 0)) != 1:
+		return false
+	seed_value = int(d.seed)
+	rng.seed = seed_value
+	rng.state = int(d.rng_state)
+	table_index = int(d.table_index)
+	money = int(d.money)
+	formulas.assign(d.formulas)
+	reagents.assign(d.reagents)
+	isotopes.clear()
+	for k in d.isotopes:
+		isotopes[int(k)] = d.isotopes[k]
+	catalyst = float(d.catalyst)
+	plan.clear()
+	for t in d.plan:
+		var td: Dictionary = t
+		td.target = int(td.target)
+		plan.append(td)
+	endless = bool(d.endless)
+	total_pots = int(d.total_pots)
+	best_shot = int(d.best_shot)
+	tables_cleared = int(d.tables_cleared)
+	best_streak = int(d.get("best_streak", 0))
+	return true

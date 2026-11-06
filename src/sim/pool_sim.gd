@@ -358,11 +358,11 @@ func _pot(i: int, k: int) -> void:
 ## Sweep a single ball (centre p, unit direction d) through the *static* table.
 ## Returns {t, kind: "ball"/"rail"/"bumper"/"pocket"/"none", hit (ball index),
 ## normal, point}. `ignore` is a ball index to skip (the moving ball itself).
-func cast(p: Vector2, d: Vector2, ignore: int, max_len: float = 3000.0) -> Dictionary:
+func cast(p: Vector2, d: Vector2, ignore: int, max_len: float = 3000.0, ignore2: int = -1) -> Dictionary:
 	var best_t := max_len
 	var res := {"kind": "none", "hit": -1, "normal": Vector2.ZERO}
 	for j in pos.size():
-		if j == ignore or alive[j] == 0:
+		if j == ignore or j == ignore2 or alive[j] == 0:
 			continue
 		var t := _toi_circle(pos[j] - p, -d, R * 2.0)
 		if t < best_t:
