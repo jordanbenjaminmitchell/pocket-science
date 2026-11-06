@@ -22,7 +22,7 @@ func _go() -> void:
 		"cues":
 			game._show_cue_select()
 			await _frames(4)
-		"pot", "potfx":
+		"pot", "potfx", "forecast":
 			game._new_run()
 			game.run.formulas.append_array(["bank", "lens"])
 			game.run.streak = 2
@@ -39,6 +39,10 @@ func _go() -> void:
 			game.power = 0.6
 			game._refresh_hud()
 			await _frames(6)
+			if scenario == "forecast":
+				game.run.reagents.assign(["forecast"])
+				game._use_reagent(0)
+				await _frames(40)
 			if scenario == "potfx":
 				game._shoot(0.6)
 				await _frames(75)

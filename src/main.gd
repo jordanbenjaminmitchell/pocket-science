@@ -267,6 +267,8 @@ func _update_aim(delta: float) -> void:
 		if forecast_timer <= 0.0:
 			forecast_dirty = false
 			_compute_forecast()
+	elif fc_sim != null:
+		_step_forecast()
 	elif not (run.forecast or run.formulas.has("oracle")):
 		view.forecast_paths = []
 
@@ -323,29 +325,45 @@ func _update_preview() -> void:
 		view.preview_pocket = pocket
 
 
+var fc_sim: PoolSim
+var fc_paths := {}
+var fc_steps := 0
+var fc_limit := 12.0
+
+
+## Starts an incremental forecast; _step_forecast advances it within a frame budget.
 func _compute_forecast() -> void:
-	var s := sim.clone()
-	var p := _current_power()
-	s.strike(aim_dir, _speed(p), follow, side)
-	var limit := 1.5 if run.formulas.has("oracle") and not run.forecast else 12.0
-	var paths := {}
-	var steps := 0
-	while s.moving() and s.time < limit:
-		s.step(PoolSim.STEP)
-		steps += 1
-		if steps % 3 == 0:
-			for i in s.count():
-				if s.alive[i] == 1 and s.vel[i] != Vector2.ZERO:
-					if not paths.has(i):
-						paths[i] = PackedVector2Array([sim.pos[i]])
-					paths[i].append(s.pos[i])
+	fc_sim = sim.clone()
+	fc_sim.strike(aim_dir, _speed(_current_power()), follow, side)
+	fc_limit = 1.5 if run.formulas.has("oracle") and not run.forecast else 12.0
+	fc_paths = {}
+	fc_steps = 0
+	_step_forecast()
+
+
+func _step_forecast() -> void:
+	if fc_sim == null:
+		return
+	var t0 := Time.get_ticks_usec()
+	while fc_sim.moving() and fc_sim.time < fc_limit and Time.get_ticks_usec() - t0 < 5000:
+		fc_sim.step(PoolSim.STEP)
+		fc_steps += 1
+		if fc_steps % 3 == 0:
+			for i in fc_sim.count():
+				if fc_sim.alive[i] == 1 and fc_sim.vel[i] != Vector2.ZERO:
+					if not fc_paths.has(i):
+						fc_paths[i] = PackedVector2Array([sim.pos[i]])
+					fc_paths[i].append(fc_sim.pos[i])
 	var out: Array = []
-	for i in paths:
-		var c := Catalog.ball_color(s.num[i])
-		if s.num[i] == 0:
+	for i in fc_paths:
+		var c := Catalog.ball_color(fc_sim.num[i])
+		if fc_sim.num[i] == 0:
 			c = Color(1, 1, 1)
-		out.append({"points": paths[i], "color": c.lightened(0.25), "end": s.alive[i] == 1})
+		var done := not fc_sim.moving() or fc_sim.time >= fc_limit
+		out.append({"points": fc_paths[i], "color": c.lightened(0.25), "end": done and fc_sim.alive[i] == 1})
 	view.forecast_paths = out
+	if not fc_sim.moving() or fc_sim.time >= fc_limit:
+		fc_sim = null
 
 
 func _speed(p: float) -> float:
@@ -386,6 +404,7 @@ func _shoot(p: float) -> void:
 	state = S.STRIKE
 	view.show_guide = false
 	view.forecast_paths = []
+	fc_sim = null
 	view.preview_text = ""
 
 
