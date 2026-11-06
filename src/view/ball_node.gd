@@ -16,6 +16,7 @@ var font: Font
 var glow := Color(0, 0, 0, 0)
 var sinking := false
 var fade := 1.0
+var vel := Vector2.ZERO
 
 
 func setup(n: int, f: Font, rng: RandomNumberGenerator) -> void:
@@ -69,6 +70,15 @@ func _push() -> void:
 func _draw() -> void:
 	if fade <= 0.01:
 		return
+	# Motion streak for fast balls.
+	var sp := vel.length()
+	if sp > 700.0 and not sinking:
+		var back := -vel / sp
+		var n := int(clampf((sp - 700.0) / 300.0, 1.0, 4.0))
+		var col := Catalog.ball_color(number) if number != 0 else Color(1, 1, 1)
+		for k in n:
+			var off2 := back * (k + 1) * 6.0 * clampf(sp / 1500.0, 0.5, 1.5)
+			draw_circle(off2, radius * (0.9 - k * 0.12), Color(col, 0.12 - k * 0.025))
 	# Contact shadow, offset away from the lamp.
 	var off := Vector2(3.0, 4.5)
 	for i in 5:

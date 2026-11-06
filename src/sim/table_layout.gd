@@ -53,6 +53,7 @@ func build(scale: float = 1.0, closed: Array[int] = []) -> TableLayout:
 			_add_seg(Vector2(x0, y), Vector2(mid - sh, y), centre)
 			_add_seg(Vector2(mid + sh, y), Vector2(x1, y), centre)
 			var sp := Vector2(mid, y + out * 6.0)
+			pockets[top_index]["mouth"] = PackedVector2Array([Vector2(mid - sh, y), Vector2(mid - sh + 5.0, y + out * jl), Vector2(mid + sh - 5.0, y + out * jl), Vector2(mid + sh, y)])
 			_add_seg(Vector2(mid - sh, y), Vector2(mid - sh + 5.0, y + out * jl), sp)
 			_add_seg(Vector2(mid + sh, y), Vector2(mid + sh - 5.0, y + out * jl), sp)
 	# Short rails (left x=0, right x=W).
@@ -75,6 +76,7 @@ func build(scale: float = 1.0, closed: Array[int] = []) -> TableLayout:
 		var back := Vector2(-sx, -sy) * jl
 		_add_seg(a1, a1 + back, c)
 		_add_seg(a2, a2 + back, c)
+		pockets[corner_ids[k]]["mouth"] = PackedVector2Array([a1, a1 + back, a2 + back, a2])
 	return self
 
 

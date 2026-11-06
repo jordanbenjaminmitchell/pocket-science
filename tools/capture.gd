@@ -64,13 +64,16 @@ func _go() -> void:
 			await _frames(4)
 			if scenario == "roll" or scenario == "tally":
 				game._shoot(0.75)
-				await _frames(40 if scenario == "roll" else 160)
+				await _frames(8 if scenario == "roll" else 160)
 			if scenario == "shop":
 				game.run.payout()
 				game._show_shop([["Table cleared", 3], ["Unused chalk ×2", 2]])
 				await _frames(4)
 	await _frames(3)
 	var img := root.get_viewport().get_texture().get_image()
+	if args.size() > 5:
+		img = img.get_region(Rect2i(int(args[2]), int(args[3]), int(args[4]), int(args[5])))
+		img.resize(img.get_width() * 2, img.get_height() * 2, Image.INTERPOLATE_NEAREST)
 	img.save_png(out)
 	print("CAPTURED ", out, " ", img.get_size())
 	quit(0)

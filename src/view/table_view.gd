@@ -131,6 +131,9 @@ func update_balls(sim: PoolSim) -> void:
 				b.set_fade(1.0)
 			if b.position != sim.pos[i]:
 				b.roll_to(sim.pos[i])
+			if b.vel != sim.vel[i]:
+				b.vel = sim.vel[i]
+				b.queue_redraw()
 		elif b.visible:
 			b.visible = false
 
@@ -185,6 +188,35 @@ func _process(delta: float) -> void:
 	fx_layer.queue_redraw()
 
 
+var punch_tw: Tween
+
+
+## Brief zoom pulse around the table centre for big moments.
+func punch(amount: float) -> void:
+	if punch_tw and punch_tw.is_valid():
+		punch_tw.kill()
+	var base := Vector2(base_scale, base_scale)
+	var centre_screen := base_position + Vector2(W, H) * 0.5 * base_scale
+	var s := base_scale * (1.0 + amount)
+	scale = Vector2(s, s)
+	base_position = centre_screen - Vector2(W, H) * 0.5 * s
+	punch_tw = create_tween()
+	punch_tw.set_parallel(true)
+	punch_tw.tween_property(self, "scale", base, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	punch_tw.tween_property(self, "base_position", home_position, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
+var base_scale := 1.0
+var home_position := Vector2.ZERO
+
+
+func spark(p: Vector2, strength: float) -> void:
+	var n := int(4 + strength * 10)
+	for i in n:
+		var a := randf() * TAU
+		particles.append({"pos": p, "vel": Vector2(cos(a), sin(a)) * randf_range(60, 200) * strength, "life": randf_range(0.12, 0.3), "max": 0.3, "color": Color(1, 0.95, 0.8), "size": randf_range(1.0, 2.0)})
+
+
 func add_shake(a: float) -> void:
 	shake = minf(10.0, shake + a)
 
@@ -226,9 +258,15 @@ func _draw() -> void:
 		draw_rect(outer.grow(g * 0.6).grow_individual(0, 0, 0, g * 0.4), Color(0, 0, 0, 0.07), true)
 	# Wood rail with layered bevel.
 	var wood := Color(0.30, 0.15, 0.07)
-	draw_rect(outer, wood.darkened(0.35), true)
-	draw_rect(outer.grow(-3), wood, true)
-	draw_rect(outer.grow(-8), wood.lightened(0.06), true)
+	draw_rect(outer, wood.darkened(0.45), true)
+	# Rounded bevel: bands from dark outer edge to a lit crown.
+	for i in 10:
+		var t := i / 9.0
+		var col := wood.darkened(0.35 - t * 0.35).lightened(sin(t * PI) * 0.1)
+		draw_rect(outer.grow(-2.0 - i * 2.2), col, true)
+	# Lacquer highlight along the top edge of each rail.
+	draw_line(outer.position + Vector2(10, 9), Vector2(outer.end.x - 10, outer.position.y + 9), Color(1, 0.9, 0.75, 0.12), 3.0)
+	draw_line(outer.position + Vector2(9, 10), Vector2(outer.position.x + 9, outer.end.y - 10), Color(1, 0.9, 0.75, 0.08), 3.0)
 	# Grain.
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 99
@@ -306,8 +344,22 @@ func _draw_cushions() -> void:
 		# Leather liner wrapped onto the rail.
 		c.draw_circle(p - dir * 6.0, r + 13.0, Color(0.11, 0.07, 0.05))
 		c.draw_circle(p - dir * 6.0, r + 9.0, Color(0.2, 0.13, 0.08))
+		c.draw_arc(p - dir * 6.0, r + 11.0, 0, TAU, 40, Color(0.3, 0.2, 0.12, 0.6), 1.5)
+		# Throat between the jaws, shading darker toward the hole.
+		if pk.has("mouth"):
+			var m: PackedVector2Array = pk.mouth
+			c.draw_colored_polygon(m, Color(0.05, 0.05, 0.05))
+			var inner := PackedVector2Array()
+			for q in m:
+				inner.append(q.lerp(p, 0.35))
+			c.draw_colored_polygon(inner, Color(0.015, 0.015, 0.015))
+			# Rubber facing on the jaws.
+			c.draw_line(m[0], m[1], felt_color.darkened(0.3), 4.0)
+			c.draw_line(m[3], m[2], felt_color.darkened(0.3), 4.0)
 		c.draw_circle(p, r + 3.0, Color(0.02, 0.02, 0.02))
 		c.draw_circle(p + dir * 3.0, r - 2.0, Color(0, 0, 0))
+		# Net/inner rim hint.
+		c.draw_arc(p + dir * 2.0, r - 4.0, 0, TAU, 40, Color(1, 1, 1, 0.04), 2.0)
 		if k == hot_pocket:
 			var pulse := 0.5 + 0.5 * sin(time * 5.0)
 			var hc := Color(1.0, 0.55, 0.15)

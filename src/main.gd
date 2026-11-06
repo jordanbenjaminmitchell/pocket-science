@@ -86,6 +86,8 @@ var banner: Label
 var banner_t := 0.0
 var flags_label: Label
 var log_label: Label
+var left_panel: Control
+var bottom_bar: Control
 var shot_log: Array[String] = []
 
 
@@ -96,6 +98,8 @@ func _ready() -> void:
 	add_child(sfx)
 	view = TableView.new()
 	view.base_position = TABLE_ORIGIN
+	view.home_position = TABLE_ORIGIN
+	view.base_scale = TABLE_SCALE
 	view.position = TABLE_ORIGIN
 	view.scale = Vector2(TABLE_SCALE, TABLE_SCALE)
 	add_child(view)
@@ -482,6 +486,10 @@ func _consume_events() -> void:
 		match e.type:
 			"ball":
 				var v := clampf(e.speed / 1600.0, 0.05, 1.0) * (0.3 if demo else 1.0)
+				if e.speed > 900.0 and not demo:
+					var ia := sim.index_of(e.a)
+					var ib := sim.index_of(e.b)
+					view.spark((sim.pos[ia] + sim.pos[ib]) * 0.5, clampf(e.speed / 2000.0, 0.3, 1.0))
 				sfx.play("click" if v > 0.25 else "click_soft", v, 0.9 + randf() * 0.25)
 			"rail":
 				var v := clampf(e.speed / 1800.0, 0.03, 0.9)
@@ -576,6 +584,7 @@ func _update_tally(delta: float) -> void:
 			var size := int(clampf(30.0 + sqrt(total) * 0.9, 30.0, 80.0))
 			view.popup(mid, "+%d" % total, Color(1.0, 0.85, 0.35), size, 1.6)
 			view.add_shake(clampf(total / 120.0, 1.0, 9.0))
+			view.punch(clampf(total / 20000.0, 0.008, 0.03))
 			_animate_score(run.score, run.score + total)
 	elif tally_phase == 1:
 		tally_phase = 2
@@ -606,6 +615,7 @@ func _apply_tally_line(l: Dictionary, i: int) -> void:
 			col = Color(1.0, 0.35, 0.45)
 			sfx.play("xmult", 0.8, 1.0)
 			view.add_shake(2.5)
+			view.punch(0.012)
 			_pulse(lbl_mult)
 		"xchips":
 			txt = "×%s Chips" % _fmt(l.value)
@@ -901,6 +911,7 @@ func _build_ui() -> void:
 
 	# ---------------- left panel
 	var left := PanelContainer.new()
+	left_panel = left
 	left.position = Vector2(14, 14)
 	left.size = Vector2(330, 872)
 	left.add_theme_stylebox_override("panel", _style(Color(0.075, 0.07, 0.075, 0.97), Color(0.55, 0.42, 0.22), 2, 14))
@@ -1030,6 +1041,7 @@ func _build_ui() -> void:
 
 	# ---------------- bottom bar: formulas + reagents
 	var bottom := HBoxContainer.new()
+	bottom_bar = bottom
 	bottom.position = Vector2(360, 712)
 	bottom.size = Vector2(1226, 174)
 	bottom.add_theme_constant_override("separation", 14)
@@ -1283,10 +1295,18 @@ func _center_panel(w: float, h: float, accent: Color = Color(0.85, 0.65, 0.3), a
 	return v
 
 
+func _hud_visible(on: bool) -> void:
+	var a := 1.0 if on else 0.0
+	for c in [left_panel, bottom_bar]:
+		var tw := create_tween()
+		tw.tween_property(c, "modulate:a", a, 0.35)
+
+
 func _show_title() -> void:
 	state = S.TITLE
 	demo_timer = 1.2
 	sfx.play_music("title")
+	_hud_visible(false)
 	_clear_overlay()
 	# A static rack on the standard table behind the title.
 	run.start(randi())
@@ -1383,6 +1403,7 @@ func _show_cue_select() -> void:
 
 func _new_run() -> void:
 	demo = false
+	_hud_visible(true)
 	_clear_overlay()
 	run.start(randi(), chosen_cue)
 	view.cue_colors = Catalog.CUES.get(chosen_cue, Catalog.CUES.maple)
@@ -1453,7 +1474,7 @@ func _show_pause() -> void:
 	v.add_child(_label("PAUSED", 30, Color(0.98, 0.8, 0.4), F_PIXB))
 	v.add_child(_button("Resume", _resume))
 	v.add_child(_button("How to Play", _show_help))
-	v.add_child(_button("Save & quit to title", func():
+	v.add_child(_button("Quit to title (Continue restarts this table)", func():
 		paused = false
 		_show_title(), Color(0.6, 0.75, 0.9)))
 	v.add_child(_button("Abandon run", func():
@@ -1601,6 +1622,7 @@ func _offer_card(i: int) -> Control:
 
 func _continue_run() -> void:
 	demo = false
+	_hud_visible(true)
 	_clear_overlay()
 	if not run.load_save():
 		_new_run()
