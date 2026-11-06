@@ -405,6 +405,11 @@ func _update_roll(delta: float) -> void:
 		if not sim.moving():
 			break
 	view.update_balls(sim)
+	if run.streak >= 3 and sim.alive[_cue_index()] == 1:
+		var cv := sim.vel[_cue_index()]
+		if cv.length() > 120.0:
+			var heat := clampf((run.streak - 2) / 5.0, 0.2, 1.0)
+			view.trail(sim.pos[_cue_index()], Color(1.0, 0.55 - heat * 0.3, 0.1).lerp(Color(0.4, 0.8, 1.0), 0.0), heat)
 	if not sim.moving() or sim.time > 30.0:
 		if sim.time > 30.0:
 			for i in sim.count():
@@ -675,6 +680,7 @@ func _table_cleared() -> void:
 	view.add_shake(6.0)
 	for k in layout.pockets.size():
 		view.burst(layout.pockets[k].pos, Color(1, 0.85, 0.4), 30, 320)
+	view.confetti()
 	var final: bool = run.table_index == run.plan.size() - 1
 	var rows := run.payout()
 	_refresh_hud()
@@ -1032,7 +1038,7 @@ func _build_ui() -> void:
 	bsb.content_margin_bottom = 10
 	banner.add_theme_stylebox_override("normal", bsb)
 	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	banner.position = Vector2(545, 320)
+	banner.position = Vector2(545, 150)
 	banner.size = Vector2(850, 70)
 	banner.pivot_offset = Vector2(425, 35)
 	banner.add_theme_constant_override("outline_size", 12)
@@ -1175,7 +1181,10 @@ func _formula_card(id: String, slot: int) -> Control:
 	var d := _label(f.desc, 11, Color(0.78, 0.8, 0.82), F_REG)
 	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	d.custom_minimum_size = Vector2(146, 0)
-	v.add_child(d)
+	if state != S.SHOP:
+		v.add_child(d)
+	else:
+		v.add_child(_label(Catalog.rarity_name(f.r), 11, accent))
 	if id == "catalyst":
 		v.add_child(_label("Now: +%s Mult" % _fmt(run.catalyst), 12, accent))
 	p.tooltip_text = "%s (%s)\n%s" % [f.name, Catalog.rarity_name(f.r), f.desc]
@@ -1238,9 +1247,11 @@ func _dim(alpha: float = 0.72) -> ColorRect:
 func _center_panel(w: float, h: float, accent: Color = Color(0.85, 0.65, 0.3), at: Vector2 = Vector2(-1, -1)) -> VBoxContainer:
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", _style(Color(0.08, 0.075, 0.08, 0.98), accent, 2, 16))
-	p.custom_minimum_size = Vector2(w, h)
-	p.size = Vector2(w, h)
+	p.custom_minimum_size = Vector2(w, 0)
+	p.size = Vector2(w, 0)
 	p.position = at if at.x >= 0 else Vector2((1600 - w) * 0.5, (900 - h) * 0.5)
+	if at.x < 0:
+		p.resized.connect(func(): p.position.y = (900.0 - p.size.y) * 0.5)
 	overlay.add_child(p)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
@@ -1381,7 +1392,8 @@ func _refresh_shop() -> void:
 	_clear_overlay()
 	var d := _dim(0.6)
 	d.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	d.size = Vector2(1600, 706)
+	d.position = Vector2(352, 0)
+	d.size = Vector2(1248, 706)
 	d.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var v := _center_panel(1040, 600, Color(0.85, 0.65, 0.3), Vector2(450, 70))

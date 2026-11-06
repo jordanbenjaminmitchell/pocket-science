@@ -169,7 +169,7 @@ func _process(delta: float) -> void:
 	for p in particles:
 		p.life -= delta
 		p.pos += p.vel * delta
-		p.vel *= 1.0 - minf(1.0, delta * 3.0)
+		p.vel *= 1.0 - minf(1.0, delta * p.get("drag", 3.0))
 	particles = particles.filter(func(p): return p.life > 0.0)
 	for p in popups:
 		p.life -= delta
@@ -193,6 +193,19 @@ func burst(p: Vector2, c: Color, n: int = 18, speed: float = 220.0) -> void:
 		var a := randf() * TAU
 		var s := randf_range(0.3, 1.0) * speed
 		particles.append({"pos": p, "vel": Vector2(cos(a), sin(a)) * s, "life": randf_range(0.35, 0.8), "max": 0.8, "color": c, "size": randf_range(1.5, 4.0)})
+
+
+func trail(p: Vector2, c: Color, heat: float) -> void:
+	for i in int(1 + heat * 2):
+		var a := randf() * TAU
+		particles.append({"pos": p + Vector2(cos(a), sin(a)) * randf_range(0, R * 0.6), "vel": Vector2(cos(a), sin(a)) * 20.0, "life": 0.35 + heat * 0.25, "max": 0.6, "color": c, "size": 2.5 + heat * 3.0})
+
+
+## Celebration: coloured paper falling across the table.
+func confetti() -> void:
+	var cols := [Color(1, 0.8, 0.3), Color(0.3, 0.8, 1), Color(1, 0.4, 0.5), Color(0.5, 1, 0.6), Color(0.8, 0.5, 1)]
+	for i in 160:
+		particles.append({"pos": Vector2(randf_range(0, W), randf_range(-80, -10)), "vel": Vector2(randf_range(-60, 60), randf_range(250, 520)), "life": randf_range(1.2, 2.2), "max": 2.2, "color": cols[i % cols.size()], "size": randf_range(2.5, 4.5), "drag": 0.0})
 
 
 func popup(p: Vector2, text: String, c: Color, size: int = 22, life: float = 1.1) -> void:
@@ -378,9 +391,13 @@ func _draw_overlay() -> void:
 		var pk: Dictionary = layout.pockets[preview_pocket]
 		var p: Vector2 = pk.pos
 		var dir: Vector2 = pk.dir
-		var lp := p + dir * 70.0
+		# Sit the value tag out on the rail, beyond the pocket.
+		var lp := p - dir * 34.0
+		if pk.side:
+			lp = p - dir * 26.0
 		var fs := 17
 		var w := font_bold.get_string_size(preview_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		lp.x = clampf(lp.x, -RAIL + w * 0.5, W + RAIL - w * 0.5)
 		var rect := Rect2(lp + Vector2(-w * 0.5 - 8, -15), Vector2(w + 16, 24))
 		o.draw_rect(rect, Color(0.05, 0.05, 0.08, 0.8), true)
 		o.draw_rect(rect, Color(1.0, 0.82, 0.3, 0.8), false, 1.5)
