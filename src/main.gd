@@ -254,6 +254,7 @@ func _update_aim(delta: float) -> void:
 		view.cue_pull = power * 18.0
 		power_w.set_power(power)
 	view.cue_dir = aim_dir
+	_update_coach()
 	if guide_dirty:
 		guide_dirty = false
 		forecast_dirty = true
@@ -271,6 +272,33 @@ func _update_aim(delta: float) -> void:
 		_step_forecast()
 	elif not (run.forecast or run.formulas.has("oracle")):
 		view.forecast_paths = []
+
+
+var coaching := false
+var coach_seen_pot := false
+
+
+func _update_coach() -> void:
+	if not coaching:
+		view.coach_text = ""
+		return
+	var cue: Vector2 = sim.pos[_cue_index()]
+	if run.shots_taken == 0:
+		view.coach_text = "Press on the table, drag BACK and release to shoot.
+Further = harder. Break the rack!"
+	elif view.guide.get("obj_pot", false) or view.guide.get("obj2_pot", false):
+		coach_seen_pot = true
+		view.coach_text = "GOLD line = that ball is going in.
+The tag on the pocket shows the points."
+	elif not coach_seen_pot:
+		view.coach_text = "Swing your aim until a line turns GOLD.
+The ring shows where the cue ball hits."
+	elif run.streak >= 1:
+		view.coach_text = "Streak! Each scoring shot in a row adds +1 Mult.
+The glowing pocket gives ×2."
+	else:
+		view.coach_text = ""
+	view.coach_pos = cue + Vector2(0, 50 if cue.y < TableLayout.H * 0.6 else -110)
 
 
 func _mouse_over_table() -> bool:
@@ -403,6 +431,7 @@ func _shoot(p: float) -> void:
 	strike_t = 0.0
 	state = S.STRIKE
 	view.show_guide = false
+	view.coach_text = ""
 	view.forecast_paths = []
 	fc_sim = null
 	view.preview_text = ""
@@ -1450,6 +1479,8 @@ func _new_run() -> void:
 	shown_score = 0
 	_set_chips_mult(0, 1)
 	lbl_line.text = "Pot balls to score Chips × Mult"
+	coaching = _load_best().tables == 0
+	coach_seen_pot = false
 	_enter_aim()
 	_flash_banner("TABLE 1  ·  TARGET %d" % run.target(), Color(1, 0.85, 0.4), 1.6)
 
@@ -1705,6 +1736,8 @@ func _load_settings() -> void:
 
 
 func _next_table() -> void:
+	coaching = false
+	view.coach_text = ""
 	_clear_overlay()
 	run.advance_table()
 	run.save()

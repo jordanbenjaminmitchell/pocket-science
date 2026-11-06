@@ -34,6 +34,8 @@ var preview_text := ""
 var preview_pocket := -1
 var cue_visible := false
 var cue_colors: Dictionary = {}
+var coach_text := ""
+var coach_pos := Vector2.ZERO
 var cue_pos := Vector2.ZERO
 var cue_dir := Vector2.RIGHT
 var cue_pull := 0.0
@@ -533,6 +535,7 @@ func _draw_cue() -> void:
 ## ---------------------------------------------------------------- effects
 func _draw_fx() -> void:
 	var f := fx_layer
+	_draw_coach(f)
 	for r in rings:
 		var t: float = 1.0 - r.life / r.max
 		f.draw_arc(r.pos, r.r * (0.4 + t), 0, TAU, 40, Color(r.color, 1.0 - t), 3.0)
@@ -655,3 +658,24 @@ static func compute_guide(sim: PoolSim, aim: Vector2, follow: float, side: float
 			break
 	g["cue"] = cp
 	return g
+
+
+func _draw_coach(o: CanvasItem) -> void:
+	if coach_text == "":
+		return
+	var a := 0.75 + 0.25 * sin(time * 4.0)
+	var fs := 18
+	var lines := coach_text.split(String.chr(10))
+	var wmax := 0.0
+	for l in lines:
+		wmax = maxf(wmax, font.get_string_size(l, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
+	var h := lines.size() * 23.0 + 14.0
+	var cp := coach_pos
+	cp.x = clampf(cp.x, wmax * 0.5 + 10, W - wmax * 0.5 - 10)
+	cp.y = clampf(cp.y, 10, H - h - 10)
+	var rect := Rect2(cp + Vector2(-wmax * 0.5 - 10, 0), Vector2(wmax + 20, h))
+	o.draw_rect(rect, Color(0.06, 0.16, 0.28, 0.96), true)
+	o.draw_rect(rect, Color(0.5, 0.85, 1.0, a), false, 2.0)
+	for i in lines.size():
+		var lw := font.get_string_size(lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		o.draw_string(font, cp + Vector2(-lw * 0.5, 25 + i * 23), lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, a))

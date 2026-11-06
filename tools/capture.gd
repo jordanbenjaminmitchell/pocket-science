@@ -19,6 +19,19 @@ func _go() -> void:
 	match scenario:
 		"title":
 			await _frames(200)
+		"coach":
+			DirAccess.remove_absolute(ProjectSettings.globalize_path("user://settings.cfg"))
+			game._new_run()
+			await _frames(140)
+		"help":
+			game._show_help()
+			await _frames(4)
+		"over":
+			game._new_run()
+			game.run.tables_cleared = 3
+			game.run.best_shot = 412
+			game._show_game_over()
+			await _frames(4)
 		"cues":
 			game._show_cue_select()
 			await _frames(4)
