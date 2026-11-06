@@ -48,13 +48,24 @@ func _initialize() -> void:
 	check(run.chalk == 4 and not o.chalk_lost, "dry break is free")
 	o = run.apply_shot(miss, false, 9, true)
 	check(run.chalk == 3 and o.chalk_lost, "miss costs chalk")
-	var hit := {"scored": true, "foul": "", "total": 30, "money": 1, "catalyst_gain": 0.0, "potted": [1], "shattered": []}
+	var hit := {"scored": true, "foul": "", "total": 30, "money": 1, "catalyst_gain": 0.0, "potted": [1], "shattered": [], "lines": []}
 	o = run.apply_shot(hit, false, 0, true)
 	check(o.rack_cleared and run.chalk == 4 and run.streak == 1, "clearing the rack refunds chalk")
 	run.score = run.target() - 1
 	o = run.apply_shot(hit, false, 5, true)
 	check(o.cleared, "reaching the target clears the table")
 
+	print("bounty")
+	var b := RunState.new()
+	b.start(3)
+	b.begin_table()
+	b.bounty = "double"
+	var m0 := b.money
+	var two := {"scored": true, "foul": "", "total": 40, "money": 0, "catalyst_gain": 0.0, "potted": [1, 2], "shattered": [], "lines": []}
+	var ob := b.apply_shot(two, false, 5, true)
+	check(ob.has("bounty") and b.money == m0 + 3 and b.bounty_done, "bounty pays once")
+	ob = b.apply_shot(two, false, 3, true)
+	check(not ob.has("bounty") and b.money == m0 + 3, "bounty does not repeat")
 	print("persistence")
 	run.formulas.assign(["golden", "bank"])
 	run.isotopes[7] = "neon"

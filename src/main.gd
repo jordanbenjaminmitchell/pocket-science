@@ -87,6 +87,7 @@ var banner_t := 0.0
 var flags_label: Label
 var log_label: Label
 var left_panel: Control
+var lbl_bounty: Label
 var bottom_bar: Control
 var shot_log: Array[String] = []
 
@@ -635,6 +636,10 @@ func _after_shot() -> void:
 	is_break = false
 	var out := run.apply_shot(result, was_break, sim.object_balls_left(), sim.alive[_cue_index()] == 1)
 	_log_shot(was_break, out)
+	if out.has("bounty"):
+		sfx.play("coin", 1.0, 1.1)
+		_flash_banner("BOUNTY!  +$%d" % Catalog.BOUNTIES[out.bounty].reward, Color(1.0, 0.85, 0.35), 1.3)
+		view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(1.0, 0.85, 0.35), 40, 300)
 	for n in result.shattered:
 		view.popup(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.6), "Glass %d-ball shattered!" % n, Color(0.7, 0.85, 1.0), 20, 1.5)
 		view.refresh_glows(sim, run.isotopes)
@@ -937,6 +942,8 @@ func _build_ui() -> void:
 	lbl_rule.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl_rule.custom_minimum_size = Vector2(290, 0)
 	labv.add_child(lbl_rule)
+	lbl_bounty = _label("", 14, Color(1.0, 0.85, 0.35))
+	labv.add_child(lbl_bounty)
 	lbl_boss = _label("", 14, Color(1.0, 0.45, 0.4))
 	lbl_boss.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl_boss.custom_minimum_size = Vector2(290, 0)
@@ -1146,6 +1153,10 @@ func _refresh_hud() -> void:
 	else:
 		lbl_boss.visible = false
 	lbl_target.text = str(run.target())
+	if run.bounty != "":
+		var bt: Dictionary = Catalog.BOUNTIES[run.bounty]
+		lbl_bounty.text = ("✔ " if run.bounty_done else "★ ") + "Bounty: %s  +$%d" % [bt.name, bt.reward]
+		lbl_bounty.add_theme_color_override("font_color", Color(0.5, 1.0, 0.6) if run.bounty_done else Color(1.0, 0.85, 0.35))
 	chalk_pips.set_count(run.chalk, run.max_chalk())
 	var per := 2.0 if run.formulas.has("streak") else 1.0
 	lbl_streak.text = "%d  (+%s Mult)" % [run.streak, _fmt(run.streak * per)] if run.streak > 0 else "0"

@@ -100,6 +100,20 @@ const ANOMALIES := {
 	"cold": {"name": "Cold Pockets", "desc": "There is no hot pocket."},
 }
 
+## Per-table side goals. Each table rolls one; completing it pays immediately.
+const BOUNTIES := {
+	"bank": {"name": "Sink a bank shot", "reward": 3},
+	"combo": {"name": "Pot a combination", "reward": 3},
+	"double": {"name": "Pot 2+ balls in one shot", "reward": 3},
+	"triple": {"name": "Pot 3+ balls in one shot", "reward": 5},
+	"kick": {"name": "Pot off a kick shot", "reward": 5},
+	"hot": {"name": "Pot into the hot pocket", "reward": 2},
+	"streak4": {"name": "Reach a streak of 4", "reward": 4},
+	"big": {"name": "Score 150+ in one shot", "reward": 4},
+	"side": {"name": "Pot into a side pocket", "reward": 2},
+	"eight": {"name": "Pot the 8-ball", "reward": 3},
+}
+
 const TABLES := [
 	{"target": 100, "rack": "nine"},
 	{"target": 220, "rack": "nine"},

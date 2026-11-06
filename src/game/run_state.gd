@@ -30,6 +30,8 @@ var shots_taken := 0
 var hot_pocket := 0
 var racks_cleared := 0
 var bluechalk := false
+var bounty := ""
+var bounty_done := false
 var forecast := false
 
 # Run stats
@@ -104,6 +106,9 @@ func begin_table() -> void:
 	forecast = false
 	chalk = max_chalk()
 	roll_hot_pocket(-1)
+	var keys := Catalog.BOUNTIES.keys()
+	bounty = keys[rng.randi_range(0, keys.size() - 1)]
+	bounty_done = false
 
 
 func max_chalk() -> int:
@@ -112,6 +117,32 @@ func max_chalk() -> int:
 	if current().anomaly == "dry":
 		c -= 1
 	return maxi(c, 1)
+
+
+func bounty_met(res: Dictionary, hot: int) -> bool:
+	var labels: Array = res.lines.map(func(l): return l.label)
+	match bounty:
+		"bank":
+			return labels.any(func(l): return l.begins_with("Bank"))
+		"combo":
+			return labels.has("Combination")
+		"double":
+			return res.potted.size() >= 2
+		"triple":
+			return res.potted.size() >= 3
+		"kick":
+			return labels.has("Kick shot")
+		"hot":
+			return labels.has("Hot pocket")
+		"streak4":
+			return streak + 1 >= 4
+		"big":
+			return res.total >= 150
+		"side":
+			return res.lines.any(func(l): return l.pocket == 1 or l.pocket == 4)
+		"eight":
+			return res.potted.has(8)
+	return false
 
 
 func roll_hot_pocket(avoid: int) -> void:
@@ -295,6 +326,11 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 	shots_taken += 1
 	var out := {"cleared": false, "over": false, "rack_cleared": false, "ball_in_hand": not cue_on_table, "chalk_lost": false}
 	if res.scored:
+		var hot_before := hot_pocket
+		if not bounty_done and bounty_met(res, hot_before):
+			bounty_done = true
+			money += int(Catalog.BOUNTIES[bounty].reward)
+			out["bounty"] = bounty
 		score += res.total
 		streak += 1
 		best_streak = maxi(best_streak, streak)
