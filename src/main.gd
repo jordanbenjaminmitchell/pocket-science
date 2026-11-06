@@ -211,8 +211,16 @@ func _process(delta: float) -> void:
 		view.cue_pos = sim.pos[cue_i]
 
 
+var mouse_pos := Vector2(800, 400)
+
+
+func _input(e: InputEvent) -> void:
+	if e is InputEventMouse:
+		mouse_pos = e.position
+
+
 func _mouse_table() -> Vector2:
-	return (get_viewport().get_mouse_position() - view.base_position) / TABLE_SCALE
+	return (mouse_pos - view.base_position) / TABLE_SCALE
 
 
 func _update_aim(delta: float) -> void:

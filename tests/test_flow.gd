@@ -27,6 +27,25 @@ func _go() -> void:
 	g._new_run()
 	await _frames(2)
 	check(g.state == g.S.AIM, "new run enters aim")
+	# Real mouse input: aim at the rack, press, drag back, release.
+	root.size = Vector2i(1600, 900)
+	g.aim_dir = Vector2(0, 1)
+	await _frames(2)
+	var cue_screen: Vector2 = g.view.base_position + g.sim.pos[g._cue_index()] * g.TABLE_SCALE
+	var target := cue_screen + Vector2(300, 0)
+	_mouse_move(target)
+	await _frames(3)
+	check(g.aim_dir.x > 0.99, "mouse aims the cue (%s)" % g.aim_dir)
+	_mouse_button(target, true)
+	await _frames(2)
+	_mouse_move(target - Vector2(200, 0))
+	await _frames(3)
+	check(g.dragging and g.drag_power > 0.6, "drag back builds power (%.2f)" % g.drag_power)
+	_mouse_button(target - Vector2(200, 0), false)
+	await _frames(2)
+	check(g.state == g.S.STRIKE or g.state == g.S.ROLL, "release fires the shot")
+	await _play_until(func(): return g.state == g.S.AIM or g.state == g.S.PLACE, 1)
+	check(g.run.shots_taken == 1, "break resolved")
 	# Make table 1 easy to clear quickly and verify the clear/shop path.
 	var cleared := await _play_until(func(): return g.state == g.S.SHOP or g.state == g.S.OVER, 60)
 	check(cleared, "table resolves (state %s)" % g.state)
@@ -77,6 +96,22 @@ func _go() -> void:
 	check(g.overlay.get_child_count() > 0, "game over screen shown")
 	print("flow tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+func _mouse_move(p: Vector2) -> void:
+	var e := InputEventMouseMotion.new()
+	e.position = p
+	e.global_position = p
+	root.push_input(e)
+
+
+func _mouse_button(p: Vector2, pressed: bool) -> void:
+	var e := InputEventMouseButton.new()
+	e.position = p
+	e.global_position = p
+	e.button_index = MOUSE_BUTTON_LEFT
+	e.pressed = pressed
+	root.push_input(e)
 
 
 func _frames(n: int) -> void:
