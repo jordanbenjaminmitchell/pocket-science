@@ -9,21 +9,36 @@ static func speed(p: float) -> float:
 	return 90.0 + pow(p, 1.35) * (2250.0 - 90.0)
 
 
-static func ctx_for(run: RunState, pw: float) -> Dictionary:
+static func ctx_for(run: RunState, pw: float, sim: PoolSim = null, is_break: bool = false) -> Dictionary:
+	if sim != null:
+		return run.shot_ctx(pw, sim, is_break)
 	return {"formulas": run.formulas, "isotopes": run.isotopes, "hot_pocket": run.hot_pocket, "lab": run.current().lab,
-		"streak": run.streak, "power": pw, "shots_taken": run.shots_taken, "catalyst": run.catalyst, "bluechalk": run.bluechalk}
+		"anomaly": run.current().anomaly, "streak": run.streak, "power": pw, "shots_taken": run.shots_taken,
+		"catalyst": run.catalyst, "bluechalk": run.bluechalk, "chalk": run.chalk, "money": run.money,
+		"empty_slots": RunState.MAX_FORMULAS - run.formulas.size(), "pockets_used": run.pockets_used}
 
 
 static func candidates(sim: PoolSim, run: RunState) -> Array:
 	var out: Array = []
 	var ci := sim.index_of(0)
 	var cue := sim.pos[ci]
+	var anomaly: String = run.current().anomaly
+	var lowest := 99
+	for i in sim.count():
+		if sim.alive[i] == 1 and sim.num[i] != 0:
+			lowest = mini(lowest, sim.num[i])
 	for i in sim.count():
 		if sim.alive[i] == 0 or sim.num[i] == 0:
+			continue
+		if anomaly == "rotation" and sim.num[i] != lowest:
+			continue
+		if anomaly == "cursed8" and sim.num[i] == 8:
 			continue
 		for k in sim.layout.pockets.size():
 			var pk: Dictionary = sim.layout.pockets[k]
 			if pk.closed:
+				continue
+			if anomaly == "onepocket" and k != run.hot_pocket:
 				continue
 			var aim_pt: Vector2 = pk.pos - (pk.dir as Vector2) * 6.0
 			var od := (aim_pt - sim.pos[i]).normalized()
@@ -66,8 +81,13 @@ static func choose(sim: PoolSim, run: RunState, tries: int = 5) -> Dictionary:
 						pots += 1
 			if scratch or pots == 0:
 				continue
-			var ctx := ctx_for(run, pw)
+			var ctx_check := ctx_for(run, pw, sim)
+			ctx_check["events"] = s.events
+			if not Scorer.score(ctx_check).scored:
+				continue
+			var ctx := ctx_for(run, pw, sim)
 			ctx["events"] = s.events
+			ctx["cue_end"] = s.pos[ci]
 			var r := Scorer.score(ctx)
 			# Prefer shots that leave another pot available (position play).
 			var follow_up := 1.0 if candidates(s, run).size() > 0 else 0.6

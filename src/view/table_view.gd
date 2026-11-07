@@ -663,8 +663,14 @@ static func compute_guide(sim: PoolSim, aim: Vector2, follow: float, side: float
 	# Cue ball after contact: tangent line plus follow/draw curve.
 	var e := sim.ball_e
 	var vin := d * 1000.0
-	var vc := vin - n * vin.dot(n) * (1.0 + e) * 0.5
+	# Impulse share for unequal masses (heavy cue, lead rack, featherweight).
+	var mc := sim.mass[ci]
+	var mo := sim.mass[obj]
+	var vc := vin - n * vin.dot(n) * (1.0 + e) * mo / (mc + mo)
 	var spin := d * follow * 1000.0 * 0.62
+	if sim.cue_damp < 1.0:
+		vc *= sim.cue_damp
+		spin *= sim.cue_damp
 	var cp := PackedVector2Array([contact])
 	var cpos := contact
 	var max_len := 900.0 if lens else 150.0

@@ -34,6 +34,8 @@ var time := 0.0
 var events: Array[Dictionary] = []
 var follow := 0.0
 var cue_contacted := false
+var cue_damp := 1.0          # fraction of speed the cue keeps at its first contact (Stun Master)
+var tilt := Vector2.ZERO     # constant acceleration on moving balls (Tilted Table)
 
 
 func _init(l: TableLayout = null) -> void:
@@ -61,6 +63,8 @@ func clone() -> PoolSim:
 	s.pocket_pull = pocket_pull
 	s.follow = follow
 	s.cue_contacted = cue_contacted
+	s.cue_damp = cue_damp
+	s.tilt = tilt
 	return s
 
 
@@ -270,6 +274,9 @@ func _resolve_balls(i: int, j: int) -> void:
 		cue_contacted = true
 		var c := i if cue_i else j
 		spin[c] = pre_dir * follow * pre_speed * 0.62
+		if cue_damp < 1.0:
+			vel[c] *= cue_damp
+			spin[c] *= cue_damp
 	events.append({"t": time, "type": "ball", "a": num[i], "b": num[j], "speed": rel})
 
 
@@ -313,6 +320,8 @@ func _forces(dt: float) -> void:
 				spin[i] = Vector2.ZERO
 		if v == Vector2.ZERO:
 			continue
+		if tilt != Vector2.ZERO:
+			v += tilt * dt
 		if well_strength != 0.0:
 			var d := well_pos - pos[i]
 			var dist := maxf(d.length(), 40.0)

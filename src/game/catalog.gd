@@ -48,6 +48,44 @@ const FORMULAS := {
 	"magnet": {"name": "Magnetic Pockets", "r": 2, "cost": 9, "icon": "U", "desc": "Pockets gently pull nearby moving balls in."},
 	"insurance": {"name": "Causality Insurance", "r": 2, "cost": 7, "icon": "☂", "desc": "Scratches and misses never cost Chalk. Your streak still resets."},
 	"oracle": {"name": "Laplace's Demon", "r": 2, "cost": 10, "icon": "◎", "desc": "See the real path of every ball for the first 1.5 seconds of each shot."},
+	# ---- Cushions & banks
+	"ricochet": {"name": "Ricochet", "r": 1, "cost": 6, "icon": "⇋", "fam": "bank", "desc": "+2 Chips for every cushion any ball touches in a scoring shot (max 15)."},
+	"cushion": {"name": "Cushion Theory", "r": 0, "cost": 4, "icon": "▭", "fam": "bank", "desc": "Bank pots give +20 Chips."},
+	"geometry": {"name": "Sacred Geometry", "r": 2, "cost": 8, "icon": "△", "fam": "bank", "desc": "Each bank pot gives ×1.5 Mult."},
+	"tracer": {"name": "Tracer Round", "r": 0, "cost": 4, "icon": "↺", "fam": "bank", "desc": "+1 Mult for each cushion the cue ball touches after hitting a ball (max 4)."},
+	# ---- Cue ball control
+	"boomerang": {"name": "Boomerang", "r": 1, "cost": 6, "icon": "⟲", "fam": "cue", "desc": "If the cue ball finishes within 120 of where it started, ×2 Mult."},
+	"precision": {"name": "Precision", "r": 1, "cost": 6, "icon": "◎", "fam": "cue", "desc": "Clean pots (straight from the cue ball, no cushions) give +5 Mult."},
+	"stun": {"name": "Stun Master", "r": 1, "cost": 6, "icon": "■", "fam": "cue", "desc": "The cue ball loses 60% of its speed when it first hits a ball. Far fewer scratches."},
+	"afterburner": {"name": "Afterburner", "r": 0, "cost": 5, "icon": "≫", "fam": "cue", "desc": "Break shots that pot give ×2 Mult."},
+	# ---- Combinations
+	"domino": {"name": "Domino Effect", "r": 0, "cost": 5, "icon": "▤", "fam": "combo", "desc": "Combination pots give +30 Chips."},
+	# ---- Streaks
+	"rhythm": {"name": "Rhythm", "r": 0, "cost": 5, "icon": "♪", "fam": "streak", "desc": "Every third scoring shot in a row gives ×2 Mult."},
+	"hothand": {"name": "Hot Hand", "r": 1, "cost": 6, "icon": "✋", "fam": "streak", "desc": "With a streak of 3 or more, every pot gives +20 Chips."},
+	"comeback": {"name": "Comeback", "r": 1, "cost": 6, "icon": "↑", "fam": "streak", "desc": "When you are down to your last Chalk, ×2 Mult."},
+	# ---- Pockets
+	"collector": {"name": "Pocket Collector", "r": 2, "cost": 8, "icon": "⬡", "fam": "pocket", "desc": "+2 Mult for every different pocket you have potted into this table."},
+	"migration": {"name": "Stay Hot", "r": 1, "cost": 6, "icon": "♨", "fam": "pocket", "desc": "The hot pocket only moves after a shot that does not score."},
+	# ---- Ball numbers
+	"lowball": {"name": "Low Ball", "r": 0, "cost": 4, "icon": "₁", "fam": "number", "desc": "Balls 1, 2 and 3 give +4 Mult."},
+	"highball": {"name": "High Roller", "r": 0, "cost": 4, "icon": "¹⁵", "fam": "number", "desc": "Balls 12 to 15 give +30 Chips."},
+	"fibonacci": {"name": "Fibonacci", "r": 1, "cost": 6, "icon": "𝑓", "fam": "number", "desc": "Balls 1, 2, 3, 5, 8 and 13 give +3 Mult."},
+	"rotation": {"name": "Rotation", "r": 1, "cost": 6, "icon": "①", "fam": "number", "desc": "Potting the lowest-numbered ball on the table gives ×1.5 Mult."},
+	"moneyball": {"name": "Money Ball", "r": 1, "cost": 7, "icon": "⑨", "fam": "number", "desc": "Potting the highest-numbered ball on the table gives ×2 Mult and $2."},
+	# ---- Economy
+	"thrift": {"name": "Thrift", "r": 0, "cost": 4, "icon": "¢", "fam": "money", "desc": "Clear a table with 2+ Chalk left: +$3."},
+	"venture": {"name": "Venture Capital", "r": 1, "cost": 6, "icon": "↗", "fam": "money", "desc": "+1 Mult for every $5 you hold (max +6)."},
+	"hunter": {"name": "Bounty Hunter", "r": 0, "cost": 4, "icon": "★", "fam": "money", "desc": "Bounties pay double."},
+	"coupon": {"name": "Coupon Book", "r": 0, "cost": 3, "icon": "%", "fam": "money", "desc": "Rerolls in the Lab Supply start at $1."},
+	"overflow": {"name": "Overflow", "r": 1, "cost": 5, "icon": "≋", "fam": "money", "desc": "When a table is cleared, earn $1 for every 25% you scored over the target (max $5)."},
+	# ---- Risk & build-around
+	"glasscannon": {"name": "Glass Cannon", "r": 2, "cost": 8, "icon": "✦", "fam": "risk", "desc": "×3 Mult on every scoring shot, but misses and scratches cost 2 Chalk."},
+	"minimalist": {"name": "Minimalist", "r": 2, "cost": 7, "icon": "□", "fam": "risk", "desc": "×1.5 Mult for every empty Formula slot."},
+	"echo": {"name": "Echo Chamber", "r": 2, "cost": 9, "icon": "⁑", "fam": "risk", "desc": "The first ×Mult of every shot triggers twice."},
+	# ---- Physics
+	"featherweight": {"name": "Featherweight", "r": 1, "cost": 6, "icon": "◌", "fam": "physics", "desc": "Object balls are 25% lighter: they fly further when struck."},
+	"velvet": {"name": "Velvet Cloth", "r": 0, "cost": 5, "icon": "≈", "fam": "physics", "desc": "30% less cloth friction: balls roll further."},
 }
 
 ## Reagents: single-use, held in two slots, used before a shot.
@@ -98,6 +136,15 @@ const ANOMALIES := {
 	"fog": {"name": "Fog", "desc": "The guideline stops at the ghost ball."},
 	"dry": {"name": "Dry Chalk", "desc": "You start with 1 less Chalk."},
 	"cold": {"name": "Cold Pockets", "desc": "There is no hot pocket."},
+	"shrink": {"name": "Shrinking Pockets", "desc": "Every pocket narrows by 4% after each shot (down to 70%)."},
+	"onepocket": {"name": "One Pocket", "desc": "Only pots into the hot pocket score. The hot pocket still moves."},
+	"rotation": {"name": "Rotation Rules", "desc": "You must hit the lowest-numbered ball first, or the shot is a foul."},
+	"heavycue": {"name": "Heavy Cue Ball", "desc": "The cue ball is 60% heavier: it follows through and scratches more."},
+	"blackice": {"name": "Black Ice", "desc": "Almost no friction and lively cushions. Control is everything."},
+	"taxman": {"name": "The Taxman", "desc": "Every scoring shot loses a quarter of its Chips."},
+	"blind": {"name": "Blind Pockets", "desc": "The guideline never turns gold and pots show no value tag."},
+	"tilt": {"name": "Tilted Table", "desc": "The table slopes: moving balls drift toward one long rail. The guideline ignores the tilt."},
+	"cursed8": {"name": "Cursed 8", "desc": "Potting the 8-ball scores nothing, breaks your streak and costs 1 Chalk."},
 }
 
 ## Per-table side goals. Each table rolls one; completing it pays immediately.

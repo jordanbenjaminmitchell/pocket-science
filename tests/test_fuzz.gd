@@ -38,12 +38,24 @@ func _initialize() -> void:
 				s.well_strength = 1.0
 		if rng.randf() < 0.2:
 			s.pocket_pull = 1.0
+		if rng.randf() < 0.15:
+			s.cue_damp = 0.4
+		if rng.randf() < 0.15:
+			s.tilt = Vector2(0, 55.0 * (1.0 if rng.randf() < 0.5 else -1.0))
+		if rng.randf() < 0.1:
+			s.roll_decel = 45.0
+			s.drag = 0.03
+			s.rail_e = 0.9
 		s.add_ball(0, Rack.HEAD + Vector2(rng.randf_range(-100, 0), rng.randf_range(-150, 150)))
 		Rack.build(s, racks[rng.randi_range(0, racks.size() - 1)], rng)
-		if rng.randf() < 0.2:
-			for i in s.count():
-				if s.num[i] != 0:
-					s.mass[i] = 1.6
+		var mass_mode := rng.randi_range(0, 4)
+		for i in s.count():
+			if mass_mode == 1 and s.num[i] != 0:
+				s.mass[i] = 1.6
+			elif mass_mode == 2 and s.num[i] == 0:
+				s.mass[i] = 1.6
+			elif mass_mode == 3 and s.num[i] != 0:
+				s.mass[i] = 0.75
 		# Several shots per rack so later shots meet scattered, rail-hugging balls.
 		for k in 6:
 			var ci := s.index_of(0)

@@ -113,11 +113,8 @@ func _ready() -> void:
 ## ================================================================ table setup
 func _setup_table() -> void:
 	var t := run.current()
-	layout = TableLayout.new().build(run.pocket_scale(), run.closed_pockets())
+	layout = run.build_layout()
 	var lab: String = t.lab
-	if lab == "cyclotron":
-		layout.add_bumper(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.27), 20.0)
-		layout.add_bumper(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.73), 20.0)
 	view.setup(layout, F_SEMI, F_PIXB)
 	view.set_felt(Catalog.LABS[lab].felt)
 	_new_rack(t.rack)
@@ -137,20 +134,7 @@ func _setup_table() -> void:
 
 
 func _make_sim() -> PoolSim:
-	var s := PoolSim.new(layout)
-	var t := run.current()
-	match t.lab:
-		"cryo":
-			s.roll_decel = 90.0
-			s.drag = 0.05
-		"spring":
-			s.rail_e = 0.92
-		"gravity":
-			s.well_pos = Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5)
-			s.well_strength = 1.0
-	if run.formulas.has("magnet"):
-		s.pocket_pull = 1.0
-	return s
+	return PoolSim.new(layout)
 
 
 func _new_rack(kind: String) -> void:
@@ -159,10 +143,7 @@ func _new_rack(kind: String) -> void:
 	var r := RandomNumberGenerator.new()
 	r.seed = run.rng.randi()
 	Rack.build(sim, kind, r)
-	if run.current().anomaly == "lead":
-		for i in sim.count():
-			if sim.num[i] != 0:
-				sim.mass[i] = 1.6
+	run.apply_physics(sim)
 	view.sync_balls(sim, vis_rng, run.isotopes)
 	is_break = true
 	aim_dir = (Rack.FOOT - Rack.HEAD).normalized()
@@ -275,6 +256,9 @@ func _update_aim(delta: float) -> void:
 		forecast_timer = 0.09
 		var fog: bool = run.current().anomaly == "fog"
 		view.guide = TableView.compute_guide(sim, aim_dir, follow, side, run.formulas.has("lens"), fog)
+		if run.current().anomaly == "blind":
+			for key in ["obj_pot", "obj2_pot", "obj_edge", "obj2_edge"]:
+				view.guide[key] = false
 		view.show_guide = true
 		_update_preview()
 	if forecast_dirty and (run.forecast or run.formulas.has("oracle")):
@@ -321,11 +305,10 @@ func _current_power() -> float:
 
 
 func _shot_ctx() -> Dictionary:
-	return {
-		"formulas": run.formulas, "isotopes": run.isotopes, "hot_pocket": run.hot_pocket,
-		"lab": run.current().lab, "streak": run.streak, "power": _current_power(),
-		"shots_taken": run.shots_taken, "catalyst": run.catalyst, "bluechalk": run.bluechalk,
-	}
+	return run.shot_ctx(_current_power(), sim, is_break)
+
+
+var pre_ctx := {}
 
 
 func _update_preview() -> void:
@@ -458,6 +441,7 @@ func _update_strike(delta: float) -> void:
 
 func _begin_roll() -> void:
 	sim_accum = 0.0
+	pre_ctx = run.shot_ctx(shot_power, sim, is_break)
 	start_pos.clear()
 	for i in sim.count():
 		if sim.alive[i] == 1:
@@ -601,9 +585,9 @@ func _inward(k: int) -> Vector2:
 ## ================================================================ tally
 func _settled() -> void:
 	view.update_balls(sim)
-	var ctx := _shot_ctx()
-	ctx["power"] = shot_power
+	var ctx := pre_ctx.duplicate()
 	ctx["events"] = sim.events
+	ctx["cue_end"] = sim.pos[_cue_index()]
 	ctx["start_pos"] = start_pos
 	ctx["rng"] = run.rng
 	result = Scorer.score(ctx)
@@ -623,7 +607,7 @@ func _settled() -> void:
 		elif insured:
 			msg += " - insured"
 		else:
-			msg += " - lose 1 chalk"
+			msg += " - lose %d chalk" % (2 if run.formulas.has("glasscannon") else 1)
 		lbl_line.text = msg
 		_flash_banner(result.foul.to_upper(), Color(1, 0.4, 0.35) if not free_break else Color(0.8, 0.85, 0.9), 1.0)
 		if not free_break:
@@ -722,6 +706,8 @@ func _after_shot() -> void:
 		_game_over()
 		return
 	view.hot_pocket = run.hot_pocket
+	if out.has("layout_changed"):
+		_rebuild_layout()
 	if out.rack_cleared:
 		_flash_banner("RACK CLEARED  +1 CHALK", Color(0.5, 1.0, 0.7), 1.6)
 		sfx.play("clear", 0.6)
@@ -733,6 +719,15 @@ func _after_shot() -> void:
 		_enter_aim()
 	_refresh_hud()
 	_save_progress()
+
+
+## Shrinking Pockets: rebuild pocket geometry between shots, keeping the balls.
+func _rebuild_layout() -> void:
+	layout = run.build_layout()
+	sim.layout = layout
+	view.setup(layout, F_SEMI, F_PIXB)
+	view.set_felt(Catalog.LABS[run.current().lab].felt)
+	view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(1, 0.5, 0.4), 12, 120)
 
 
 func _enter_aim() -> void:
@@ -1802,6 +1797,7 @@ func _restore_snapshot(snap: Dictionary) -> void:
 	if sim.index_of(0) < 0:
 		sim.add_ball(0, Rack.HEAD)
 		sim.alive[sim.index_of(0)] = 0
+	run.apply_physics(sim)
 	view.sync_balls(sim, vis_rng, run.isotopes)
 	is_break = bool(snap.get("is_break", false))
 	shot_log.assign(snap.get("log", []))
@@ -2150,7 +2146,13 @@ func _show_run_info() -> void:
 		c2.add_child(_label(txt, 15, col, F_REG))
 		if t.anomaly != "":
 			var an: Dictionary = Catalog.ANOMALIES[t.anomaly]
-			c2.add_child(_label("        BOSS: %s - %s" % [an.name, an.desc], 13, Color(1.0, 0.5, 0.45), F_REG))
+			var bl := _label("BOSS: %s - %s" % [an.name, an.desc], 13, Color(1.0, 0.5, 0.45), F_REG)
+			bl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			bl.custom_minimum_size = Vector2(400, 0)
+			var indent := MarginContainer.new()
+			indent.add_theme_constant_override("margin_left", 30)
+			indent.add_child(bl)
+			c2.add_child(indent)
 	if run.endless:
 		c2.add_child(_label("Endless: table %d (target %d)" % [run.table_index + 1, run.target()], 15, Color(1.0, 0.85, 0.45), F_REG))
 

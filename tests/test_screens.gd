@@ -50,6 +50,9 @@ func _go() -> void:
 			g.run.formulas.assign(["golden", "bank", "catalyst", "heat", "streak"])
 			g.run.reagents.assign(["bluechalk", "forecast"])
 			g.run.isotopes = {3: "neon", 11: "glass"}
+			for t in g.run.plan:
+				if t.get("boss", false):
+					t.anomaly = "tilt"   # longest description
 			g._show_run_info(),
 		"game over": func():
 			g._close_run_info()

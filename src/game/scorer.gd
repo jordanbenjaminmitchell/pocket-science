@@ -15,6 +15,11 @@ static func score(ctx: Dictionary) -> Dictionary:
 	var lab: String = ctx.get("lab", "standard")
 	var start_pos: Dictionary = ctx.get("start_pos", {})
 	var rng: RandomNumberGenerator = ctx.get("rng", null)
+	var anomaly: String = ctx.get("anomaly", "")
+	var lowest: int = ctx.get("lowest", -1)
+	var highest: int = ctx.get("highest", -1)
+	var total_rails := 0
+	var cue_rails_after := 0
 
 	var pots: Array = []
 	var scratch := false
@@ -34,8 +39,11 @@ static func score(ctx: Dictionary) -> Dictionary:
 				if not toucher.has(e.b):
 					toucher[e.b] = e.a
 			"rail":
+				total_rails += 1
 				if e.a == 0 and first_contact < 0:
 					kick_rails += 1
+				elif e.a == 0:
+					cue_rails_after += 1
 			"bumper":
 				bumpers += 1
 				if e.a == 0 and first_contact < 0:
@@ -58,8 +66,17 @@ static func score(ctx: Dictionary) -> Dictionary:
 	if first_contact < 0 and pots.is_empty():
 		out.foul = "No contact"
 		return out
+	# Boss rules that decide whether a shot counts at all.
+	if anomaly == "rotation" and lowest > 0 and first_contact != lowest:
+		out.foul = "Wrong ball first"
+		return out
+	if anomaly == "cursed8" and pots.any(func(p): return p.a == 8):
+		out.foul = "Cursed 8"
+		return out
+	if anomaly == "onepocket":
+		pots = pots.filter(func(p): return p.pocket == hot)
 	if pots.is_empty():
-		out.foul = "Miss"
+		out.foul = "Wrong pocket" if anomaly == "onepocket" and not out.potted.is_empty() else "Miss"
 		return out
 
 	var lines: Array = out.lines
@@ -110,12 +127,20 @@ static func score(ctx: Dictionary) -> Dictionary:
 			if (start_pos[n] as Vector2).distance_to(at) >= 450.0:
 				lines.append(_l("Lever Arm", "mult", 4, n, k))
 		var rails: int = mini(p.get("rails", 0), 3)
+		if rails > 0 and formulas.has("cushion"):
+			lines.append(_l("Cushion Theory", "chips", 20, n, k))
+		if rails > 0 and formulas.has("geometry"):
+			lines.append(_l("Sacred Geometry", "xmult", 1.5, n, k))
 		if rails > 0:
 			var per_rail := 3 if formulas.has("bank") else 1
 			if lab == "spring":
 				per_rail += 1
 			lines.append(_l("Bank ×%d" % rails, "mult", per_rail * rails, n, k))
 		var by: int = toucher.get(n, 0)
+		if formulas.has("precision") and rails == 0 and by == 0 and kick_rails == 0:
+			lines.append(_l("Precision", "mult", 5, n, k))
+		if by != 0 and formulas.has("domino"):
+			lines.append(_l("Domino Effect", "chips", 30, n, k))
 		if by != 0:
 			lines.append(_l("Combination", "mult", 2, n, k))
 			if formulas.has("chain"):
@@ -130,6 +155,19 @@ static func score(ctx: Dictionary) -> Dictionary:
 				lines.append(_l("Black Hole", "money", 3, n, k))
 		if idx == 0 and formulas.has("golden"):
 			lines.append(_l("Golden Ratio", "xmult", 1.6, n, k))
+		if formulas.has("hothand") and streak >= 3:
+			lines.append(_l("Hot Hand", "chips", 20, n, k))
+		if formulas.has("lowball") and n <= 3:
+			lines.append(_l("Low Ball", "mult", 4, n, k))
+		if formulas.has("highball") and n >= 12:
+			lines.append(_l("High Roller", "chips", 30, n, k))
+		if formulas.has("fibonacci") and [1, 2, 3, 5, 8, 13].has(n):
+			lines.append(_l("Fibonacci", "mult", 3, n, k))
+		if formulas.has("rotation") and n == lowest:
+			lines.append(_l("Rotation", "xmult", 1.5, n, k))
+		if formulas.has("moneyball") and n == highest:
+			lines.append(_l("Money Ball", "xmult", 2, n, k))
+			lines.append(_l("Money Ball", "money", 2, n, k))
 		if formulas.has("gold") and gold_paid < 3:
 			gold_paid += 1
 			lines.append(_l("Gold Standard", "money", 1, n, k))
@@ -164,12 +202,51 @@ static func score(ctx: Dictionary) -> Dictionary:
 			if per_pocket[k] >= 2:
 				lines.append(_l("Fusion", "xmult", 3, -1, k))
 				break
+	if formulas.has("ricochet") and total_rails > 0:
+		var rc := mini(total_rails, 15)
+		lines.append(_l("Ricochet ×%d" % rc, "chips", 2 * rc))
+	if formulas.has("tracer") and cue_rails_after > 0:
+		lines.append(_l("Tracer Round", "mult", mini(cue_rails_after, 4)))
+	if formulas.has("collector"):
+		var used: Array = ctx.get("pockets_used", []).duplicate()
+		for p in pots:
+			if not used.has(p.pocket):
+				used.append(p.pocket)
+		lines.append(_l("Collector ×%d" % used.size(), "mult", 2 * used.size()))
+	if formulas.has("venture"):
+		var v := mini(int(ctx.get("money", 0)) / 5, 6)
+		if v > 0:
+			lines.append(_l("Venture Capital", "mult", v))
+	if formulas.has("boomerang") and ctx.has("cue_start") and ctx.has("cue_end"):
+		if (ctx.cue_start as Vector2).distance_to(ctx.cue_end) <= 120.0:
+			lines.append(_l("Boomerang", "xmult", 2))
+	if formulas.has("afterburner") and ctx.get("is_break", false):
+		lines.append(_l("Afterburner", "xmult", 2))
+	if formulas.has("rhythm") and (streak + 1) % 3 == 0:
+		lines.append(_l("Rhythm", "xmult", 2))
+	if formulas.has("comeback") and int(ctx.get("chalk", 99)) == 1:
+		lines.append(_l("Comeback", "xmult", 2))
+	if formulas.has("glasscannon"):
+		lines.append(_l("Glass Cannon", "xmult", 3))
+	if formulas.has("minimalist"):
+		var empty: int = ctx.get("empty_slots", 0)
+		if empty > 0:
+			lines.append(_l("Minimalist ×%d" % empty, "xmult", pow(1.5, empty)))
 	if ctx.get("bluechalk", false):
 		lines.append(_l("Blue Chalk", "xmult", 2))
+	if anomaly == "taxman":
+		lines.append(_l("Taxman", "xchips", 0.75))
 
 	# Additive bonuses first, then multipliers: Mult = (1 + bonuses) × multipliers.
 	var additive: Array = lines.filter(func(l): return l.kind == "chips" or l.kind == "mult" or l.kind == "money")
 	var multiplicative: Array = lines.filter(func(l): return l.kind == "xmult" or l.kind == "xchips")
+	if formulas.has("echo"):
+		for i in multiplicative.size():
+			if multiplicative[i].kind == "xmult":
+				var again: Dictionary = multiplicative[i].duplicate()
+				again.label = "Echo: " + again.label
+				multiplicative.insert(i + 1, again)
+				break
 	lines = additive + multiplicative
 	out.lines = lines
 	var chips := 0.0
@@ -189,6 +266,7 @@ static func score(ctx: Dictionary) -> Dictionary:
 				money += int(l.value)
 		l["chips_after"] = chips
 		l["mult_after"] = mult
+	out["pocket_list"] = pots.map(func(p): return p.pocket)
 	out.chips = chips
 	out.mult = mult
 	out.money = money

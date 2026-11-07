@@ -33,6 +33,8 @@ var bluechalk := false
 var bounty := ""
 var bounty_done := false
 var forecast := false
+var pockets_used: Array = []
+var shrink_steps := 0
 
 # Run stats
 var total_pots := 0
@@ -105,6 +107,8 @@ func begin_table() -> void:
 	bluechalk = false
 	forecast = false
 	chalk = max_chalk()
+	pockets_used = []
+	shrink_steps = 0
 	roll_hot_pocket(-1)
 	var keys := Catalog.BOUNTIES.keys()
 	bounty = keys[rng.randi_range(0, keys.size() - 1)]
@@ -169,6 +173,8 @@ func pocket_scale() -> float:
 		s *= 1.12
 	if current().anomaly == "tight":
 		s *= 0.85
+	if current().anomaly == "shrink":
+		s *= maxf(0.7, 1.0 - 0.04 * shrink_steps)
 	return s
 
 
@@ -195,6 +201,12 @@ func payout() -> Array:
 		var i := mini(money / 5, 5)
 		if i > 0:
 			rows.append(["Compound interest", i])
+	if formulas.has("thrift") and chalk >= 2:
+		rows.append(["Thrift", 3])
+	if formulas.has("overflow") and target() > 0:
+		var over := int(floor((score - target()) / (target() * 0.25)))
+		if over > 0:
+			rows.append(["Overflow", mini(over, 5)])
 	var total := 0
 	for r in rows:
 		total += r[1]
@@ -215,7 +227,7 @@ func is_final_cleared() -> bool:
 
 ## ---------------------------------------------------------------- shop
 func roll_shop() -> void:
-	reroll_cost = 2
+	reroll_cost = 1 if formulas.has("coupon") else 2
 	shop.clear()
 	for i in 3:
 		var f := _random_formula()
@@ -329,7 +341,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		var hot_before := hot_pocket
 		if not bounty_done and bounty_met(res, hot_before):
 			bounty_done = true
-			money += int(Catalog.BOUNTIES[bounty].reward)
+			money += int(Catalog.BOUNTIES[bounty].reward) * (2 if formulas.has("hunter") else 1)
 			out["bounty"] = bounty
 		score += res.total
 		streak += 1
@@ -340,12 +352,18 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		best_shot = maxi(best_shot, res.total)
 		for n in res.shattered:
 			isotopes.erase(n)
+		for k in res.get("pocket_list", []):
+			if not pockets_used.has(k):
+				pockets_used.append(k)
 	else:
 		var free_break: bool = was_break and res.foul == "Miss"
 		if not free_break and not formulas.has("insurance"):
-			chalk -= 1
+			chalk -= 2 if formulas.has("glasscannon") else 1
 			out.chalk_lost = true
 		streak = 0
+	if current().anomaly == "shrink":
+		shrink_steps += 1
+		out["layout_changed"] = true
 	bluechalk = false
 	forecast = false
 	if score >= target():
@@ -354,12 +372,85 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 	if chalk <= 0:
 		out.over = true
 		return out
-	roll_hot_pocket(hot_pocket)
+	if not (res.scored and formulas.has("migration")):
+		roll_hot_pocket(hot_pocket)
 	if balls_left == 0:
 		racks_cleared += 1
 		chalk += 1
 		out.rack_cleared = true
 	return out
+
+
+## ---------------------------------------------------------------- table physics
+## Single source of truth for how the current table plays, shared by the game,
+## the bots and the tests.
+func build_layout() -> TableLayout:
+	var layout := TableLayout.new().build(pocket_scale(), closed_pockets())
+	if current().lab == "cyclotron":
+		layout.add_bumper(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.27), 20.0)
+		layout.add_bumper(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.73), 20.0)
+	return layout
+
+
+## Applies lab, formula and anomaly physics. Call after the balls are racked.
+func apply_physics(s: PoolSim) -> void:
+	var t := current()
+	match t.lab:
+		"cryo":
+			s.roll_decel = 90.0
+			s.drag = 0.05
+		"spring":
+			s.rail_e = 0.92
+		"gravity":
+			s.well_pos = Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5)
+			s.well_strength = 1.0
+	if formulas.has("velvet"):
+		s.roll_decel *= 0.7
+		s.drag *= 0.7
+	if formulas.has("magnet"):
+		s.pocket_pull = 1.0
+	if formulas.has("stun"):
+		s.cue_damp = 0.4
+	match t.anomaly:
+		"blackice":
+			s.roll_decel = 45.0
+			s.drag = 0.03
+			s.rail_e = 0.9
+		"tilt":
+			s.tilt = Vector2(0, 55.0 if (seed_value + table_index) % 2 == 0 else -55.0)
+	for i in s.count():
+		var m := 1.0
+		if s.num[i] == 0:
+			if t.anomaly == "heavycue":
+				m = 1.6
+		else:
+			if t.anomaly == "lead":
+				m = 1.6
+			if formulas.has("featherweight"):
+				m *= 0.75
+		s.mass[i] = m
+
+
+## Everything the scorer needs to know about the shot about to be taken.
+func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
+	var lowest := -1
+	var highest := -1
+	for i in s.count():
+		if s.alive[i] == 1 and s.num[i] != 0:
+			var n: int = s.num[i]
+			if lowest < 0 or n < lowest:
+				lowest = n
+			if n > highest:
+				highest = n
+	var ci := s.index_of(0)
+	return {
+		"formulas": formulas, "isotopes": isotopes, "hot_pocket": hot_pocket, "lab": current().lab,
+		"anomaly": current().anomaly, "streak": streak, "power": power, "shots_taken": shots_taken,
+		"catalyst": catalyst, "bluechalk": bluechalk, "is_break": is_break, "chalk": chalk,
+		"money": money, "empty_slots": MAX_FORMULAS - formulas.size(), "pockets_used": pockets_used,
+		"lowest": lowest, "highest": highest,
+		"cue_start": s.pos[ci] if ci >= 0 else Vector2.ZERO,
+	}
 
 
 ## ---------------------------------------------------------------- persistence
@@ -391,6 +482,7 @@ func to_dict() -> Dictionary:
 			"score": score, "chalk": chalk, "streak": streak, "shots_taken": shots_taken,
 			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "bluechalk": bluechalk,
 			"forecast": forecast, "bounty": bounty, "bounty_done": bounty_done,
+			"pockets_used": pockets_used, "shrink_steps": shrink_steps,
 			"snapshot": table_snapshot,
 		}
 	else:
@@ -496,6 +588,8 @@ func _load_from(path: String) -> bool:
 		if Catalog.BOUNTIES.has(b):
 			bounty = b
 		bounty_done = bool(t.get("bounty_done", false))
+		pockets_used = (t.get("pockets_used", []) as Array).map(func(x): return int(x))
+		shrink_steps = int(t.get("shrink_steps", 0))
 		if typeof(t.get("snapshot")) == TYPE_DICTIONARY:
 			table_snapshot = t.snapshot
 	elif phase == "shop" and d.has("shop") and typeof(d.shop) == TYPE_DICTIONARY:
