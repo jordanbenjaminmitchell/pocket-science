@@ -20,11 +20,7 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 - [ ] **P2 — Render interpolation above 240 Hz.** Above the 240 Hz physics rate, some frames advance no physics step, which may cause slight judder. Interpolate ball positions between steps.
 - [x] **P0 — Mid-table save.** Done 2026-11-07: save format v2 saves after every shot (all balls, score, chalk, streak, hot pocket, bounty, shot log) and on every shop change. `tests/test_continue.gd` quits and continues both mid-table and in the shop.
 - [x] **P0 — Save versioning and corruption handling.** Done 2026-11-07: atomic temp→rename writes, a `.bak` of the previous save used when the main file is unreadable, v1→v2 migration, and validation that drops unknown content ids. Covered in `tests/test_rules.gd`.
-- [ ] **P0 — Stuck-ball edge cases.** Run a long fuzz test (thousands of random racks and shots) checking for:
-  - balls wedged on jaw knuckles
-  - balls resting inside capture circles without dropping
-  - the 30 s time cap being hit
-  - overlaps after high-speed clusters
+- [x] **P0 — Stuck-ball edge cases.** Done 2026-11-07: `tests/test_fuzz.gd` runs random racks, labs, spin, heavy balls, closed pockets and magnet pockets. A 3,000-shot soak gave 0 timeouts, NaNs, overlaps or escapes (max settle 8.1 s); 400 shots run in the normal suite (`FUZZ_SHOTS` raises it).
 - [ ] **P1 — Clean shutdown.** Fix the ObjectDB/RID leak warnings at exit.
 - [ ] **P1 — Pause.** Make pause work from every state, including STRIKE, TALLY, the shop and table-clear, and make sure no tween or timer fires while paused.
 - [ ] **P1 — Startup hitch.** Sound synthesis (~4 s of samples) runs on the main thread at launch. Pre-bake the sounds or move synthesis to a thread.
