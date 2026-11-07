@@ -48,9 +48,7 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 ## 3. Aiming, controls and input
 
 - [x] **P0 — Input settings, part 1.** Done 2026-11-07: keyboard fine-aim speed and pull-back distance for full power (`tests/test_settings.gd`).
-- [ ] **P0 — Input settings, part 2:**
-  - invert drag direction
-  - "click to shoot" alternative scheme (set power first, click to fire)
+- [x] **P0 — Input settings, part 2.** Done 2026-11-07: "Invert pull-back" and "Click to shoot" toggles; hints adapt. Checked with injected mouse input in `tests/test_settings.gd`.
 - [ ] **P1 — Full gamepad support.** Covers aim, fine aim, power (trigger pull-back), spin (right stick), reagents, shop navigation and menus. Also Steam Deck layout.
 - [ ] **P1 — Keyboard navigation** for every menu and the shop (focus states are currently invisible).
 - [ ] **P1 — Key rebinding.**
@@ -221,7 +219,8 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 
 ## 12. Licensing housekeeping (in-game)
 
-- [ ] **P0 — Credits screen** covering fonts (Chakra Petch, Silkscreen — include their OFL licences), the Godot licence notice, and the music (original Pocket Science score).
+- [x] **P0 — Credits screen.** Done 2026-11-07: Title → Credits, with an in-game viewer for the Chakra Petch and Silkscreen OFL texts and the Godot licence (`licenses/`).
+- [ ] **P0 — Ship the licence files.** When export presets are created, add `licenses/*` to the export include filter: non-resource `.txt`/`.md` files aren’t exported by default.
 - [ ] **P1 — Content audit.** Confirm every name and asset is original and shipped licence files are present.
 
 ---

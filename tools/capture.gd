@@ -36,6 +36,9 @@ func _go() -> void:
 			await _frames(3)
 			game._show_run_info()
 			await _frames(4)
+		"credits":
+			game._show_credits()
+			await _frames(4)
 		"help":
 			game._show_help()
 			await _frames(4)

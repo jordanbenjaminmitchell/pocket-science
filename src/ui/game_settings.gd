@@ -14,8 +14,10 @@ var shake := 1.0            # 0..1.5 multiplier on screen shake
 var reduced_motion := false # no shake, zoom punches or confetti
 var aim_speed := 1.0        # keyboard fine-aim speed multiplier
 var pull := 1.0             # drag distance for full power (0.6 short .. 1.6 long)
+var invert_drag := false    # push forward instead of pulling back
+var click_shoot := false    # set power with wheel/keys, click to shoot
 
-const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull"]
+const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot"]
 
 
 func load_file() -> void:
@@ -50,6 +52,8 @@ func _clamp() -> void:
 	fullscreen = bool(fullscreen)
 	vsync = bool(vsync)
 	reduced_motion = bool(reduced_motion)
+	invert_drag = bool(invert_drag)
+	click_shoot = bool(click_shoot)
 
 
 func reset() -> void:
@@ -62,3 +66,5 @@ func reset() -> void:
 	reduced_motion = false
 	aim_speed = 1.0
 	pull = 1.0
+	invert_drag = false
+	click_shoot = false

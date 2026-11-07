@@ -245,6 +245,8 @@ func _update_aim(delta: float) -> void:
 	var m := _mouse_table()
 	if dragging:
 		var pull := (drag_origin - m).dot(aim_dir)
+		if settings.invert_drag:
+			pull = -pull
 		drag_power = clampf(pull / (DRAG_FULL * settings.pull), 0.0, 1.0)
 		view.cue_pull = drag_power * 90.0
 		power_w.set_power(drag_power)
@@ -737,10 +739,13 @@ func _enter_aim() -> void:
 	state = S.AIM
 	view.placing = false
 	guide_dirty = true
+	var how := "Drag %s and release to shoot." % ("forward" if settings.invert_drag else "back")
+	if settings.click_shoot:
+		how = "Set power with the wheel or Up/Down, then click to shoot."
 	if is_break:
-		lbl_hint.text = "Break! Drag back from the cue ball and release. H: move the cue ball behind the line."
+		lbl_hint.text = "Break! %s H: move the cue ball behind the line." % how
 	else:
-		lbl_hint.text = "Aim with the mouse. Drag back to set power and release to shoot. Wheel/Space also work."
+		lbl_hint.text = "Aim with the mouse. %s Space also shoots." % how
 	_refresh_hud()
 
 
@@ -862,7 +867,9 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 	match state:
 		S.AIM:
 			if e.button_index == MOUSE_BUTTON_LEFT:
-				if e.pressed and _mouse_over_table():
+				if e.pressed and _mouse_over_table() and settings.click_shoot:
+					_shoot(power)
+				elif e.pressed and _mouse_over_table():
 					dragging = true
 					drag_origin = _mouse_table()
 					drag_power = 0.0
@@ -1456,6 +1463,7 @@ func _show_title() -> void:
 	v.add_child(b)
 	v.add_child(_button("How to Play", _show_help))
 	v.add_child(_button("Settings", func(): _show_settings(_show_title)))
+	v.add_child(_button("Credits", _show_credits))
 	v.add_child(_button("Quit", func(): get_tree().quit()))
 	var best := _load_best()
 	if best.tables > 0 or best.shot > 0:
@@ -1864,6 +1872,8 @@ func _show_settings(back: Callable) -> void:
 	_setting_toggle(grid, "Fullscreen", "fullscreen")
 	_setting_toggle(grid, "VSync", "vsync")
 	_setting_toggle(grid, "Reduced motion (no shake, zoom or confetti)", "reduced_motion")
+	_setting_toggle(grid, "Invert pull-back (push forward for power)", "invert_drag")
+	_setting_toggle(grid, "Click to shoot (power from wheel / Up / Down)", "click_shoot")
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	v.add_child(row)
@@ -2172,3 +2182,68 @@ Best shot %d  ·  best streak %d" % [run.tables_cleared, run.total_pots, run.bes
 	var close := _button("Close  [Tab / Esc]", _close_run_info, Color(0.5, 0.7, 0.9))
 	close.custom_minimum_size = Vector2(0, 46)
 	outer.add_child(close)
+
+
+## ================================================================ credits
+const LICENSE_FILES := [
+	["Chakra Petch font (SIL OFL 1.1)", "res://licenses/chakrapetch-OFL.txt"],
+	["Silkscreen font (SIL OFL 1.1)", "res://licenses/silkscreen-OFL.txt"],
+	["Godot Engine (MIT)", "res://licenses/GODOT_LICENSE.txt"],
+]
+
+
+func _show_credits() -> void:
+	_clear_overlay()
+	_dim(0.8)
+	var v := _center_panel(820, 640)
+	v.add_child(_label("CREDITS", 30, Color(0.98, 0.8, 0.4), F_PIXB))
+	var rt := RichTextLabel.new()
+	rt.bbcode_enabled = true
+	rt.fit_content = true
+	rt.custom_minimum_size = Vector2(780, 0)
+	rt.add_theme_font_override("normal_font", F_REG)
+	rt.add_theme_font_override("bold_font", F_SEMI)
+	rt.add_theme_font_size_override("normal_font_size", 16)
+	rt.add_theme_font_size_override("bold_font_size", 17)
+	rt.text = """[b]Pocket Science[/b]
+Game design and direction: Jordan Mitchell
+Built in Godot 4.7
+
+[b]Music[/b]
+Original Pocket Science score, composed for the project (see licenses/MUSIC-NOTE.md)
+
+[b]Sound effects[/b]
+Synthesised in-engine
+
+[b]Fonts[/b]
+Chakra Petch - Copyright 2018 The Chakra Petch Project Authors, SIL Open Font License 1.1
+Silkscreen - Copyright 2001 The Silkscreen Project Authors, SIL Open Font License 1.1
+
+[b]Engine[/b]
+Godot Engine - Copyright (c) 2014-present Godot Engine contributors, MIT License"""
+	v.add_child(rt)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	v.add_child(row)
+	for lic in LICENSE_FILES:
+		var b := _button(lic[0], func(): _show_license(lic[0], lic[1]), Color(0.6, 0.75, 0.9))
+		b.add_theme_font_size_override("font_size", 13)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(b)
+	v.add_child(_button("Back", _show_title, Color(0.4, 0.9, 0.6)))
+
+
+func _show_license(title: String, path: String) -> void:
+	_clear_overlay()
+	_dim(0.85)
+	var v := _center_panel(900, 760)
+	v.add_child(_label(title, 22, Color(0.98, 0.8, 0.4), F_SEMI))
+	var sc := ScrollContainer.new()
+	sc.custom_minimum_size = Vector2(860, 600)
+	v.add_child(sc)
+	var txt := FileAccess.get_file_as_string(path)
+	var l := _label(txt if txt != "" else "Licence file missing: " + path, 13, Color(0.82, 0.84, 0.87), F_REG)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size = Vector2(840, 0)
+	sc.add_child(l)
+	v.add_child(_button("Back", _show_credits, Color(0.4, 0.9, 0.6)))

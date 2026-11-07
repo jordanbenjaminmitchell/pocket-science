@@ -24,6 +24,20 @@ func _find(n: Node, name: String) -> Node:
 	return null
 
 
+func _mouse(p: Vector2, button: bool, pressed: bool) -> void:
+	var e: InputEvent
+	if button:
+		var b := InputEventMouseButton.new()
+		b.button_index = MOUSE_BUTTON_LEFT
+		b.pressed = pressed
+		e = b
+	else:
+		e = InputEventMouseMotion.new()
+	e.position = p
+	e.global_position = p
+	root.push_input(e)
+
+
 func _go() -> void:
 	create_timer(60.0).timeout.connect(func(): quit(2))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(GameSettings.PATH))
@@ -64,6 +78,34 @@ func _go() -> void:
 	g._new_run()
 	await process_frame
 	check(g.DRAG_FULL * g.settings.pull > g.DRAG_FULL, "pull setting lengthens full-power drag")
+	# Invert pull-back: pushing forward (toward the aim) builds power.
+	root.size = Vector2i(1600, 900)
+	g._clear_overlay()
+	g.paused = false
+	g.settings.reset()
+	g.settings.invert_drag = true
+	g.aim_dir = Vector2.RIGHT
+	var cue_screen: Vector2 = g.view.base_position + g.sim.pos[g._cue_index()] * g.TABLE_SCALE
+	_mouse(cue_screen + Vector2(300, 0), false, false)
+	await process_frame
+	_mouse(cue_screen + Vector2(300, 0), true, true)
+	await process_frame
+	_mouse(cue_screen + Vector2(450, 0), false, false)
+	await process_frame
+	check(g.dragging and g.drag_power > 0.4, "inverted drag builds power pushing forward (%.2f)" % g.drag_power)
+	_mouse(cue_screen + Vector2(300, 0), true, false)
+	g.dragging = false
+	g.state = g.S.AIM
+	await process_frame
+	# Click to shoot: a single click fires at the set power.
+	g.settings.reset()
+	g.settings.click_shoot = true
+	g.state = g.S.AIM
+	g.power = 0.4
+	_mouse(cue_screen + Vector2(300, 0), true, true)
+	await process_frame
+	check(g.state == g.S.STRIKE or g.state == g.S.ROLL, "click-to-shoot fires on click")
+	check(is_equal_approx(g.shot_power, 0.4), "click-to-shoot uses the set power")
 	g.settings.reset()
 	g._save_settings()
 	print("settings tests: %d failures" % failures)

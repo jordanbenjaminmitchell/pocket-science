@@ -34,6 +34,8 @@ func _go() -> void:
 		"cue select": func(): g._show_cue_select(),
 		"help": func(): g._show_help(),
 		"settings": func(): g._show_settings(g._show_title),
+		"credits": func(): g._show_credits(),
+		"licence": func(): g._show_license("Godot Engine (MIT)", "res://licenses/GODOT_LICENSE.txt"),
 		"pause": func():
 			g._new_run()
 			g._show_pause(),
@@ -66,6 +68,7 @@ func _go() -> void:
 			var r: Rect2 = p.get_global_rect()
 			var inside := r.position.x >= 0 and r.position.y >= 0 and r.end.x <= 1600.5 and r.end.y <= 900.5
 			check(inside and r.size.y > 80, "%s panel on-screen %s" % [name, r])
+	check(FileAccess.get_file_as_string("res://licenses/chakrapetch-OFL.txt").contains("Open Font License"), "font licence text present")
 	# The HUD side panel must fit on screen with a full build (5 formulas, streak, flags).
 	g._clear_overlay()
 	g.paused = false
