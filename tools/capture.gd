@@ -23,6 +23,9 @@ func _go() -> void:
 			DirAccess.remove_absolute(ProjectSettings.globalize_path("user://settings.cfg"))
 			game._new_run()
 			await _frames(140)
+		"settings":
+			game._show_settings(game._show_title)
+			await _frames(4)
 		"help":
 			game._show_help()
 			await _frames(4)

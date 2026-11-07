@@ -195,6 +195,8 @@ var punch_tw: Tween
 
 ## Brief zoom pulse around the table centre for big moments.
 func punch(amount: float) -> void:
+	if reduced_motion:
+		return
 	if punch_tw and punch_tw.is_valid():
 		punch_tw.kill()
 	var base := Vector2(base_scale, base_scale)
@@ -219,7 +221,12 @@ func spark(p: Vector2, strength: float) -> void:
 		particles.append({"pos": p, "vel": Vector2(cos(a), sin(a)) * randf_range(60, 200) * strength, "life": randf_range(0.12, 0.3), "max": 0.3, "color": Color(1, 0.95, 0.8), "size": randf_range(1.0, 2.0)})
 
 
+var shake_scale := 1.0
+var reduced_motion := false
+
+
 func add_shake(a: float) -> void:
+	a *= 0.0 if reduced_motion else shake_scale
 	shake = minf(10.0, shake + a)
 
 
@@ -238,6 +245,8 @@ func trail(p: Vector2, c: Color, heat: float) -> void:
 
 ## Celebration: coloured paper falling across the table.
 func confetti() -> void:
+	if reduced_motion:
+		return
 	var cols := [Color(1, 0.8, 0.3), Color(0.3, 0.8, 1), Color(1, 0.4, 0.5), Color(0.5, 1, 0.6), Color(0.8, 0.5, 1)]
 	for i in 160:
 		particles.append({"pos": Vector2(randf_range(0, W), randf_range(-80, -10)), "vel": Vector2(randf_range(-60, 60), randf_range(250, 520)), "life": randf_range(1.2, 2.2), "max": 2.2, "color": cols[i % cols.size()], "size": randf_range(2.5, 4.5), "drag": 0.0})

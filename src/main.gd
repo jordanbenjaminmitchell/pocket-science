@@ -237,7 +237,7 @@ func _update_aim(delta: float) -> void:
 	var m := _mouse_table()
 	if dragging:
 		var pull := (drag_origin - m).dot(aim_dir)
-		drag_power = clampf(pull / DRAG_FULL, 0.0, 1.0)
+		drag_power = clampf(pull / (DRAG_FULL * settings.pull), 0.0, 1.0)
 		view.cue_pull = drag_power * 90.0
 		power_w.set_power(drag_power)
 	else:
@@ -247,7 +247,7 @@ func _update_aim(delta: float) -> void:
 				aim_dir = nd
 				guide_dirty = true
 		var rot := 0.0
-		var spd := 0.06 if Input.is_key_pressed(KEY_SHIFT) else 0.6
+		var spd := (0.06 if Input.is_key_pressed(KEY_SHIFT) else 0.6) * settings.aim_speed
 		if Input.is_key_pressed(KEY_LEFT):
 			rot -= spd
 		if Input.is_key_pressed(KEY_RIGHT):
@@ -1380,12 +1380,28 @@ func _center_panel(w: float, h: float, accent: Color = Color(0.85, 0.65, 0.3), a
 	p.size = Vector2(w, 0)
 	p.position = at if at.x >= 0 else Vector2((1600 - w) * 0.5, (900 - h) * 0.5)
 	if at.x < 0:
-		p.resized.connect(func(): p.position.y = (900.0 - p.size.y) * 0.5)
+		p.resized.connect(func(): p.position.y = maxf(10.0, (900.0 - p.size.y) * 0.5))
 	overlay.add_child(p)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
 	p.add_child(v)
+	# Wrapping labels with no width would measure one word per line and balloon
+	# the panel; give them the panel's inner width once the content is built.
+	(func():
+		_fix_wrap_widths(v, w - 32.0)
+		if is_instance_valid(p):
+			p.size = Vector2(w, 0)).call_deferred()
 	return v
+
+
+func _fix_wrap_widths(n: Node, width: float) -> void:
+	if not is_instance_valid(n):
+		return
+	for c in n.get_children():
+		if c is Label and (c as Label).autowrap_mode != TextServer.AUTOWRAP_OFF and (c as Label).custom_minimum_size.x <= 0.0:
+			(c as Label).custom_minimum_size.x = width
+		elif c is Container and not (c is HBoxContainer) and not (c is GridContainer):
+			_fix_wrap_widths(c, width)
 
 
 func _hud_visible(on: bool) -> void:
@@ -1427,30 +1443,14 @@ func _show_title() -> void:
 	b.add_theme_font_size_override("font_size", 24)
 	v.add_child(b)
 	v.add_child(_button("How to Play", _show_help))
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	v.add_child(row)
-	var snd := _button("Sound: %s" % ("On" if sfx.volume > 0.0 else "Off"), func(): pass)
-	snd.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	snd.pressed.connect(func():
-		sfx.volume = 0.0 if sfx.volume > 0.0 else 0.8
-		snd.text = "Sound: Off" if sfx.volume == 0.0 else "Sound: On"
-		_save_settings())
-	row.add_child(snd)
-	var mus := _button("Music: %s" % ("On" if sfx.music_volume > 0.0 else "Off"), func(): pass)
-	mus.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	mus.pressed.connect(func():
-		sfx.set_music_volume(0.0 if sfx.music_volume > 0.0 else 0.55)
-		mus.text = "Music: Off" if sfx.music_volume == 0.0 else "Music: On"
-		_save_settings())
-	row.add_child(mus)
+	v.add_child(_button("Settings", func(): _show_settings(_show_title)))
 	v.add_child(_button("Quit", func(): get_tree().quit()))
 	var best := _load_best()
 	if best.tables > 0 or best.shot > 0:
 		var bl := _label("Best run: %d tables cleared  ·  best shot %d  ·  best streak %d" % [best.tables, best.shot, best.streak], 15, Color(1.0, 0.85, 0.45), F_REG)
 		bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		v.add_child(bl)
-	var foot := _label("Real pool physics · exact guideline · 30 Formulas · 9 tables + endless", 13, Color(0.55, 0.55, 0.6), F_REG)
+	var foot := _label("Real pool physics · exact guideline · %d Formulas · 9 tables + endless" % Catalog.FORMULAS.size(), 13, Color(0.55, 0.55, 0.6), F_REG)
 	foot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(foot)
 
@@ -1574,6 +1574,7 @@ func _show_pause() -> void:
 	v.add_child(_label("PAUSED", 30, Color(0.98, 0.8, 0.4), F_PIXB))
 	v.add_child(_button("Resume", _resume))
 	v.add_child(_button("How to Play", _show_help))
+	v.add_child(_button("Settings", func(): _show_settings(_show_pause_again)))
 	v.add_child(_button("Save & quit to title", func():
 		paused = false
 		_show_title(), Color(0.6, 0.75, 0.9)))
@@ -1804,19 +1805,136 @@ func _record_best() -> void:
 	c.save("user://settings.cfg")
 
 
+var settings := GameSettings.new()
+
+
 func _save_settings() -> void:
-	var c := ConfigFile.new()
-	c.load("user://settings.cfg")
-	c.set_value("audio", "sfx", sfx.volume)
-	c.set_value("audio", "music", sfx.music_volume)
-	c.save("user://settings.cfg")
+	settings.save_file()
 
 
 func _load_settings() -> void:
-	var c := ConfigFile.new()
-	if c.load("user://settings.cfg") == OK:
-		sfx.volume = c.get_value("audio", "sfx", 0.8)
-		sfx.set_music_volume(c.get_value("audio", "music", 0.55))
+	settings.load_file()
+	_apply_settings()
+
+
+## Pushes every preference into the running game.
+func _apply_settings() -> void:
+	sfx.volume = settings.master * settings.sfx
+	sfx.set_music_volume(settings.master * settings.music)
+	view.shake_scale = settings.shake
+	view.reduced_motion = settings.reduced_motion
+	if DisplayServer.get_name() != "headless":
+		var want := DisplayServer.WINDOW_MODE_FULLSCREEN if settings.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
+		if DisplayServer.window_get_mode() != want:
+			DisplayServer.window_set_mode(want)
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if settings.vsync else DisplayServer.VSYNC_DISABLED)
+
+
+func _show_settings(back: Callable) -> void:
+	var was_paused := paused
+	paused = false
+	_clear_overlay()
+	paused = was_paused
+	_dim(0.75)
+	var v := _center_panel(640, 640)
+	v.add_child(_label("SETTINGS", 30, Color(0.98, 0.8, 0.4), F_PIXB))
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 14)
+	grid.add_theme_constant_override("v_separation", 10)
+	v.add_child(grid)
+	_setting_slider(grid, "Master volume", "master", 0.0, 1.0, func(x): return "%d%%" % int(round(x * 100)))
+	_setting_slider(grid, "Music", "music", 0.0, 1.0, func(x): return "%d%%" % int(round(x * 100)))
+	_setting_slider(grid, "Sound effects", "sfx", 0.0, 1.0, func(x): return "%d%%" % int(round(x * 100)))
+	_setting_slider(grid, "Screen shake", "shake", 0.0, 1.5, func(x): return "%d%%" % int(round(x * 100)))
+	_setting_slider(grid, "Pull-back for full power", "pull", 0.6, 1.6, func(x): return "%d px" % int(round(DRAG_FULL * x * TABLE_SCALE)))
+	_setting_slider(grid, "Keyboard aim speed", "aim_speed", 0.25, 3.0, func(x): return "%.2fx" % x)
+	_setting_toggle(grid, "Fullscreen", "fullscreen")
+	_setting_toggle(grid, "VSync", "vsync")
+	_setting_toggle(grid, "Reduced motion (no shake, zoom or confetti)", "reduced_motion")
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	v.add_child(row)
+	var reset := _button("Defaults", func():
+		settings.reset()
+		_apply_settings()
+		_save_settings()
+		_show_settings(back), Color(0.6, 0.75, 0.9))
+	reset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(reset)
+	var wipe := _button("Erase all progress…", func(): _confirm_wipe(back), Color(0.9, 0.4, 0.3))
+	wipe.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(wipe)
+	var done := _button("Back", func():
+		_save_settings()
+		back.call(), Color(0.4, 0.9, 0.6))
+	done.custom_minimum_size = Vector2(0, 48)
+	v.add_child(done)
+
+
+func _setting_slider(grid: GridContainer, title: String, key: String, lo: float, hi: float, fmt: Callable) -> void:
+	var l := _label(title, 16, Color(0.85, 0.87, 0.9), F_REG)
+	grid.add_child(l)
+	var s := HSlider.new()
+	s.min_value = lo
+	s.max_value = hi
+	s.step = 0.05
+	s.value = float(settings.get(key))
+	s.custom_minimum_size = Vector2(240, 24)
+	s.name = "slider_" + key
+	grid.add_child(s)
+	var val := _label(fmt.call(s.value), 15, Color(1.0, 0.85, 0.45), F_SEMI)
+	val.custom_minimum_size = Vector2(70, 0)
+	grid.add_child(val)
+	s.value_changed.connect(func(x: float):
+		settings.set(key, x)
+		val.text = fmt.call(x)
+		_apply_settings()
+		if key == "sfx" or key == "master":
+			sfx.play("click", 0.6))
+	s.drag_ended.connect(func(_changed: bool): _save_settings())
+
+
+func _setting_toggle(grid: GridContainer, title: String, key: String) -> void:
+	grid.add_child(_label(title, 16, Color(0.85, 0.87, 0.9), F_REG))
+	var c := CheckButton.new()
+	c.button_pressed = bool(settings.get(key))
+	c.name = "toggle_" + key
+	grid.add_child(c)
+	grid.add_child(Control.new())
+	c.toggled.connect(func(on: bool):
+		settings.set(key, on)
+		_apply_settings()
+		_save_settings()
+		sfx.play("ui", 0.8))
+
+
+func _confirm_wipe(back: Callable) -> void:
+	_clear_overlay()
+	_dim(0.8)
+	var v := _center_panel(520, 260, Color(0.9, 0.35, 0.3))
+	v.add_child(_label("ERASE ALL PROGRESS?", 26, Color(1, 0.45, 0.4), F_PIXB))
+	var t := _label("This deletes your saved run and personal bests. Settings are kept. It cannot be undone.", 16, Color(0.85, 0.85, 0.85), F_REG)
+	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	t.custom_minimum_size = Vector2(480, 0)
+	v.add_child(t)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	v.add_child(row)
+	var no := _button("Cancel", func(): _show_settings(back))
+	no.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(no)
+	var yes := _button("Erase", func():
+		RunState.clear_save()
+		var c := ConfigFile.new()
+		c.load(GameSettings.PATH)
+		if c.has_section("best"):
+			c.erase_section("best")
+		c.save(GameSettings.PATH)
+		paused = false
+		_show_title(), Color(0.9, 0.4, 0.3))
+	yes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(yes)
 
 
 func _next_table() -> void:

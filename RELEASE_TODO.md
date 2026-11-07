@@ -47,11 +47,10 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 
 ## 3. Aiming, controls and input
 
-- [ ] **P0 — Settings menu** with:
-  - mouse sensitivity
-  - fine-aim speed
+- [x] **P0 — Input settings, part 1.** Done 2026-11-07: keyboard fine-aim speed and pull-back distance for full power (`tests/test_settings.gd`).
+- [ ] **P0 — Input settings, part 2:**
   - invert drag direction
-  - "hold to aim / click to shoot" alternative scheme
+  - "click to shoot" alternative scheme (set power first, click to fire)
 - [ ] **P1 — Full gamepad support.** Covers aim, fine aim, power (trigger pull-back), spin (right stick), reagents, shop navigation and menus. Also Steam Deck layout.
 - [ ] **P1 — Keyboard navigation** for every menu and the shop (focus states are currently invisible).
 - [ ] **P1 — Key rebinding.**
@@ -124,15 +123,15 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
   - current table plan and upcoming bosses
   - isotopes per ball
   - scoring rules
-- [ ] **P0 — Settings screen:**
-  - separate master/music/SFX sliders
-  - fullscreen/windowed/resolution
-  - vsync and frame cap
-  - screen shake amount
+- [x] **P0 — Settings screen.** Done 2026-11-07, from the title and pause menus:
+  - master/music/SFX sliders
+  - fullscreen and vsync
+  - screen-shake amount
   - reduced motion
-  - guideline options
-  - text size
-  - reset save data (with confirmation)
+  - erase progress, with confirmation
+  
+  Settings persist and old audio toggles migrate. Covered by `tests/test_settings.gd`; on-screen layout of every overlay is checked by `tests/test_screens.gd`.
+- [ ] **P1 — Settings, remaining:** windowed resolution choice, frame cap, guideline options (colour palette, length), text size.
 - [ ] **P1 — Shop revamp:**
   - hover-to-inspect with synergies highlighted ("works with your Bank formula")
   - sell confirmation
