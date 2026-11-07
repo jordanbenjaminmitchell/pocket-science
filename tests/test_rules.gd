@@ -60,8 +60,10 @@ func _initialize() -> void:
 	op.plan[0].anomaly = "onepocket"
 	op.begin_table()
 	var c0 := op.chalk
+	var hot_fixed := op.hot_pocket
 	var wp := op.apply_shot({"scored": false, "foul": "Wrong pocket", "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [4], "shattered": [], "lines": []}, false, 5, true)
 	check(op.chalk == c0 and not wp.chalk_lost and op.streak == 0, "one pocket: wrong pocket costs no chalk but breaks the streak")
+	check(op.hot_pocket == hot_fixed, "one pocket: the pocket stays put")
 	print("bounty")
 	var b := RunState.new()
 	b.start(3)

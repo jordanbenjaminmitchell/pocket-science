@@ -43,7 +43,7 @@ func _initialize() -> void:
 	check(run_case(["chain"], combo).mult == 6, "chain reaction x2")
 	var two := [{"type": "ball", "a": 0, "b": 3}, {"type": "ball", "a": 3, "b": 5}, pot(5, 0), pot(3, 0)]
 	check(run_case(["multi"], two).mult == 1 + 2 + 3, "cluster +3 per extra ball")
-	check(run_case([], hit5, {"streak": 2}).mult == 3 and run_case(["streak"], hit5, {"streak": 2}).mult == 5, "momentum doubles streak")
+	check(run_case([], hit5, {"streak": 2}).mult == 3 and run_case(["streak"], hit5, {"streak": 2}).mult == 7, "momentum triples streak")
 	check(run_case([], hit5, {"hot_pocket": 0}).mult == 2 and run_case(["heat"], hit5, {"hot_pocket": 0}).mult == 3 and run_case(["heat"], hit5, {"hot_pocket": 0}).chips == 35, "heat sink x3 and +20 chips")
 	check(run_case(["power"], hit5, {"power": 0.9}).mult == 6 and run_case(["power"], hit5, {"power": 0.5}).mult == 1, "kinetic energy at 85%+")
 	check(run_case(["finesse"], hit5, {"power": 0.3}).chips == 30, "finesse x2 chips")
@@ -79,7 +79,7 @@ func _initialize() -> void:
 	check(run_case(["collector"], hit5, {"pockets_used": [2, 4]}).mult == 1 + 6, "collector +2 per distinct pocket")
 	var low := [{"type": "ball", "a": 0, "b": 2}, pot(2, 0)]
 	check(run_case(["lowball"], low).mult == 5, "low ball +4")
-	check(run_case(["highball"], [{"type": "ball", "a": 0, "b": 14}, pot(14, 0)]).chips == 24 + 40, "high roller +40")
+	check(run_case(["highball"], [{"type": "ball", "a": 0, "b": 14}, pot(14, 0)]).chips == 24 + 35 and run_case(["highball"], [{"type": "ball", "a": 0, "b": 8}, pot(8, 0)]).chips == 18 + 35, "high roller +35 for 8 and up")
 	check(run_case(["fibonacci"], [{"type": "ball", "a": 0, "b": 13}, pot(13, 0)]).mult == 4, "fibonacci +3")
 	check(is_equal_approx(run_case(["rotation"], low, {"lowest": 2}).mult, 1.5) and run_case(["rotation"], low, {"lowest": 1}).mult == 1, "rotation x1.5 on lowest ball")
 	var mb := run_case(["moneyball"], hit5, {"highest": 5})
@@ -94,7 +94,7 @@ func _initialize() -> void:
 	check(run_case([], [{"type": "ball", "a": 0, "b": 1}, pot(1, 0)], {"anomaly": "rotation", "lowest": 1}).scored, "rotation boss: lowest first scores")
 	check(run_case([], eight, {"anomaly": "cursed8"}).foul == "Cursed 8", "cursed 8 voids the shot")
 	check(run_case([], hit5, {"anomaly": "onepocket", "hot_pocket": 3}).foul == "Wrong pocket", "one pocket: other pockets do not score")
-	check(run_case([], hit5, {"anomaly": "onepocket", "hot_pocket": 0}).total == 30, "one pocket: hot pocket scores")
+	check(run_case([], hit5, {"anomaly": "onepocket", "hot_pocket": 0}).total == 45, "one pocket: hot pocket scores x3")
 	check(run_case([], hit5, {"anomaly": "taxman"}).total == 12, "taxman takes 15% of chips")
 	print("labs and isotopes")
 	check(run_case([], hit5, {"lab": "cryo"}).mult == 2, "cryo +1 mult")
@@ -134,7 +134,11 @@ func _initialize() -> void:
 	th.score = th.target() * 2
 	var pr := th.payout()
 	check(pr.any(func(r): return r[0] == "Thrift" and r[1] == 3), "thrift pays $3 with 2+ chalk")
-	check(pr.any(func(r): return r[0] == "Overflow" and r[1] == 5), "overflow $1 per 20% over target")
+	var next_t: int = th.plan[1].target
+	check(th.carry == mini(th.score - th.target(), int(next_t * 0.25)), "overflow carries excess score (%d)" % th.carry)
+	th.advance_table()
+	th.begin_table()
+	check(th.score == int(next_t * 0.25) and th.carry == 0, "next table starts with the carried score")
 	var gc := RunState.new()
 	gc.start(8)
 	gc.formulas.assign(["glasscannon"])

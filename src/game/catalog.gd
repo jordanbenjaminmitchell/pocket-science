@@ -33,7 +33,7 @@ const FORMULAS := {
 	"kick": {"name": "Kick Drum", "r": 1, "cost": 6, "icon": "↯", "fam": "cue", "desc": "Kick shots (cue hits a cushion first) that pot: ×2 Mult."},
 	"chain": {"name": "Chain Reaction", "r": 1, "cost": 7, "icon": "∞", "fam": "combo", "desc": "Combination pots (object ball into object ball) give ×2 Mult."},
 	"multi": {"name": "Cluster Theory", "r": 1, "cost": 6, "icon": "⁂", "fam": "combo", "desc": "Every extra ball potted in one shot gives +3 Mult instead of +1."},
-	"streak": {"name": "Momentum", "r": 1, "cost": 7, "icon": "»", "fam": "streak", "desc": "Your streak gives +2 Mult per step instead of +1."},
+	"streak": {"name": "Momentum", "r": 1, "cost": 7, "icon": "»", "fam": "streak", "desc": "Your streak gives +3 Mult per step instead of +1."},
 	"heat": {"name": "Heat Sink", "r": 1, "cost": 6, "icon": "♨", "fam": "pocket", "desc": "The hot pocket gives ×3 Mult instead of ×2, and +20 Chips."},
 	"power": {"name": "Kinetic Energy", "r": 1, "cost": 5, "icon": "⚡", "fam": "cue", "desc": "Shots at 85%+ power that pot give +5 Mult."},
 	"finesse": {"name": "Finesse", "r": 1, "cost": 6, "icon": "~", "fam": "cue", "desc": "Shots at 35% power or less that pot give ×2 Chips."},
@@ -69,7 +69,7 @@ const FORMULAS := {
 	"migration": {"name": "Stay Hot", "r": 1, "cost": 6, "icon": "♨", "fam": "pocket", "desc": "The hot pocket only moves after a shot that does not score."},
 	# ---- Ball numbers
 	"lowball": {"name": "Low Ball", "r": 0, "cost": 4, "icon": "₁", "fam": "number", "desc": "Balls 1, 2 and 3 give +4 Mult."},
-	"highball": {"name": "High Roller", "r": 0, "cost": 4, "icon": "¹⁵", "fam": "number", "desc": "Balls 10 to 15 give +40 Chips."},
+	"highball": {"name": "High Roller", "r": 0, "cost": 4, "icon": "¹⁵", "fam": "number", "desc": "Balls 8 and above give +35 Chips."},
 	"fibonacci": {"name": "Fibonacci", "r": 1, "cost": 6, "icon": "𝑓", "fam": "number", "desc": "Balls 1, 2, 3, 5, 8 and 13 give +3 Mult."},
 	"rotation": {"name": "Rotation", "r": 1, "cost": 6, "icon": "①", "fam": "number", "desc": "Potting the lowest-numbered ball on the table gives ×1.5 Mult."},
 	"moneyball": {"name": "Money Ball", "r": 1, "cost": 7, "icon": "⑨", "fam": "number", "desc": "Potting the highest-numbered ball on the table gives ×2 Mult and $2."},
@@ -78,7 +78,7 @@ const FORMULAS := {
 	"venture": {"name": "Venture Capital", "r": 1, "cost": 6, "icon": "↗", "fam": "money", "desc": "+1 Mult for every $5 you hold (max +6)."},
 	"hunter": {"name": "Bounty Hunter", "r": 0, "cost": 4, "icon": "★", "fam": "money", "desc": "Bounties pay double."},
 	"coupon": {"name": "Coupon Book", "r": 0, "cost": 3, "icon": "%", "fam": "money", "desc": "Rerolls in the Lab Supply start at $1."},
-	"overflow": {"name": "Overflow", "r": 1, "cost": 5, "icon": "≋", "fam": "money", "desc": "When a table is cleared, earn $1 for every 20% you scored over the target (max $6)."},
+	"overflow": {"name": "Overflow", "r": 1, "cost": 5, "icon": "≋", "fam": "money", "desc": "Points scored over a table's target carry into the next table (up to 25% of its target)."},
 	# ---- Risk & build-around
 	"glasscannon": {"name": "Glass Cannon", "r": 2, "cost": 8, "icon": "✦", "fam": "risk", "desc": "×3 Mult on every scoring shot, but misses and scratches cost 2 Chalk."},
 	"minimalist": {"name": "Minimalist", "r": 2, "cost": 7, "icon": "□", "fam": "risk", "desc": "×1.5 Mult for every empty Formula slot."},
@@ -113,7 +113,7 @@ const CUES := {
 		"shaft": Color(0.8, 0.86, 0.9), "butt": Color(0.1, 0.25, 0.4), "accent": Color(0.4, 0.85, 1.0)},
 	"hotrod": {"name": "Hot Rod", "desc": "Starts with Heat Sink (hot pocket ×3), but every table has 1 less Chalk. $4.", "money": 4, "formulas": ["heat"], "reagents": [], "chalk": -1,
 		"shaft": Color(0.85, 0.7, 0.5), "butt": Color(0.6, 0.12, 0.05), "accent": Color(1.0, 0.55, 0.1)},
-	"momentum": {"name": "Momentum Cue", "desc": "Starts with Momentum (+2 Mult per streak step). Run-outs explode. $4.", "money": 4, "formulas": ["streak"], "reagents": [], "chalk": 0,
+	"momentum": {"name": "Momentum Cue", "desc": "Starts with Momentum (+3 Mult per streak step). Run-outs explode. $4.", "money": 4, "formulas": ["streak"], "reagents": [], "chalk": 0,
 		"shaft": Color(0.88, 0.78, 0.6), "butt": Color(0.12, 0.12, 0.14), "accent": Color(0.6, 1.0, 0.5)},
 	"gilded": {"name": "Gilded Cue", "desc": "Starts rich: $12 and Compound Interest. No chalk cube.", "money": 12, "formulas": ["interest"], "reagents": [], "chalk": 0,
 		"shaft": Color(0.92, 0.82, 0.55), "butt": Color(0.45, 0.32, 0.08), "accent": Color(1.0, 0.85, 0.3)},
@@ -130,16 +130,16 @@ const LABS := {
 
 ## Anomalies are boss rules on every third table.
 const ANOMALIES := {
-	"tight": {"name": "Tight Pockets", "desc": "Pockets are 15% narrower."},
+	"tight": {"name": "Tight Pockets", "desc": "Pockets are 12% narrower."},
 	"sealed": {"name": "Sealed Sides", "desc": "Both side pockets are closed."},
 	"lead": {"name": "Lead Rack", "desc": "Object balls are 60% heavier."},
 	"fog": {"name": "Fog", "desc": "The guideline stops at the ghost ball."},
 	"dry": {"name": "Dry Chalk", "desc": "You start with 1 less Chalk."},
 	"cold": {"name": "Cold Pockets", "desc": "There is no hot pocket."},
 	"shrink": {"name": "Shrinking Pockets", "desc": "Every pocket narrows by 3% after each shot (down to 75%)."},
-	"onepocket": {"name": "One Pocket", "desc": "Only pots into the hot pocket score. Pots elsewhere score nothing (no Chalk lost). The hot pocket still moves."},
+	"onepocket": {"name": "One Pocket", "desc": "Only the hot pocket scores, and it pays ×3. It stays put all table. Pots elsewhere score nothing (no Chalk lost)."},
 	"rotation": {"name": "Rotation Rules", "desc": "You must hit the lowest-numbered ball first, or the shot is a foul."},
-	"heavycue": {"name": "Heavy Cue Ball", "desc": "The cue ball is 60% heavier: it follows through and scratches more."},
+	"heavycue": {"name": "Heavy Cue Ball", "desc": "The cue ball is twice as heavy: it follows through and scratches more."},
 	"blackice": {"name": "Black Ice", "desc": "Almost no friction and lively cushions. Control is everything."},
 	"taxman": {"name": "The Taxman", "desc": "Every scoring shot loses 15% of its Chips."},
 	"blind": {"name": "Blind Pockets", "desc": "The guideline never turns gold and pots show no value tag."},
@@ -168,9 +168,9 @@ const TABLES := [
 	{"target": 550, "rack": "ten"},
 	{"target": 800, "rack": "ten"},
 	{"target": 1150, "rack": "fifteen", "boss": true},
-	{"target": 1700, "rack": "fifteen"},
-	{"target": 2500, "rack": "fifteen"},
-	{"target": 3600, "rack": "fifteen", "boss": true},
+	{"target": 1500, "rack": "fifteen"},
+	{"target": 2200, "rack": "fifteen"},
+	{"target": 3200, "rack": "fifteen", "boss": true},
 ]
 
 

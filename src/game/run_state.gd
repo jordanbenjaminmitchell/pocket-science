@@ -36,6 +36,7 @@ var forecast := false
 var pockets_used: Array = []
 var shrink_steps := 0
 var insured_used := 0
+var carry := 0           # Overflow: score carried into the next table
 
 # Run stats
 var total_pots := 0
@@ -101,7 +102,8 @@ func current() -> Dictionary:
 
 
 func begin_table() -> void:
-	score = 0
+	score = carry
+	carry = 0
 	streak = 0
 	shots_taken = 0
 	racks_cleared = 0
@@ -155,6 +157,8 @@ func roll_hot_pocket(avoid: int) -> void:
 	if current().anomaly == "cold":
 		hot_pocket = -1
 		return
+	if current().anomaly == "onepocket" and avoid >= 0:
+		return   # One Pocket: the pocket is fixed for the whole table
 	var choices: Array = []
 	for k in 6:
 		if k == avoid:
@@ -174,7 +178,7 @@ func pocket_scale() -> float:
 	if formulas.has("jaws"):
 		s *= 1.12
 	if current().anomaly == "tight":
-		s *= 0.85
+		s *= 0.88
 	if current().anomaly == "shrink":
 		s *= maxf(0.75, 1.0 - 0.03 * shrink_steps)
 	return s
@@ -205,10 +209,10 @@ func payout() -> Array:
 			rows.append(["Compound interest", i])
 	if formulas.has("thrift") and chalk >= 2:
 		rows.append(["Thrift", 3])
-	if formulas.has("overflow") and target() > 0:
-		var over := int(floor((score - target()) / (target() * 0.2)))
-		if over > 0:
-			rows.append(["Overflow", mini(over, 6)])
+	if formulas.has("overflow"):
+		var nxt := table_index + 1
+		var next_target: int = plan[nxt].target if nxt < plan.size() else int(target() * 1.6)
+		carry = mini(maxi(score - target(), 0), int(next_target * 0.25))
 	var total := 0
 	for r in rows:
 		total += r[1]
@@ -423,12 +427,12 @@ func apply_physics(s: PoolSim) -> void:
 			s.drag = 0.03
 			s.rail_e = 0.9
 		"tilt":
-			s.tilt = Vector2(0, 55.0 if (seed_value + table_index) % 2 == 0 else -55.0)
+			s.tilt = Vector2(0, 90.0 if (seed_value + table_index) % 2 == 0 else -90.0)
 	for i in s.count():
 		var m := 1.0
 		if s.num[i] == 0:
 			if t.anomaly == "heavycue":
-				m = 1.6
+				m = 2.0
 		else:
 			if t.anomaly == "lead":
 				m = 1.6
@@ -481,7 +485,7 @@ func to_dict() -> Dictionary:
 		"money": money, "formulas": formulas, "reagents": reagents, "isotopes": iso,
 		"catalyst": catalyst, "plan": plan, "endless": endless, "total_pots": total_pots,
 		"best_shot": best_shot, "tables_cleared": tables_cleared, "best_streak": best_streak,
-		"phase": phase,
+		"phase": phase, "carry": carry,
 	}
 	if phase == "table":
 		d["table"] = {
@@ -574,6 +578,7 @@ func _load_from(path: String) -> bool:
 	best_shot = int(d.get("best_shot", 0))
 	tables_cleared = int(d.get("tables_cleared", 0))
 	best_streak = int(d.get("best_streak", 0))
+	carry = int(d.get("carry", 0))
 	# v1 saves only knew "start of table".
 	phase = str(d.get("phase", "table"))
 	table_snapshot = {}

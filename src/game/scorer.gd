@@ -82,7 +82,7 @@ static func score(ctx: Dictionary) -> Dictionary:
 	var lines: Array = out.lines
 	var streak: int = ctx.get("streak", 0)
 	if streak > 0:
-		var per := 2.0 if formulas.has("streak") else 1.0
+		var per := 3.0 if formulas.has("streak") else 1.0
 		lines.append(_l("Streak %d" % streak, "mult", per * streak))
 
 	var gold_paid := 0
@@ -148,7 +148,7 @@ static func score(ctx: Dictionary) -> Dictionary:
 		if idx >= 1:
 			lines.append(_l("Cluster", "mult", 3 if formulas.has("multi") else 1, n, k))
 		if k == hot:
-			lines.append(_l("Hot pocket", "xmult", 3 if formulas.has("heat") else 2, n, k))
+			lines.append(_l("Hot pocket", "xmult", 3 if (formulas.has("heat") or anomaly == "onepocket") else 2, n, k))
 			if formulas.has("heat"):
 				lines.append(_l("Heat Sink", "chips", 20, n, k))
 		if n == 8:
@@ -161,8 +161,8 @@ static func score(ctx: Dictionary) -> Dictionary:
 			lines.append(_l("Hot Hand", "chips", 20, n, k))
 		if formulas.has("lowball") and n <= 3:
 			lines.append(_l("Low Ball", "mult", 4, n, k))
-		if formulas.has("highball") and n >= 10:
-			lines.append(_l("High Roller", "chips", 40, n, k))
+		if formulas.has("highball") and n >= 8:
+			lines.append(_l("High Roller", "chips", 35, n, k))
 		if formulas.has("fibonacci") and [1, 2, 3, 5, 8, 13].has(n):
 			lines.append(_l("Fibonacci", "mult", 3, n, k))
 		if formulas.has("rotation") and n == lowest:

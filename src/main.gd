@@ -128,7 +128,7 @@ func _setup_table() -> void:
 			sfx.play_music("boss")
 		else:
 			sfx.play_music(lab)
-	view.hot_mult = 3 if run.formulas.has("heat") else 2
+	view.hot_mult = 3 if (run.formulas.has("heat") or t.anomaly == "onepocket") else 2
 	view.hot_pocket = run.hot_pocket
 	_refresh_hud()
 
@@ -1239,7 +1239,7 @@ func _refresh_hud() -> void:
 		lbl_bounty.text = ("✔ " if run.bounty_done else "★ ") + "Bounty: %s  +$%d" % [bt.name, bt.reward]
 		lbl_bounty.add_theme_color_override("font_color", Color(0.5, 1.0, 0.6) if run.bounty_done else Color(1.0, 0.85, 0.35))
 	chalk_pips.set_count(run.chalk, run.max_chalk())
-	var per := 2.0 if run.formulas.has("streak") else 1.0
+	var per := 3.0 if run.formulas.has("streak") else 1.0
 	lbl_streak.text = "%d  (+%s Mult)" % [run.streak, _fmt(run.streak * per)] if run.streak > 0 else "0"
 	lbl_money.text = "$%d" % run.money
 	var flags: Array[String] = []
@@ -1971,10 +1971,11 @@ func _next_table() -> void:
 	run.begin_table()
 	_setup_table()
 	_save_progress()
-	_animate_score(0, 0)
+	# Overflow can start a table with carried-over points.
 	shown_score = 0
+	_animate_score(0, run.score)
 	_set_chips_mult(0, 1)
-	lbl_line.text = "Pot balls to score Chips × Mult"
+	lbl_line.text = "Overflow carried %d points" % run.score if run.score > 0 else "Pot balls to score Chips × Mult"
 	_enter_aim()
 	var t := run.current()
 	var msg := "TABLE %d  ·  TARGET %d" % [run.table_index + 1, run.target()]
@@ -2170,7 +2171,7 @@ func _show_run_info() -> void:
 	c3.add_theme_constant_override("separation", 6)
 	cols.add_child(c3)
 	c3.add_child(_label("SCORING", 16, Color(0.6, 0.8, 1.0)))
-	var streak_per := 2 if run.formulas.has("streak") else 1
+	var streak_per := 3 if run.formulas.has("streak") else 1
 	var hot_x := 3 if run.formulas.has("heat") else 2
 	var rules := [
 		"Shot = Chips × Mult",

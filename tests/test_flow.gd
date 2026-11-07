@@ -63,8 +63,12 @@ func _go() -> void:
 			break
 	check(bought and g.run.formulas.size() == 1, "bought a formula")
 	g._refresh_shop()
+	g.run.carry = 37
 	g._next_table()
-	await _frames(2)
+	await _frames(90)
+	check(g.run.score == 37 and g.lbl_score.text == "37", "carried Overflow score shows on the HUD (%s)" % g.lbl_score.text)
+	g.run.score = 0
+	g._refresh_hud()
 	check(g.state == g.S.AIM and g.run.table_index == 1, "next table starts")
 	# Reagents
 	g.run.reagents.assign(["bluechalk", "forecast"])
