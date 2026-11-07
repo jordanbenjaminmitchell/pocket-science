@@ -363,63 +363,152 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 
 
 ## ---------------------------------------------------------------- persistence
+## Save format v2. A save records where the player is ("table" mid-play, or
+## "shop" between tables) so quitting never costs progress. Writes go to a temp
+## file that replaces the save atomically; the previous save is kept as a
+## backup and used if the main file is ever unreadable.
 const SAVE_PATH := "user://pocket_science_run.json"
+const SAVE_VERSION := 2
+
+var phase := "table"            # "table" or "shop"
+var table_snapshot := {}        # balls + is_break, supplied by the game controller
+var shop_payout: Array = []
 
 
 func to_dict() -> Dictionary:
 	var iso := {}
 	for k in isotopes:
 		iso[str(k)] = isotopes[k]
-	return {
-		"v": 1, "seed": seed_value, "cue": cue, "rng_state": str(rng.state), "table_index": table_index,
+	var d := {
+		"v": SAVE_VERSION, "seed": seed_value, "cue": cue, "rng_state": str(rng.state), "table_index": table_index,
 		"money": money, "formulas": formulas, "reagents": reagents, "isotopes": iso,
 		"catalyst": catalyst, "plan": plan, "endless": endless, "total_pots": total_pots,
 		"best_shot": best_shot, "tables_cleared": tables_cleared, "best_streak": best_streak,
+		"phase": phase,
 	}
+	if phase == "table":
+		d["table"] = {
+			"score": score, "chalk": chalk, "streak": streak, "shots_taken": shots_taken,
+			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "bluechalk": bluechalk,
+			"forecast": forecast, "bounty": bounty, "bounty_done": bounty_done,
+			"snapshot": table_snapshot,
+		}
+	else:
+		d["shop"] = {"items": shop, "reroll_cost": reroll_cost, "payout": shop_payout}
+	return d
 
 
 func save() -> void:
-	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify(to_dict()))
+	var tmp := SAVE_PATH + ".tmp"
+	var f := FileAccess.open(tmp, FileAccess.WRITE)
+	if f == null:
+		return
+	f.store_string(JSON.stringify(to_dict()))
+	f.close()
+	var main_abs := ProjectSettings.globalize_path(SAVE_PATH)
+	var bak_abs := ProjectSettings.globalize_path(SAVE_PATH + ".bak")
+	if FileAccess.file_exists(SAVE_PATH):
+		if FileAccess.file_exists(SAVE_PATH + ".bak"):
+			DirAccess.remove_absolute(bak_abs)
+		DirAccess.rename_absolute(main_abs, bak_abs)
+	DirAccess.rename_absolute(ProjectSettings.globalize_path(tmp), main_abs)
 
 
 static func has_save() -> bool:
-	return FileAccess.file_exists(SAVE_PATH)
+	return FileAccess.file_exists(SAVE_PATH) or FileAccess.file_exists(SAVE_PATH + ".bak")
 
 
 static func clear_save() -> void:
-	if FileAccess.file_exists(SAVE_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	for p in [SAVE_PATH, SAVE_PATH + ".bak", SAVE_PATH + ".tmp"]:
+		if FileAccess.file_exists(p):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(p))
 
 
+## Loads the save, falling back to the backup. Returns false if neither is usable.
 func load_save() -> bool:
-	if not has_save():
+	for p in [SAVE_PATH, SAVE_PATH + ".bak"]:
+		if FileAccess.file_exists(p) and _load_from(p):
+			return true
+	return false
+
+
+static func _read(path: String) -> Variant:
+	var txt := FileAccess.get_file_as_string(path)
+	if txt == "":
+		return null
+	return JSON.parse_string(txt)
+
+
+func _load_from(path: String) -> bool:
+	var d = _read(path)
+	if typeof(d) != TYPE_DICTIONARY:
 		return false
-	var txt := FileAccess.get_file_as_string(SAVE_PATH)
-	var d = JSON.parse_string(txt)
-	if typeof(d) != TYPE_DICTIONARY or int(d.get("v", 0)) != 1:
+	var v := int(d.get("v", 0))
+	if v < 1 or v > SAVE_VERSION:
+		return false
+	for k in ["seed", "rng_state", "table_index", "money", "formulas", "reagents", "isotopes", "plan"]:
+		if not d.has(k):
+			return false
+	if typeof(d.plan) != TYPE_ARRAY or (d.plan as Array).is_empty():
 		return false
 	seed_value = int(d.seed)
 	cue = str(d.get("cue", "maple"))
+	if not Catalog.CUES.has(cue):
+		cue = "maple"
 	rng.seed = seed_value
 	rng.state = int(d.rng_state)
 	table_index = int(d.table_index)
 	money = int(d.money)
-	formulas.assign(d.formulas)
-	reagents.assign(d.reagents)
+	formulas.assign((d.formulas as Array).filter(func(x): return Catalog.FORMULAS.has(x)))
+	reagents.assign((d.reagents as Array).filter(func(x): return Catalog.REAGENTS.has(x)))
 	isotopes.clear()
 	for k in d.isotopes:
-		isotopes[int(k)] = d.isotopes[k]
-	catalyst = float(d.catalyst)
+		if Catalog.ISOTOPES.has(d.isotopes[k]):
+			isotopes[int(k)] = d.isotopes[k]
+	catalyst = float(d.get("catalyst", 0.0))
 	plan.clear()
 	for t in d.plan:
 		var td: Dictionary = t
 		td.target = int(td.target)
 		plan.append(td)
-	endless = bool(d.endless)
-	total_pots = int(d.total_pots)
-	best_shot = int(d.best_shot)
-	tables_cleared = int(d.tables_cleared)
+	endless = bool(d.get("endless", false))
+	total_pots = int(d.get("total_pots", 0))
+	best_shot = int(d.get("best_shot", 0))
+	tables_cleared = int(d.get("tables_cleared", 0))
 	best_streak = int(d.get("best_streak", 0))
+	# v1 saves only knew "start of table".
+	phase = str(d.get("phase", "table"))
+	table_snapshot = {}
+	shop_payout = []
+	if phase == "table" and d.has("table") and typeof(d.table) == TYPE_DICTIONARY:
+		var t: Dictionary = d.table
+		begin_table()
+		rng.state = int(d.rng_state)   # begin_table consumed rng; restore the saved stream
+		score = int(t.get("score", 0))
+		chalk = int(t.get("chalk", chalk))
+		streak = int(t.get("streak", 0))
+		shots_taken = int(t.get("shots_taken", 0))
+		hot_pocket = int(t.get("hot_pocket", hot_pocket))
+		racks_cleared = int(t.get("racks_cleared", 0))
+		bluechalk = bool(t.get("bluechalk", false))
+		forecast = bool(t.get("forecast", false))
+		var b := str(t.get("bounty", bounty))
+		if Catalog.BOUNTIES.has(b):
+			bounty = b
+		bounty_done = bool(t.get("bounty_done", false))
+		if typeof(t.get("snapshot")) == TYPE_DICTIONARY:
+			table_snapshot = t.snapshot
+	elif phase == "shop" and d.has("shop") and typeof(d.shop) == TYPE_DICTIONARY:
+		shop.clear()
+		for it in d.shop.get("items", []):
+			var item: Dictionary = it
+			item.cost = int(item.cost)
+			if item.has("ball"):
+				item.ball = int(item.ball)
+			shop.append(item)
+		reroll_cost = int(d.shop.get("reroll_cost", 2))
+		shop_payout = d.shop.get("payout", [])
+	else:
+		phase = "table"
+		begin_table()
 	return true

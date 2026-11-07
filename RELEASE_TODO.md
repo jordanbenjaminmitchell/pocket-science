@@ -18,8 +18,8 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 
 - [x] **P0 — Frame-rate-dependent physics speed.** Fixed 2026-11-07: a fixed-step accumulator (`_sim_steps`) drives both the shot and the title demo. `tests/test_timing.gd` checks 30–360 Hz, 4× fast-forward and hitch clamping.
 - [ ] **P2 — Render interpolation above 240 Hz.** Above the 240 Hz physics rate, some frames advance no physics step, which may cause slight judder. Interpolate ball positions between steps.
-- [ ] **P0 — Mid-table save.** Quitting restarts the current table on Continue. Save after every shot (ball positions, score, chalk, streak, hot pocket, bounty, shot log) so quitting never costs progress.
-- [ ] **P0 — Save versioning and corruption handling.** Version-migrate old saves, recover gracefully from a bad or partial JSON file, and keep a backup of the last good save.
+- [x] **P0 — Mid-table save.** Done 2026-11-07: save format v2 saves after every shot (all balls, score, chalk, streak, hot pocket, bounty, shot log) and on every shop change. `tests/test_continue.gd` quits and continues both mid-table and in the shop.
+- [x] **P0 — Save versioning and corruption handling.** Done 2026-11-07: atomic temp→rename writes, a `.bak` of the previous save used when the main file is unreadable, v1→v2 migration, and validation that drops unknown content ids. Covered in `tests/test_rules.gd`.
 - [ ] **P0 — Stuck-ball edge cases.** Run a long fuzz test (thousands of random racks and shots) checking for:
   - balls wedged on jaw knuckles
   - balls resting inside capture circles without dropping

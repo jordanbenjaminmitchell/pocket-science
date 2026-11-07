@@ -172,7 +172,10 @@ func _new_rack(kind: String) -> void:
 
 
 func _cue_index() -> int:
-	return 0
+	if sim == null:
+		return 0
+	var i := sim.index_of(0)
+	return i if i >= 0 else 0
 
 
 ## ================================================================ main loop
@@ -719,6 +722,7 @@ func _after_shot() -> void:
 	else:
 		_enter_aim()
 	_refresh_hud()
+	_save_progress()
 
 
 func _enter_aim() -> void:
@@ -781,6 +785,7 @@ func _table_cleared() -> void:
 
 func _game_over() -> void:
 	state = S.OVER
+	RunState.clear_save()
 	sfx.play("bad", 1.0, 0.7)
 	_flash_banner("OUT OF CHALK", Color(1, 0.35, 0.3), 2.0)
 	await get_tree().create_timer(1.4).timeout
@@ -1500,9 +1505,9 @@ func _new_run() -> void:
 	_clear_overlay()
 	run.start(randi(), chosen_cue)
 	view.cue_colors = Catalog.CUES.get(chosen_cue, Catalog.CUES.maple)
-	run.save()
 	run.begin_table()
 	_setup_table()
+	_save_progress()
 	spin_w.set_spin(0, 0)
 	_animate_score(0, 0)
 	shown_score = 0
@@ -1569,7 +1574,7 @@ func _show_pause() -> void:
 	v.add_child(_label("PAUSED", 30, Color(0.98, 0.8, 0.4), F_PIXB))
 	v.add_child(_button("Resume", _resume))
 	v.add_child(_button("How to Play", _show_help))
-	v.add_child(_button("Quit to title (Continue restarts this table)", func():
+	v.add_child(_button("Save & quit to title", func():
 		paused = false
 		_show_title(), Color(0.6, 0.75, 0.9)))
 	v.add_child(_button("Abandon run", func():
@@ -1592,7 +1597,22 @@ func _show_shop(rows: Array) -> void:
 	_refresh_hud()
 
 
+## Persists the run exactly where the player is: mid-table (every ball) or in the shop.
+func _save_progress() -> void:
+	if state == S.SHOP:
+		run.phase = "shop"
+		run.shop_payout = payout_rows
+	else:
+		run.phase = "table"
+		var balls: Array = []
+		for i in sim.count():
+			balls.append({"n": sim.num[i], "x": sim.pos[i].x, "y": sim.pos[i].y, "alive": sim.alive[i], "m": sim.mass[i]})
+		run.table_snapshot = {"balls": balls, "is_break": is_break, "log": shot_log}
+	run.save()
+
+
 func _refresh_shop() -> void:
+	_save_progress()
 	_clear_overlay()
 	var d := _dim(0.6)
 	d.set_anchors_preset(Control.PRESET_TOP_LEFT)
@@ -1723,15 +1743,50 @@ func _continue_run() -> void:
 		_new_run()
 		return
 	view.cue_colors = Catalog.CUES.get(run.cue, Catalog.CUES.maple)
-	run.begin_table()
+	# Building the table draws a rack from the run RNG; keep the saved stream intact.
+	var rng_state := run.rng.state
 	_setup_table()
+	run.rng.state = rng_state
 	spin_w.set_spin(0, 0)
-	_animate_score(0, 0)
-	shown_score = 0
 	_set_chips_mult(0, 1)
 	lbl_line.text = "Pot balls to score Chips × Mult"
-	_enter_aim()
-	_flash_banner("TABLE %d  ·  TARGET %d" % [run.table_index + 1, run.target()], Color(1, 0.85, 0.4), 1.6)
+	if run.phase == "shop":
+		payout_rows = run.shop_payout
+		state = S.SHOP
+		sfx.play_music("shop")
+		_refresh_shop()
+		_refresh_hud()
+		return
+	_restore_snapshot(run.table_snapshot)
+	shown_score = run.score
+	_animate_score(run.score, run.score)
+	view.hot_pocket = run.hot_pocket
+	_refresh_hud()
+	var ci := _cue_index()
+	if sim.alive[ci] == 0:
+		_begin_place(false)
+	else:
+		_enter_aim()
+	_flash_banner("TABLE %d  ·  %d / %d" % [run.table_index + 1, run.score, run.target()], Color(1, 0.85, 0.4), 1.6)
+
+
+func _restore_snapshot(snap: Dictionary) -> void:
+	var balls: Array = snap.get("balls", [])
+	if balls.is_empty():
+		return
+	sim = _make_sim()
+	for b in balls:
+		var i := sim.add_ball(int(b.n), Vector2(float(b.x), float(b.y)), float(b.get("m", 1.0)))
+		sim.alive[i] = int(b.get("alive", 1))
+	if sim.index_of(0) < 0:
+		sim.add_ball(0, Rack.HEAD)
+		sim.alive[sim.index_of(0)] = 0
+	view.sync_balls(sim, vis_rng, run.isotopes)
+	is_break = bool(snap.get("is_break", false))
+	shot_log.assign(snap.get("log", []))
+	log_label.text = "
+".join(shot_log)
+	guide_dirty = true
 
 
 func _load_best() -> Dictionary:
@@ -1769,9 +1824,9 @@ func _next_table() -> void:
 	view.coach_text = ""
 	_clear_overlay()
 	run.advance_table()
-	run.save()
 	run.begin_table()
 	_setup_table()
+	_save_progress()
 	_animate_score(0, 0)
 	shown_score = 0
 	_set_chips_mult(0, 1)

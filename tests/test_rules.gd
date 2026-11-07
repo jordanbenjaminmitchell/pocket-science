@@ -77,6 +77,51 @@ func _initialize() -> void:
 	check(r2.formulas == run.formulas and r2.isotopes.get(7, "") == "neon" and r2.money == 17 and r2.table_index == 2, "fields round-trip")
 	check(r2.rng.randi() == run.rng.randi(), "rng state round-trips")
 	check(r2.plan.size() == run.plan.size() and r2.current().target == run.current().target, "plan round-trips")
+	print("save v2: mid-table, shop, backup, corruption")
+	var m := RunState.new()
+	m.start(77)
+	m.begin_table()
+	m.score = 123
+	m.chalk = 2
+	m.streak = 3
+	m.bounty = "combo"
+	m.bounty_done = true
+	m.phase = "table"
+	m.table_snapshot = {"balls": [{"n": 0, "x": 100.0, "y": 200.0, "alive": 1, "m": 1.0}, {"n": 5, "x": 300.0, "y": 250.0, "alive": 0, "m": 1.0}], "is_break": false}
+	m.save()
+	var m2 := RunState.new()
+	check(m2.load_save() and m2.phase == "table" and m2.score == 123 and m2.chalk == 2 and m2.streak == 3, "mid-table state restored")
+	check(m2.bounty == "combo" and m2.bounty_done, "bounty restored")
+	check((m2.table_snapshot.balls as Array).size() == 2 and int(m2.table_snapshot.balls[1].alive) == 0, "ball snapshot restored")
+	check(m2.rng.randi() == m.rng.randi(), "rng stream identical after mid-table load")
+	m.phase = "shop"
+	m.roll_shop()
+	m.shop_payout = [["Table cleared", 3]]
+	m.save()
+	var m3 := RunState.new()
+	check(m3.load_save() and m3.phase == "shop" and m3.shop.size() == m.shop.size() and m3.shop[0].id == m.shop[0].id, "shop phase restored with same offers")
+	# Corrupt the main file: the backup (previous save, mid-table) must load.
+	var fw := FileAccess.open(RunState.SAVE_PATH, FileAccess.WRITE)
+	fw.store_string("{ this is not json")
+	fw.close()
+	var m4 := RunState.new()
+	check(m4.load_save() and m4.phase == "table" and m4.score == 123, "corrupt save falls back to backup")
+	# v1 save still loads (start of table).
+	var v1 := run.to_dict()
+	v1.v = 1
+	v1.erase("phase")
+	v1.erase("table")
+	RunState.clear_save()
+	var fv := FileAccess.open(RunState.SAVE_PATH, FileAccess.WRITE)
+	fv.store_string(JSON.stringify(v1))
+	fv.close()
+	var m5 := RunState.new()
+	check(m5.load_save() and m5.phase == "table" and m5.score == 0 and m5.chalk == m5.max_chalk(), "v1 save migrates to start of table")
+	# Garbage everywhere: refuse cleanly.
+	var fg := FileAccess.open(RunState.SAVE_PATH, FileAccess.WRITE)
+	fg.store_string("[1, 2, 3]")
+	fg.close()
+	check(not RunState.new().load_save(), "unusable save is rejected, not crashed on")
 	RunState.clear_save()
 	check(not RunState.has_save(), "save cleared")
 	print("rules tests: %d failures" % failures)
