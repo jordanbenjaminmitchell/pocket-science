@@ -16,7 +16,8 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 
 ## 1. Known bugs and must-fix issues
 
-- [ ] **P0 — Frame-rate-dependent physics speed.** `_update_roll` rounds `delta / STEP` to whole steps, so balls run about 20% fast at 144 Hz and about 30% slow at 165 Hz. Replace this with a fixed-step accumulator. The title demo (a fixed 4 steps per frame) has the same problem.
+- [x] **P0 — Frame-rate-dependent physics speed.** Fixed 2026-11-07: a fixed-step accumulator (`_sim_steps`) drives both the shot and the title demo. `tests/test_timing.gd` checks 30–360 Hz, 4× fast-forward and hitch clamping.
+- [ ] **P2 — Render interpolation above 240 Hz.** Above the 240 Hz physics rate, some frames advance no physics step, which may cause slight judder. Interpolate ball positions between steps.
 - [ ] **P0 — Mid-table save.** Quitting restarts the current table on Continue. Save after every shot (ball positions, score, chalk, streak, hot pocket, bounty, shot log) so quitting never costs progress.
 - [ ] **P0 — Save versioning and corruption handling.** Version-migrate old saves, recover gracefully from a bad or partial JSON file, and keep a backup of the last good save.
 - [ ] **P0 — Stuck-ball edge cases.** Run a long fuzz test (thousands of random racks and shots) checking for:

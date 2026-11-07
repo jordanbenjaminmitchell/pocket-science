@@ -444,6 +444,7 @@ func _update_strike(delta: float) -> void:
 
 
 func _begin_roll() -> void:
+	sim_accum = 0.0
 	start_pos.clear()
 	for i in sim.count():
 		if sim.alive[i] == 1:
@@ -458,11 +459,21 @@ func _begin_roll() -> void:
 	lbl_hint.text = "Click or press Space to fast-forward."
 
 
+var sim_accum := 0.0
+
+
+## Fixed-step accumulator: converts real frame time into whole 1/240 s physics
+## steps, carrying the remainder, so ball speed is identical at any refresh rate.
+## Long frames are clamped (0.1 s) so a hitch cannot trigger a catch-up spiral.
+func _sim_steps(delta: float, speed: float = 1.0) -> int:
+	sim_accum += minf(delta, 0.1) * speed
+	var steps := int(floor(sim_accum / PoolSim.STEP + 1.0e-6))
+	sim_accum -= steps * PoolSim.STEP
+	return steps
+
+
 func _update_roll(delta: float) -> void:
-	var steps := int(round(delta / PoolSim.STEP))
-	steps = clampi(steps, 1, 12)
-	if fast:
-		steps *= 4
+	var steps := _sim_steps(delta, 4.0 if fast else 1.0)
 	for i in steps:
 		sim.step(PoolSim.STEP)
 		_consume_events()
@@ -493,7 +504,7 @@ func _update_demo(delta: float) -> void:
 		return
 	demo = true
 	if sim.moving():
-		for i in 4:
+		for i in _sim_steps(delta):
 			sim.step(PoolSim.STEP)
 			_consume_events()
 		view.update_balls(sim)
