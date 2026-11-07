@@ -188,6 +188,18 @@ func step(dt: float) -> void:
 					kind = 4
 					bi = i
 					bj = k
+			# Entering a pocket mouth is an exact event too, so a ball cannot
+			# clip a jaw later in the same step after it has already dropped.
+			for k in layout.pockets.size():
+				var pk: Dictionary = layout.pockets[k]
+				if pk.closed:
+					continue
+				var t := _toi_circle(pk.pos - pos[i], -vi, pk.r)
+				if t < best_t:
+					best_t = t
+					kind = 5
+					bi = i
+					bj = k
 		_advance(best_t)
 		remaining -= best_t
 		match kind:
@@ -200,6 +212,8 @@ func step(dt: float) -> void:
 				_resolve_wall(bi, nn, bj)
 			4:
 				_resolve_bumper(bi, bj)
+			5:
+				_pot(bi, bj)
 			_:
 				break
 	if remaining > 0.0:
@@ -272,7 +286,7 @@ func _resolve_wall(i: int, nrm: Vector2, _seg: int) -> void:
 	# Follow/draw that has not yet been transferred bends off the cushion too.
 	spin[i] *= 0.5
 	rails[i] += 1
-	events.append({"t": time, "type": "rail", "a": num[i], "speed": -vn})
+	events.append({"t": time, "type": "rail", "a": num[i], "speed": -vn, "at": pos[i]})
 
 
 func _resolve_bumper(i: int, k: int) -> void:

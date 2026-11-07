@@ -430,6 +430,8 @@ func _draw_overlay() -> void:
 		var op: PackedVector2Array = guide.obj
 		var pot: bool = guide.get("obj_pot", false)
 		var oc := Color(1.0, 0.82, 0.3) if pot else Color(0.75, 0.95, 1.0)
+		if guide.get("obj_edge", false):
+			oc = Color(1.0, 0.5, 0.2)
 		for i in op.size() - 1:
 			o.draw_line(op[i], op[i + 1], Color(oc, 0.18), 8.0)
 			o.draw_line(op[i], op[i + 1], oc, 2.5)
@@ -439,6 +441,8 @@ func _draw_overlay() -> void:
 		var op2: PackedVector2Array = guide.obj2
 		var pot2: bool = guide.get("obj2_pot", false)
 		var oc2 := Color(1.0, 0.82, 0.3) if pot2 else Color(0.75, 0.95, 1.0, 0.7)
+		if guide.get("obj2_edge", false):
+			oc2 = Color(1.0, 0.5, 0.2)
 		for i in op2.size() - 1:
 			_dashed(o, op2[i], op2[i + 1], oc2, 2.0, 9.0)
 		if op2.size() >= 2:
@@ -553,6 +557,17 @@ func _draw_fx() -> void:
 
 
 ## ---------------------------------------------------------------- guideline maths
+## A pot is "clean" when parallel paths offset either side also reach the
+## same pocket: borderline paths that could clip a jaw are shown as edges.
+static func _clean_pot(sim: PoolSim, from: Vector2, d: Vector2, ignore: int, pocket: int) -> bool:
+	var perp := Vector2(-d.y, d.x) * 1.6
+	for off in [perp, -perp]:
+		var h := sim.cast(from + off, d, ignore, 1400.0)
+		if h.kind != "pocket" or h.hit != pocket:
+			return false
+	return true
+
+
 ## Builds the aiming guide from the static table: cue path (with up to two
 ## cushion reflections), ghost ball, object-ball line (and one combination
 ## follow-on), and the cue ball's curved post-contact path.
@@ -608,15 +623,20 @@ static func compute_guide(sim: PoolSim, aim: Vector2, follow: float, side: float
 		oh = sim.cast(op[op.size() - 1], od, obj, 1400.0)
 		op.append(oh.point)
 		if oh.kind == "rail" and b < reach:
+			# Identical cushion response to PoolSim._resolve_wall.
 			var rn: Vector2 = oh.normal
 			var v := od - rn * od.dot(rn) * (1.0 + sim.rail_e)
+			var rt := Vector2(-rn.y, rn.x)
+			v -= rt * v.dot(rt) * 0.04
 			od = v.normalized()
 			obj_rails += 1
 			continue
 		break
 	g["obj"] = op
-	g["obj_pot"] = oh.kind == "pocket"
-	g["obj_pocket"] = oh.hit if oh.kind == "pocket" else -1
+	var pot_clean: bool = oh.kind == "pocket" and _clean_pot(sim, op[op.size() - 2], od, obj, oh.hit)
+	g["obj_pot"] = pot_clean
+	g["obj_edge"] = oh.kind == "pocket" and not pot_clean
+	g["obj_pocket"] = oh.hit if pot_clean else -1
 	g["obj_rails"] = obj_rails
 	if oh.kind == "ball":
 		# Combination: show where the second ball would go.
@@ -626,8 +646,10 @@ static func compute_guide(sim: PoolSim, aim: Vector2, follow: float, side: float
 		var h2 := sim.cast(sim.pos[b2], n2, b2, 1400.0)
 		p2.append(h2.point)
 		g["obj2"] = p2
-		g["obj2_pot"] = h2.kind == "pocket"
-		g["obj2_pocket"] = h2.hit if h2.kind == "pocket" else -1
+		var clean2: bool = h2.kind == "pocket" and _clean_pot(sim, sim.pos[b2], n2, b2, h2.hit)
+		g["obj2_pot"] = clean2
+		g["obj2_edge"] = h2.kind == "pocket" and not clean2
+		g["obj2_pocket"] = h2.hit if clean2 else -1
 		g["obj2_index"] = b2
 	# Cue ball after contact: tangent line plus follow/draw curve.
 	var e := sim.ball_e
