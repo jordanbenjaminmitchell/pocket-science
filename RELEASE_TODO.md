@@ -118,11 +118,7 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 
 ## 7. UI / UX revamp
 
-- [ ] **P0 — Run info screen** (hotkey/tab):
-  - full formula descriptions
-  - current table plan and upcoming bosses
-  - isotopes per ball
-  - scoring rules
+- [x] **P0 — Run info screen.** Done 2026-11-07: Tab or the side-panel button opens it, and it pauses play. It shows formulas with full text, reagents, enhanced balls, the 9-table plan with bosses and progress, scoring rules adapted to your build, stats, cue and seed. `tests/test_screens.gd` checks layout and the Tab toggle, and now also asserts the side panel fits on screen with a full build.
 - [x] **P0 — Settings screen.** Done 2026-11-07, from the title and pause menus:
   - master/music/SFX sliders
   - fullscreen and vsync

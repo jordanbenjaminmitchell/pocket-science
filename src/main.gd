@@ -226,6 +226,14 @@ var mouse_pos := Vector2(800, 400)
 func _input(e: InputEvent) -> void:
 	if e is InputEventMouse:
 		mouse_pos = e.position
+	# Tab is also Godot UI focus navigation, so take it before the GUI does.
+	if e is InputEventKey and e.pressed and not e.echo and e.keycode == KEY_TAB:
+		if info_open:
+			_close_run_info()
+			get_viewport().set_input_as_handled()
+		elif not paused and (state == S.AIM or state == S.PLACE or state == S.SHOP):
+			_show_run_info()
+			get_viewport().set_input_as_handled()
 
 
 func _mouse_table() -> Vector2:
@@ -799,7 +807,7 @@ func _unhandled_input(e: InputEvent) -> void:
 	if e is InputEventKey and e.pressed and not e.echo:
 		if paused:
 			if e.keycode == KEY_ESCAPE:
-				_resume()
+				_close_run_info()
 			return
 		_key(e.keycode)
 		return
@@ -984,14 +992,20 @@ func _build_ui() -> void:
 	left.add_theme_stylebox_override("panel", _style(Color(0.075, 0.07, 0.075, 1.0), Color(0.55, 0.42, 0.22), 2, 14))
 	root.add_child(left)
 	var lv := VBoxContainer.new()
-	lv.add_theme_constant_override("separation", 8)
+	lv.add_theme_constant_override("separation", 5)
 	left.add_child(lv)
 	var title := _label("POCKET SCIENCE", 22, Color(0.95, 0.78, 0.4), F_PIXB)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lv.add_child(title)
+	var round_row := HBoxContainer.new()
+	lv.add_child(round_row)
 	lbl_round = _label("Table 1 / 9", 16, Color(0.7, 0.75, 0.8))
-	lbl_round.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lv.add_child(lbl_round)
+	lbl_round.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	round_row.add_child(lbl_round)
+	var info_btn := _button("Run info [Tab]", _show_run_info, Color(0.5, 0.7, 0.9))
+	info_btn.add_theme_font_size_override("font_size", 12)
+	info_btn.custom_minimum_size = Vector2(0, 26)
+	round_row.add_child(info_btn)
 
 	var labbox := PanelContainer.new()
 	labbox.add_theme_stylebox_override("panel", _style(Color(0.12, 0.13, 0.15), Color(0.25, 0.3, 0.35), 1, 8))
@@ -1024,7 +1038,7 @@ func _build_ui() -> void:
 	th.add_child(sp)
 	lbl_target = _label("150", 22, Color(1.0, 0.85, 0.45), F_PIXB)
 	th.add_child(lbl_target)
-	lbl_score = _label("0", 44, Color.WHITE, F_PIXB)
+	lbl_score = _label("0", 38, Color.WHITE, F_PIXB)
 	lbl_score.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tv.add_child(lbl_score)
 	score_bar = ProgressBar.new()
@@ -1061,7 +1075,7 @@ func _build_ui() -> void:
 	lbl_line = _label("Pot balls to score Chips × Mult", 14, Color(0.85, 0.85, 0.85))
 	lbl_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl_line.custom_minimum_size = Vector2(290, 40)
+	lbl_line.custom_minimum_size = Vector2(290, 32)
 	lv.add_child(lbl_line)
 
 	var stats := GridContainer.new()
@@ -1086,7 +1100,7 @@ func _build_ui() -> void:
 	lv.add_child(tray)
 	lv.add_child(_label("RECENT SHOTS", 12, Color(0.5, 0.5, 0.55)))
 	log_label = _label("", 13, Color(0.8, 0.82, 0.85), F_REG)
-	log_label.custom_minimum_size = Vector2(290, 70)
+	log_label.custom_minimum_size = Vector2(290, 52)
 	lv.add_child(log_label)
 
 	var ctrl := HBoxContainer.new()
@@ -1095,12 +1109,12 @@ func _build_ui() -> void:
 	lv.add_child(ctrl)
 	spin_w = SpinWidget.new()
 	spin_w.font = F_SEMI
-	spin_w.custom_minimum_size = Vector2(130, 130)
+	spin_w.custom_minimum_size = Vector2(108, 108)
 	spin_w.changed.connect(_on_spin)
 	ctrl.add_child(spin_w)
 	power_w = PowerMeter.new()
 	power_w.font = F_SEMI
-	power_w.custom_minimum_size = Vector2(40, 130)
+	power_w.custom_minimum_size = Vector2(40, 108)
 	ctrl.add_child(power_w)
 
 	var filler := Control.new()
@@ -1108,7 +1122,7 @@ func _build_ui() -> void:
 	lv.add_child(filler)
 	lbl_hint = _label("", 13, Color(0.7, 0.72, 0.75), F_REG)
 	lbl_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl_hint.custom_minimum_size = Vector2(290, 50)
+	lbl_hint.custom_minimum_size = Vector2(290, 34)
 	lv.add_child(lbl_hint)
 
 	# ---------------- bottom bar: formulas + reagents
@@ -1233,8 +1247,6 @@ func _refresh_hud() -> void:
 		flags.append("Forecast active")
 	if run.formulas.has("catalyst"):
 		flags.append("Catalyst: +%s Mult" % _fmt(run.catalyst))
-	if run.hot_pocket >= 0:
-		flags.append("Hot pocket: %s (×%d)" % [TableLayout.pocket_name(run.hot_pocket), 3 if run.formulas.has("heat") else 2])
 	flags_label.text = "\n".join(flags)
 	_refresh_tray()
 	if score_t >= 1.0:
@@ -2029,7 +2041,134 @@ func _log_shot(was_break: bool, out: Dictionary) -> void:
 		if was_break and result.foul == "Miss":
 			line = "Dry break"
 	shot_log.push_front(line)
-	if shot_log.size() > 4:
-		shot_log.resize(4)
+	if shot_log.size() > 3:
+		shot_log.resize(3)
 	log_label.text = "
 ".join(shot_log)
+
+
+## ================================================================ run info
+var info_open := false
+
+
+func _close_run_info() -> void:
+	if not info_open:
+		_resume()
+		return
+	info_open = false
+	if state == S.SHOP:
+		paused = false
+		_refresh_shop()
+	else:
+		_resume()
+
+
+## Everything about the current build in one place.
+func _show_run_info() -> void:
+	if not (state == S.AIM or state == S.PLACE or state == S.PICK or state == S.SHOP):
+		return
+	info_open = true
+	paused = true
+	_clear_overlay()
+	_dim(0.82)
+	var p := PanelContainer.new()
+	p.add_theme_stylebox_override("panel", _style(Color(0.08, 0.075, 0.08, 0.99), Color(0.5, 0.7, 0.9), 2, 16))
+	p.position = Vector2(40, 30)
+	p.size = Vector2(1520, 840)
+	overlay.add_child(p)
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 10)
+	p.add_child(outer)
+	var head := HBoxContainer.new()
+	outer.add_child(head)
+	head.add_child(_label("RUN INFO", 30, Color(0.98, 0.8, 0.4), F_PIXB))
+	var sp := Control.new()
+	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(sp)
+	var cue: Dictionary = Catalog.CUES.get(run.cue, Catalog.CUES.maple)
+	head.add_child(_label("%s  ·  seed %d  ·  $%d" % [cue.name, run.seed_value, run.money], 17, Color(0.8, 0.85, 0.9), F_REG))
+	var cols := HBoxContainer.new()
+	cols.add_theme_constant_override("separation", 24)
+	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	outer.add_child(cols)
+
+	# Column 1: build
+	var c1 := VBoxContainer.new()
+	c1.custom_minimum_size = Vector2(560, 0)
+	c1.add_theme_constant_override("separation", 6)
+	cols.add_child(c1)
+	c1.add_child(_label("FORMULAS  (%d / %d)" % [run.formulas.size(), RunState.MAX_FORMULAS], 16, Color(0.6, 0.8, 1.0)))
+	if run.formulas.is_empty():
+		c1.add_child(_label("None yet - buy them in the Lab Supply between tables.", 15, Color(0.6, 0.6, 0.65), F_REG))
+	for id in run.formulas:
+		var fd: Dictionary = Catalog.FORMULAS[id]
+		var l := _label("%s  %s  (%s)  -  %s" % [fd.icon, fd.name, Catalog.rarity_name(fd.r), fd.desc], 15, Catalog.rarity_color(fd.r).lerp(Color.WHITE, 0.5), F_REG)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size = Vector2(560, 0)
+		c1.add_child(l)
+	if run.formulas.has("catalyst"):
+		c1.add_child(_label("Catalyst is at +%s Mult." % _fmt(run.catalyst), 14, Color(1.0, 0.6, 0.3), F_REG))
+	c1.add_child(_label("REAGENTS  (%d / %d)" % [run.reagents.size(), RunState.MAX_REAGENTS], 16, Color(0.6, 0.8, 1.0)))
+	if run.reagents.is_empty():
+		c1.add_child(_label("None.", 15, Color(0.6, 0.6, 0.65), F_REG))
+	for id in run.reagents:
+		var rd: Dictionary = Catalog.REAGENTS[id]
+		var l := _label("%s  %s  -  %s" % [rd.icon, rd.name, rd.desc], 15, Color(0.75, 0.85, 1.0), F_REG)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size = Vector2(560, 0)
+		c1.add_child(l)
+	c1.add_child(_label("ENHANCED BALLS", 16, Color(0.6, 0.8, 1.0)))
+	if run.isotopes.is_empty():
+		c1.add_child(_label("None.", 15, Color(0.6, 0.6, 0.65), F_REG))
+	var balls := run.isotopes.keys()
+	balls.sort()
+	for n in balls:
+		var iso: Dictionary = Catalog.ISOTOPES[run.isotopes[n]]
+		c1.add_child(_label("%d-ball: %s - %s" % [n, iso.name, iso.desc], 15, iso.color, F_REG))
+
+	# Column 2: tables
+	var c2 := VBoxContainer.new()
+	c2.custom_minimum_size = Vector2(430, 0)
+	c2.add_theme_constant_override("separation", 6)
+	cols.add_child(c2)
+	c2.add_child(_label("THE TRIALS", 16, Color(0.6, 0.8, 1.0)))
+	for i in run.plan.size():
+		var t: Dictionary = run.plan[i]
+		var mark := "▶ " if i == run.table_index else ("✔ " if i < run.table_index else "   ")
+		var txt := "%sTable %d  ·  %s  ·  target %d" % [mark, i + 1, Catalog.LABS[t.lab].name, t.target]
+		var col := Color(1.0, 0.85, 0.45) if i == run.table_index else (Color(0.5, 0.75, 0.55) if i < run.table_index else Color(0.8, 0.82, 0.85))
+		c2.add_child(_label(txt, 15, col, F_REG))
+		if t.anomaly != "":
+			var an: Dictionary = Catalog.ANOMALIES[t.anomaly]
+			c2.add_child(_label("        BOSS: %s - %s" % [an.name, an.desc], 13, Color(1.0, 0.5, 0.45), F_REG))
+	if run.endless:
+		c2.add_child(_label("Endless: table %d (target %d)" % [run.table_index + 1, run.target()], 15, Color(1.0, 0.85, 0.45), F_REG))
+
+	# Column 3: rules
+	var c3 := VBoxContainer.new()
+	c3.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	c3.add_theme_constant_override("separation", 6)
+	cols.add_child(c3)
+	c3.add_child(_label("SCORING", 16, Color(0.6, 0.8, 1.0)))
+	var streak_per := 2 if run.formulas.has("streak") else 1
+	var hot_x := 3 if run.formulas.has("heat") else 2
+	var rules := [
+		"Shot = Chips × Mult",
+		"Chips: 10 + ball number per pot",
+		"+Mult first: streak +%d each, bank +1/cushion, combination +2, extra ball +1, kick +2" % streak_per,
+		"Then ×Mult: hot pocket ×%d, black 8 ×2, then formulas" % hot_x,
+		"Miss / scratch / no contact: -1 chalk (dry break free)",
+		"Clear the rack: +1 chalk and a new rack",
+		"Leftover chalk pays $1 each",
+	]
+	for r in rules:
+		var l := _label("•  " + r, 14, Color(0.82, 0.84, 0.87), F_REG)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size = Vector2(400, 0)
+		c3.add_child(l)
+	c3.add_child(_label("STATS", 16, Color(0.6, 0.8, 1.0)))
+	c3.add_child(_label("Tables cleared %d  ·  balls potted %d
+Best shot %d  ·  best streak %d" % [run.tables_cleared, run.total_pots, run.best_shot, run.best_streak], 14, Color(0.82, 0.84, 0.87), F_REG))
+	var close := _button("Close  [Tab / Esc]", _close_run_info, Color(0.5, 0.7, 0.9))
+	close.custom_minimum_size = Vector2(0, 46)
+	outer.add_child(close)

@@ -26,6 +26,16 @@ func _go() -> void:
 		"settings":
 			game._show_settings(game._show_title)
 			await _frames(4)
+		"info":
+			game._new_run()
+			game.run.formulas.assign(["golden", "bank", "catalyst", "heat", "streak"])
+			game.run.reagents.assign(["bluechalk", "forecast"])
+			game.run.isotopes = {3: "neon", 11: "glass"}
+			game.run.catalyst = 2.5
+			game.run.table_index = 3
+			await _frames(3)
+			game._show_run_info()
+			await _frames(4)
 		"help":
 			game._show_help()
 			await _frames(4)
