@@ -600,7 +600,7 @@ func _settled() -> void:
 	lbl_hint.text = ""
 	if not result.scored:
 		var free_break: bool = is_break and result.foul == "Miss"
-		var insured := run.formulas.has("insurance")
+		var insured: bool = run.formulas.has("insurance") and run.insured_used < 2
 		var msg: String = result.foul
 		if free_break:
 			msg = "Dry break - no penalty"
@@ -1689,6 +1689,7 @@ func _offer_card(i: int) -> Control:
 	var title := ""
 	var desc := ""
 	var kind := ""
+	var syn: Array = []
 	var icon := ""
 	match item.type:
 		"formula":
@@ -1696,8 +1697,9 @@ func _offer_card(i: int) -> Control:
 			accent = Catalog.rarity_color(f.r)
 			title = f.name
 			desc = f.desc
-			kind = "Formula · " + Catalog.rarity_name(f.r)
+			kind = "%s · %s" % [Catalog.rarity_name(f.r), Catalog.family_name(item.id)]
 			icon = f.icon
+			syn = Catalog.synergies(item.id, run.formulas).map(func(o): return Catalog.FORMULAS[o].name)
 		"reagent":
 			var r: Dictionary = Catalog.REAGENTS[item.id]
 			accent = Color(0.4, 0.65, 1.0)
@@ -1728,6 +1730,12 @@ func _offer_card(i: int) -> Control:
 	t.custom_minimum_size = Vector2(164, 0)
 	v.add_child(t)
 	v.add_child(_label(kind, 12, accent))
+	if not syn.is_empty():
+		var sl := _label("✚ Synergy: " + ", ".join(syn), 12, Color(0.5, 1.0, 0.6))
+		sl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		sl.custom_minimum_size = Vector2(164, 0)
+		v.add_child(sl)
+		p.add_theme_stylebox_override("panel", _style(Color(0.1, 0.16, 0.11), Color(0.5, 1.0, 0.6), 3, 10))
 	var d := _label(desc, 13, Color(0.8, 0.82, 0.85), F_REG)
 	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	d.custom_minimum_size = Vector2(164, 0)

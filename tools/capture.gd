@@ -101,6 +101,9 @@ func _go() -> void:
 			if scenario == "shop":
 				game.run.payout()
 				game._show_shop([["Table cleared", 3], ["Unused chalk ×2", 2]])
+				game.run.shop[0] = {"type": "formula", "id": "ricochet", "cost": 6, "sold": false}
+				game.run.shop[1] = {"type": "formula", "id": "geometry", "cost": 8, "sold": false}
+				game._refresh_shop()
 				await _frames(4)
 	await _frames(3)
 	var img := root.get_viewport().get_texture().get_image()

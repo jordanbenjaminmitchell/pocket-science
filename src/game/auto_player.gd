@@ -98,18 +98,37 @@ static func choose(sim: PoolSim, run: RunState, tries: int = 5) -> Dictionary:
 	if best.is_empty():
 		if c.size() > 0:
 			return {"dir": c[0].dir, "power": 0.55}
-		var nb := -1
-		var nd := 1.0e9
-		for i in sim.count():
-			if sim.alive[i] == 1 and sim.num[i] != 0:
-				var d := sim.pos[i].distance_to(sim.pos[ci])
-				if d < nd:
-					nd = d
-					nb = i
-		if nb < 0:
-			return {"dir": Vector2.RIGHT, "power": 0.4}
-		return {"dir": (sim.pos[nb] - sim.pos[ci]).normalized(), "power": 0.5}
+		return safety_shot(sim, run)
 	return best
+
+
+## No pot available: make legal contact with a ball the rules allow (the lowest
+## ball under Rotation, never the 8 under Cursed 8), preferring a clear path.
+static func safety_shot(sim: PoolSim, run: RunState) -> Dictionary:
+	var ci := sim.index_of(0)
+	var anomaly: String = run.current().anomaly
+	var lowest := 99
+	for i in sim.count():
+		if sim.alive[i] == 1 and sim.num[i] != 0:
+			lowest = mini(lowest, sim.num[i])
+	var options: Array = []
+	for i in sim.count():
+		if sim.alive[i] == 0 or sim.num[i] == 0:
+			continue
+		if anomaly == "rotation" and sim.num[i] != lowest:
+			continue
+		if anomaly == "cursed8" and sim.num[i] == 8:
+			continue
+		options.append(i)
+	options.sort_custom(func(a, b): return sim.pos[a].distance_to(sim.pos[ci]) < sim.pos[b].distance_to(sim.pos[ci]))
+	for i in options:
+		var d := (sim.pos[i] - sim.pos[ci]).normalized()
+		var h := sim.cast(sim.pos[ci], d, ci)
+		if h.kind == "ball" and h.hit == i:
+			return {"dir": d, "power": 0.5}
+	if options.size() > 0:
+		return {"dir": (sim.pos[options[0]] - sim.pos[ci]).normalized(), "power": 0.5}
+	return {"dir": Vector2.RIGHT, "power": 0.4}
 
 
 static func place_spot(sim: PoolSim, run: RunState, rng: RandomNumberGenerator, head_only: bool = false) -> Vector2:

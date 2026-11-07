@@ -5,7 +5,7 @@ extends RefCounted
 
 const MAX_FORMULAS := 5
 const MAX_REAGENTS := 2
-const BASE_CHALK := 4
+const BASE_CHALK := 5
 
 var seed_value := 0
 var cue := "maple"
@@ -35,6 +35,7 @@ var bounty_done := false
 var forecast := false
 var pockets_used: Array = []
 var shrink_steps := 0
+var insured_used := 0
 
 # Run stats
 var total_pots := 0
@@ -109,6 +110,7 @@ func begin_table() -> void:
 	chalk = max_chalk()
 	pockets_used = []
 	shrink_steps = 0
+	insured_used = 0
 	roll_hot_pocket(-1)
 	var keys := Catalog.BOUNTIES.keys()
 	bounty = keys[rng.randi_range(0, keys.size() - 1)]
@@ -174,7 +176,7 @@ func pocket_scale() -> float:
 	if current().anomaly == "tight":
 		s *= 0.85
 	if current().anomaly == "shrink":
-		s *= maxf(0.7, 1.0 - 0.04 * shrink_steps)
+		s *= maxf(0.75, 1.0 - 0.03 * shrink_steps)
 	return s
 
 
@@ -204,9 +206,9 @@ func payout() -> Array:
 	if formulas.has("thrift") and chalk >= 2:
 		rows.append(["Thrift", 3])
 	if formulas.has("overflow") and target() > 0:
-		var over := int(floor((score - target()) / (target() * 0.25)))
+		var over := int(floor((score - target()) / (target() * 0.2)))
 		if over > 0:
-			rows.append(["Overflow", mini(over, 5)])
+			rows.append(["Overflow", mini(over, 6)])
 	var total := 0
 	for r in rows:
 		total += r[1]
@@ -357,7 +359,11 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 				pockets_used.append(k)
 	else:
 		var free_break: bool = was_break and res.foul == "Miss"
-		if not free_break and not formulas.has("insurance"):
+		var soft: bool = res.foul == "Wrong pocket"   # One Pocket: scores nothing but costs no chalk
+		var insured: bool = formulas.has("insurance") and insured_used < 2
+		if insured and not free_break and not soft:
+			insured_used += 1
+		if not free_break and not soft and not insured:
 			chalk -= 2 if formulas.has("glasscannon") else 1
 			out.chalk_lost = true
 		streak = 0
@@ -482,7 +488,7 @@ func to_dict() -> Dictionary:
 			"score": score, "chalk": chalk, "streak": streak, "shots_taken": shots_taken,
 			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "bluechalk": bluechalk,
 			"forecast": forecast, "bounty": bounty, "bounty_done": bounty_done,
-			"pockets_used": pockets_used, "shrink_steps": shrink_steps,
+			"pockets_used": pockets_used, "shrink_steps": shrink_steps, "insured_used": insured_used,
 			"snapshot": table_snapshot,
 		}
 	else:
@@ -590,6 +596,7 @@ func _load_from(path: String) -> bool:
 		bounty_done = bool(t.get("bounty_done", false))
 		pockets_used = (t.get("pockets_used", []) as Array).map(func(x): return int(x))
 		shrink_steps = int(t.get("shrink_steps", 0))
+		insured_used = int(t.get("insured_used", 0))
 		if typeof(t.get("snapshot")) == TYPE_DICTIONARY:
 			table_snapshot = t.snapshot
 	elif phase == "shop" and d.has("shop") and typeof(d.shop) == TYPE_DICTIONARY:

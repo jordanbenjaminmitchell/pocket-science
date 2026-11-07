@@ -42,19 +42,26 @@ func _initialize() -> void:
 	var run := RunState.new()
 	run.start(99)
 	run.begin_table()
-	check(run.chalk == 4, "4 chalk to start")
+	check(run.chalk == 5, "5 chalk to start")
 	var miss := {"scored": false, "foul": "Miss", "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [], "shattered": []}
 	var o := run.apply_shot(miss, true, 9, true)
-	check(run.chalk == 4 and not o.chalk_lost, "dry break is free")
+	check(run.chalk == 5 and not o.chalk_lost, "dry break is free")
 	o = run.apply_shot(miss, false, 9, true)
-	check(run.chalk == 3 and o.chalk_lost, "miss costs chalk")
+	check(run.chalk == 4 and o.chalk_lost, "miss costs chalk")
 	var hit := {"scored": true, "foul": "", "total": 30, "money": 1, "catalyst_gain": 0.0, "potted": [1], "shattered": [], "lines": []}
 	o = run.apply_shot(hit, false, 0, true)
-	check(o.rack_cleared and run.chalk == 4 and run.streak == 1, "clearing the rack refunds chalk")
+	check(o.rack_cleared and run.chalk == 5 and run.streak == 1, "clearing the rack refunds chalk")
 	run.score = run.target() - 1
 	o = run.apply_shot(hit, false, 5, true)
 	check(o.cleared, "reaching the target clears the table")
 
+	var op := RunState.new()
+	op.start(3)
+	op.plan[0].anomaly = "onepocket"
+	op.begin_table()
+	var c0 := op.chalk
+	var wp := op.apply_shot({"scored": false, "foul": "Wrong pocket", "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [4], "shattered": [], "lines": []}, false, 5, true)
+	check(op.chalk == c0 and not wp.chalk_lost and op.streak == 0, "one pocket: wrong pocket costs no chalk but breaks the streak")
 	print("bounty")
 	var b := RunState.new()
 	b.start(3)

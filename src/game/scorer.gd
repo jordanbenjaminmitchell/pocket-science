@@ -112,7 +112,7 @@ static func score(ctx: Dictionary) -> Dictionary:
 		if formulas.has("even") and n % 2 == 0:
 			lines.append(_l("Even Hypothesis", "mult", 2, n, k))
 		if formulas.has("stripes") and Catalog.is_stripe(n):
-			lines.append(_l("Stripe Theory", "mult", 3, n, k))
+			lines.append(_l("Stripe Theory", "mult", 4, n, k))
 		if formulas.has("solids") and n <= 7:
 			lines.append(_l("Solid State", "chips", 25, n, k))
 		if formulas.has("prime") and Catalog.PRIMES.has(n):
@@ -149,6 +149,8 @@ static func score(ctx: Dictionary) -> Dictionary:
 			lines.append(_l("Cluster", "mult", 3 if formulas.has("multi") else 1, n, k))
 		if k == hot:
 			lines.append(_l("Hot pocket", "xmult", 3 if formulas.has("heat") else 2, n, k))
+			if formulas.has("heat"):
+				lines.append(_l("Heat Sink", "chips", 20, n, k))
 		if n == 8:
 			lines.append(_l("Black 8", "xmult", 3 if formulas.has("eight") else 2, n, k))
 			if formulas.has("eight"):
@@ -159,8 +161,8 @@ static func score(ctx: Dictionary) -> Dictionary:
 			lines.append(_l("Hot Hand", "chips", 20, n, k))
 		if formulas.has("lowball") and n <= 3:
 			lines.append(_l("Low Ball", "mult", 4, n, k))
-		if formulas.has("highball") and n >= 12:
-			lines.append(_l("High Roller", "chips", 30, n, k))
+		if formulas.has("highball") and n >= 10:
+			lines.append(_l("High Roller", "chips", 40, n, k))
 		if formulas.has("fibonacci") and [1, 2, 3, 5, 8, 13].has(n):
 			lines.append(_l("Fibonacci", "mult", 3, n, k))
 		if formulas.has("rotation") and n == lowest:
@@ -206,7 +208,7 @@ static func score(ctx: Dictionary) -> Dictionary:
 		var rc := mini(total_rails, 15)
 		lines.append(_l("Ricochet ×%d" % rc, "chips", 2 * rc))
 	if formulas.has("tracer") and cue_rails_after > 0:
-		lines.append(_l("Tracer Round", "mult", mini(cue_rails_after, 4)))
+		lines.append(_l("Tracer Round", "mult", 2 * mini(cue_rails_after, 3)))
 	if formulas.has("collector"):
 		var used: Array = ctx.get("pockets_used", []).duplicate()
 		for p in pots:
@@ -221,7 +223,7 @@ static func score(ctx: Dictionary) -> Dictionary:
 		if (ctx.cue_start as Vector2).distance_to(ctx.cue_end) <= 120.0:
 			lines.append(_l("Boomerang", "xmult", 2))
 	if formulas.has("afterburner") and ctx.get("is_break", false):
-		lines.append(_l("Afterburner", "xmult", 2))
+		lines.append(_l("Afterburner", "xmult", 3))
 	if formulas.has("rhythm") and (streak + 1) % 3 == 0:
 		lines.append(_l("Rhythm", "xmult", 2))
 	if formulas.has("comeback") and int(ctx.get("chalk", 99)) == 1:
@@ -235,7 +237,7 @@ static func score(ctx: Dictionary) -> Dictionary:
 	if ctx.get("bluechalk", false):
 		lines.append(_l("Blue Chalk", "xmult", 2))
 	if anomaly == "taxman":
-		lines.append(_l("Taxman", "xchips", 0.75))
+		lines.append(_l("Taxman", "xchips", 0.85))
 
 	# Additive bonuses first, then multipliers: Mult = (1 + bonuses) × multipliers.
 	var additive: Array = lines.filter(func(l): return l.kind == "chips" or l.kind == "mult" or l.kind == "money")

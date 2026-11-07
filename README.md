@@ -15,7 +15,7 @@ This is a ground-up rebuild of Pocket Science in Godot. It plays like real pool:
 2. **Each table has a target score.** You keep shooting while you pot, as in real pool. A miss, scratch or no-contact costs one **Chalk**; a dry break is free. When Chalk runs out before you reach the target, the run is over.
 3. **Clear the rack** for +1 Chalk and a fresh rack.
 4. **Lab Supply** opens between tables, where you can buy:
-   - **Formulas**: passive rules, 5 slots, sell for half.
+   - **Formulas**: 60 passive rules in synergy families (banks, cue control, combos, streaks, pockets, ball numbers, economy, risk, physics). 5 slots; sell for half.
    - **Reagents**: one-use tricks, 2 slots.
    - **Isotopes**: permanently enhance one numbered ball.
 5. **The run has 9 tables.** Every third table is a boss with an **Anomaly**. After table 9 you can continue in endless mode.
@@ -71,7 +71,7 @@ While you aim, a tag on the rail shows exactly what the pot is worth. The guidel
 - **Spring Rails:** lively cushions, extra Mult for banks.
 - **Gravity Well:** a central pull bends moving balls.
 
-**Boss anomalies:** Tight Pockets, Sealed Sides, Lead Rack, Fog (guideline stops at the ghost ball), Dry Chalk, Cold Pockets.
+**Boss anomalies (15):** Tight Pockets, Sealed Sides, Lead Rack, Fog, Dry Chalk, Cold Pockets, Shrinking Pockets, One Pocket, Rotation Rules, Heavy Cue Ball, Black Ice, The Taxman, Blind Pockets, Tilted Table, Cursed 8.
 
 ## Project layout
 
@@ -84,7 +84,9 @@ src/audio/     Sfx: synthesized effects + soundtrack crossfades
 src/main.gd    Game controller: states, input, HUD, tally, shop, screens
 assets/music/  Original Pocket Science soundtrack (from the v21 project)
 tests/         Headless suites: physics, rules/persistence, end-to-end flow (incl. real mouse input)
-tools/         bot.gd (balance runs), capture.gd (real rendered screenshots), tune.gd (physics tuning)
+tools/         playtest.gd (six emulated player personas), playtest_report.mjs (balance report),
+               bot.gd (quick balance runs), capture.gd (real rendered screenshots), tune.gd (physics tuning)
+docs/playtests REPORT.md plus earlier rounds: emulated playtest results that drove the balance
 ```
 
 ### Why the guideline is exact
@@ -95,7 +97,8 @@ The guideline is accurate because of how `PoolSim` handles contacts. It doesn't 
 
 ```bash
 ./run_tests.sh                       # all headless suites (physics, rules, flow)
-GODOT=... godot --headless --path . --script res://tools/bot.gd -- 10 0.3   # balance: 10 runs, 0.3° aim error
+godot --headless --path . --script res://tools/playtest.gd -- expert 30 1000 out.jsonl   # one persona, 30 runs
+node tools/playtest_report.mjs                                                          # aggregate docs/playtests/*.jsonl
 godot --path . --script res://tools/capture.gd -- pot shots/pot.png          # real rendered frame
 ```
 

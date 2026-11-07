@@ -132,7 +132,7 @@ func _test_boss_physics() -> void:
 	for i in 20:
 		r.apply_shot({"scored": false, "foul": "Miss", "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [], "shattered": [], "lines": []}, false, 5, true)
 		r.chalk = 4
-	check(r.pocket_scale() < s0 and is_equal_approx(r.pocket_scale(), s0 / 1.0 * 0.7), "shrinking pockets bottom out at 70%% (%.3f)" % r.pocket_scale())
+	check(r.pocket_scale() < s0 and is_equal_approx(r.pocket_scale(), s0 * 0.75), "shrinking pockets bottom out at 75%% (%.3f)" % r.pocket_scale())
 	var layout := r.build_layout()
 	check(layout.pockets[0].r < TableLayout.new().build(s0).pockets[0].r, "shrunk layout has smaller pockets")
 	# Heavy cue: on a full hit the heavier cue ball keeps rolling forward.
