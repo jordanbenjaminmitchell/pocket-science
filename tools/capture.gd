@@ -39,6 +39,13 @@ func _go() -> void:
 		"credits":
 			game._show_credits()
 			await _frames(4)
+		"twopockets":
+			game._new_run()
+			game.run.plan[0].anomaly = "onepocket"
+			game.run.begin_table()
+			game._setup_table()
+			game._enter_aim()
+			await _frames(110)
 		"help":
 			game._show_help()
 			await _frames(4)

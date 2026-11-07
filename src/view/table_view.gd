@@ -29,6 +29,7 @@ var show_guide := false
 var guide := {}
 var forecast_paths: Array = []
 var hot_pocket := -1
+var second_pocket := -1   # Two Pockets boss: also scores, shown with a cooler ring
 var hot_mult := 2
 var preview_text := ""
 var preview_pocket := -1
@@ -381,6 +382,13 @@ func _draw_cushions() -> void:
 			var w := font_bold.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			var lp := p + dir * -46.0
 			c.draw_string(font_bold, lp + Vector2(-w * 0.5, 6), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, hc)
+		if k == second_pocket:
+			var pulse2 := 0.5 + 0.5 * sin(time * 5.0 + PI)
+			for i in 3:
+				c.draw_arc(p, r + 6.0 + i * 3.0 + pulse2 * 2.0, 0, TAU, 40, Color(0.4, 0.85, 1.0, 0.45 - i * 0.12), 2.0)
+			var t2 := "scores"
+			var w2 := font_bold.get_string_size(t2, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+			c.draw_string(font_bold, p + dir * -46.0 + Vector2(-w2 * 0.5, 5), t2, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.5, 0.9, 1.0))
 		if pocket_pick and k == hover_pocket:
 			c.draw_arc(p, r + 10.0, 0, TAU, 40, Color(1, 1, 1, 0.9), 3.0)
 	# Spots.

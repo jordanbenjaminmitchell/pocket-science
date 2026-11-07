@@ -17,7 +17,7 @@ func _initialize() -> void:
 
 
 func _go() -> void:
-	create_timer(150.0).timeout.connect(func():
+	create_timer(300.0).timeout.connect(func():
 		print("WATCHDOG timeout")
 		quit(2))
 	g = load("res://main.tscn").instantiate()

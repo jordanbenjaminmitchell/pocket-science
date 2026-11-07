@@ -20,6 +20,7 @@ var plan: Array[Dictionary] = []   # one entry per table: {target, rack, boss, l
 var shop: Array[Dictionary] = []
 var reroll_cost := 2
 var endless := false
+var locked: Array = []    # formulas not yet unlocked (Meta); empty = everything available
 
 # Per-table state
 var score := 0
@@ -157,8 +158,6 @@ func roll_hot_pocket(avoid: int) -> void:
 	if current().anomaly == "cold":
 		hot_pocket = -1
 		return
-	if current().anomaly == "onepocket" and avoid >= 0:
-		return   # One Pocket: the pocket is fixed for the whole table
 	var choices: Array = []
 	for k in 6:
 		if k == avoid:
@@ -208,7 +207,7 @@ func payout() -> Array:
 		if i > 0:
 			rows.append(["Compound interest", i])
 	if formulas.has("thrift") and chalk >= 2:
-		rows.append(["Thrift", 3])
+		rows.append(["Thrift", 5])
 	if formulas.has("overflow"):
 		var nxt := table_index + 1
 		var next_target: int = plan[nxt].target if nxt < plan.size() else int(target() * 1.6)
@@ -262,7 +261,7 @@ func current_rack_max() -> int:
 func _random_formula() -> String:
 	var pool: Array = []
 	for id in Catalog.FORMULAS:
-		if formulas.has(id):
+		if formulas.has(id) or locked.has(id):
 			continue
 		var already := false
 		for s in shop:
@@ -363,7 +362,8 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 				pockets_used.append(k)
 	else:
 		var free_break: bool = was_break and res.foul == "Miss"
-		var soft: bool = res.foul == "Wrong pocket"   # One Pocket: scores nothing but costs no chalk
+		# Boss "soft fouls": the shot scores nothing and the streak resets, but no chalk is lost.
+		var soft: bool = res.foul == "Wrong pocket" or res.foul == "Wrong ball first"
 		var insured: bool = formulas.has("insurance") and insured_used < 2
 		if insured and not free_break and not soft:
 			insured_used += 1

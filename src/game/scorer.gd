@@ -74,7 +74,8 @@ static func score(ctx: Dictionary) -> Dictionary:
 		out.foul = "Cursed 8"
 		return out
 	if anomaly == "onepocket":
-		pots = pots.filter(func(p): return p.pocket == hot)
+		# Two Pockets: only the hot pocket and its diagonal opposite (5 - hot) score.
+		pots = pots.filter(func(p): return p.pocket == hot or p.pocket == 5 - hot)
 	if pots.is_empty():
 		out.foul = "Wrong pocket" if anomaly == "onepocket" and not out.potted.is_empty() else "Miss"
 		return out
@@ -148,7 +149,7 @@ static func score(ctx: Dictionary) -> Dictionary:
 		if idx >= 1:
 			lines.append(_l("Cluster", "mult", 3 if formulas.has("multi") else 1, n, k))
 		if k == hot:
-			lines.append(_l("Hot pocket", "xmult", 3 if (formulas.has("heat") or anomaly == "onepocket") else 2, n, k))
+			lines.append(_l("Hot pocket", "xmult", 3 if formulas.has("heat") else 2, n, k))
 			if formulas.has("heat"):
 				lines.append(_l("Heat Sink", "chips", 20, n, k))
 		if n == 8:

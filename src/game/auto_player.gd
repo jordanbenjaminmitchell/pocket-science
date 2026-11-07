@@ -38,7 +38,7 @@ static func candidates(sim: PoolSim, run: RunState) -> Array:
 			var pk: Dictionary = sim.layout.pockets[k]
 			if pk.closed:
 				continue
-			if anomaly == "onepocket" and k != run.hot_pocket:
+			if anomaly == "onepocket" and k != run.hot_pocket and k != 5 - run.hot_pocket:
 				continue
 			var aim_pt: Vector2 = pk.pos - (pk.dir as Vector2) * 6.0
 			var od := (aim_pt - sim.pos[i]).normalized()

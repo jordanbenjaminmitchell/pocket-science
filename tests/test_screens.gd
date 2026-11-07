@@ -85,6 +85,16 @@ func _go() -> void:
 	check(lp.end.y <= 890.0, "side panel fits on screen (bottom %.0f)" % lp.end.y)
 	var hint_bottom: float = g.lbl_hint.get_global_rect().end.y
 	check(hint_bottom <= 890.0, "hint text visible (bottom %.0f)" % hint_bottom)
+	# Worst case: a boss table with every anomaly description.
+	for an in Catalog.ANOMALIES:
+		g.run.plan[g.run.table_index].anomaly = an
+		g._refresh_hud()
+		for i in 2:
+			await process_frame
+		var b: float = g.lbl_hint.get_global_rect().end.y
+		if b > 890.0:
+			check(false, "side panel fits on a %s boss table (hint bottom %.0f)" % [an, b])
+	check(true, "side panel checked on all boss tables")
 	# Tab toggles run info from aim and returns to aim.
 	g._clear_overlay()
 	g.paused = false

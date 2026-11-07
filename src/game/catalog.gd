@@ -74,7 +74,7 @@ const FORMULAS := {
 	"rotation": {"name": "Rotation", "r": 1, "cost": 6, "icon": "①", "fam": "number", "desc": "Potting the lowest-numbered ball on the table gives ×1.5 Mult."},
 	"moneyball": {"name": "Money Ball", "r": 1, "cost": 7, "icon": "⑨", "fam": "number", "desc": "Potting the highest-numbered ball on the table gives ×2 Mult and $2."},
 	# ---- Economy
-	"thrift": {"name": "Thrift", "r": 0, "cost": 4, "icon": "¢", "fam": "money", "desc": "Clear a table with 2+ Chalk left: +$3."},
+	"thrift": {"name": "Thrift", "r": 0, "cost": 4, "icon": "¢", "fam": "money", "desc": "Clear a table with 2+ Chalk left: +$5."},
 	"venture": {"name": "Venture Capital", "r": 1, "cost": 6, "icon": "↗", "fam": "money", "desc": "+1 Mult for every $5 you hold (max +6)."},
 	"hunter": {"name": "Bounty Hunter", "r": 0, "cost": 4, "icon": "★", "fam": "money", "desc": "Bounties pay double."},
 	"coupon": {"name": "Coupon Book", "r": 0, "cost": 3, "icon": "%", "fam": "money", "desc": "Rerolls in the Lab Supply start at $1."},
@@ -137,8 +137,8 @@ const ANOMALIES := {
 	"dry": {"name": "Dry Chalk", "desc": "You start with 1 less Chalk."},
 	"cold": {"name": "Cold Pockets", "desc": "There is no hot pocket."},
 	"shrink": {"name": "Shrinking Pockets", "desc": "Every pocket narrows by 3% after each shot (down to 75%)."},
-	"onepocket": {"name": "One Pocket", "desc": "Only the hot pocket scores, and it pays ×3. It stays put all table. Pots elsewhere score nothing (no Chalk lost)."},
-	"rotation": {"name": "Rotation Rules", "desc": "You must hit the lowest-numbered ball first, or the shot is a foul."},
+	"onepocket": {"name": "Two Pockets", "desc": "Only the hot pocket and the pocket diagonally opposite it score. Pots elsewhere score nothing (no Chalk lost)."},
+	"rotation": {"name": "Rotation Rules", "desc": "Hit the lowest-numbered ball first, or the shot scores nothing and your streak resets (no Chalk lost)."},
 	"heavycue": {"name": "Heavy Cue Ball", "desc": "The cue ball is twice as heavy: it follows through and scratches more."},
 	"blackice": {"name": "Black Ice", "desc": "Almost no friction and lively cushions. Control is everything."},
 	"taxman": {"name": "The Taxman", "desc": "Every scoring shot loses 15% of its Chips."},
@@ -169,8 +169,8 @@ const TABLES := [
 	{"target": 800, "rack": "ten"},
 	{"target": 1150, "rack": "fifteen", "boss": true},
 	{"target": 1500, "rack": "fifteen"},
-	{"target": 2200, "rack": "fifteen"},
-	{"target": 3200, "rack": "fifteen", "boss": true},
+	{"target": 2000, "rack": "fifteen"},
+	{"target": 2800, "rack": "fifteen", "boss": true},
 ]
 
 

@@ -107,6 +107,7 @@ func _ready() -> void:
 	add_child(view)
 	_build_ui()
 	_load_settings()
+	meta.load_file()
 	_show_title()
 
 
@@ -128,8 +129,8 @@ func _setup_table() -> void:
 			sfx.play_music("boss")
 		else:
 			sfx.play_music(lab)
-	view.hot_mult = 3 if (run.formulas.has("heat") or t.anomaly == "onepocket") else 2
-	view.hot_pocket = run.hot_pocket
+	view.hot_mult = 3 if run.formulas.has("heat") else 2
+	_sync_hot()
 	_refresh_hud()
 
 
@@ -690,6 +691,7 @@ func _after_shot() -> void:
 	is_break = false
 	var out := run.apply_shot(result, was_break, sim.object_balls_left(), sim.alive[_cue_index()] == 1)
 	_log_shot(was_break, out)
+	_announce_unlocks(meta.on_shot(result, run))
 	if out.has("bounty"):
 		sfx.play("coin", 1.0, 1.1)
 		_flash_banner("BOUNTY!  +$%d" % Catalog.BOUNTIES[out.bounty].reward, Color(1.0, 0.85, 0.35), 1.3)
@@ -705,7 +707,7 @@ func _after_shot() -> void:
 		_refresh_hud()
 		_game_over()
 		return
-	view.hot_pocket = run.hot_pocket
+	_sync_hot()
 	if out.has("layout_changed"):
 		_rebuild_layout()
 	if out.rack_cleared:
@@ -728,6 +730,11 @@ func _rebuild_layout() -> void:
 	view.setup(layout, F_SEMI, F_PIXB)
 	view.set_felt(Catalog.LABS[run.current().lab].felt)
 	view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(1, 0.5, 0.4), 12, 120)
+
+
+func _sync_hot() -> void:
+	view.hot_pocket = run.hot_pocket
+	view.second_pocket = 5 - run.hot_pocket if run.current().anomaly == "onepocket" and run.hot_pocket >= 0 else -1
 
 
 func _enter_aim() -> void:
@@ -780,6 +787,9 @@ func _table_cleared() -> void:
 		view.burst(layout.pockets[k].pos, Color(1, 0.85, 0.4), 30, 320)
 	view.confetti()
 	var final: bool = run.table_index == run.plan.size() - 1
+	_announce_unlocks(meta.on_table_cleared(run))
+	if final and not run.endless:
+		_announce_unlocks(meta.on_win())
 	var rows := run.payout()
 	_refresh_hud()
 	await get_tree().create_timer(1.6).timeout
@@ -889,7 +899,7 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 		S.PICK:
 			if e.button_index == MOUSE_BUTTON_LEFT and e.pressed and view.hover_pocket >= 0:
 				run.hot_pocket = view.hover_pocket
-				view.hot_pocket = run.hot_pocket
+				_sync_hot()
 				view.pocket_pick = false
 				sfx.play("xmult", 0.6)
 				_enter_aim()
@@ -996,9 +1006,6 @@ func _build_ui() -> void:
 	var lv := VBoxContainer.new()
 	lv.add_theme_constant_override("separation", 5)
 	left.add_child(lv)
-	var title := _label("POCKET SCIENCE", 22, Color(0.95, 0.78, 0.4), F_PIXB)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lv.add_child(title)
 	var round_row := HBoxContainer.new()
 	lv.add_child(round_row)
 	lbl_round = _label("Table 1 / 9", 16, Color(0.7, 0.75, 0.8))
@@ -1022,7 +1029,7 @@ func _build_ui() -> void:
 	labv.add_child(lbl_rule)
 	lbl_bounty = _label("", 14, Color(1.0, 0.85, 0.35))
 	labv.add_child(lbl_bounty)
-	lbl_boss = _label("", 14, Color(1.0, 0.45, 0.4))
+	lbl_boss = _label("", 13, Color(1.0, 0.45, 0.4), F_REG)
 	lbl_boss.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl_boss.custom_minimum_size = Vector2(290, 0)
 	labv.add_child(lbl_boss)
@@ -1229,10 +1236,12 @@ func _refresh_hud() -> void:
 	lbl_rule.text = Catalog.LABS[t.lab].desc
 	if t.anomaly != "":
 		var an: Dictionary = Catalog.ANOMALIES[t.anomaly]
-		lbl_boss.text = "ANOMALY: %s - %s" % [an.name, an.desc]
+		lbl_boss.text = "BOSS - %s: %s" % [an.name, an.desc]
 		lbl_boss.visible = true
+		lbl_rule.visible = false   # make room for the boss rule
 	else:
 		lbl_boss.visible = false
+		lbl_rule.visible = true
 	lbl_target.text = str(run.target())
 	if run.bounty != "":
 		var bt: Dictionary = Catalog.BOUNTIES[run.bounty]
@@ -1460,6 +1469,9 @@ func _show_title() -> void:
 	v.add_child(_button("Settings", func(): _show_settings(_show_title)))
 	v.add_child(_button("Credits", _show_credits))
 	v.add_child(_button("Quit", func(): get_tree().quit()))
+	var prog := _label("Unlocks: " + meta.progress() + "  ·  %d / %d Formulas" % [Catalog.FORMULAS.size() - meta.locked_formulas().size(), Catalog.FORMULAS.size()], 14, Color(0.6, 0.85, 1.0), F_REG)
+	prog.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(prog)
 	var best := _load_best()
 	if best.tables > 0 or best.shot > 0:
 		var bl := _label("Best run: %d tables cleared  ·  best shot %d  ·  best streak %d" % [best.tables, best.shot, best.streak], 15, Color(1.0, 0.85, 0.45), F_REG)
@@ -1509,16 +1521,45 @@ func _show_cue_select() -> void:
 		var pick := _button("Choose", func():
 			chosen_cue = id
 			_new_run(), c.accent)
+		if not meta.cue_unlocked(id):
+			pick.text = "Locked"
+			pick.disabled = true
+			p.modulate = Color(1, 1, 1, 0.55)
+			var lk := _label("🔒 " + meta.cue_hint(id), 13, Color(1.0, 0.8, 0.45), F_SEMI)
+			lk.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			lk.custom_minimum_size = Vector2(176, 0)
+			cv.add_child(lk)
 		cv.add_child(pick)
 		row.add_child(p)
 	v.add_child(_button("Back", _show_title))
+
+
+var meta := Meta.new()
+
+
+## Celebrates newly earned milestones: banner, sound and a line in the shot log.
+func _announce_unlocks(ids: Array) -> void:
+	if ids.is_empty():
+		return
+	var names: Array = ids.map(func(m): return Meta.MILESTONES[m].name)
+	_flash_banner("UNLOCKED: " + ", ".join(names).to_upper(), Color(0.5, 0.9, 1.0), 2.2)
+	sfx.play("clear", 0.7, 1.2)
+	for m in ids:
+		shot_log.push_front("New: " + Meta.reward_text(m))
+	if shot_log.size() > 3:
+		shot_log.resize(3)
+	log_label.text = "
+".join(shot_log)
 
 
 func _new_run() -> void:
 	demo = false
 	_hud_visible(true)
 	_clear_overlay()
+	if not meta.cue_unlocked(chosen_cue):
+		chosen_cue = "maple"
 	run.start(randi(), chosen_cue)
+	run.locked = meta.locked_formulas()
 	view.cue_colors = Catalog.CUES.get(chosen_cue, Catalog.CUES.maple)
 	run.begin_table()
 	_setup_table()
@@ -1766,6 +1807,7 @@ func _continue_run() -> void:
 	if not run.load_save():
 		_new_run()
 		return
+	run.locked = meta.locked_formulas()
 	view.cue_colors = Catalog.CUES.get(run.cue, Catalog.CUES.maple)
 	# Building the table draws a rack from the run RNG; keep the saved stream intact.
 	var rng_state := run.rng.state
@@ -1784,7 +1826,7 @@ func _continue_run() -> void:
 	_restore_snapshot(run.table_snapshot)
 	shown_score = run.score
 	_animate_score(run.score, run.score)
-	view.hot_pocket = run.hot_pocket
+	_sync_hot()
 	_refresh_hud()
 	var ci := _cue_index()
 	if sim.alive[ci] == 0:
@@ -1956,6 +1998,9 @@ func _confirm_wipe(back: Callable) -> void:
 		c.load(GameSettings.PATH)
 		if c.has_section("best"):
 			c.erase_section("best")
+		if c.has_section("meta"):
+			c.erase_section("meta")
+		meta = Meta.new()
 		c.save(GameSettings.PATH)
 		paused = false
 		_show_title(), Color(0.9, 0.4, 0.3))

@@ -94,7 +94,8 @@ func _initialize() -> void:
 	check(run_case([], [{"type": "ball", "a": 0, "b": 1}, pot(1, 0)], {"anomaly": "rotation", "lowest": 1}).scored, "rotation boss: lowest first scores")
 	check(run_case([], eight, {"anomaly": "cursed8"}).foul == "Cursed 8", "cursed 8 voids the shot")
 	check(run_case([], hit5, {"anomaly": "onepocket", "hot_pocket": 3}).foul == "Wrong pocket", "one pocket: other pockets do not score")
-	check(run_case([], hit5, {"anomaly": "onepocket", "hot_pocket": 0}).total == 45, "one pocket: hot pocket scores x3")
+	check(run_case([], hit5, {"anomaly": "onepocket", "hot_pocket": 0}).total == 30, "two pockets: hot pocket scores x2")
+	check(run_case([], hit5, {"anomaly": "onepocket", "hot_pocket": 5}).total == 15, "two pockets: the diagonal opposite also scores")
 	check(run_case([], hit5, {"anomaly": "taxman"}).total == 12, "taxman takes 15% of chips")
 	print("labs and isotopes")
 	check(run_case([], hit5, {"lab": "cryo"}).mult == 2, "cryo +1 mult")
@@ -133,7 +134,7 @@ func _initialize() -> void:
 	th.chalk = 3
 	th.score = th.target() * 2
 	var pr := th.payout()
-	check(pr.any(func(r): return r[0] == "Thrift" and r[1] == 3), "thrift pays $3 with 2+ chalk")
+	check(pr.any(func(r): return r[0] == "Thrift" and r[1] == 5), "thrift pays $5 with 2+ chalk")
 	var next_t: int = th.plan[1].target
 	check(th.carry == mini(th.score - th.target(), int(next_t * 0.25)), "overflow carries excess score (%d)" % th.carry)
 	th.advance_table()
