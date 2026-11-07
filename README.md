@@ -37,7 +37,18 @@ Each shot scores **Chips × Mult**:
   - the black 8: ×2
   - Golden Ratio, Supernova, Fusion, Blue Chalk, …
 
-While you aim, the gold line shows an object ball heading into a pocket. A tag on the rail shows exactly what that pot is worth.
+While you aim, a tag on the rail shows exactly what the pot is worth. The guideline colours mean:
+- **Gold:** that ball goes in cleanly, including off one cushion. `tests/test_guide_trust.gd` checks this: 200/200 gold lines pot unless another moving ball gets in the way or the shot lacks pace.
+- **Orange:** the path is borderline and could rattle on a jaw.
+- **White:** the ball is not going in.
+- **Blue dashes:** the cue ball's path after contact, including follow, draw and english.
+
+### Extras
+- **Starting cues:** Classic Maple, Optic (Long Lens), Hot Rod (hot pocket ×3, one less chalk), Momentum (+2 Mult per streak step) or Gilded ($12 and interest).
+- **Bounty:** every table has a side goal, such as "Sink a bank shot +$3", which pays immediately.
+- **Ball tray:** the side panel shows which balls are still up and which are down, plus their isotopes.
+- **Coach:** first-time players get on-table hints until they clear their first table.
+- **Saves:** runs save at the start of each table (title → Continue). Personal bests are shown on the title screen.
 
 ## Controls
 
