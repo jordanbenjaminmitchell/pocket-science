@@ -5,7 +5,7 @@ extends SceneTree
 ##   Godot --headless --path . --script res://tools/playtest.gd -- <persona> <runs> <seed0> <out.jsonl>
 ##
 ## Each run writes one JSON line: outcome, cue, purchases, per-table results,
-## fouls, reagent use and so on. tools/playtest_report.mjs aggregates them.
+## fouls and so on. tools/playtest_report.mjs aggregates them.
 
 const PERSONAS := {
 	"novice": {"aim": 1.0, "pow_noise": 0.12, "look": false, "tries": 0, "sloppy": 0.35, "shop": "random", "reroll": false},
@@ -16,7 +16,7 @@ const PERSONAS := {
 	"expert": {"aim": 0.2, "pow_noise": 0.04, "look": true, "tries": 5, "sloppy": 0.0, "shop": "value", "reroll": true},
 }
 
-## Rough power estimate per formula for value-driven shoppers (3 strong .. 1 weak).
+## Rough power estimate per perk for value-driven shoppers (3 strong .. 1 weak).
 const TIER := {
 	"golden": 3, "echo": 3, "supernova": 3, "glasscannon": 3, "heat": 3, "streak": 3, "catalyst": 3, "collector": 3,
 	"geometry": 3, "rhythm": 3, "chain": 3, "kick": 2, "multi": 2, "fusion": 2, "bank": 2, "prime": 2, "stripes": 2,
@@ -43,7 +43,7 @@ func _initialize() -> void:
 		var rec := play_run(seed0 + r)
 		f.store_line(JSON.stringify(rec))
 		f.flush()
-		print("%s run %d: cleared %d (%s) cue=%s formulas=%s" % [persona, r + 1, rec.cleared, "WIN" if rec.won else "died T%d %s" % [rec.died_at + 1, rec.died_anomaly], rec.cue, rec.final_formulas])
+		print("%s run %d: cleared %d (%s) cue=%s perks=%s" % [persona, r + 1, rec.cleared, "WIN" if rec.won else "died T%d %s" % [rec.died_at + 1, rec.died_anomaly], rec.cue, rec.final_perks])
 	f.close()
 	print("PLAYTEST DONE %s %d runs in %ds" % [persona, runs, (Time.get_ticks_msec() - t0) / 1000])
 	quit()
@@ -58,15 +58,15 @@ func play_run(s: int) -> Dictionary:
 	run.start(s, cue)
 	var rec := {
 		"persona": persona, "seed": s, "cue": cue, "won": false, "cleared": 0, "died_at": -1, "died_anomaly": "",
-		"tables": [], "purchases": [], "sold": [], "rerolls": 0, "reagents_used": {}, "fouls": {},
-		"shots": 0, "pots": 0, "final_formulas": [], "money_end": 0, "best_shot": 0, "best_streak": 0, "bounties": 0,
+		"tables": [], "purchases": [], "sold": [], "rerolls": 0, "fouls": {},
+		"shots": 0, "pots": 0, "final_perks": [], "money_end": 0, "best_shot": 0, "best_heat": 0, "bounties": 0,
 	}
 	while true:
 		run.begin_table()
 		var t := run.current()
 		var res := play_table(run, rec)
 		rec.tables.append({"i": run.table_index, "lab": t.lab, "anomaly": t.anomaly, "target": run.target(),
-			"score": run.score, "shots": run.shots_taken, "won": res, "chalk_left": run.chalk, "formulas": run.formulas.duplicate()})
+			"score": run.score, "shots": run.shots_taken, "won": res, "chalk_left": run.chalk, "perks": run.perks.duplicate()})
 		if not res:
 			rec.died_at = run.table_index
 			rec.died_anomaly = t.anomaly
@@ -78,10 +78,10 @@ func play_run(s: int) -> Dictionary:
 			break
 		shop(run, rec)
 		run.advance_table()
-	rec.final_formulas = run.formulas.duplicate()
+	rec.final_perks = run.perks.duplicate()
 	rec.money_end = run.money
 	rec.best_shot = run.best_shot
-	rec.best_streak = run.best_streak
+	rec.best_heat = run.best_heat
 	return rec
 
 
@@ -95,7 +95,6 @@ func play_table(run: RunState, rec: Dictionary) -> bool:
 		var ci := sim.index_of(0)
 		if sim.alive[ci] == 0:
 			place_cue(sim, run, false)
-		use_reagents(sim, run, rec, is_break)
 		var shot := choose_shot(sim, run, is_break)
 		var dir: Vector2 = (shot.dir as Vector2).rotated(deg_to_rad(rng.randfn(0.0, P.aim)))
 		var pw: float = clampf(shot.power * (1.0 + rng.randfn(0.0, P.pow_noise)), 0.05, 1.0)
@@ -241,67 +240,6 @@ func place_cue(sim: PoolSim, run: RunState, head_only: bool) -> void:
 	sim.vel[ci] = Vector2.ZERO
 
 
-## ---------------------------------------------------------------- reagents
-func use_reagents(sim: PoolSim, run: RunState, rec: Dictionary, is_break: bool) -> void:
-	if run.reagents.is_empty():
-		return
-	var used := ""
-	for id in run.reagents.duplicate():
-		match id:
-			"spare":
-				if run.chalk == 1:
-					run.chalk += 1
-					used = id
-			"bluechalk":
-				var go := run.streak >= 2 or (is_break and persona == "gambler")
-				if persona == "novice":
-					go = rng.randf() < 0.3
-				if go and not run.bluechalk:
-					run.bluechalk = true
-					used = id
-			"hand":
-				if not is_break and AutoPlayer.candidates(sim, run).is_empty():
-					place_cue(sim, run, false)
-					used = id
-			"hotswap":
-				if persona in ["expert", "builder", "gambler"] and not is_break and run.current().anomaly != "cold":
-					var c := AutoPlayer.candidates(sim, run)
-					if c.size() > 0 and c[0].pocket != run.hot_pocket:
-						run.hot_pocket = c[0].pocket
-						used = id
-			"forecast":
-				if persona == "novice" and rng.randf() < 0.3:
-					run.forecast = true
-					used = id
-			"second", "grant", "contract":
-				run.use_instant(id)
-				used = id
-			"adrenaline", "overcharge":
-				if run.streak >= 1:
-					run.use_instant(id)
-					used = id
-			"wideopen", "magnetize":
-				if run.chalk <= 2 and not is_break:
-					run.use_instant(id)
-					sim.layout = run.build_layout()
-					run.apply_physics(sim)
-					used = id
-			"callshot":
-				if not is_break:
-					var c2 := AutoPlayer.candidates(sim, run)
-					if c2.size() > 0:
-						run.called_pocket = c2[0].pocket
-						used = id
-			"scatter":
-				if not is_break and AutoPlayer.candidates(sim, run).is_empty():
-					run.scatter(sim)
-					used = id
-		if used != "":
-			run.reagents.erase(used)
-			rec.reagents_used[used] = rec.reagents_used.get(used, 0) + 1
-			used = ""
-
-
 ## ---------------------------------------------------------------- shopping
 func shop(run: RunState, rec: Dictionary) -> void:
 	run.roll_shop()
@@ -320,11 +258,11 @@ func shop(run: RunState, rec: Dictionary) -> void:
 				best_i = i
 		if best_i >= 0:
 			var it: Dictionary = run.shop[best_i]
-			if it.type == "formula" and run.formulas.size() >= RunState.MAX_FORMULAS:
-				var worst := worst_formula(run)
-				if worst >= 0 and best_v > formula_value(run, run.formulas[worst]) + 1.5:
-					rec.sold.append(run.formulas[worst])
-					run.sell_formula(worst)
+			if it.type == "perk" and run.perks.size() >= RunState.MAX_PERKS:
+				var worst := worst_perk(run)
+				if worst >= 0 and best_v > perk_value(run, run.perks[worst]) + 1.5:
+					rec.sold.append(run.perks[worst])
+					run.sell_perk(worst)
 				else:
 					best_i = -1
 		if best_i >= 0 and run.buy(best_i) == "":
@@ -333,9 +271,9 @@ func shop(run: RunState, rec: Dictionary) -> void:
 			bought = true
 		if not bought:
 			var can_reroll: bool = P.reroll and rerolls < 2 and run.money >= run.reroll_cost + 5
-			if persona == "saver" and run.formulas.has("interest"):
+			if persona == "saver" and run.perks.has("interest"):
 				can_reroll = can_reroll and run.money - run.reroll_cost >= 15
-			if can_reroll and run.formulas.size() < RunState.MAX_FORMULAS:
+			if can_reroll and run.perks.size() < RunState.MAX_PERKS:
 				run.reroll()
 				rerolls += 1
 				rec.rerolls += 1
@@ -345,21 +283,11 @@ func shop(run: RunState, rec: Dictionary) -> void:
 
 func item_value(run: RunState, it: Dictionary) -> float:
 	match it.type:
-		"formula":
-			if run.formulas.size() >= RunState.MAX_FORMULAS and P.shop in ["random", "cheap"]:
+		"perk":
+			if run.perks.size() >= RunState.MAX_PERKS and P.shop in ["random", "cheap"]:
 				return 0.0
-			return formula_value(run, it.id)
-		"reagent":
-			if run.reagents.size() >= RunState.MAX_REAGENTS:
-				return 0.0
-			match P.shop:
-				"random":
-					return rng.randf() * 3.0
-				"economy":
-					return 1.0 if it.id in ["spare", "bluechalk"] and run.money > 12 else 0.0
-				_:
-					return 2.2 if it.id in ["bluechalk", "spare"] else (1.5 if it.id == "hotswap" else 0.5)
-		"isotope":
+			return perk_value(run, it.id)
+		"imbue":
 			match P.shop:
 				"random":
 					return rng.randf() * 2.5
@@ -368,12 +296,12 @@ func item_value(run: RunState, it: Dictionary) -> float:
 				"risk":
 					return 2.5 if it.id == "glass" else 1.0
 				_:
-					return 2.0 if it.id in ["neon", "heavy"] else 1.0
+					return 2.0 if it.id in ["vein", "heavy", "ember"] else 1.0
 	return 0.0
 
 
-func formula_value(run: RunState, id: String) -> float:
-	var f: Dictionary = Catalog.FORMULAS[id]
+func perk_value(run: RunState, id: String) -> float:
+	var f: Dictionary = Catalog.PERKS[id]
 	var tier: float = TIER.get(id, 1)
 	var fam: String = f.get("fam", "utility")
 	match P.shop:
@@ -383,8 +311,8 @@ func formula_value(run: RunState, id: String) -> float:
 			return 6.0 - f.cost * 0.6 + tier * 0.5
 		"synergy":
 			var same := 0
-			for o in run.formulas:
-				if Catalog.FORMULAS[o].get("fam", "") == fam:
+			for o in run.perks:
+				if Catalog.PERKS[o].get("fam", "") == fam:
 					same += 1
 			return tier + same * 1.6 + (0.8 if fam == "streak" or fam == "pocket" else 0.0)
 		"economy":
@@ -397,11 +325,11 @@ func formula_value(run: RunState, id: String) -> float:
 	return tier
 
 
-func worst_formula(run: RunState) -> int:
+func worst_perk(run: RunState) -> int:
 	var w := -1
 	var wv := 1.0e9
-	for i in run.formulas.size():
-		var v := formula_value(run, run.formulas[i])
+	for i in run.perks.size():
+		var v := perk_value(run, run.perks[i])
 		if v < wv:
 			wv = v
 			w = i

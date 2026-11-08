@@ -49,9 +49,8 @@ func _go() -> void:
 			g._clear_overlay()
 			g.paused = false
 			g.state = g.S.AIM
-			g.run.formulas.assign(["golden", "bank", "catalyst", "heat", "streak"])
-			g.run.reagents.assign(["bluechalk", "forecast"])
-			g.run.isotopes = {3: "neon", 11: "glass"}
+			g.run.perks.assign(["golden", "bank", "catalyst", "heat", "streak"])
+			g.run.imbues = {3: "vein", 11: "glass"}
 			for t in g.run.plan:
 				if t.get("boss", false):
 					t.anomaly = "tilt"   # longest description
@@ -74,12 +73,10 @@ func _go() -> void:
 			var inside := r.position.x >= 0 and r.position.y >= 0 and r.end.x <= 1600.5 and r.end.y <= 900.5
 			check(inside and r.size.y > 80, "%s panel on-screen %s" % [name, r])
 	check(FileAccess.get_file_as_string("res://licenses/chakrapetch-OFL.txt").contains("Open Font License"), "font licence text present")
-	# The HUD side panel must fit on screen with a full build (5 formulas, streak, flags).
+	# The HUD side panel must fit on screen with a full build (5 perks, streak, flags).
 	g._clear_overlay()
 	g.paused = false
-	g.run.bluechalk = true
-	g.run.forecast = true
-	g.run.streak = 4
+	g.run.heat = 4
 	g._refresh_hud()
 	for i in 3:
 		await process_frame
@@ -88,14 +85,14 @@ func _go() -> void:
 	var hint_bottom: float = g.lbl_hint.get_global_rect().end.y
 	check(hint_bottom <= 890.0, "hint text visible (bottom %.0f)" % hint_bottom)
 	# Worst case: a boss table with every anomaly description.
-	for an in Catalog.ANOMALIES:
-		g.run.plan[g.run.table_index].anomaly = an
+	for id in Catalog.BOSSES:
+		g.run.plan[g.run.table_index].id = id
 		g._refresh_hud()
 		for i in 2:
 			await process_frame
 		var b: float = g.lbl_hint.get_global_rect().end.y
 		if b > 890.0:
-			check(false, "side panel fits on a %s boss table (hint bottom %.0f)" % [an, b])
+			check(false, "side panel fits on a %s boss table (hint bottom %.0f)" % [id, b])
 	check(true, "side panel checked on all boss tables")
 	# Every bounty text, on the tallest boss rule, must keep the panel in its column.
 	var wide := 0.0

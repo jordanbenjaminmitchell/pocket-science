@@ -1,6 +1,6 @@
 class_name IconArt
 extends Control
-## Vector medallion icons for Formulas and Reagents, in one consistent style.
+## Vector medallion icons for Perks and Reagents, in one consistent style.
 ##
 ## Each motif is a tiny drawing script in a -50..50 space, ops separated by ";":
 ##   c x y r          ring          C x y r        filled circle
@@ -106,7 +106,7 @@ var font: Font
 func setup(id: String, f: Font, px: float) -> IconArt:
 	motif = MOTIFS.get(id, "")
 	font = f
-	var fam: String = Catalog.FORMULAS[id].get("fam", "utility") if Catalog.FORMULAS.has(id) else "reagent"
+	var fam: String = Catalog.PERKS[id].get("fam", "utility") if Catalog.PERKS.has(id) else "reagent"
 	tint = FAMILY_COLORS.get(fam, Color.WHITE)
 	custom_minimum_size = Vector2(px, px)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE

@@ -2,10 +2,10 @@ class_name MetaScreens
 extends RefCounted
 ## Collection and Records screens. Built on the game controller's UI helpers.
 
-const TABS := ["Formulas", "Reagents", "Isotopes", "Cues", "Labs", "Bosses"]
+const TABS := ["Perks", "Imbues", "Cues", "Tables"]
 
 var g: Node
-var tab := "Formulas"
+var tab := "Perks"
 
 
 func _init(game: Node) -> void:
@@ -57,32 +57,24 @@ func show_collection() -> void:
 func _rows() -> Array:
 	var rows: Array = []
 	match tab:
-		"Formulas":
-			for id in Catalog.FORMULAS:
-				var f: Dictionary = Catalog.FORMULAS[id]
-				var locked: bool = g.meta.locked_formulas().has(id)
+		"Perks":
+			for id in Catalog.PERKS:
+				var f: Dictionary = Catalog.PERKS[id]
+				var locked: bool = g.meta.locked_perks().has(id)
 				rows.append({"icon": id, "title": f.name, "sub": "%s · %s · $%d" % [Catalog.rarity_name(f.r), Catalog.family_name(id), f.cost],
-					"desc": f.desc, "color": Catalog.rarity_color(f.r), "hint": g.meta.formula_hint(id) if locked else ""})
-		"Reagents":
-			for id in Catalog.REAGENTS:
-				var r: Dictionary = Catalog.REAGENTS[id]
-				rows.append({"icon": id, "title": r.name, "sub": "Single use · $%d" % r.cost, "desc": r.desc, "color": Color(0.4, 0.65, 1.0), "hint": ""})
-		"Isotopes":
-			for id in Catalog.ISOTOPES:
-				var r: Dictionary = Catalog.ISOTOPES[id]
-				rows.append({"icon": "", "title": r.name, "sub": "Ball enhancement · $%d" % r.cost, "desc": r.desc, "color": r.color, "hint": ""})
+					"desc": f.desc, "color": Catalog.rarity_color(f.r), "hint": g.meta.perk_hint(id) if locked else ""})
+		"Imbues":
+			for id in Catalog.IMBUES:
+				var r: Dictionary = Catalog.IMBUES[id]
+				rows.append({"icon": "", "title": r.name, "sub": "Ball imbue · $%d" % r.cost, "desc": r.desc, "color": r.color, "hint": ""})
 		"Cues":
 			for id in Catalog.CUES:
 				var r: Dictionary = Catalog.CUES[id]
 				rows.append({"icon": "", "title": r.name, "sub": "Starting cue", "desc": r.desc, "color": r.accent, "hint": g.meta.cue_hint(id) if not g.meta.cue_unlocked(id) else ""})
-		"Labs":
-			for id in Catalog.LABS:
-				var r: Dictionary = Catalog.LABS[id]
-				rows.append({"icon": "", "title": r.name, "sub": "Lab", "desc": r.desc, "color": (r.felt as Color).lightened(0.35), "hint": ""})
-		"Bosses":
-			for id in Catalog.ANOMALIES:
-				var r: Dictionary = Catalog.ANOMALIES[id]
-				rows.append({"icon": "", "title": r.name, "sub": "Boss anomaly", "desc": r.desc, "color": Color(1.0, 0.5, 0.45), "hint": ""})
+		"Tables":
+			for id in Catalog.BOSSES:
+				var r: Dictionary = Catalog.BOSSES[id]
+				rows.append({"icon": "", "title": r.name, "sub": "Boss table", "desc": r.desc, "color": Color(1.0, 0.7, 0.5), "hint": ""})
 	return rows
 
 
@@ -129,15 +121,15 @@ func show_records() -> void:
 	cols.add_child(left)
 	left.add_child(g._label("LIFETIME", 16, Color(0.6, 0.8, 1.0)))
 	var win_rate := "%d%%" % int(round(100.0 * l.wins / l.runs)) if l.runs > 0 else "-"
-	left.add_child(g._label("Runs played: %d\nWins: %d  (%s)\nTables cleared: %d\nBalls potted: %d\nBest shot: %d\nBest streak: %d\nDeepest run: %d tables" % [l.runs, l.wins, win_rate, l.tables, l.pots, l.best_shot, l.best_streak, l.best_tables], 17, Color(0.85, 0.87, 0.9), g.F_REG))
-	left.add_child(g._label("FAVOURITE FORMULAS", 16, Color(0.6, 0.8, 1.0)))
+	left.add_child(g._label("Runs played: %d\nWins: %d  (%s)\nTables cleared: %d\nBalls potted: %d\nBest shot: %d\nBest streak: %d\nDeepest run: %d tables" % [l.runs, l.wins, win_rate, l.tables, l.pots, l.best_shot, l.best_heat, l.best_tables], 17, Color(0.85, 0.87, 0.9), g.F_REG))
+	left.add_child(g._label("FAVOURITE PERKS", 16, Color(0.6, 0.8, 1.0)))
 	var favs := rec.favourites()
 	if favs.is_empty():
 		left.add_child(g._label("Finish a run to see these.", 15, Color(0.6, 0.6, 0.65), g.F_REG))
 	for f in favs:
 		var row := HBoxContainer.new()
 		row.add_child(IconArt.new().setup(f[0], g.F_SEMI, 30))
-		row.add_child(g._label("  %s  ×%d" % [Catalog.FORMULAS[f[0]].name, f[1]], 16, Color(0.85, 0.87, 0.9), g.F_REG))
+		row.add_child(g._label("  %s  ×%d" % [Catalog.PERKS[f[0]].name, f[1]], 16, Color(0.85, 0.87, 0.9), g.F_REG))
 		left.add_child(row)
 	var right := VBoxContainer.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -116,17 +116,17 @@ func _test_rail() -> void:
 	print("  1300 speed shot travelled with %d rails, ended at %s" % [s2.rails[0], s2.pos[0]])
 
 
-func _run_with(anomaly: String, formulas: Array) -> RunState:
+func _run_with(anomaly: String, perks: Array) -> RunState:
 	var r := RunState.new()
 	r.start(5)
 	r.plan[0].anomaly = anomaly
-	r.formulas.assign(formulas)
+	r.perks.assign(perks)
 	r.begin_table()
 	return r
 
 
 func _test_boss_physics() -> void:
-	print("boss and formula physics")
+	print("boss and perk physics")
 	var r := _run_with("shrink", [])
 	var s0 := r.pocket_scale()
 	for i in 20:

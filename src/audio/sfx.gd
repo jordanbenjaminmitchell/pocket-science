@@ -17,7 +17,7 @@ const TRACKS := {
 	"title": "velvet-orbit", "standard": "prism-pocket-jazz", "cryo": "cryo-cool",
 	"cyclotron": "cyclotron-bounce", "spring": "bumper-ballet", "gravity": "event-horizon-jam",
 	"current": "crystal-drift", "dense": "split-circuit-funk", "magnetlab": "mirror-chrome", "pinball": "spectrum-shuffle", "repulsor": "ion-switch",
-	"boss": "last-pocket", "shop": "static-picnic", "endless": "mass-driver-groove", "victory": "solar-syncopation",
+	"boss": "last-pocket", "element": "last-pocket", "final": "last-pocket", "shop": "static-picnic", "endless": "mass-driver-groove", "victory": "solar-syncopation",
 }
 
 

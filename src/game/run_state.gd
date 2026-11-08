@@ -1,10 +1,9 @@
 class_name RunState
 extends RefCounted
-## Everything that persists across a run: money, formulas, reagents, isotopes,
+## Everything that persists across a run: money, perks, imbues,
 ## the table sequence and the shop.
 
-const MAX_FORMULAS := 5
-const MAX_REAGENTS := 2
+const MAX_PERKS := 6
 const BASE_CHALK := 5
 
 var seed_value := 0
@@ -12,9 +11,8 @@ var cue := "maple"
 var rng := RandomNumberGenerator.new()
 var table_index := 0
 var money := 4
-var formulas: Array[String] = []
-var reagents: Array[String] = []
-var isotopes := {}         # ball number -> isotope id
+var perks: Array[String] = []
+var imbues := {}         # ball number -> imbue id
 var catalyst := 0.0
 var plan: Array[Dictionary] = []   # one entry per table: {target, rack, boss, lab, anomaly}
 var shop: Array[Dictionary] = []
@@ -22,30 +20,23 @@ var reroll_cost := 2
 var endless := false
 var record_id := ""       # links this run to its Records entry
 var daily_key := ""       # yyyymmdd when this is a daily challenge
-var stake := 0            # difficulty level
+var handicap := 0            # difficulty level
 var total_score := 0
-var locked: Array = []    # formulas not yet unlocked (Meta); empty = everything available
+var locked: Array = []    # perks not yet unlocked (Meta); empty = everything available
 
 # Per-table state
 var score := 0
 var chalk := 3
-var streak := 0
-var best_streak := 0
+var heat := 0
+var best_heat := 0
 var shots_taken := 0
 var hot_pocket := 0
 var racks_cleared := 0
-var bluechalk := false
 var bounty := ""
 var bounty_done := false
-var forecast := false
+var element_mix: Array = []   # Element Table: the last elements potted
+var forgiven := false         # The Local: the free miss has been used
 var pockets_used: Array = []
-var second_chance := 0
-var called_pocket := -1
-var overcharge := false
-var wide_shot := false
-var magnetize := false
-var bounty_mult := 1
-var radium := {}          # ball number (string) -> times potted while Radium
 var shrink_steps := 0
 var insured_used := 0
 var carry := 0           # Overflow: score carried into the next table
@@ -56,11 +47,10 @@ var best_shot := 0
 var tables_cleared := 0
 
 
-func start(s: int, cue_id: String = "maple", stake_level: int = 0) -> void:
-	stake = clampi(stake_level, 0, Catalog.STAKES.size() - 1)
+func start(s: int, cue_id: String = "maple", handicap_level: int = 0) -> void:
+	handicap = clampi(handicap_level, 0, Catalog.HANDICAPS.size() - 1)
 	record_id = ""
 	daily_key = ""
-	radium = {}
 	total_score = 0
 	seed_value = s
 	rng.seed = s
@@ -68,10 +58,9 @@ func start(s: int, cue_id: String = "maple", stake_level: int = 0) -> void:
 	var c: Dictionary = Catalog.CUES.get(cue, Catalog.CUES.maple)
 	table_index = 0
 	money = c.money
-	formulas.clear()
-	formulas.assign(c.formulas)
-	reagents.assign(c.reagents)
-	isotopes.clear()
+	perks.clear()
+	perks.assign(c.perks)
+	imbues.clear()
 	catalyst = 0.0
 	total_pots = 0
 	best_shot = 0
@@ -82,59 +71,40 @@ func start(s: int, cue_id: String = "maple", stake_level: int = 0) -> void:
 
 func _build_plan() -> void:
 	plan.clear()
-	var labs := Catalog.LABS.keys()
-	var bosses := Catalog.ANOMALIES.keys()
-	for i in range(bosses.size() - 1, 0, -1):
-		var j := rng.randi_range(0, i)
-		var tmp = bosses[i]
-		bosses[i] = bosses[j]
-		bosses[j] = tmp
-	var b := 0
-	for i in Catalog.TABLES.size():
-		var t: Dictionary = Catalog.TABLES[i].duplicate()
-		if i == 0:
-			t.lab = "standard"
-		else:
-			t.lab = labs[rng.randi_range(0, labs.size() - 1)]
-		if t.get("boss", false):
-			t.anomaly = bosses[b % bosses.size()]
-			b += 1
-		else:
-			t.anomaly = ""
-		plan.append(t)
+	var used := {}
+	for slot in Catalog.TABLES:
+		var id: String = slot.get("boss", "")
+		if id == "":
+			var pool: Array = Catalog.BOSSES.keys().filter(func(k): return int(Catalog.BOSSES[k].tier) == int(slot.tier) and not used.has(k))
+			id = pool[rng.randi_range(0, pool.size() - 1)]
+		used[id] = true
+		plan.append(_table_entry(id, int(slot.target), slot.rack))
+
+
+func _table_entry(id: String, tgt: int, rack: String) -> Dictionary:
+	var b: Dictionary = Catalog.BOSSES[id]
+	return {"id": id, "target": tgt, "rack": rack, "boss": true, "lab": b.lab, "anomaly": b.anomaly}
 
 
 func current() -> Dictionary:
 	if table_index < plan.size():
 		return plan[table_index]
-	# Endless: targets keep climbing and every second table is a boss.
+	# Endless: targets keep climbing while the tour loops through the hard tables.
 	var extra := table_index - plan.size() + 1
-	var labs := Catalog.LABS.keys()
-	var bosses := Catalog.ANOMALIES.keys()
-	var is_boss := extra % 2 == 0
-	return {
-		"target": int(plan[plan.size() - 1].target * pow(1.6, extra)), "rack": "fifteen",
-		"boss": is_boss, "lab": labs[(extra + seed_value) % labs.size()],
-		"anomaly": bosses[(extra + seed_value) % bosses.size()] if is_boss else "",
-	}
+	var ids: Array = Catalog.BOSSES.keys().filter(func(k): return int(Catalog.BOSSES[k].tier) >= 2 and int(Catalog.BOSSES[k].tier) < 9)
+	return _table_entry(ids[(extra + seed_value) % ids.size()], int(plan[plan.size() - 1].target * pow(1.6, extra)), "fifteen")
 
 
 func begin_table() -> void:
 	score = carry
 	carry = 0
-	streak = 0
+	heat = 0
 	shots_taken = 0
 	racks_cleared = 0
-	bluechalk = false
-	forecast = false
+	element_mix = []
+	forgiven = false
 	chalk = max_chalk()
 	pockets_used = []
-	second_chance = 0
-	called_pocket = -1
-	overcharge = false
-	wide_shot = false
-	magnetize = false
-	bounty_mult = 1
 	shrink_steps = 0
 	insured_used = 0
 	roll_hot_pocket(-1)
@@ -144,11 +114,9 @@ func begin_table() -> void:
 
 
 func max_chalk() -> int:
-	var c := BASE_CHALK + (1 if formulas.has("chalk") else 0)
+	var c := BASE_CHALK + (1 if perks.has("chalk") else 0)
 	c += int(Catalog.CUES.get(cue, Catalog.CUES.maple).chalk)
-	if current().anomaly == "dry":
-		c -= 1
-	if stake >= 2:
+	if handicap >= 2:
 		c -= 1
 	# Endless wears you down: one less Chalk every four tables past the last.
 	if table_index >= plan.size():
@@ -157,110 +125,69 @@ func max_chalk() -> int:
 	return maxi(c, 1)
 
 
-## Boss tables carry gold bounties worth double.
 func bounty_reward() -> int:
-	var r := int(Catalog.BOUNTIES[bounty].reward) * bounty_mult
-	if formulas.has("hunter"):
-		r *= 2
-	if current().get("boss", false):
-		r *= 2
-	return r
+	return int(Catalog.BOUNTIES[bounty].reward) * (2 if perks.has("hunter") else 1)
 
 
-## Reagents whose whole effect is on the run state. Returns false if not one.
-func use_instant(id: String) -> bool:
-	match id:
-		"second":
-			second_chance += 1
-		"adrenaline":
-			streak += 3
-		"grant":
-			money += 5
-		"overcharge":
-			overcharge = true
-		"wideopen":
-			wide_shot = true
-		"magnetize":
-			magnetize = true
-		"contract":
-			var keys: Array = Catalog.BOUNTIES.keys().filter(func(k): return k != bounty)
-			bounty = keys[rng.randi_range(0, keys.size() - 1)]
-			bounty_done = false
-			bounty_mult = 2
-		_:
-			return false
-	return true
-
-
-## Moves every object ball on the table to a new clear spot.
-func scatter(s: PoolSim) -> void:
-	for i in s.count():
-		if s.alive[i] == 1 and s.num[i] != 0:
-			for t in 60:
-				var p := Vector2(rng.randf_range(60, 940), rng.randf_range(60, 440))
-				if s.is_clear_spot(p, i):
-					s.pos[i] = p
-					break
-
-
-func bounty_met(res: Dictionary, hot: int) -> bool:
-	var labels: Array = res.lines.map(func(l): return l.label)
+func bounty_met(res: Dictionary, _hot: int) -> bool:
+	var pots: Array = res.potted
+	var heat_after: int = heat + 1 + int(res.get("heat_gain", 0))
 	match bounty:
 		"bank":
-			return labels.any(func(l): return l.begins_with("Bank"))
+			return int(res.banks) > 0
 		"bank2":
-			return labels.any(func(l): return l.begins_with("Bank ×2") or l.begins_with("Bank ×3"))
+			return int(res.max_rails) >= 2
+		"combo":
+			return int(res.combos) > 0
+		"kick":
+			return res.kick
+		"hot":
+			return int(res.hot_pots) > 0
+		"hot2":
+			return int(res.hot_pots) >= 2
+		"big":
+			return res.total >= 150
 		"big300":
 			return res.total >= 300
 		"big600":
 			return res.total >= 600
-		"streak3":
-			return streak + 1 >= 3
-		"streak6":
-			return streak + 1 >= 6
-		"corner":
-			return res.lines.any(func(l): return l.kind == "chips" and l.pocket in [0, 2, 3, 5])
-		"hot2":
-			return labels.count("Hot pocket") >= 2
+		"double":
+			return pots.size() >= 2
+		"triple":
+			return pots.size() >= 3
 		"quad":
-			return res.potted.size() >= 4
+			return pots.size() >= 4
+		"heat3":
+			return heat_after >= 3
+		"heat4":
+			return heat_after >= 4
+		"heat6":
+			return heat_after >= 6
+		"corner":
+			return (res.pocket_list as Array).any(func(k): return k in [0, 2, 3, 5])
+		"side":
+			return (res.pocket_list as Array).any(func(k): return k == 1 or k == 4)
+		"eight":
+			return pots.has(8)
 		"stripe":
-			return res.potted.any(func(n): return n >= 9)
+			return pots.any(func(n): return n >= 9)
 		"solid":
-			return res.potted.any(func(n): return n <= 7)
+			return pots.any(func(n): return n <= 7)
 		"soft":
 			return res.get("power", 0.5) <= 0.35
 		"hard":
 			return res.get("power", 0.5) >= 0.85
 		"breakpot":
 			return res.get("is_break", false)
-		"mult10":
-			return res.mult >= 10.0
-		"chips100":
-			return res.chips >= 100.0
-		"combo":
-			return labels.has("Combination")
-		"double":
-			return res.potted.size() >= 2
-		"triple":
-			return res.potted.size() >= 3
-		"kick":
-			return labels.has("Kick shot")
-		"hot":
-			return labels.has("Hot pocket")
-		"streak4":
-			return streak + 1 >= 4
-		"big":
-			return res.total >= 150
-		"side":
-			return res.lines.any(func(l): return l.pocket == 1 or l.pocket == 4)
-		"eight":
-			return res.potted.has(8)
+		"chain5":
+			return float(res.chain) >= 5.0
+		"chain8":
+			return float(res.chain) >= 8.0
 	return false
 
 
 func roll_hot_pocket(avoid: int) -> void:
-	if current().anomaly == "cold":
+	if current().anomaly == "elements":
 		hot_pocket = -1
 		return
 	var choices: Array = []
@@ -275,20 +202,18 @@ func roll_hot_pocket(avoid: int) -> void:
 
 func target() -> int:
 	var t := float(current().target)
-	if stake >= 1:
+	if handicap >= 1:
 		t *= 1.15
-	if stake >= 5:
+	if handicap >= 5:
 		t *= 1.3
 	return int(round(t))
 
 
 func pocket_scale() -> float:
 	var s := 1.08
-	if wide_shot:
-		s *= 1.25
-	if formulas.has("jaws"):
+	if perks.has("jaws"):
 		s *= 1.12
-	if stake >= 4:
+	if handicap >= 4:
 		s *= 0.95
 	if current().anomaly == "tight":
 		s *= 0.88
@@ -306,23 +231,19 @@ func closed_pockets() -> Array[int]:
 
 func table_name() -> String:
 	var t := current()
-	return Catalog.LABS[t.lab].name
+	return Catalog.BOSSES[t.id].name
 
 
 ## Called after a table is cleared. Returns a breakdown of the payout.
 func payout() -> Array:
 	var rows: Array = []
-	var base := 3 + (2 if current().get("boss", false) else 0)
+	var base := 4
 	rows.append(["Table cleared", base])
 	if chalk > 0:
 		rows.append(["Unused chalk ×%d" % chalk, chalk])
-	if formulas.has("interest"):
-		var i := mini(money / 5, 5)
-		if i > 0:
-			rows.append(["Compound interest", i])
-	if formulas.has("thrift") and chalk >= 2:
+	if perks.has("thrift") and chalk >= 2:
 		rows.append(["Thrift", 5])
-	if formulas.has("overflow"):
+	if perks.has("overflow"):
 		var nxt := table_index + 1
 		var next_target: int = plan[nxt].target if nxt < plan.size() else int(target() * 1.6)
 		carry = mini(maxi(score - target(), 0), int(next_target * 0.25))
@@ -356,39 +277,34 @@ func roll_shop() -> void:
 	var keep_state := rng.state
 	rng.seed = seed_value * 31 + table_index * 1009 + 3
 	_roll_shop_items()
-	_apply_stake_prices()
+	_apply_handicap_prices()
 	rng.seed = seed_value
 	rng.state = keep_state
 
 
-func _apply_stake_prices() -> void:
-	if stake < 3:
+func _apply_handicap_prices() -> void:
+	if handicap < 3:
 		return
 	for item in shop:
-		if not item.get("staked", false):
+		if not item.get("priced", false):
 			item.cost = int(item.cost) + 1
-			item["staked"] = true
+			item["priced"] = true
 
 
 func _roll_shop_items() -> void:
-	reroll_cost = 1 if formulas.has("coupon") else 2
+	reroll_cost = 1 if perks.has("coupon") else 2
 	shop.clear()
 	for i in 3:
-		var f := _random_formula()
+		var f := _random_perk()
 		if f != "":
-			shop.append({"type": "formula", "id": f, "cost": Catalog.FORMULAS[f].cost, "sold": false})
+			shop.append({"type": "perk", "id": f, "cost": Catalog.PERKS[f].cost, "sold": false})
 	for i in 2:
-		if rng.randf() < 0.55:
-			var keys := Catalog.REAGENTS.keys()
-			var r: String = keys[rng.randi_range(0, keys.size() - 1)]
-			shop.append({"type": "reagent", "id": r, "cost": Catalog.REAGENTS[r].cost, "sold": false})
-		else:
-			var keys := Catalog.ISOTOPES.keys()
-			var iso: String = keys[rng.randi_range(0, keys.size() - 1)]
-			var ball := rng.randi_range(1, 15)
-			if current_rack_max() < 15:
-				ball = rng.randi_range(1, current_rack_max())
-			shop.append({"type": "isotope", "id": iso, "ball": ball, "cost": Catalog.ISOTOPES[iso].cost, "sold": false})
+		var keys := Catalog.IMBUES.keys()
+		var iso: String = keys[rng.randi_range(0, keys.size() - 1)]
+		var ball := rng.randi_range(1, 15)
+		if current_rack_max() < 15:
+			ball = rng.randi_range(1, current_rack_max())
+		shop.append({"type": "imbue", "id": iso, "ball": ball, "cost": Catalog.IMBUES[iso].cost, "sold": false})
 
 
 func current_rack_max() -> int:
@@ -397,18 +313,18 @@ func current_rack_max() -> int:
 	return {"six": 6, "nine": 9, "ten": 10}.get(rack, 15)
 
 
-func _random_formula() -> String:
+func _random_perk() -> String:
 	var pool: Array = []
-	for id in Catalog.FORMULAS:
-		if formulas.has(id) or locked.has(id):
+	for id in Catalog.PERKS:
+		if perks.has(id) or locked.has(id):
 			continue
 		var already := false
 		for s in shop:
-			if s.type == "formula" and s.id == id:
+			if s.type == "perk" and s.id == id:
 				already = true
 		if already:
 			continue
-		var r: int = Catalog.FORMULAS[id].r
+		var r: int = Catalog.PERKS[id].r
 		var w: int = [10, 5, 2][r]
 		for k in w:
 			pool.append(id)
@@ -424,17 +340,17 @@ func reroll() -> bool:
 	var cost := reroll_cost + 1
 	var kept: Array[Dictionary] = []
 	for s in shop:
-		if s.type != "formula":
+		if s.type != "perk":
 			kept.append(s)
 	shop = kept
 	for i in 3:
-		var f := _random_formula()
+		var f := _random_perk()
 		if f != "":
-			var item := {"type": "formula", "id": f, "cost": Catalog.FORMULAS[f].cost, "sold": false}
+			var item := {"type": "perk", "id": f, "cost": Catalog.PERKS[f].cost, "sold": false}
 			shop.append(item)
-	_apply_stake_prices()
-	# Formulas first in display order.
-	shop.sort_custom(func(a, b): return (a.type == "formula") and not (b.type == "formula"))
+	_apply_handicap_prices()
+	# Perks first in display order.
+	shop.sort_custom(func(a, b): return (a.type == "perk") and not (b.type == "perk"))
 	reroll_cost = cost
 	return true
 
@@ -447,33 +363,29 @@ func buy(i: int) -> String:
 	if money < item.cost:
 		return "Not enough money"
 	match item.type:
-		"formula":
-			if formulas.size() >= MAX_FORMULAS:
-				return "Formula slots full - sell one first"
-			formulas.append(item.id)
-		"reagent":
-			if reagents.size() >= MAX_REAGENTS:
-				return "Reagent slots full"
-			reagents.append(item.id)
-		"isotope":
-			isotopes[item.ball] = item.id
+		"perk":
+			if perks.size() >= MAX_PERKS:
+				return "Perk slots full - sell one first"
+			perks.append(item.id)
+		"imbue":
+			imbues[item.ball] = item.id
 	money -= item.cost
 	item.sold = true
 	return ""
 
 
-func sell_formula(i: int) -> int:
-	if i < 0 or i >= formulas.size():
+func sell_perk(i: int) -> int:
+	if i < 0 or i >= perks.size():
 		return 0
-	var id := formulas[i]
-	var v := maxi(1, int(Catalog.FORMULAS[id].cost / 2))
-	formulas.remove_at(i)
+	var id := perks[i]
+	var v := maxi(1, int(Catalog.PERKS[id].cost / 2))
+	perks.remove_at(i)
 	money += v
 	return v
 
 
 func sell_value(id: String) -> int:
-	return maxi(1, int(Catalog.FORMULAS[id].cost / 2))
+	return maxi(1, int(Catalog.PERKS[id].cost / 2))
 
 
 ## Applies a scored (or failed) shot to the table state. Shared by the game and
@@ -490,52 +402,44 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 			out["bounty"] = bounty
 		score += res.total
 		total_score += res.total
-		streak += 1
-		best_streak = maxi(best_streak, streak)
+		heat += 1 + int(res.get("heat_gain", 0))
+		best_heat = maxi(best_heat, heat)
+		element_mix = res.get("element_mix", [])
 		money += res.money
 		catalyst += res.catalyst_gain
 		total_pots += res.potted.size()
 		best_shot = maxi(best_shot, res.total)
 		for n in res.shattered:
-			isotopes.erase(n)
+			imbues.erase(n)
 		for k in res.get("pocket_list", []):
 			if not pockets_used.has(k):
 				pockets_used.append(k)
 	else:
 		var free_break: bool = was_break and res.foul == "Miss"
-		# Boss "soft fouls": the shot scores nothing and the streak resets, but no chalk is lost.
+		# Boss "soft fouls": the shot scores nothing and the heat resets, but no chalk is lost.
 		var soft: bool = res.foul == "Wrong pocket" or res.foul == "Wrong ball first"
-		var insured: bool = formulas.has("insurance") and insured_used < 2
-		var second: bool = second_chance > 0 and not insured
-		if not free_break and not soft:
-			if insured:
-				insured_used += 1
-			elif second:
-				second_chance -= 1
-		if not free_break and not soft and not insured and not second:
-			chalk -= 2 if formulas.has("glasscannon") else 1
+		var insured: bool = perks.has("insurance") and insured_used < 2
+		var excused: bool = current().id == "local" and not forgiven and not free_break and not soft and not insured
+		if excused:
+			forgiven = true
+			out["forgiven"] = true
+		if not free_break and not soft and insured:
+			insured_used += 1
+		if not free_break and not soft and not insured and not excused:
+			chalk -= 2 if perks.has("glasscannon") else 1
 			out.chalk_lost = true
-		streak = 0
+		heat = int(heat / 2.0)   # a miss cools the table but never wipes it out
+		element_mix = []
 	if current().anomaly == "shrink":
 		shrink_steps += 1
 		out["layout_changed"] = true
-	bluechalk = false
-	forecast = false
-	called_pocket = -1
-	overcharge = false
-	if wide_shot or magnetize:
-		wide_shot = false
-		magnetize = false
-		out["layout_changed"] = true
-	for n in res.get("radium_used", []):
-		radium[str(n)] = int(radium.get(str(n), 0)) + 1
 	if score >= target():
 		out.cleared = true
 		return out
 	if chalk <= 0:
 		out.over = true
 		return out
-	if not (res.scored and formulas.has("migration")):
+	if not (res.scored and perks.has("migration")):
 		roll_hot_pocket(hot_pocket)
 	if balls_left == 0:
 		racks_cleared += 1
@@ -558,7 +462,7 @@ func build_layout() -> TableLayout:
 	return layout
 
 
-## Applies lab, formula and anomaly physics. Call after the balls are racked.
+## Applies lab, perk and anomaly physics. Call after the balls are racked.
 func apply_physics(s: PoolSim) -> void:
 	var t := current()
 	# Absolute values, because this also runs mid-table after temporary effects.
@@ -588,12 +492,12 @@ func apply_physics(s: PoolSim) -> void:
 		"dense":
 			s.roll_decel = 290.0
 			s.drag = 0.17
-	if formulas.has("velvet"):
+	if perks.has("velvet"):
 		s.roll_decel *= 0.7
 		s.drag *= 0.7
-	if formulas.has("magnet") or magnetize:
+	if perks.has("magnet"):
 		s.pocket_pull = 1.0
-	if formulas.has("stun"):
+	if perks.has("stun"):
 		s.cue_damp = 0.4
 	match t.anomaly:
 		"blackice":
@@ -610,7 +514,7 @@ func apply_physics(s: PoolSim) -> void:
 		else:
 			if t.anomaly == "lead":
 				m = 1.6
-			if formulas.has("featherweight"):
+			if perks.has("featherweight"):
 				m *= 0.75
 		s.mass[i] = m
 
@@ -628,12 +532,11 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 				highest = n
 	var ci := s.index_of(0)
 	return {
-		"formulas": formulas, "isotopes": isotopes, "hot_pocket": hot_pocket, "lab": current().lab,
-		"anomaly": current().anomaly, "streak": streak, "power": power, "shots_taken": shots_taken,
-		"catalyst": catalyst, "bluechalk": bluechalk, "is_break": is_break, "chalk": chalk,
-		"money": money, "empty_slots": MAX_FORMULAS - formulas.size(), "pockets_used": pockets_used,
-		"called": called_pocket, "overcharge": overcharge, "radium": radium,
-		"lowest": lowest, "highest": highest,
+		"perks": perks, "imbues": imbues, "hot_pocket": hot_pocket, "boss": current().id, "lab": current().lab,
+		"anomaly": current().anomaly, "heat": heat, "power": power, "shots_taken": shots_taken,
+		"catalyst": catalyst, "is_break": is_break, "chalk": chalk, "objects": s.object_balls_left(),
+		"money": money, "empty_slots": MAX_PERKS - perks.size(), "pockets_used": pockets_used,
+		"lowest": lowest, "highest": highest, "element_mix": element_mix,
 		"cue_start": s.pos[ci] if ci >= 0 else Vector2.ZERO,
 	}
 
@@ -644,7 +547,7 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 ## file that replaces the save atomically; the previous save is kept as a
 ## backup and used if the main file is ever unreadable.
 const SAVE_PATH := "user://pocket_science_run.json"
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 
 var phase := "table"            # "table" or "shop"
 var table_snapshot := {}        # balls + is_break, supplied by the game controller
@@ -653,24 +556,22 @@ var shop_payout: Array = []
 
 func to_dict() -> Dictionary:
 	var iso := {}
-	for k in isotopes:
-		iso[str(k)] = isotopes[k]
+	for k in imbues:
+		iso[str(k)] = imbues[k]
 	var d := {
 		"v": SAVE_VERSION, "seed": seed_value, "cue": cue, "rng_state": str(rng.state), "table_index": table_index,
-		"money": money, "formulas": formulas, "reagents": reagents, "isotopes": iso,
+		"money": money, "perks": perks, "imbues": iso,
 		"catalyst": catalyst, "plan": plan, "endless": endless, "total_pots": total_pots,
-		"best_shot": best_shot, "tables_cleared": tables_cleared, "best_streak": best_streak,
+		"best_shot": best_shot, "tables_cleared": tables_cleared, "best_heat": best_heat,
 		"phase": phase, "carry": carry, "record_id": record_id, "daily_key": daily_key,
-		"stake": stake, "total_score": total_score, "radium": radium,
+		"handicap": handicap, "total_score": total_score,
 	}
 	if phase == "table":
 		d["table"] = {
-			"score": score, "chalk": chalk, "streak": streak, "shots_taken": shots_taken,
-			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "bluechalk": bluechalk,
-			"forecast": forecast, "bounty": bounty, "bounty_done": bounty_done,
+			"score": score, "chalk": chalk, "heat": heat, "shots_taken": shots_taken,
+			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "element_mix": element_mix,
+			"forgiven": forgiven, "bounty": bounty, "bounty_done": bounty_done,
 			"pockets_used": pockets_used, "shrink_steps": shrink_steps, "insured_used": insured_used,
-			"second_chance": second_chance, "called_pocket": called_pocket, "overcharge": overcharge,
-			"wide_shot": wide_shot, "magnetize": magnetize, "bounty_mult": bounty_mult,
 			"snapshot": table_snapshot,
 		}
 	else:
@@ -724,9 +625,9 @@ func _load_from(path: String) -> bool:
 	if typeof(d) != TYPE_DICTIONARY:
 		return false
 	var v := int(d.get("v", 0))
-	if v < 1 or v > SAVE_VERSION:
+	if v < 3 or v > SAVE_VERSION:   # older saves used the retired scoring
 		return false
-	for k in ["seed", "rng_state", "table_index", "money", "formulas", "reagents", "isotopes", "plan"]:
+	for k in ["seed", "rng_state", "table_index", "money", "perks", "imbues", "plan"]:
 		if not d.has(k):
 			return false
 	if typeof(d.plan) != TYPE_ARRAY or (d.plan as Array).is_empty():
@@ -739,12 +640,11 @@ func _load_from(path: String) -> bool:
 	rng.state = int(d.rng_state)
 	table_index = int(d.table_index)
 	money = int(d.money)
-	formulas.assign((d.formulas as Array).filter(func(x): return Catalog.FORMULAS.has(x)))
-	reagents.assign((d.reagents as Array).filter(func(x): return Catalog.REAGENTS.has(x)))
-	isotopes.clear()
-	for k in d.isotopes:
-		if Catalog.ISOTOPES.has(d.isotopes[k]):
-			isotopes[int(k)] = d.isotopes[k]
+	perks.assign((d.perks as Array).filter(func(x): return Catalog.PERKS.has(x)))
+	imbues.clear()
+	for k in d.imbues:
+		if Catalog.IMBUES.has(d.imbues[k]):
+			imbues[int(k)] = d.imbues[k]
 	catalyst = float(d.get("catalyst", 0.0))
 	plan.clear()
 	for t in d.plan:
@@ -755,13 +655,12 @@ func _load_from(path: String) -> bool:
 	total_pots = int(d.get("total_pots", 0))
 	best_shot = int(d.get("best_shot", 0))
 	tables_cleared = int(d.get("tables_cleared", 0))
-	best_streak = int(d.get("best_streak", 0))
+	best_heat = int(d.get("best_heat", 0))
 	carry = int(d.get("carry", 0))
 	record_id = str(d.get("record_id", ""))
 	daily_key = str(d.get("daily_key", ""))
-	stake = int(d.get("stake", 0))
+	handicap = int(d.get("handicap", 0))
 	total_score = int(d.get("total_score", 0))
-	radium = d.get("radium", {})
 	# v1 saves only knew "start of table".
 	phase = str(d.get("phase", "table"))
 	table_snapshot = {}
@@ -772,12 +671,12 @@ func _load_from(path: String) -> bool:
 		rng.state = int(d.rng_state)   # begin_table consumed rng; restore the saved stream
 		score = int(t.get("score", 0))
 		chalk = int(t.get("chalk", chalk))
-		streak = int(t.get("streak", 0))
+		heat = int(t.get("heat", 0))
 		shots_taken = int(t.get("shots_taken", 0))
 		hot_pocket = int(t.get("hot_pocket", hot_pocket))
 		racks_cleared = int(t.get("racks_cleared", 0))
-		bluechalk = bool(t.get("bluechalk", false))
-		forecast = bool(t.get("forecast", false))
+		element_mix = t.get("element_mix", [])
+		forgiven = bool(t.get("forgiven", false))
 		var b := str(t.get("bounty", bounty))
 		if Catalog.BOUNTIES.has(b):
 			bounty = b
@@ -785,12 +684,6 @@ func _load_from(path: String) -> bool:
 		pockets_used = (t.get("pockets_used", []) as Array).map(func(x): return int(x))
 		shrink_steps = int(t.get("shrink_steps", 0))
 		insured_used = int(t.get("insured_used", 0))
-		second_chance = int(t.get("second_chance", 0))
-		called_pocket = int(t.get("called_pocket", -1))
-		overcharge = bool(t.get("overcharge", false))
-		wide_shot = bool(t.get("wide_shot", false))
-		magnetize = bool(t.get("magnetize", false))
-		bounty_mult = int(t.get("bounty_mult", 1))
 		if typeof(t.get("snapshot")) == TYPE_DICTIONARY:
 			table_snapshot = t.snapshot
 	elif phase == "shop" and d.has("shop") and typeof(d.shop) == TYPE_DICTIONARY:

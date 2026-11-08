@@ -1,6 +1,6 @@
 extends SceneTree
 ## End-to-end: drives the real main scene with the AutoPlayer through table
-## clears, the shop, a purchase, reagents and a forced game over.
+## clears, the shop, a purchase and a forced game over.
 
 var failures := 0
 var g: Node
@@ -62,10 +62,10 @@ func _go() -> void:
 	g.run.money = 50
 	var bought := false
 	for i in g.run.shop.size():
-		if g.run.shop[i].type == "formula":
+		if g.run.shop[i].type == "perk":
 			bought = g.run.buy(i) == ""
 			break
-	check(bought and g.run.formulas.size() == 1, "bought a formula")
+	check(bought and g.run.perks.size() == 1, "bought a perk")
 	g._refresh_shop()
 	g.run.carry = 37
 	g._next_table()
@@ -74,14 +74,12 @@ func _go() -> void:
 	g.run.score = 0
 	g._refresh_hud()
 	check(g.state == g.S.AIM and g.run.table_index == 1, "next table starts")
-	# Reagents
-	g.run.reagents.assign(["bluechalk", "forecast"])
-	g._refresh_hud()
-	g._use_reagent(1)
+	# Second Sight draws real ball paths.
+	g.run.perks.assign(["oracle"])
+	g.guide_dirty = true
 	await _frames(12)
-	check(g.run.forecast and g.view.forecast_paths.size() > 0, "forecast draws paths (%d)" % g.view.forecast_paths.size())
-	g._use_reagent(0)
-	check(g.run.bluechalk, "blue chalk armed")
+	check(g.view.forecast_paths.size() > 0, "Second Sight draws paths (%d)" % g.view.forecast_paths.size())
+	g.run.perks.clear()
 	# Force a game over: one chalk left, shoot into nothing.
 	await _play_until(func(): return g.state == g.S.AIM, 10)
 	g.run.chalk = 1

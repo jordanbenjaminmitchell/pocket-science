@@ -47,7 +47,7 @@ func _go() -> void:
 		guard += 1
 		g.fast = true
 		await process_frame
-	var before := {"score": g.run.score, "chalk": g.run.chalk, "streak": g.run.streak, "hot": g.run.hot_pocket,
+	var before := {"score": g.run.score, "chalk": g.run.chalk, "heat": g.run.heat, "hot": g.run.hot_pocket,
 		"money": g.run.money, "state": g.state, "pos": g.sim.pos.duplicate(), "alive": g.sim.alive.duplicate(),
 		"next": g.run.rng.randi()}
 	print("  played %d shots; score %d chalk %d state %d" % [shots, before.score, before.chalk, before.state])
@@ -59,7 +59,7 @@ func _go() -> void:
 	check(RunState.has_save(), "save exists after quitting mid-table")
 	h._continue_run()
 	await process_frame
-	check(h.run.score == before.score and h.run.chalk == before.chalk and h.run.streak == before.streak, "score/chalk/streak restored")
+	check(h.run.score == before.score and h.run.chalk == before.chalk and h.run.heat == before.heat, "score/chalk/streak restored")
 	check(h.run.hot_pocket == before.hot and h.run.money == before.money, "hot pocket and money restored")
 	check(h.sim.pos == before.pos and h.sim.alive == before.alive, "every ball in the same place")
 	check(h.state == before.state, "same state (%d vs %d)" % [h.state, before.state])

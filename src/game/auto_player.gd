@@ -12,10 +12,11 @@ static func speed(p: float) -> float:
 static func ctx_for(run: RunState, pw: float, sim: PoolSim = null, is_break: bool = false) -> Dictionary:
 	if sim != null:
 		return run.shot_ctx(pw, sim, is_break)
-	return {"formulas": run.formulas, "isotopes": run.isotopes, "hot_pocket": run.hot_pocket, "lab": run.current().lab,
-		"anomaly": run.current().anomaly, "streak": run.streak, "power": pw, "shots_taken": run.shots_taken,
-		"catalyst": run.catalyst, "bluechalk": run.bluechalk, "chalk": run.chalk, "money": run.money,
-		"empty_slots": RunState.MAX_FORMULAS - run.formulas.size(), "pockets_used": run.pockets_used}
+	return {"perks": run.perks, "imbues": run.imbues, "hot_pocket": run.hot_pocket, "lab": run.current().lab,
+		"boss": run.current().id, "element_mix": run.element_mix,
+		"anomaly": run.current().anomaly, "heat": run.heat, "power": pw, "shots_taken": run.shots_taken,
+		"catalyst": run.catalyst, "chalk": run.chalk, "money": run.money,
+		"empty_slots": RunState.MAX_PERKS - run.perks.size(), "pockets_used": run.pockets_used}
 
 
 static func candidates(sim: PoolSim, run: RunState) -> Array:
@@ -32,7 +33,7 @@ static func candidates(sim: PoolSim, run: RunState) -> Array:
 			continue
 		if anomaly == "rotation" and sim.num[i] != lowest:
 			continue
-		if anomaly == "cursed8" and sim.num[i] == 8:
+		if anomaly == "cursed8" and sim.num[i] == 8 and sim.object_balls_left() > 1:
 			continue
 		for k in sim.layout.pockets.size():
 			var pk: Dictionary = sim.layout.pockets[k]
@@ -117,7 +118,7 @@ static func safety_shot(sim: PoolSim, run: RunState) -> Dictionary:
 			continue
 		if anomaly == "rotation" and sim.num[i] != lowest:
 			continue
-		if anomaly == "cursed8" and sim.num[i] == 8:
+		if anomaly == "cursed8" and sim.num[i] == 8 and sim.object_balls_left() > 1:
 			continue
 		options.append(i)
 	options.sort_custom(func(a, b): return sim.pos[a].distance_to(sim.pos[ci]) < sim.pos[b].distance_to(sim.pos[ci]))

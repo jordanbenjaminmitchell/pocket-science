@@ -31,8 +31,8 @@ func record(run: RunState, won: bool) -> void:
 	var e := {
 		"id": run.record_id, "date": Time.get_date_string_from_system(), "seed": run.seed_value, "cue": run.cue,
 		"won": won or run.endless, "tables": run.tables_cleared, "score": run.total_score, "pots": run.total_pots,
-		"best_shot": run.best_shot, "best_streak": run.best_streak, "formulas": run.formulas.duplicate(),
-		"daily": run.daily_key, "stake": run.stake,
+		"best_shot": run.best_shot, "best_heat": run.best_heat, "perks": run.perks.duplicate(),
+		"daily": run.daily_key, "handicap": run.handicap,
 	}
 	for i in entries.size():
 		if entries[i].id == run.record_id:
@@ -46,26 +46,26 @@ func record(run: RunState, won: bool) -> void:
 
 
 func lifetime() -> Dictionary:
-	var out := {"runs": entries.size(), "wins": 0, "tables": 0, "pots": 0, "best_shot": 0, "best_streak": 0, "best_tables": 0}
+	var out := {"runs": entries.size(), "wins": 0, "tables": 0, "pots": 0, "best_shot": 0, "best_heat": 0, "best_tables": 0}
 	for e in entries:
 		out.wins += 1 if e.won else 0
 		out.tables += int(e.tables)
 		out.pots += int(e.pots)
 		out.best_shot = maxi(out.best_shot, int(e.best_shot))
-		out.best_streak = maxi(out.best_streak, int(e.best_streak))
+		out.best_heat = maxi(out.best_heat, int(e.best_heat))
 		out.best_tables = maxi(out.best_tables, int(e.tables))
 	return out
 
 
-## Most-carried Formulas across all finished runs: [[id, count], ...].
+## Most-carried Perks across all finished runs: [[id, count], ...].
 func favourites(n: int = 5) -> Array:
 	var counts := {}
 	for e in entries:
-		for f in e.formulas:
+		for f in e.perks:
 			counts[f] = counts.get(f, 0) + 1
 	var rows: Array = []
 	for f in counts:
-		if Catalog.FORMULAS.has(f):
+		if Catalog.PERKS.has(f):
 			rows.append([f, counts[f]])
 	rows.sort_custom(func(a, b): return a[1] > b[1])
 	return rows.slice(0, n)

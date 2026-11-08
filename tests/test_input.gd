@@ -131,26 +131,6 @@ func _go() -> void:
 	check(g.paused, "Start pauses")
 	g._resume()
 	await _frames(1)
-	g.run.reagents.assign(["hotswap", "grant"])
-	g._refresh_hud()
-	_pad(JOY_BUTTON_LEFT_SHOULDER)
-	await _frames(2)
-	check(g.state == g.S.PICK, "LB uses reagent 1")
-	_pad(JOY_BUTTON_B)
-	await _frames(2)
-	check(g.state == g.S.AIM and g.run.reagents.has("hotswap"), "cancelling hands the reagent back")
-	g._use_reagent(g.run.reagents.find("hotswap"))
-	await _frames(1)
-	_stick(JOY_AXIS_LEFT_Y, 1.0)
-	_stick(JOY_AXIS_LEFT_X, 1.0)
-	await _frames(70)
-	_stick(JOY_AXIS_LEFT_Y, 0.0)
-	_stick(JOY_AXIS_LEFT_X, 0.0)
-	await _frames(1)
-	check(g.view.hover_pocket == 5, "stick moves the pocket cursor (%d)" % g.view.hover_pocket)
-	_pad(JOY_BUTTON_A)
-	await _frames(1)
-	check(g.run.hot_pocket == 5 and g.state == g.S.AIM, "A confirms the pocket")
 	_pad(JOY_BUTTON_A)
 	await _frames(1)
 	check(g.state == g.S.STRIKE or g.state == g.S.ROLL, "A shoots")
@@ -194,16 +174,16 @@ func _go() -> void:
 	print("shop safety")
 	g._new_run()
 	await _frames(2)
-	g.run.formulas.assign(["bank", "odd"])
+	g.run.perks.assign(["bank", "odd"])
 	g._show_shop([["Table cleared", 3]])
 	await _frames(2)
 	var mny: int = g.run.money
 	g._sell_click("bank")
-	check(g.run.formulas.has("bank") and g.run.money == mny and g.sell_armed == "bank", "first click only arms the sale")
+	check(g.run.perks.has("bank") and g.run.money == mny and g.sell_armed == "bank", "first click only arms the sale")
 	g._sell_click("odd")
-	check(g.run.formulas.has("odd") and g.sell_armed == "odd", "arming another card does not sell the first")
+	check(g.run.perks.has("odd") and g.sell_armed == "odd", "arming another card does not sell the first")
 	g._sell_click("odd")
-	check(not g.run.formulas.has("odd") and g.run.money > mny and g.run.formulas.has("bank"), "second click sells only that card")
+	check(not g.run.perks.has("odd") and g.run.money > mny and g.run.perks.has("bank"), "second click sells only that card")
 	print("ball in hand")
 	g._new_run()
 	await _frames(2)
@@ -270,15 +250,6 @@ func _go() -> void:
 	g.sim.alive[ci2] = 1
 	g.state = g.S.AIM
 	g.view.placing = false
-	g.run.reagents.assign(["hotswap"])
-	g._use_reagent(0)
-	await _frames(1)
-	var pk_scr: Vector2 = g.view.base_position + (g.layout.pockets[3].pos as Vector2) * g.TABLE_SCALE
-	_tap(pk_scr, true)
-	await _frames(2)
-	_tap(pk_scr, false)
-	await _frames(2)
-	check(g.run.hot_pocket == 3 and g.state == g.S.AIM, "tap picks a pocket")
 	g.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
 	await _frames(1)
 	check(g.paused, "Android back opens the menu")
@@ -296,8 +267,6 @@ func _go() -> void:
 	g.run.plan[g.run.table_index].anomaly = "onepocket"
 	g.run.plan[g.run.table_index].boss = true
 	g.run.bounty = "bank2"
-	g.run.bluechalk = true
-	g.run.forecast = true
 	g._refresh_hud()
 	g.left_panel.size = Vector2.ZERO
 	await _frames(3)

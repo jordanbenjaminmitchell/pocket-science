@@ -1,11 +1,11 @@
 class_name BallTray
 extends Control
 ## Shows every ball in the current rack: bright if still on the table, sunk
-## into the tray if potted. Isotope-enhanced balls carry a coloured ring.
+## into the tray if potted. Imbue-enhanced balls carry a coloured ring.
 
 var balls: Array = []        # ball numbers in this rack
 var potted := {}             # number -> true
-var isotopes := {}
+var imbues := {}
 var font: Font
 
 
@@ -17,7 +17,7 @@ func _ready() -> void:
 func set_state(rack: Array, down: Dictionary, iso: Dictionary) -> void:
 	balls = rack
 	potted = down
-	isotopes = iso
+	imbues = iso
 	queue_redraw()
 
 
@@ -34,9 +34,9 @@ func _draw() -> void:
 		var down: bool = potted.has(n)
 		var a := 0.28 if down else 1.0
 		var base := Catalog.ball_color(n)
-		var iso: String = isotopes.get(n, "")
+		var iso: String = imbues.get(n, "")
 		if iso != "":
-			draw_arc(c, r + 3.0, 0, TAU, 24, Color(Catalog.ISOTOPES[iso].color, a), 2.0)
+			draw_arc(c, r + 3.0, 0, TAU, 24, Color(Catalog.IMBUES[iso].color, a), 2.0)
 		if Catalog.is_stripe(n):
 			draw_circle(c, r, Color(0.95, 0.93, 0.88, a))
 			draw_rect(Rect2(c + Vector2(-r * 0.92, -r * 0.5), Vector2(r * 1.84, r)), Color(base, a))

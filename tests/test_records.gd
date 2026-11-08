@@ -54,7 +54,7 @@ func _go() -> void:
 	g.run.tables_cleared = 3
 	g.run.total_pots = 20
 	g.run.best_shot = 200
-	g.run.formulas.assign(["golden", "bank"])
+	g.run.perks.assign(["golden", "bank"])
 	g.records.record(g.run, false)
 	check(g.records.entries.size() == 1 and g.records.daily_best(key).score == 500, "finished daily is recorded")
 	g.run.tables_cleared = 5
@@ -63,7 +63,7 @@ func _go() -> void:
 	check(g.records.entries.size() == 1 and g.records.lifetime().tables == 5, "same run updates, never double-counts")
 	var other := RunState.new()
 	other.start(1)
-	other.formulas.assign(["bank"])
+	other.perks.assign(["bank"])
 	other.tables_cleared = 9
 	other.total_score = 7000
 	g.records.record(other, true)
@@ -80,10 +80,10 @@ func _go() -> void:
 	check(fresh.entries.is_empty(), "damaged history is ignored, not fatal")
 	print("collection")
 	g.meta = Meta.new()
-	g.screens.tab = "Formulas"
+	g.screens.tab = "Perks"
 	var rows: Array = g.screens._rows()
-	check(rows.size() == Catalog.FORMULAS.size(), "all formulas listed")
-	check(rows.filter(func(r): return r.hint != "").size() == g.meta.locked_formulas().size(), "locked formulas show unlock hints")
+	check(rows.size() == Catalog.PERKS.size(), "all perks listed")
+	check(rows.filter(func(r): return r.hint != "").size() == g.meta.locked_perks().size(), "locked perks show unlock hints")
 	for t in MetaScreens.TABS:
 		g.screens.tab = t
 		check(g.screens._rows().size() > 0, "%s tab has entries" % t)

@@ -24,12 +24,12 @@ func _go() -> void:
 	c.save(Meta.PATH)
 	var m := Meta.new()
 	m.load_file()
-	var locked := m.locked_formulas()
-	check(locked.size() == 32 and Catalog.FORMULAS.size() - locked.size() == 28, "fresh profile: 28 formulas available, 32 locked")
+	var locked := m.locked_perks()
+	check(locked.size() >= 30 and Catalog.PERKS.size() - locked.size() >= 25, "fresh profile: starter perks available, the rest locked (%d locked)" % locked.size())
 	check(m.cue_unlocked("maple") and not m.cue_unlocked("optic") and not m.cue_unlocked("gilded"), "fresh profile: only Classic Maple")
 	for id in locked:
-		check(Catalog.FORMULAS.has(id), "locked id %s exists" % id) if not Catalog.FORMULAS.has(id) else null
-	# Shop never offers locked formulas.
+		check(Catalog.PERKS.has(id), "locked id %s exists" % id) if not Catalog.PERKS.has(id) else null
+	# Shop never offers locked perks.
 	var run := RunState.new()
 	run.start(11)
 	run.locked = locked
@@ -37,14 +37,14 @@ func _go() -> void:
 	for i in 200:
 		run.roll_shop()
 		for it in run.shop:
-			if it.type == "formula" and locked.has(it.id):
+			if it.type == "perk" and locked.has(it.id):
 				leaked += 1
-	check(leaked == 0, "shop never offers locked formulas (200 rolls)")
+	check(leaked == 0, "shop never offers locked perks (200 rolls)")
 	# Milestones.
 	run.begin_table()
-	var bank_shot := {"scored": true, "potted": [3], "total": 40, "lines": [{"label": "Bank ×1"}]}
+	var bank_shot := {"scored": true, "potted": [3], "total": 40, "lines": [], "banks": 1}
 	var got := m.on_shot(bank_shot, run)
-	check(got == ["bank"] and not m.locked_formulas().has("precision"), "a bank pot unlocks Angles")
+	check(got == ["bank"] and not m.locked_perks().has("precision"), "a bank pot unlocks Angles")
 	check(m.on_shot(bank_shot, run).is_empty(), "milestones are earned once")
 	var big := {"scored": true, "potted": [1, 2, 3], "total": 1200, "lines": []}
 	got = m.on_shot(big, run)

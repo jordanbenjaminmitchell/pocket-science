@@ -36,11 +36,11 @@ func play_run(s: int) -> int:
 		var r := play_table(run)
 		line += " T%d[%s/%s %d/%d sh%d]" % [run.table_index + 1, t.lab.substr(0, 4), t.anomaly.substr(0, 4), run.score, run.target(), run.shots_taken]
 		if not r:
-			print(line, "  formulas=", run.formulas)
+			print(line, "  perks=", run.perks)
 			return run.table_index
 		run.payout()
 		if run.table_index >= run.plan.size() - 1:
-			print(line, "  WIN formulas=", run.formulas)
+			print(line, "  WIN perks=", run.perks)
 			return run.plan.size()
 		if shop_on:
 			shop(run)
@@ -56,14 +56,14 @@ func shop(run: RunState) -> void:
 		for p in pref:
 			for i in run.shop.size():
 				var it: Dictionary = run.shop[i]
-				if it.type == "formula" and it.id == p and not it.sold and run.money >= it.cost and run.formulas.size() < 5:
+				if it.type == "perk" and it.id == p and not it.sold and run.money >= it.cost and run.perks.size() < 5:
 					run.buy(i)
 					bought = true
 		for i in run.shop.size():
 			var it: Dictionary = run.shop[i]
-			if it.type == "isotope" and not it.sold and run.money >= it.cost + 4 and it.id in ["neon", "heavy"]:
+			if it.type == "imbue" and not it.sold and run.money >= it.cost + 4 and it.id in ["neon", "heavy"]:
 				run.buy(i)
-		if not bought and run.money >= run.reroll_cost + 7 and run.formulas.size() < 5:
+		if not bought and run.money >= run.reroll_cost + 7 and run.perks.size() < 5:
 			run.reroll()
 		else:
 			break
@@ -80,7 +80,7 @@ func make_sim(run: RunState, layout: TableLayout) -> PoolSim:
 		"gravity":
 			s.well_pos = Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5)
 			s.well_strength = 1.0
-	if run.formulas.has("magnet"):
+	if run.perks.has("magnet"):
 		s.pocket_pull = 1.0
 	return s
 
@@ -144,9 +144,6 @@ func play_table(run: RunState) -> bool:
 				start[sim.num[i]] = sim.pos[i]
 		var noisy: Vector2 = shot.dir.rotated(deg_to_rad(rng.randfn(0.0, aim_sigma)))
 		var pw: float = clampf(shot.power * (1.0 + rng.randfn(0.0, 0.05)), 0.05, 1.0)
-		if run.streak >= 2 and run.reagents.has("bluechalk") and not run.bluechalk:
-			run.reagents.erase("bluechalk")
-			run.bluechalk = true
 		var ctx := ctx_for(run, pw)
 		sim.strike(noisy, speed(pw), 0.0, 0.0)
 		sim.settle()

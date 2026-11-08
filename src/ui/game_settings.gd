@@ -32,7 +32,7 @@ const ACTIONS := {
 	"aim_left": ["Aim left", KEY_LEFT], "aim_right": ["Aim right", KEY_RIGHT], "spin_up": ["Spin: follow", KEY_W],
 	"spin_down": ["Spin: draw", KEY_S], "spin_left": ["Spin: left", KEY_A], "spin_right": ["Spin: right", KEY_D],
 	"place": ["Move cue ball on break", KEY_H], "fine": ["Toggle fine aim", KEY_F],
-	"reagent1": ["Use reagent 1", KEY_1], "reagent2": ["Use reagent 2", KEY_2],
+	
 }
 
 var keys := {}

@@ -29,7 +29,7 @@ var show_guide := false
 var guide := {}
 var forecast_paths: Array = []
 var hot_pocket := -1
-var called_pocket := -1   # Call Shot reagent
+var element_pockets: Array = []   # Element Table: one element id per pocket
 var second_pocket := -1   # Two Pockets boss: also scores, shown with a cooler ring
 var hot_mult := 2
 var preview_text := ""
@@ -124,7 +124,7 @@ func set_felt(c: Color) -> void:
 
 
 ## ---------------------------------------------------------------- balls
-func sync_balls(sim: PoolSim, rng: RandomNumberGenerator, isotopes: Dictionary) -> void:
+func sync_balls(sim: PoolSim, rng: RandomNumberGenerator, imbues: Dictionary) -> void:
 	for k in ball_nodes:
 		ball_nodes[k].queue_free()
 	ball_nodes.clear()
@@ -136,15 +136,15 @@ func sync_balls(sim: PoolSim, rng: RandomNumberGenerator, isotopes: Dictionary) 
 		ball_nodes[i] = b
 		if sim.alive[i] == 0:
 			b.visible = false
-	refresh_glows(sim, isotopes)
+	refresh_glows(sim, imbues)
 
 
-func refresh_glows(sim: PoolSim, isotopes: Dictionary) -> void:
+func refresh_glows(sim: PoolSim, imbues: Dictionary) -> void:
 	for i in ball_nodes:
 		var n: int = sim.num[i]
-		var iso: String = isotopes.get(n, "")
+		var iso: String = imbues.get(n, "")
 		if iso != "":
-			var c: Color = Catalog.ISOTOPES[iso].color
+			var c: Color = Catalog.IMBUES[iso].color
 			c.a = 0.95
 			ball_nodes[i].set_glow(c)
 		else:
@@ -422,11 +422,13 @@ func _draw_cushions() -> void:
 			var w := font_bold.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			var lp := p + dir * -46.0
 			c.draw_string(font_bold, lp + Vector2(-w * 0.5, 6), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, hc)
-		if k == called_pocket:
-			c.draw_arc(p, r + 8.0 + sin(time * 6.0) * 2.0, 0, TAU, 40, Color(0.95, 0.6, 1.0, 0.9), 3.0)
-			var t3 := "×3 called"
-			var w3 := font_bold.get_string_size(t3, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
-			c.draw_string(font_bold, p + dir * 58.0 + Vector2(-w3 * 0.5, 5), t3, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.95, 0.7, 1.0))
+		if k < element_pockets.size():
+			var el: Dictionary = Catalog.ELEMENTS[element_pockets[k]]
+			var ec: Color = el.color
+			c.draw_arc(p, r + 6.0, 0, TAU, 40, Color(ec, 0.75), 3.0)
+			var et: String = el.name
+			var ew := font_bold.get_string_size(et, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+			c.draw_string(font_bold, p + dir * -50.0 + Vector2(-ew * 0.5, 5), et, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, ec)
 		if k == second_pocket:
 			var pulse2 := 0.5 + 0.5 * sin(time * 5.0 + PI)
 			for i in 3:
