@@ -596,7 +596,13 @@ func save() -> void:
 
 
 static func has_save() -> bool:
-	return FileAccess.file_exists(SAVE_PATH) or FileAccess.file_exists(SAVE_PATH + ".bak")
+	# Only a save this version can load counts, so Continue never appears for a dead save.
+	for p in [SAVE_PATH, SAVE_PATH + ".bak"]:
+		if FileAccess.file_exists(p):
+			var d = _read(p)
+			if typeof(d) == TYPE_DICTIONARY and int(d.get("v", 0)) >= 3 and int(d.get("v", 0)) <= SAVE_VERSION:
+				return true
+	return false
 
 
 static func clear_save() -> void:
