@@ -108,6 +108,8 @@ func _ready() -> void:
 	_build_ui()
 	_load_settings()
 	meta.load_file()
+	records.load_file()
+	screens = MetaScreens.new(self)
 	_show_title()
 
 
@@ -142,7 +144,7 @@ func _new_rack(kind: String) -> void:
 	sim = _make_sim()
 	sim.add_ball(0, Rack.HEAD)
 	var r := RandomNumberGenerator.new()
-	r.seed = run.rng.randi()
+	r.seed = run.rack_seed()
 	Rack.build(sim, kind, r)
 	run.apply_physics(sim)
 	view.sync_balls(sim, vis_rng, run.isotopes)
@@ -1231,7 +1233,7 @@ func _refresh_hud() -> void:
 	if run.endless:
 		lbl_round.text = "Endless table %d" % (run.table_index + 1)
 	else:
-		lbl_round.text = "Table %d / %d%s" % [run.table_index + 1, total, "  ·  BOSS" if t.get("boss", false) else ""]
+		lbl_round.text = "%sTable %d / %d%s" % ["Daily · " if run.daily_key != "" else "", run.table_index + 1, total, "  ·  BOSS" if t.get("boss", false) else ""]
 	lbl_lab.text = Catalog.LABS[t.lab].name
 	lbl_rule.text = Catalog.LABS[t.lab].desc
 	if t.anomaly != "":
@@ -1466,10 +1468,13 @@ func _show_title() -> void:
 	b.custom_minimum_size = Vector2(0, 54)
 	b.add_theme_font_size_override("font_size", 24)
 	v.add_child(b)
-	v.add_child(_button("How to Play", _show_help))
-	v.add_child(_button("Settings", func(): _show_settings(_show_title)))
-	v.add_child(_button("Credits", _show_credits))
-	v.add_child(_button("Quit", func(): get_tree().quit()))
+	var key := Records.today_key()
+	var day_best := records.daily_best(key)
+	var day_txt := "Daily Challenge" if day_best.is_empty() else "Daily Challenge  (best today: %d tables, %d)" % [int(day_best.tables), int(day_best.score)]
+	v.add_child(_button(day_txt, _start_daily, Color(0.5, 0.8, 1.0)))
+	_menu_row(v, "How to Play", _show_help, "Settings", func(): _show_settings(_show_title))
+	_menu_row(v, "Collection", func(): screens.show_collection(), "Records", func(): screens.show_records())
+	_menu_row(v, "Credits", _show_credits, "Quit", func(): get_tree().quit())
 	var prog := _label("Unlocks: " + meta.progress() + "  ·  %d / %d Formulas" % [Catalog.FORMULAS.size() - meta.locked_formulas().size(), Catalog.FORMULAS.size()], 14, Color(0.6, 0.85, 1.0), F_REG)
 	prog.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(prog)
@@ -1489,8 +1494,17 @@ var chosen_cue := "maple"
 func _show_cue_select() -> void:
 	_clear_overlay()
 	_dim(0.6)
-	var v := _center_panel(1100, 420)
+	var v := _center_panel(1100, 480)
 	v.add_child(_label("CHOOSE YOUR CUE", 30, Color(0.98, 0.8, 0.4), F_PIXB))
+	var seed_row := HBoxContainer.new()
+	seed_row.add_theme_constant_override("separation", 10)
+	v.add_child(seed_row)
+	seed_row.add_child(_label("Seed (optional):", 15, Color(0.8, 0.82, 0.85), F_REG))
+	seed_input = LineEdit.new()
+	seed_input.placeholder_text = "leave blank for a random run"
+	seed_input.custom_minimum_size = Vector2(300, 34)
+	seed_input.name = "seed_input"
+	seed_row.add_child(seed_input)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	v.add_child(row)
@@ -1521,12 +1535,13 @@ func _show_cue_select() -> void:
 		cv.add_child(d)
 		var pick := _button("Choose", func():
 			chosen_cue = id
+			pending_seed = _parse_seed(seed_input.text)
 			_new_run(), c.accent)
 		if not meta.cue_unlocked(id):
 			pick.text = "Locked"
 			pick.disabled = true
 			p.modulate = Color(1, 1, 1, 0.55)
-			var lk := _label("🔒 " + meta.cue_hint(id), 13, Color(1.0, 0.8, 0.45), F_SEMI)
+			var lk := _label("Locked: " + meta.cue_hint(id), 13, Color(1.0, 0.8, 0.45), F_SEMI)
 			lk.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			lk.custom_minimum_size = Vector2(176, 0)
 			cv.add_child(lk)
@@ -1536,6 +1551,11 @@ func _show_cue_select() -> void:
 
 
 var meta := Meta.new()
+var records := Records.new()
+var screens: MetaScreens
+var pending_seed := -1
+var pending_daily := ""
+var seed_input: LineEdit
 
 
 ## Celebrates newly earned milestones: banner, sound and a line in the shot log.
@@ -1553,14 +1573,46 @@ func _announce_unlocks(ids: Array) -> void:
 ".join(shot_log)
 
 
+func _menu_row(v: Control, a: String, fa: Callable, b: String, fb: Callable) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	v.add_child(row)
+	for pair in [[a, fa], [b, fb]]:
+		var btn := _button(pair[0], pair[1])
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(btn)
+
+
+func _start_daily() -> void:
+	pending_daily = Records.today_key()
+	_new_run()
+
+
+## Blank = random. Numbers are used as they are; words hash to a stable seed.
+func _parse_seed(text: String) -> int:
+	var t := text.strip_edges()
+	if t == "":
+		return -1
+	if t.is_valid_int():
+		return absi(t.to_int())
+	return absi(t.hash())
+
+
 func _new_run() -> void:
 	demo = false
 	_hud_visible(true)
 	_clear_overlay()
-	if not meta.cue_unlocked(chosen_cue):
+	if pending_daily != "":
+		chosen_cue = Records.daily_cue(pending_daily)
+		pending_seed = Records.daily_seed(pending_daily)
+	elif not meta.cue_unlocked(chosen_cue):
 		chosen_cue = "maple"
-	run.start(randi(), chosen_cue)
-	run.locked = meta.locked_formulas()
+	run.start(pending_seed if pending_seed >= 0 else randi(), chosen_cue)
+	run.daily_key = pending_daily
+	# Dailies give everyone the full pool, so results are comparable.
+	run.locked = [] if pending_daily != "" else meta.locked_formulas()
+	pending_seed = -1
+	pending_daily = ""
 	view.cue_colors = Catalog.CUES.get(chosen_cue, Catalog.CUES.maple)
 	run.begin_table()
 	_setup_table()
@@ -1999,6 +2051,8 @@ func _confirm_wipe(back: Callable) -> void:
 		if c.has_section("meta"):
 			c.erase_section("meta")
 		meta = Meta.new()
+		records.entries = []
+		records.save_file()
 		c.save(GameSettings.PATH)
 		paused = false
 		_show_title(), Color(0.9, 0.4, 0.3))
@@ -2030,20 +2084,26 @@ func _next_table() -> void:
 func _show_game_over() -> void:
 	RunState.clear_save()
 	_record_best()
+	records.record(run, false)
 	_clear_overlay()
 	_dim(0.7)
 	var v := _center_panel(560, 460, Color(0.9, 0.35, 0.3))
 	v.add_child(_label("EXPERIMENT FAILED", 36, Color(1, 0.45, 0.4), F_PIXB))
 	v.add_child(_label("Reached table %d. Score %d / %d" % [run.table_index + 1, run.score, run.target()], 18, Color(0.9, 0.9, 0.9), F_REG))
-	v.add_child(_label("Tables cleared: %d\nBalls potted: %d\nBest shot: %d\nBest streak: %d" % [run.tables_cleared, run.total_pots, run.best_shot, run.best_streak], 17, Color(0.8, 0.82, 0.85), F_REG))
+	v.add_child(_label("Tables cleared: %d\nBalls potted: %d\nBest shot: %d\nBest streak: %d\nSeed: %d" % [run.tables_cleared, run.total_pots, run.best_shot, run.best_streak, run.seed_value], 17, Color(0.8, 0.82, 0.85), F_REG))
 	var b := _button("New Run", _new_run)
 	b.custom_minimum_size = Vector2(0, 50)
 	v.add_child(b)
+	var again_seed := run.seed_value
+	v.add_child(_button("Same seed again", func():
+		pending_seed = again_seed
+		_new_run(), Color(0.5, 0.8, 1.0)))
 	v.add_child(_button("Title", _show_title))
 
 
 func _show_victory(rows: Array) -> void:
 	_record_best()
+	records.record(run, true)
 	_clear_overlay()
 	_dim(0.6)
 	var v := _center_panel(620, 470, Color(1.0, 0.85, 0.35))

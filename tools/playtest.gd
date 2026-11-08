@@ -136,7 +136,7 @@ func new_rack(run: RunState, layout: TableLayout) -> PoolSim:
 	var s := PoolSim.new(layout)
 	s.add_ball(0, Rack.HEAD)
 	var r := RandomNumberGenerator.new()
-	r.seed = run.rng.randi()
+	r.seed = run.rack_seed()
 	Rack.build(s, run.current().rack, r)
 	run.apply_physics(s)
 	return s

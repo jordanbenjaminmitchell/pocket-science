@@ -35,6 +35,8 @@ func _go() -> void:
 		"help": func(): g._show_help(),
 		"settings": func(): g._show_settings(g._show_title),
 		"credits": func(): g._show_credits(),
+		"collection": func(): g.screens.show_collection(),
+		"records": func(): g.screens.show_records(),
 		"licence": func(): g._show_license("Godot Engine (MIT)", "res://licenses/GODOT_LICENSE.txt"),
 		"pause": func():
 			g._new_run()

@@ -20,6 +20,10 @@ var plan: Array[Dictionary] = []   # one entry per table: {target, rack, boss, l
 var shop: Array[Dictionary] = []
 var reroll_cost := 2
 var endless := false
+var record_id := ""       # links this run to its Records entry
+var daily_key := ""       # yyyymmdd when this is a daily challenge
+var stake := 0            # difficulty level
+var total_score := 0
 var locked: Array = []    # formulas not yet unlocked (Meta); empty = everything available
 
 # Per-table state
@@ -46,6 +50,9 @@ var tables_cleared := 0
 
 
 func start(s: int, cue_id: String = "maple") -> void:
+	record_id = ""
+	daily_key = ""
+	total_score = 0
 	seed_value = s
 	rng.seed = s
 	cue = cue_id
@@ -231,7 +238,22 @@ func is_final_cleared() -> bool:
 
 
 ## ---------------------------------------------------------------- shop
+## A rack depends only on seed, table and rack number, never on how you played,
+## so a shared seed really does give everyone the same racks.
+func rack_seed() -> int:
+	return seed_value * 17 + table_index * 131 + racks_cleared * 7 + 1
+
+
 func roll_shop() -> void:
+	# Each table's first offers come from their own stream, so seeds stay comparable.
+	var keep_state := rng.state
+	rng.seed = seed_value * 31 + table_index * 1009 + 3
+	_roll_shop_items()
+	rng.seed = seed_value
+	rng.state = keep_state
+
+
+func _roll_shop_items() -> void:
 	reroll_cost = 1 if formulas.has("coupon") else 2
 	shop.clear()
 	for i in 3:
@@ -349,6 +371,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 			money += int(Catalog.BOUNTIES[bounty].reward) * (2 if formulas.has("hunter") else 1)
 			out["bounty"] = bounty
 		score += res.total
+		total_score += res.total
 		streak += 1
 		best_streak = maxi(best_streak, streak)
 		money += res.money
@@ -485,7 +508,8 @@ func to_dict() -> Dictionary:
 		"money": money, "formulas": formulas, "reagents": reagents, "isotopes": iso,
 		"catalyst": catalyst, "plan": plan, "endless": endless, "total_pots": total_pots,
 		"best_shot": best_shot, "tables_cleared": tables_cleared, "best_streak": best_streak,
-		"phase": phase, "carry": carry,
+		"phase": phase, "carry": carry, "record_id": record_id, "daily_key": daily_key,
+		"stake": stake, "total_score": total_score,
 	}
 	if phase == "table":
 		d["table"] = {
@@ -579,6 +603,10 @@ func _load_from(path: String) -> bool:
 	tables_cleared = int(d.get("tables_cleared", 0))
 	best_streak = int(d.get("best_streak", 0))
 	carry = int(d.get("carry", 0))
+	record_id = str(d.get("record_id", ""))
+	daily_key = str(d.get("daily_key", ""))
+	stake = int(d.get("stake", 0))
+	total_score = int(d.get("total_score", 0))
 	# v1 saves only knew "start of table".
 	phase = str(d.get("phase", "table"))
 	table_snapshot = {}

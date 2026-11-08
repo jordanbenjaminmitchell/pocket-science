@@ -59,6 +59,25 @@ func _go() -> void:
 				ic.size = Vector2(118, 118)
 				game.root.add_child(ic)
 			await _frames(4)
+		"collection":
+			game.screens.show_collection()
+			await _frames(4)
+		"records":
+			for i in 6:
+				var r := RunState.new()
+				r.start(100 + i, Catalog.CUES.keys()[i % 5])
+				r.tables_cleared = 2 + i
+				r.total_score = 900 * (i + 1)
+				r.best_shot = 150 * (i + 1)
+				r.total_pots = 12 * (i + 1)
+				r.best_streak = 2 + i
+				r.formulas.assign(["golden", "bank", "rhythm"].slice(0, 1 + i % 3))
+				r.record_id = "t%d" % i
+				if i == 3:
+					r.daily_key = "20261108"
+				game.records.record(r, i == 5)
+			game.screens.show_records()
+			await _frames(4)
 		"help":
 			game._show_help()
 			await _frames(4)
