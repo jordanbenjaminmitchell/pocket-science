@@ -19,6 +19,7 @@ var click_shoot := false    # set power with wheel/keys, click to shoot
 var colorblind := false     # safe guideline palette
 var number_tags := false    # flat, always-readable number on every ball
 var large_text := false     # bigger small text
+var touch_mode := false     # on-screen aim, power and shoot controls
 var frame_cap := 0          # index into FRAME_CAPS
 var window_size := 1        # index into WINDOW_SIZES
 
@@ -36,7 +37,7 @@ const ACTIONS := {
 
 var keys := {}
 
-const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "frame_cap", "window_size"]
+const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size"]
 
 
 func load_file() -> void:
@@ -59,6 +60,14 @@ func load_file() -> void:
 
 func _init() -> void:
 	reset_keys()
+	_device_defaults()
+
+
+## Phones and tablets start with touch controls and larger text.
+func _device_defaults() -> void:
+	if OS.has_feature("mobile"):
+		touch_mode = true
+		large_text = true
 
 
 func reset_keys() -> void:
@@ -107,6 +116,7 @@ func _clamp() -> void:
 	colorblind = bool(colorblind)
 	number_tags = bool(number_tags)
 	large_text = bool(large_text)
+	touch_mode = bool(touch_mode)
 	frame_cap = clampi(int(frame_cap), 0, FRAME_CAPS.size() - 1)
 	window_size = clampi(int(window_size), 0, WINDOW_SIZES.size() - 1)
 
@@ -126,6 +136,8 @@ func reset() -> void:
 	colorblind = false
 	number_tags = false
 	large_text = false
+	touch_mode = false
+	_device_defaults()
 	frame_cap = 0
 	window_size = 1
 	reset_keys()

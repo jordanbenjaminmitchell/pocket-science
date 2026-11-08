@@ -112,6 +112,7 @@ func _ready() -> void:
 	view.position = TABLE_ORIGIN
 	view.scale = Vector2(TABLE_SCALE, TABLE_SCALE)
 	add_child(view)
+	get_tree().quit_on_go_back = false   # the Android back button opens the menu instead
 	_build_ui()
 	_load_settings()
 	meta.load_file()
@@ -269,7 +270,8 @@ func _update_aim(delta: float) -> void:
 		view.cue_pull = drag_power * 90.0
 		power_w.set_power(drag_power)
 	else:
-		if not fine_aim and not pad_active and _mouse_over_table() and m.distance_to(sim.pos[ci]) > 4.0:
+		var may_steer: bool = touch_aiming if settings.touch_mode else true
+		if not fine_aim and not pad_active and may_steer and _mouse_over_table() and m.distance_to(sim.pos[ci]) > 4.0:
 			var nd := (m - sim.pos[ci]).normalized()
 			if nd.angle_to(aim_dir) != 0.0:
 				aim_dir = nd
@@ -280,6 +282,9 @@ func _update_aim(delta: float) -> void:
 			rot -= spd
 		if Input.is_key_pressed(settings.keys.aim_right):
 			rot += spd
+		rot += touch_rot * 0.3
+		if settings.touch_mode and power_slider.value != power:
+			power_slider.set_value_no_signal(power)
 		var jx := _joy(JOY_AXIS_LEFT_X)
 		if jx != 0.0:
 			pad_active = true
@@ -329,7 +334,7 @@ func _update_coach() -> void:
 		return
 	var cue: Vector2 = sim.pos[_cue_index()]
 	if run.shots_taken == 0:
-		view.coach_text = "Press on the table, drag BACK and release to shoot.\nFurther = harder. Break the rack!"
+		view.coach_text = "Drag on the table to aim, set power with the slider,\nthen press SHOOT. Break the rack!" if settings.touch_mode else "Press on the table, drag BACK and release to shoot.\nFurther = harder. Break the rack!"
 	elif view.guide.get("obj_pot", false) or view.guide.get("obj2_pot", false):
 		coach_seen_pot = true
 		view.coach_text = "GOLD line = that ball is going in.\nThe tag on the pocket shows the points."
@@ -833,6 +838,7 @@ func _enter_aim() -> void:
 	state = S.AIM
 	view.placing = false
 	guide_dirty = true
+	touch_aiming = false
 	var how := "Drag %s and release to shoot." % ("forward" if settings.invert_drag else "back")
 	if settings.click_shoot:
 		how = "Set power with the wheel or Up/Down, then click to shoot."
@@ -844,6 +850,7 @@ func _enter_aim() -> void:
 
 
 func _begin_place(head_only: bool) -> void:
+	touch_armed = false
 	state = S.PLACE
 	place_head_only = head_only
 	view.show_guide = false
@@ -1046,7 +1053,9 @@ func _focus_first(n: Node) -> bool:
 func _mouse_button(e: InputEventMouseButton) -> void:
 	match state:
 		S.AIM:
-			if e.button_index == MOUSE_BUTTON_LEFT:
+			if e.button_index == MOUSE_BUTTON_LEFT and settings.touch_mode:
+				touch_aiming = e.pressed and _mouse_over_table()
+			elif e.button_index == MOUSE_BUTTON_LEFT:
 				if e.pressed and _mouse_over_table() and settings.click_shoot:
 					_shoot(power)
 				elif e.pressed and _mouse_over_table():
@@ -1069,10 +1078,26 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 				power = clampf(power - 0.03, 0.02, 1.0)
 				forecast_dirty = true
 		S.PLACE:
-			if e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
+			if e.button_index == MOUSE_BUTTON_LEFT and settings.touch_mode:
+				# Touch has no hover: drag the ghost ball, lift to place it.
+				if e.pressed:
+					touch_armed = true
+				elif touch_armed:
+					touch_armed = false
+					_update_place()
+					_place_cue()
+			elif e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
 				_place_cue()
 		S.PICK:
-			if e.button_index == MOUSE_BUTTON_LEFT and e.pressed and view.hover_pocket >= 0:
+			if e.button_index == MOUSE_BUTTON_LEFT and settings.touch_mode:
+				if e.pressed:
+					touch_armed = true
+				elif touch_armed:
+					touch_armed = false
+					_update_pick()
+					if view.hover_pocket >= 0:
+						_confirm_pick()
+			elif e.button_index == MOUSE_BUTTON_LEFT and e.pressed and view.hover_pocket >= 0:
 				_confirm_pick()
 		S.ROLL, S.TALLY:
 			if e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
@@ -1123,12 +1148,14 @@ func _use_reagent(i: int) -> void:
 		"hotswap":
 			pick_reagent = id
 			pick_call = false
+			touch_armed = false
 			state = S.PICK
 			view.pocket_pick = true
 			lbl_hint.text = "Click a pocket to make it the hot pocket. Esc cancels."
 		"callshot":
 			pick_reagent = id
 			pick_call = true
+			touch_armed = false
 			state = S.PICK
 			view.pocket_pick = true
 			lbl_hint.text = "Click the pocket you are calling. Pots there on your next shot get ×3."
@@ -1200,6 +1227,71 @@ func _button(text: String, cb: Callable, accent: Color = Color(0.85, 0.65, 0.3))
 	return b
 
 
+var log_title: Label
+var touch_box: VBoxContainer
+var menu_btn: Button
+var info_btn_ref: Button
+var power_slider: HSlider
+var touch_aiming := false
+var touch_rot := 0.0
+var touch_armed := false
+
+
+## On-screen shot controls for phones and tablets.
+func _build_touch_controls(parent: Control) -> void:
+	touch_box = VBoxContainer.new()
+	touch_box.add_theme_constant_override("separation", 6)
+	touch_box.visible = false
+	parent.add_child(touch_box)
+	power_slider = HSlider.new()
+	power_slider.min_value = 0.02
+	power_slider.max_value = 1.0
+	power_slider.step = 0.01
+	power_slider.custom_minimum_size = Vector2(0, 44)
+	power_slider.focus_mode = Control.FOCUS_NONE
+	power_slider.value_changed.connect(func(v: float):
+		power = v
+		forecast_dirty = true)
+	touch_box.add_child(power_slider)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	touch_box.add_child(row)
+	for dir in [-1.0, 1.0]:
+		var nudge := _button("<" if dir < 0 else ">", func(): pass, Color(0.6, 0.75, 0.9))
+		nudge.custom_minimum_size = Vector2(66, 58)
+		nudge.focus_mode = Control.FOCUS_NONE
+		nudge.button_down.connect(func(): touch_rot = dir)
+		nudge.button_up.connect(func(): touch_rot = 0.0)
+		row.add_child(nudge)
+		if dir < 0:
+			var shoot := _button("SHOOT", func():
+				if state == S.AIM:
+					_shoot(power), Color(0.4, 0.9, 0.6))
+			shoot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			shoot.custom_minimum_size = Vector2(0, 58)
+			shoot.focus_mode = Control.FOCUS_NONE
+			shoot.add_theme_font_size_override("font_size", 24)
+			row.add_child(shoot)
+
+
+func _sync_touch_ui() -> void:
+	var t := settings.touch_mode
+	touch_box.visible = t
+	log_title.visible = not t
+	log_label.visible = not t
+	lbl_hint.visible = not t
+	menu_btn.visible = t
+	info_btn_ref.text = "Run info" if t else "Run info [Tab]"
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		if paused:
+			_close_run_info()
+		else:
+			_key(KEY_ESCAPE)
+
+
 func _build_ui() -> void:
 	ui = CanvasLayer.new()
 	add_child(ui)
@@ -1228,6 +1320,13 @@ func _build_ui() -> void:
 	info_btn.custom_minimum_size = Vector2(0, 26)
 	info_btn.focus_mode = Control.FOCUS_NONE
 	round_row.add_child(info_btn)
+	info_btn_ref = info_btn
+	menu_btn = _button("Menu", func(): _key(KEY_ESCAPE), Color(0.6, 0.75, 0.9))
+	menu_btn.add_theme_font_size_override("font_size", 12)
+	menu_btn.custom_minimum_size = Vector2(0, 26)
+	menu_btn.focus_mode = Control.FOCUS_NONE
+	menu_btn.visible = false
+	round_row.add_child(menu_btn)
 
 	var labbox := PanelContainer.new()
 	labbox.add_theme_stylebox_override("panel", _style(Color(0.12, 0.13, 0.15), Color(0.25, 0.3, 0.35), 1, 8))
@@ -1322,10 +1421,12 @@ func _build_ui() -> void:
 	tray = BallTray.new()
 	tray.font = F_SEMI
 	lv.add_child(tray)
-	lv.add_child(_label("RECENT SHOTS", 12, Color(0.5, 0.5, 0.55)))
+	log_title = _label("RECENT SHOTS", 12, Color(0.5, 0.5, 0.55))
+	lv.add_child(log_title)
 	log_label = _label("", 13, Color(0.8, 0.82, 0.85), F_REG)
 	log_label.custom_minimum_size = Vector2(290, 52)
 	lv.add_child(log_label)
+	_build_touch_controls(lv)
 
 	var ctrl := HBoxContainer.new()
 	ctrl.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -1460,7 +1561,7 @@ func _refresh_hud() -> void:
 	lbl_target.text = str(run.target())
 	if run.bounty != "":
 		var bt: Dictionary = Catalog.BOUNTIES[run.bounty]
-		lbl_bounty.text = ("✔ " if run.bounty_done else "★ ") + "%s: %s  +$%d" % ["Gold bounty" if t.get("boss", false) else "Bounty", bt.name, run.bounty_reward()]
+		lbl_bounty.text = ("DONE - " if run.bounty_done else "") + "%s: %s  +$%d" % ["Gold bounty" if t.get("boss", false) else "Bounty", bt.name, run.bounty_reward()]
 		lbl_bounty.add_theme_color_override("font_color", Color(0.5, 1.0, 0.6) if run.bounty_done else Color(1.0, 0.85, 0.35))
 	chalk_pips.set_count(run.chalk, run.max_chalk())
 	var per := 3.0 if run.formulas.has("streak") else 1.0
@@ -2032,7 +2133,7 @@ func _refresh_shop() -> void:
 	var spc2 := Control.new()
 	spc2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.add_child(spc2)
-	var go := _button("Next table  ▶", _next_table, Color(0.4, 0.9, 0.6))
+	var go := _button("Next table  >", _next_table, Color(0.4, 0.9, 0.6))
 	go.custom_minimum_size = Vector2(220, 50)
 	go.add_theme_font_size_override("font_size", 22)
 	bar.add_child(go)
@@ -2087,7 +2188,7 @@ func _offer_card(i: int) -> Control:
 	v.add_child(t)
 	v.add_child(_label(kind, 12, accent))
 	if not syn.is_empty():
-		var sl := _label("✚ Synergy: " + ", ".join(syn), 12, Color(0.5, 1.0, 0.6))
+		var sl := _label("+ Synergy: " + ", ".join(syn), 12, Color(0.5, 1.0, 0.6))
 		sl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		sl.custom_minimum_size = Vector2(164, 0)
 		v.add_child(sl)
@@ -2212,10 +2313,11 @@ func _apply_settings() -> void:
 	sfx.set_music_volume(settings.master * settings.music)
 	view.shake_scale = settings.shake
 	view.reduced_motion = settings.reduced_motion
+	_sync_touch_ui()
 	view.colorblind = settings.colorblind
 	view.number_tags = settings.number_tags
 	Engine.max_fps = GameSettings.FRAME_CAPS[settings.frame_cap]
-	if DisplayServer.get_name() != "headless":
+	if DisplayServer.get_name() != "headless" and not OS.has_feature("mobile"):
 		var want := DisplayServer.WINDOW_MODE_FULLSCREEN if settings.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 		if DisplayServer.window_get_mode() != want:
 			DisplayServer.window_set_mode(want)
@@ -2253,6 +2355,7 @@ func _show_settings(back: Callable) -> void:
 	_setting_toggle(grid, "Colour-blind guideline palette", "colorblind")
 	_setting_toggle(grid, "Number tags on every ball", "number_tags")
 	_setting_toggle(grid, "Larger small text", "large_text")
+	_setting_toggle(grid, "Touch controls", "touch_mode")
 	_setting_choice(grid, "Frame cap", "frame_cap", GameSettings.FRAME_CAPS.map(func(f): return "Unlimited" if f == 0 else "%d FPS" % f))
 	_setting_choice(grid, "Window size", "window_size", GameSettings.WINDOW_SIZES.map(func(w): return "%d × %d" % [w.x, w.y]))
 	var row := HBoxContainer.new()
@@ -2599,7 +2702,7 @@ func _show_run_info() -> void:
 	c2.add_child(_label("THE TRIALS", 16, Color(0.6, 0.8, 1.0)))
 	for i in run.plan.size():
 		var t: Dictionary = run.plan[i]
-		var mark := "▶ " if i == run.table_index else ("✔ " if i < run.table_index else "   ")
+		var mark := "> " if i == run.table_index else ("Done: " if i < run.table_index else "   ")
 		var txt := "%sTable %d  ·  %s  ·  target %d" % [mark, i + 1, Catalog.LABS[t.lab].name, t.target]
 		var col := Color(1.0, 0.85, 0.45) if i == run.table_index else (Color(0.5, 0.75, 0.55) if i < run.table_index else Color(0.8, 0.82, 0.85))
 		c2.add_child(_label(txt, 15, col, F_REG))

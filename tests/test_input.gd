@@ -36,6 +36,22 @@ func _stick(axis: int, v: float) -> void:
 	root.push_input(e)
 
 
+func _tap(p: Vector2, pressed: bool) -> void:
+	var e := InputEventMouseButton.new()
+	e.button_index = MOUSE_BUTTON_LEFT
+	e.pressed = pressed
+	e.position = p
+	e.global_position = p
+	root.push_input(e)
+
+
+func _tap_move(p: Vector2) -> void:
+	var e := InputEventMouseMotion.new()
+	e.position = p
+	e.global_position = p
+	root.push_input(e)
+
+
 func _frames(n: int) -> void:
 	for i in n:
 		await process_frame
@@ -202,6 +218,93 @@ func _go() -> void:
 	await _frames(2)
 	check(g.view.place_pos.x > Rack.HEAD.x, "other scratches: anywhere")
 	check(g.sim.alive[ci] == 0, "pot hints do not disturb the table")
+	print("touch")
+	s.reset()
+	s.touch_mode = true
+	g._apply_settings()
+	g._new_run()
+	await _frames(2)
+	g.run.plan[0].target = 1000000
+	check(g.touch_box.visible and g.menu_btn.visible and not g.lbl_hint.visible, "touch controls appear")
+	var cue_scr: Vector2 = g.view.base_position + g.sim.pos[g._cue_index()] * g.TABLE_SCALE
+	var before_aim: Vector2 = g.aim_dir
+	_tap_move(cue_scr + Vector2(0, -200))
+	await _frames(2)
+	check(g.aim_dir == before_aim, "no aim change without a finger down")
+	_tap(cue_scr + Vector2(0, -200), true)
+	await _frames(2)
+	check(g.aim_dir.y < -0.9, "finger aims the shot (%s)" % g.aim_dir)
+	_tap(cue_scr + Vector2(0, -200), false)
+	await _frames(2)
+	check(g.state == g.S.AIM and not g.dragging, "lifting the finger does not shoot")
+	var locked: Vector2 = g.aim_dir
+	_tap_move(cue_scr + Vector2(200, 0))
+	await _frames(2)
+	check(g.aim_dir == locked, "aim stays put after lifting")
+	g.power_slider.value = 0.42
+	check(is_equal_approx(g.power, 0.42), "slider sets power")
+	var a2: Vector2 = g.aim_dir
+	g.touch_rot = 1.0
+	await _frames(6)
+	g.touch_rot = 0.0
+	var moved_deg: float = rad_to_deg(absf(g.aim_dir.angle_to(a2)))
+	check(moved_deg > 0.0 and moved_deg < 3.0, "nudge buttons make fine adjustments (%.2f deg)" % moved_deg)
+	var ci2: int = g._cue_index()
+	g.sim.alive[ci2] = 0
+	g._begin_place(false)
+	var drop_at: Vector2 = g.view.base_position + Vector2(500, 120) * g.TABLE_SCALE
+	_tap(drop_at + Vector2(90, 90), true)
+	await _frames(2)
+	check(g.state == g.S.PLACE, "ghost ball waits while the finger is down")
+	_tap_move(drop_at)
+	await _frames(2)
+	_tap(drop_at, false)
+	await _frames(2)
+	check(g.state == g.S.AIM and g.sim.alive[ci2] == 1 and g.sim.pos[ci2].distance_to(Vector2(500, 120)) < 2.0, "lifting places the cue ball where the finger was")
+	g.sim.alive[ci2] = 0
+	_tap(drop_at, true)
+	g._begin_place(false)
+	_tap(drop_at + Vector2(40, 0), false)
+	await _frames(2)
+	check(g.state == g.S.PLACE, "a stale finger-lift cannot place the ball")
+	g.sim.alive[ci2] = 1
+	g.state = g.S.AIM
+	g.view.placing = false
+	g.run.reagents.assign(["hotswap"])
+	g._use_reagent(0)
+	await _frames(1)
+	var pk_scr: Vector2 = g.view.base_position + (g.layout.pockets[3].pos as Vector2) * g.TABLE_SCALE
+	_tap(pk_scr, true)
+	await _frames(2)
+	_tap(pk_scr, false)
+	await _frames(2)
+	check(g.run.hot_pocket == 3 and g.state == g.S.AIM, "tap picks a pocket")
+	g.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	await _frames(1)
+	check(g.paused, "Android back opens the menu")
+	g.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	await _frames(1)
+	check(not g.paused, "Android back closes it again")
+	g.power_slider.value = 0.6
+	await _frames(1)
+	g._shoot(g.power)
+	await _frames(2)
+	check(g.state == g.S.STRIKE or g.state == g.S.ROLL, "shoot fires")
+	await _settle()
+	s.large_text = true
+	g._apply_settings()
+	g.run.plan[g.run.table_index].anomaly = "onepocket"
+	g.run.plan[g.run.table_index].boss = true
+	g.run.bounty = "bank2"
+	g.run.bluechalk = true
+	g.run.forecast = true
+	g._refresh_hud()
+	g.left_panel.size = Vector2.ZERO
+	await _frames(3)
+	var lpr: Rect2 = g.left_panel.get_global_rect()
+	check(lpr.end.y <= 892.0 and lpr.end.x <= 352.0, "touch side panel fits with large text on a boss table (%s)" % lpr)
+	s.reset()
+	g._apply_settings()
 	print("accessibility")
 	s.colorblind = true
 	s.number_tags = true
