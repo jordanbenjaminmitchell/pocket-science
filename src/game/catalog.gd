@@ -95,6 +95,16 @@ const REAGENTS := {
 	"spare": {"name": "Chalk Cube", "cost": 3, "desc": "+1 Chalk on this table."},
 	"forecast": {"name": "Forecast", "cost": 3, "desc": "See every ball's full real path for your next shot."},
 	"hotswap": {"name": "Hot Swap", "cost": 2, "desc": "Move the hot pocket to the pocket you click."},
+	"scatter": {"name": "Scatter", "cost": 3, "desc": "Blast every object ball to a new clear spot on the table."},
+	"freshrack": {"name": "Fresh Rack", "cost": 4, "desc": "Replace the table with a new rack and take a free break."},
+	"second": {"name": "Second Chance", "cost": 3, "desc": "Your next miss or scratch on this table costs no Chalk."},
+	"callshot": {"name": "Call Shot", "cost": 3, "desc": "Click a pocket. Pots there on your next shot give ×3 Mult."},
+	"adrenaline": {"name": "Adrenaline", "cost": 3, "desc": "+3 to your current streak."},
+	"grant": {"name": "Research Grant", "cost": 2, "desc": "Gain $5 right now."},
+	"wideopen": {"name": "Wide Open", "cost": 3, "desc": "Pockets are 25% wider for your next shot."},
+	"magnetize": {"name": "Magnetize", "cost": 3, "desc": "Pockets pull moving balls in during your next shot."},
+	"overcharge": {"name": "Overcharge", "cost": 3, "desc": "Your next shot gets ×2 Chips."},
+	"contract": {"name": "Bounty Contract", "cost": 2, "desc": "Swap this table's Bounty for a new one, paying double."},
 }
 
 ## Isotopes enhance a specific ball number for the rest of the run.
@@ -103,6 +113,10 @@ const ISOTOPES := {
 	"gold": {"name": "Gilded", "cost": 4, "color": Color(1.0, 0.82, 0.3), "desc": "+$2 when this ball is potted."},
 	"heavy": {"name": "Tungsten", "cost": 3, "color": Color(0.75, 0.78, 0.85), "desc": "+40 Chips when this ball is potted."},
 	"glass": {"name": "Glass", "cost": 5, "color": Color(0.7, 0.85, 1.0), "desc": "×2 Mult when potted, but 1 in 4 chance it shatters (enhancement lost)."},
+	"radium": {"name": "Radium", "cost": 5, "color": Color(0.55, 1.0, 0.25), "desc": "+10 Mult when potted, decaying by 2 each time (minimum +2)."},
+	"prismatic": {"name": "Prismatic", "cost": 5, "color": Color(1.0, 0.55, 0.95), "desc": "+20 Chips and +2 Mult when potted."},
+	"lucky": {"name": "Lucky", "cost": 4, "color": Color(0.35, 0.95, 0.5), "desc": "1 in 3 chance of ×3 Mult when potted."},
+	"resonant": {"name": "Resonant", "cost": 4, "color": Color(0.5, 0.65, 1.0), "desc": "This ball's Chips count twice."},
 }
 
 ## Starting cues: each run begins by choosing one. "shaft"/"butt"/"accent" colour the stick.
@@ -117,6 +131,16 @@ const CUES := {
 		"shaft": Color(0.88, 0.78, 0.6), "butt": Color(0.12, 0.12, 0.14), "accent": Color(0.6, 1.0, 0.5)},
 	"gilded": {"name": "Gilded Cue", "desc": "Starts rich: $12 and Compound Interest. No chalk cube.", "money": 12, "formulas": ["interest"], "reagents": [], "chalk": 0,
 		"shaft": Color(0.92, 0.82, 0.55), "butt": Color(0.45, 0.32, 0.08), "accent": Color(1.0, 0.85, 0.3)},
+	"breaker": {"name": "Break Cue", "desc": "Starts with Afterburner (break pots ×3 Mult). $3.", "money": 3, "formulas": ["afterburner"], "reagents": [], "chalk": 0,
+		"shaft": Color(0.75, 0.75, 0.78), "butt": Color(0.5, 0.1, 0.5), "accent": Color(0.85, 0.5, 1.0)},
+	"banker": {"name": "Banker's Cue", "desc": "Starts with Thrift and $8.", "money": 8, "formulas": ["thrift"], "reagents": [], "chalk": 0,
+		"shaft": Color(0.9, 0.85, 0.7), "butt": Color(0.1, 0.3, 0.15), "accent": Color(0.75, 0.9, 0.3)},
+	"thermal": {"name": "Thermal Cue", "desc": "Starts with Stay Hot: the hot pocket only moves after a shot that does not score. $3.", "money": 3, "formulas": ["migration"], "reagents": [], "chalk": 0,
+		"shaft": Color(0.9, 0.75, 0.55), "butt": Color(0.75, 0.3, 0.05), "accent": Color(1.0, 0.7, 0.2)},
+	"angle": {"name": "Angle Cue", "desc": "Starts with Angle of Incidence (banks +3 Mult per cushion). $2.", "money": 2, "formulas": ["bank"], "reagents": [], "chalk": 0,
+		"shaft": Color(0.8, 0.85, 0.8), "butt": Color(0.1, 0.4, 0.3), "accent": Color(0.35, 0.8, 0.5)},
+	"glass": {"name": "Glass Cue", "desc": "Starts with Glass Cannon (×3 Mult, misses cost 2 Chalk). 1 less Chalk. $4.", "money": 4, "formulas": ["glasscannon"], "reagents": [], "chalk": -1,
+		"shaft": Color(0.85, 0.92, 1.0), "butt": Color(0.55, 0.7, 0.9), "accent": Color(1.0, 0.35, 0.65)},
 }
 
 ## Labs set the table physics and cloth. "felt" is the cloth colour.
@@ -126,6 +150,11 @@ const LABS := {
 	"cyclotron": {"name": "Cyclotron", "felt": Color(0.3, 0.2, 0.48), "desc": "A spring bumper sits mid-table. +10 Chips per bumper hit in a scoring shot."},
 	"spring": {"name": "Spring Rails", "felt": Color(0.5, 0.14, 0.16), "desc": "Lively cushions. Bank pots give +1 extra Mult per cushion."},
 	"gravity": {"name": "Gravity Well", "felt": Color(0.09, 0.2, 0.42), "desc": "A well at the centre bends moving balls toward it."},
+	"current": {"name": "The Current", "felt": Color(0.05, 0.36, 0.42), "desc": "Moving balls drift toward the right rail. All pots +2 Mult."},
+	"magnetlab": {"name": "Magnet Lab", "felt": Color(0.42, 0.13, 0.32), "desc": "Pockets pull moving balls in. Every pot gives 5 fewer Chips."},
+	"dense": {"name": "Neutron Cloth", "felt": Color(0.2, 0.26, 0.13), "desc": "Heavy cloth stops balls quickly. All pots +15 Chips."},
+	"pinball": {"name": "Pinball Lab", "felt": Color(0.42, 0.26, 0.07), "desc": "Four spring bumpers. +6 Chips per bumper hit in a scoring shot."},
+	"repulsor": {"name": "Repulsor", "felt": Color(0.12, 0.13, 0.38), "desc": "The centre pushes moving balls away. Bank pots give +1 extra Mult per cushion."},
 }
 
 ## Anomalies are boss rules on every third table.
@@ -159,7 +188,32 @@ const BOUNTIES := {
 	"big": {"name": "Score 150+ in one shot", "reward": 4},
 	"side": {"name": "Pot into a side pocket", "reward": 2},
 	"eight": {"name": "Pot the 8-ball", "reward": 3},
+	"bank2": {"name": "Sink a 2-cushion bank", "reward": 6},
+	"big300": {"name": "Score 300+ in one shot", "reward": 5},
+	"big600": {"name": "Score 600+ in one shot", "reward": 7},
+	"streak3": {"name": "Reach a streak of 3", "reward": 2},
+	"streak6": {"name": "Reach a streak of 6", "reward": 7},
+	"corner": {"name": "Pot into a corner pocket", "reward": 1},
+	"hot2": {"name": "Pot 2 balls into the hot pocket", "reward": 7},
+	"quad": {"name": "Pot 4+ balls in one shot", "reward": 8},
+	"stripe": {"name": "Pot a striped ball", "reward": 2},
+	"solid": {"name": "Pot a solid ball", "reward": 1},
+	"soft": {"name": "Pot with a soft shot (35% power or less)", "reward": 3},
+	"hard": {"name": "Pot with a power shot (85% or more)", "reward": 3},
+	"breakpot": {"name": "Pot a ball on the break", "reward": 3},
+	"mult10": {"name": "Reach 10 Mult on a shot", "reward": 4},
+	"chips100": {"name": "Reach 100 Chips on a shot", "reward": 5},
 }
+
+## Difficulty ladder. Each Stake includes every rule before it.
+const STAKES := [
+	{"name": "Standard", "desc": "The game as designed."},
+	{"name": "Scuffed Cloth", "desc": "Table targets are 15% higher."},
+	{"name": "Chalk Shortage", "desc": "1 less Chalk on every table."},
+	{"name": "Tight Budget", "desc": "Everything in the Lab Supply costs $1 more."},
+	{"name": "Narrow Jaws", "desc": "Pockets are 5% narrower."},
+	{"name": "High Stakes", "desc": "Table targets are 30% higher again."},
+]
 
 const TABLES := [
 	{"target": 60, "rack": "nine"},

@@ -70,7 +70,7 @@ func _go() -> void:
 	g._show_cue_select()
 	await process_frame
 	var locked_buttons := _find_text(g.overlay, "Locked")
-	check(locked_buttons == 4, "cue select shows 4 locked cues (%d)" % locked_buttons)
+	check(locked_buttons == Catalog.CUES.size() - 1, "cue select shows every other cue locked (%d)" % locked_buttons)
 	g._new_run()
 	check(g.run.locked.size() == 32, "a new run uses the profile's locks")
 	# Restore whatever profile existed.

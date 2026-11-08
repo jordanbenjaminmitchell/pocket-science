@@ -135,7 +135,7 @@ func _go() -> void:
 		check(b.bounty_met(cases[id], -1), "bounty %s triggers" % id)
 		var nope := fresh()
 		nope.bounty = id
-		check(not nope.bounty_met(hit([6], 10, {"power": 0.5}), -1), "bounty %s stays off for a plain pot" % id)
+		check(not nope.bounty_met(hit([8], 10, {"power": 0.5}), -1), "bounty %s stays off for a plain pot" % id)
 	var st := fresh()
 	st.bounty = "streak6"
 	st.streak = 5
@@ -195,6 +195,64 @@ func _go() -> void:
 	for i in 10:
 		m.on_shot(hit([1], 20, {"lines": [{"label": "Bank ×1"}]}), fresh())
 	check(m.cue_unlocked("angle"), "10 banks unlocks the Angle Cue")
+	print("stakes")
+	var sk := []
+	for lvl in Catalog.STAKES.size():
+		var q := RunState.new()
+		q.start(77, "maple", lvl)
+		q.begin_table()
+		q.roll_shop()
+		sk.append({"t": q.target(), "c": q.chalk, "p": q.pocket_scale(), "cost": q.shop[0].cost})
+	check(sk[1].t > sk[0].t and sk[1].c == sk[0].c, "stake 1 raises targets only")
+	check(sk[2].c == sk[1].c - 1, "stake 2 removes a chalk")
+	check(sk[3].cost == sk[2].cost + 1, "stake 3 raises prices")
+	check(sk[4].p < sk[3].p, "stake 4 narrows pockets")
+	check(sk[5].t > sk[4].t, "stake 5 raises targets again")
+	var rl := RunState.new()
+	rl.start(77, "maple", 3)
+	rl.roll_shop()
+	var costs: Array = rl.shop.map(func(x): return x.cost)
+	rl.money = 100
+	var kept: Array = rl.shop.filter(func(x): return x.type != "formula").map(func(x): return x.cost)
+	rl.reroll()
+	check(rl.shop.filter(func(x): return x.type != "formula").map(func(x): return x.cost) == kept, "rerolling never double-charges kept offers")
+	var fm := RunState.new()
+	fm.start(1)
+	fm.roll_shop()
+	var fid: String = fm.shop[0].id
+	var base: int = fm.shop[0].cost
+	var fs3 := RunState.new()
+	fs3.start(1, "maple", 3)
+	fs3.roll_shop()
+	check(fs3.shop[0].id == fid and fs3.shop[0].cost == base + 1, "stake price applies once")
+	var mw := Meta.new()
+	check(mw.max_stake == 0, "starts at stake 0")
+	mw.on_win(0)
+	check(mw.max_stake == 1, "a win opens the next stake")
+	mw.on_win(0)
+	check(mw.max_stake == 1, "winning a lower stake does not skip ahead")
+	for i in 10:
+		mw.on_win(mw.max_stake)
+	check(mw.max_stake == Catalog.STAKES.size() - 1, "ladder stops at the top")
+	print("endless")
+	var en := RunState.new()
+	en.start(9)
+	en.table_index = en.plan.size() - 1
+	var last := en.target()
+	en.advance_table()
+	var tgs := [en.target()]
+	var cur1: Dictionary = en.current()
+	check(en.endless and tgs[0] > last and not cur1.boss, "endless starts harder than the final table")
+	en.advance_table()
+	check(en.current().boss and en.current().anomaly != "", "every second endless table is a boss")
+	check(en.target() > tgs[0], "targets keep climbing")
+	var c_now := en.max_chalk()
+	en.table_index += 8
+	check(en.max_chalk() < c_now and en.max_chalk() >= 2, "endless wears chalk down to a floor of 2 (%d)" % en.max_chalk())
+	for i in 30:
+		en.advance_table()
+		en.begin_table()
+		check(Catalog.LABS.has(en.current().lab), "endless table %d valid" % i) if not Catalog.LABS.has(en.current().lab) else null
 	print("content tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 

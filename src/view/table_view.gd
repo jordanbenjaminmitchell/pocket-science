@@ -29,6 +29,7 @@ var show_guide := false
 var guide := {}
 var forecast_paths: Array = []
 var hot_pocket := -1
+var called_pocket := -1   # Call Shot reagent
 var second_pocket := -1   # Two Pockets boss: also scores, shown with a cooler ring
 var hot_mult := 2
 var preview_text := ""
@@ -382,6 +383,11 @@ func _draw_cushions() -> void:
 			var w := font_bold.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			var lp := p + dir * -46.0
 			c.draw_string(font_bold, lp + Vector2(-w * 0.5, 6), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, hc)
+		if k == called_pocket:
+			c.draw_arc(p, r + 8.0 + sin(time * 6.0) * 2.0, 0, TAU, 40, Color(0.95, 0.6, 1.0, 0.9), 3.0)
+			var t3 := "×3 called"
+			var w3 := font_bold.get_string_size(t3, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+			c.draw_string(font_bold, p + dir * 58.0 + Vector2(-w3 * 0.5, 5), t3, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.95, 0.7, 1.0))
 		if k == second_pocket:
 			var pulse2 := 0.5 + 0.5 * sin(time * 5.0 + PI)
 			for i in 3:

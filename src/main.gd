@@ -696,7 +696,7 @@ func _after_shot() -> void:
 	_announce_unlocks(meta.on_shot(result, run))
 	if out.has("bounty"):
 		sfx.play("coin", 1.0, 1.1)
-		_flash_banner("BOUNTY!  +$%d" % Catalog.BOUNTIES[out.bounty].reward, Color(1.0, 0.85, 0.35), 1.3)
+		_flash_banner("BOUNTY!  +$%d" % run.bounty_reward(), Color(1.0, 0.85, 0.35), 1.3)
 		view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(1.0, 0.85, 0.35), 40, 300)
 	for n in result.shattered:
 		view.popup(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.6), "Glass %d-ball shattered!" % n, Color(0.7, 0.85, 1.0), 20, 1.5)
@@ -729,14 +729,21 @@ func _after_shot() -> void:
 func _rebuild_layout() -> void:
 	layout = run.build_layout()
 	sim.layout = layout
+	run.apply_physics(sim)
+	guide_dirty = true
 	view.setup(layout, F_SEMI, F_PIXB)
 	view.set_felt(Catalog.LABS[run.current().lab].felt)
 	view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(1, 0.5, 0.4), 12, 120)
 
 
+var pick_call := false
+var chosen_stake := 0
+
+
 func _sync_hot() -> void:
 	view.hot_pocket = run.hot_pocket
 	view.second_pocket = 5 - run.hot_pocket if run.current().anomaly == "onepocket" and run.hot_pocket >= 0 else -1
+	view.called_pocket = run.called_pocket
 
 
 func _enter_aim() -> void:
@@ -791,7 +798,7 @@ func _table_cleared() -> void:
 	var final: bool = run.table_index == run.plan.size() - 1
 	_announce_unlocks(meta.on_table_cleared(run))
 	if final and not run.endless:
-		_announce_unlocks(meta.on_win())
+		_announce_unlocks(meta.on_win(run.stake))
 	var rows := run.payout()
 	_refresh_hud()
 	await get_tree().create_timer(1.6).timeout
@@ -900,8 +907,13 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 				_place_cue()
 		S.PICK:
 			if e.button_index == MOUSE_BUTTON_LEFT and e.pressed and view.hover_pocket >= 0:
-				run.hot_pocket = view.hover_pocket
-				_sync_hot()
+				if pick_call:
+					run.called_pocket = view.hover_pocket
+					view.called_pocket = run.called_pocket
+					pick_call = false
+				else:
+					run.hot_pocket = view.hover_pocket
+					_sync_hot()
 				view.pocket_pick = false
 				sfx.play("xmult", 0.6)
 				_enter_aim()
@@ -938,9 +950,32 @@ func _use_reagent(i: int) -> void:
 			forecast_dirty = true
 			forecast_timer = 0.0
 		"hotswap":
+			pick_call = false
 			state = S.PICK
 			view.pocket_pick = true
 			lbl_hint.text = "Click a pocket to make it the hot pocket. Esc cancels."
+		"callshot":
+			pick_call = true
+			state = S.PICK
+			view.pocket_pick = true
+			lbl_hint.text = "Click the pocket you are calling. Pots there on your next shot get ×3."
+		"scatter":
+			run.scatter(sim)
+			guide_dirty = true
+			for b in view.ball_nodes:
+				view.ball_nodes[b].position = sim.pos[b]
+			sfx.play("bumper", 0.8)
+			view.add_shake(4.0)
+		"freshrack":
+			run.racks_cleared += 1   # a new rack number means a different layout
+			_new_rack(run.current().rack)
+		"wideopen", "magnetize":
+			run.use_instant(id)
+			_rebuild_layout()
+			_flash_banner(Catalog.REAGENTS[id].name.to_upper() + ": NEXT SHOT", Color(0.4, 0.7, 1.0), 1.2)
+		"second", "adrenaline", "grant", "overcharge", "contract":
+			run.use_instant(id)
+			_flash_banner(Catalog.REAGENTS[id].name.to_upper(), Color(0.4, 0.7, 1.0), 1.2)
 	run.reagents.remove_at(i)
 	sfx.play("coin", 0.5, 1.2)
 	guide_dirty = true
@@ -1233,7 +1268,7 @@ func _refresh_hud() -> void:
 	if run.endless:
 		lbl_round.text = "Endless table %d" % (run.table_index + 1)
 	else:
-		lbl_round.text = "%sTable %d / %d%s" % ["Daily · " if run.daily_key != "" else "", run.table_index + 1, total, "  ·  BOSS" if t.get("boss", false) else ""]
+		lbl_round.text = "%sTable %d / %d%s" % ["Daily · " if run.daily_key != "" else ("Stake %d · " % run.stake if run.stake > 0 else ""), run.table_index + 1, total, "  ·  BOSS" if t.get("boss", false) else ""]
 	lbl_lab.text = Catalog.LABS[t.lab].name
 	lbl_rule.text = Catalog.LABS[t.lab].desc
 	if t.anomaly != "":
@@ -1247,7 +1282,7 @@ func _refresh_hud() -> void:
 	lbl_target.text = str(run.target())
 	if run.bounty != "":
 		var bt: Dictionary = Catalog.BOUNTIES[run.bounty]
-		lbl_bounty.text = ("✔ " if run.bounty_done else "★ ") + "Bounty: %s  +$%d" % [bt.name, bt.reward]
+		lbl_bounty.text = ("✔ " if run.bounty_done else "★ ") + "%s: %s  +$%d" % ["Gold bounty" if t.get("boss", false) else "Bounty", bt.name, run.bounty_reward()]
 		lbl_bounty.add_theme_color_override("font_color", Color(0.5, 1.0, 0.6) if run.bounty_done else Color(1.0, 0.85, 0.35))
 	chalk_pips.set_count(run.chalk, run.max_chalk())
 	var per := 3.0 if run.formulas.has("streak") else 1.0
@@ -1258,6 +1293,14 @@ func _refresh_hud() -> void:
 		flags.append("Blue Chalk ready: ×2 Mult")
 	if run.forecast:
 		flags.append("Forecast active")
+	if run.overcharge:
+		flags.append("Overcharge ready: ×2 Chips")
+	if run.wide_shot:
+		flags.append("Wide Open: next shot")
+	if run.magnetize:
+		flags.append("Magnetize: next shot")
+	if run.second_chance > 0:
+		flags.append("Second Chance ready")
 	if run.formulas.has("catalyst"):
 		flags.append("Catalyst: +%s Mult" % _fmt(run.catalyst))
 	flags_label.text = "\n".join(flags)
@@ -1505,12 +1548,26 @@ func _show_cue_select() -> void:
 	seed_input.custom_minimum_size = Vector2(300, 34)
 	seed_input.name = "seed_input"
 	seed_row.add_child(seed_input)
+	if meta.max_stake > 0:
+		chosen_stake = mini(chosen_stake, meta.max_stake)
+		var st: Dictionary = Catalog.STAKES[chosen_stake]
+		var down := _button("<", func():
+			chosen_stake = maxi(0, chosen_stake - 1)
+			_show_cue_select())
+		var up := _button(">", func():
+			chosen_stake = mini(meta.max_stake, chosen_stake + 1)
+			_show_cue_select())
+		down.disabled = chosen_stake == 0
+		up.disabled = chosen_stake >= meta.max_stake
+		seed_row.add_child(down)
+		seed_row.add_child(_label("Stake %d: %s - %s" % [chosen_stake, st.name, st.desc], 15, Color(1.0, 0.7, 0.45), F_SEMI))
+		seed_row.add_child(up)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	v.add_child(row)
 	for id in Catalog.CUES:
 		var c: Dictionary = Catalog.CUES[id]
-		var sh := _card_shell(c.accent, 200, 260)
+		var sh := _card_shell(c.accent, 200, 232)
 		var p: PanelContainer = sh[0]
 		var cv: VBoxContainer = sh[1]
 		var stick := Control.new()
@@ -1546,6 +1603,10 @@ func _show_cue_select() -> void:
 			lk.custom_minimum_size = Vector2(176, 0)
 			cv.add_child(lk)
 		cv.add_child(pick)
+		if row.get_child_count() == 5:
+			row = HBoxContainer.new()
+			row.add_theme_constant_override("separation", 12)
+			v.add_child(row)
 		row.add_child(p)
 	v.add_child(_button("Back", _show_title))
 
@@ -1607,7 +1668,8 @@ func _new_run() -> void:
 		pending_seed = Records.daily_seed(pending_daily)
 	elif not meta.cue_unlocked(chosen_cue):
 		chosen_cue = "maple"
-	run.start(pending_seed if pending_seed >= 0 else randi(), chosen_cue)
+	var stake_now := 0 if pending_daily != "" else mini(chosen_stake, meta.max_stake)
+	run.start(pending_seed if pending_seed >= 0 else randi(), chosen_cue, stake_now)
 	run.daily_key = pending_daily
 	# Dailies give everyone the full pool, so results are comparable.
 	run.locked = [] if pending_daily != "" else meta.locked_formulas()

@@ -58,7 +58,8 @@ static func score(ctx: Dictionary) -> Dictionary:
 		"lines": [], "chips": 0.0, "mult": 1.0, "total": 0, "money": 0,
 		"potted": pots.map(func(p): return p.a), "scratch": scratch,
 		"foul": "", "scored": false, "first_contact": first_contact,
-		"shattered": [], "catalyst_gain": 0.0,
+		"shattered": [], "catalyst_gain": 0.0, "power": ctx.get("power", 0.5), "is_break": ctx.get("is_break", false),
+		"radium_used": [],
 	}
 	if scratch:
 		out.foul = "Scratch"
@@ -106,8 +107,28 @@ static func score(ctx: Dictionary) -> Dictionary:
 				lines.append(_l("Glass", "xmult", 2, n, k))
 				if rng != null and rng.randf() < 0.25:
 					out.shattered.append(n)
+			"radium":
+				var uses: int = ctx.get("radium", {}).get(str(n), 0)
+				lines.append(_l("Radium", "mult", maxi(2, 10 - 2 * uses), n, k))
+				out.radium_used.append(n)
+			"prismatic":
+				lines.append(_l("Prismatic", "chips", 20, n, k))
+				lines.append(_l("Prismatic", "mult", 2, n, k))
+			"lucky":
+				if rng != null and rng.randf() < 1.0 / 3.0:
+					lines.append(_l("Lucky", "xmult", 3, n, k))
+			"resonant":
+				lines.append(_l("Resonant", "chips", Catalog.ball_points(n), n, k))
 		if lab == "cryo":
 			lines.append(_l("Cryo Felt", "mult", 1, n, k))
+		elif lab == "current":
+			lines.append(_l("The Current", "mult", 2, n, k))
+		elif lab == "magnetlab":
+			lines.append(_l("Magnet Lab", "chips", -5, n, k))
+		elif lab == "dense":
+			lines.append(_l("Neutron Cloth", "chips", 15, n, k))
+		if k == int(ctx.get("called", -1)):
+			lines.append(_l("Called shot", "xmult", 3, n, k))
 		if formulas.has("odd") and n % 2 == 1:
 			lines.append(_l("Odd Hypothesis", "chips", 15, n, k))
 		if formulas.has("even") and n % 2 == 0:
@@ -134,7 +155,7 @@ static func score(ctx: Dictionary) -> Dictionary:
 			lines.append(_l("Sacred Geometry", "xmult", 1.5, n, k))
 		if rails > 0:
 			var per_rail := 3 if formulas.has("bank") else 1
-			if lab == "spring":
+			if lab == "spring" or lab == "repulsor":
 				per_rail += 1
 			lines.append(_l("Bank ×%d" % rails, "mult", per_rail * rails, n, k))
 		var by: int = toucher.get(n, 0)
@@ -182,8 +203,8 @@ static func score(ctx: Dictionary) -> Dictionary:
 	if formulas.has("elastic") and collisions > 0:
 		var counted := mini(collisions, 12)
 		lines.append(_l("Elastic ×%d" % counted, "chips", 4 * counted))
-	if lab == "cyclotron" and bumpers > 0:
-		lines.append(_l("Bumper ×%d" % bumpers, "chips", 10 * bumpers))
+	if (lab == "cyclotron" or lab == "pinball") and bumpers > 0:
+		lines.append(_l("Bumper ×%d" % bumpers, "chips", (10 if lab == "cyclotron" else 6) * bumpers))
 	var power: float = ctx.get("power", 0.5)
 	if formulas.has("power") and power >= 0.85:
 		lines.append(_l("Kinetic Energy", "mult", 5))
@@ -237,6 +258,8 @@ static func score(ctx: Dictionary) -> Dictionary:
 			lines.append(_l("Minimalist ×%d" % empty, "xmult", pow(1.5, empty)))
 	if ctx.get("bluechalk", false):
 		lines.append(_l("Blue Chalk", "xmult", 2))
+	if ctx.get("overcharge", false):
+		lines.append(_l("Overcharge", "xchips", 2))
 	if anomaly == "taxman":
 		lines.append(_l("Taxman", "xchips", 0.85))
 

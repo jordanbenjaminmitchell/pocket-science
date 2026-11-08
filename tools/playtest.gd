@@ -126,6 +126,7 @@ func play_table(run: RunState, rec: Dictionary) -> bool:
 		if out.has("layout_changed"):
 			layout = run.build_layout()
 			sim.layout = layout
+			run.apply_physics(sim)
 		if out.rack_cleared:
 			sim = new_rack(run, layout)
 			is_break = true
@@ -271,6 +272,29 @@ func use_reagents(sim: PoolSim, run: RunState, rec: Dictionary, is_break: bool) 
 			"forecast":
 				if persona == "novice" and rng.randf() < 0.3:
 					run.forecast = true
+					used = id
+			"second", "grant", "contract":
+				run.use_instant(id)
+				used = id
+			"adrenaline", "overcharge":
+				if run.streak >= 1:
+					run.use_instant(id)
+					used = id
+			"wideopen", "magnetize":
+				if run.chalk <= 2 and not is_break:
+					run.use_instant(id)
+					sim.layout = run.build_layout()
+					run.apply_physics(sim)
+					used = id
+			"callshot":
+				if not is_break:
+					var c2 := AutoPlayer.candidates(sim, run)
+					if c2.size() > 0:
+						run.called_pocket = c2[0].pocket
+						used = id
+			"scatter":
+				if not is_break and AutoPlayer.candidates(sim, run).is_empty():
+					run.scatter(sim)
 					used = id
 		if used != "":
 			run.reagents.erase(used)

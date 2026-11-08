@@ -16,7 +16,7 @@ var current_track := ""
 const TRACKS := {
 	"title": "velvet-orbit", "standard": "prism-pocket-jazz", "cryo": "cryo-cool",
 	"cyclotron": "cyclotron-bounce", "spring": "bumper-ballet", "gravity": "event-horizon-jam",
-	"boss": "last-pocket", "shop": "static-picnic", "endless": "mass-driver-groove", "drift": "crystal-drift",
+	"current": "crystal-drift", "dense": "static-picnic", "magnetlab": "event-horizon-jam", "pinball": "bumper-ballet", "repulsor": "cyclotron-bounce", "boss": "last-pocket", "shop": "static-picnic", "endless": "mass-driver-groove", "drift": "crystal-drift",
 }
 
 
