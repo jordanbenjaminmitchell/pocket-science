@@ -14,7 +14,16 @@ func _go() -> void:
 	var scenario := args[0] if args.size() > 0 else "aim"
 	var out := args[1] if args.size() > 1 else "res://tools/shot.png"
 	game = load("res://main.tscn").instantiate()
+	# Phone-like captures: PS_PHONE=1 uses touch UI and larger text, PS_HOLE sets the camera cutout.
+	if OS.get_environment("PS_PHONE") == "1":
+		game.settings.touch_mode = true
+		game.settings.large_text = true
+	if OS.get_environment("PS_HOLE") != "":
+		game.debug_hole = float(OS.get_environment("PS_HOLE"))
 	root.add_child(game)
+	if OS.get_environment("PS_LAYOUT") == "wide":
+		game.settings.screen_layout = 1
+		game._apply_settings()
 	await _frames(5)
 	match scenario:
 		"title":

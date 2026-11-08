@@ -30,7 +30,7 @@ func _draw() -> void:
 		var n: int = balls[k]
 		var col := k % per_row
 		var row := k / per_row
-		var c := Vector2(18 + col * 36, 16 + row * 26)
+		var c := Vector2(18 + col * minf(36.0, (size.x - 36.0) / 7.0), 16 + row * 26)
 		var down: bool = potted.has(n)
 		var a := 0.28 if down else 1.0
 		var base := Catalog.ball_color(n)

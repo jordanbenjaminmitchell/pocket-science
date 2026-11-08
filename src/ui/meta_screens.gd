@@ -17,7 +17,7 @@ func show_collection() -> void:
 	g._dim(0.88)
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", g._style(Color(0.08, 0.075, 0.08, 0.99), Color(0.5, 0.7, 0.9), 2, 16))
-	p.position = Vector2(40, 30)
+	p.position = Vector2(40.0 + g.fit.frame_x, 30.0)
 	p.size = Vector2(1520, 840)
 	g.overlay.add_child(p)
 	var v := VBoxContainer.new()

@@ -77,7 +77,12 @@ var spin_w: SpinWidget
 var power_w: PowerMeter
 var lbl_hint: Label
 var lbl_status: Label
-var perk_row: HBoxContainer
+var perk_row: BoxContainer
+var room_rect: ColorRect
+var fit := ScreenFit.classic()
+var fit_key := ""
+var debug_hole := -1.0   # capture tool: pretend the phone has this camera cutout
+var debug_window := Vector2i.ZERO   # tests: pretend the window is this size
 var overlay: Control
 var selected_perk := -1
 var banner: Label
@@ -103,6 +108,7 @@ func _ready() -> void:
 	room_mat.shader = preload("res://src/view/shaders/room.gdshader")
 	room.material = room_mat
 	add_child(room)
+	room_rect = room
 	view = TableView.new()
 	view.base_position = TABLE_ORIGIN
 	view.home_position = TABLE_ORIGIN
@@ -113,6 +119,14 @@ func _ready() -> void:
 	get_tree().quit_on_go_back = false   # the Android back button opens the menu instead
 	_build_ui()
 	_load_settings()
+	get_window().size_changed.connect(_apply_screen_layout)
+	left_panel.minimum_size_changed.connect(_size_hud, CONNECT_DEFERRED)
+	# Android reports the camera cutout a moment after launch, and again on rotation.
+	var fit_timer := Timer.new()
+	fit_timer.wait_time = 1.0
+	fit_timer.autostart = true
+	fit_timer.timeout.connect(_apply_screen_layout)
+	add_child(fit_timer)
 	meta.load_file()
 	records.load_file()
 	screens = MetaScreens.new(self)
@@ -997,7 +1011,7 @@ func _pad_cursor(delta: float) -> void:
 	if stick != Vector2.ZERO:
 		pad_active = true
 		mouse_pos += stick * delta * 760.0
-		mouse_pos = mouse_pos.clamp(Vector2.ZERO, Vector2(1600, 900))
+		mouse_pos = mouse_pos.clamp(Vector2.ZERO, fit.view)
 
 
 func _focus_first(n: Node) -> bool:
@@ -1319,7 +1333,7 @@ func _build_ui() -> void:
 	var fv := VBoxContainer.new()
 	fpanel.add_child(fv)
 	fv.add_child(_label("PERKS  (always active)", 12, Color(0.6, 0.6, 0.6)))
-	perk_row = HBoxContainer.new()
+	perk_row = BoxContainer.new()
 	perk_row.add_theme_constant_override("separation", 8)
 	fv.add_child(perk_row)
 	# ---------------- banner + overlay
@@ -1445,13 +1459,14 @@ func _refresh_tray() -> void:
 
 func _rebuild_cards() -> void:
 	for c in perk_row.get_children():
+		perk_row.remove_child(c)   # at once, so the old cards stop holding the row open
 		c.queue_free()
 	for i in RunState.MAX_PERKS:
 		if i < run.perks.size():
 			perk_row.add_child(_perk_card(run.perks[i], i))
 		else:
 			var empty := PanelContainer.new()
-			empty.custom_minimum_size = Vector2(192, 132)
+			empty.custom_minimum_size = fit.card
 			empty.add_theme_stylebox_override("panel", _style(Color(0, 0, 0, 0.2), Color(1, 1, 1, 0.08), 1, 10))
 			perk_row.add_child(empty)
 
@@ -1470,7 +1485,8 @@ func _card_shell(accent: Color, w: float, h: float) -> Array:
 func _perk_card(id: String, slot: int) -> Control:
 	var f: Dictionary = Catalog.PERKS[id]
 	var accent := Catalog.rarity_color(f.r)
-	var sh := _card_shell(accent, 192, 132)
+	var card: Vector2 = fit.card
+	var sh := _card_shell(accent, card.x, card.y)
 	var p: PanelContainer = sh[0]
 	var v: VBoxContainer = sh[1]
 	var hb := HBoxContainer.new()
@@ -1479,11 +1495,11 @@ func _perk_card(id: String, slot: int) -> Control:
 	hb.add_child(IconArt.new().setup(id, F_SEMI, 34))
 	var name_l := _label(f.name, 14, Color.WHITE)
 	name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	name_l.custom_minimum_size = Vector2(126, 0)
+	name_l.custom_minimum_size = Vector2(card.x - 66.0, 0)
 	hb.add_child(name_l)
 	var d := _label(f.desc, 11, Color(0.78, 0.8, 0.82), F_REG)
 	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	d.custom_minimum_size = Vector2(168, 0)
+	d.custom_minimum_size = Vector2(card.x - 24.0, 0)
 	if state != S.SHOP:
 		v.add_child(d)
 	else:
@@ -1538,9 +1554,9 @@ func _center_panel(w: float, h: float, accent: Color = Color(0.85, 0.65, 0.3), a
 	p.add_theme_stylebox_override("panel", _style(Color(0.08, 0.075, 0.08, 0.98), accent, 2, 16))
 	p.custom_minimum_size = Vector2(w, 0)
 	p.size = Vector2(w, 0)
-	p.position = at if at.x >= 0 else Vector2((1600 - w) * 0.5, (900 - h) * 0.5)
+	p.position = at if at.x >= 0 else Vector2((fit.view.x - w) * 0.5, (900 - h) * 0.5)
 	if at.x < 0:
-		p.resized.connect(func(): p.position.y = maxf(10.0, (900.0 - p.size.y) * 0.5))
+		p.resized.connect(func(): p.position = Vector2((fit.view.x - p.size.x) * 0.5, maxf(10.0, (900.0 - p.size.y) * 0.5)))
 	overlay.add_child(p)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
@@ -1889,11 +1905,12 @@ func _refresh_shop() -> void:
 	_clear_overlay()
 	var d := _dim(0.6)
 	d.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	d.position = Vector2(352, 0)
-	d.size = Vector2(1248, 706)
+	var zone: Rect2 = fit.table_zone
+	d.position = zone.position
+	d.size = zone.size
 	d.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var v := _center_panel(1040, 600, Color(0.85, 0.65, 0.3), Vector2(450, 70))
+	var v := _center_panel(1040, 600, Color(0.85, 0.65, 0.3), Vector2(450, 70) + fit.table_offset)
 	var head := HBoxContainer.new()
 	v.add_child(head)
 	head.add_child(_label("PRO SHOP", 30, Color(0.98, 0.8, 0.4), F_PIXB))
@@ -2114,6 +2131,7 @@ func _apply_settings() -> void:
 	view.colorblind = settings.colorblind
 	view.number_tags = settings.number_tags
 	Engine.max_fps = GameSettings.FRAME_CAPS[settings.frame_cap]
+	_apply_screen_layout()
 	if DisplayServer.get_name() != "headless" and not OS.has_feature("mobile"):
 		var want := DisplayServer.WINDOW_MODE_FULLSCREEN if settings.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 		if DisplayServer.window_get_mode() != want:
@@ -2123,6 +2141,70 @@ func _apply_settings() -> void:
 				DisplayServer.window_set_size(GameSettings.WINDOW_SIZES[settings.window_size])
 			applied_window = settings.window_size
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if settings.vsync else DisplayServer.VSYNC_DISABLED)
+
+
+## How far a camera cutout intrudes from a short edge, in canvas units.
+func _hole_inset() -> float:
+	if debug_hole >= 0.0:
+		return debug_hole
+	if not OS.has_feature("mobile"):
+		return 0.0
+	var screen := Vector2(DisplayServer.screen_get_size())
+	if screen.x <= screen.y:
+		return 0.0   # still portrait during launch
+	var safe := Rect2(DisplayServer.get_display_safe_area())
+	var px := maxf(safe.position.x, screen.x - safe.end.x)
+	return clampf(px * ScreenFit.FRAME.y / screen.y, 0.0, 200.0)
+
+
+## Applies the Classic or Wide arrangement. Runs often, and only acts on a change.
+func _apply_screen_layout() -> void:
+	var win := get_window()
+	var win_size := debug_window if debug_window != Vector2i.ZERO else win.size
+	var hole := _hole_inset()
+	var key := "%s|%s|%.1f" % [settings.screen_layout, win_size, hole]
+	if key == fit_key:
+		return
+	fit_key = key
+	var was_x: float = fit.frame_x
+	fit = ScreenFit.solve(Vector2(win_size), settings.screen_layout == 1, hole)
+	win.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND if fit.wide else Window.CONTENT_SCALE_ASPECT_KEEP
+	room_rect.size = fit.view
+	(room_rect.material as ShaderMaterial).set_shader_parameter("size", fit.view)
+	var origin: Vector2 = TABLE_ORIGIN + fit.table_offset
+	view.base_position = origin
+	view.home_position = origin
+	view.position = origin
+	banner.position = Vector2(545, 636) + fit.table_offset
+	# Anything already on screen (like the Settings page itself) stays centred.
+	for c in overlay.get_children():
+		if c is PanelContainer:
+			c.position.x += fit.frame_x - was_x
+	var text_w: float = fit.panel_size.x - 40.0
+	for l in [lbl_rule, lbl_bounty, lbl_boss, lbl_line, flags_label, log_label, lbl_hint]:
+		l.custom_minimum_size.x = text_w
+	tray.custom_minimum_size.x = fit.panel_size.x - 34.0
+	(left_panel.get_child(0) as VBoxContainer).add_theme_constant_override("separation", 3 if fit.wide else 5)
+	perk_row.vertical = fit.perks_vertical
+	_rebuild_cards()
+	_size_hud()
+	if not get_tree().process_frame.is_connected(_size_hud):
+		get_tree().process_frame.connect(_size_hud, CONNECT_ONE_SHOT)
+
+
+func _size_hud() -> void:
+	left_panel.position = fit.panel_pos
+	left_panel.size = fit.panel_size
+	bottom_bar.position = fit.perks_pos
+	bottom_bar.size = fit.perks_size
+	_shrink_panel_to_fit()
+
+
+## A long table rule can make the side panel taller than the screen; scale it to stay on.
+func _shrink_panel_to_fit() -> void:
+	var wanted := left_panel.get_combined_minimum_size().y
+	var limit: float = fit.panel_size.y
+	left_panel.scale = Vector2.ONE * minf(1.0, limit / maxf(wanted, 1.0))
 
 
 func _show_settings(back: Callable) -> void:
@@ -2155,6 +2237,7 @@ func _show_settings(back: Callable) -> void:
 	_setting_toggle(grid, "Touch controls", "touch_mode")
 	_setting_choice(grid, "Frame cap", "frame_cap", GameSettings.FRAME_CAPS.map(func(f): return "Unlimited" if f == 0 else "%d FPS" % f))
 	_setting_choice(grid, "Window size", "window_size", GameSettings.WINDOW_SIZES.map(func(w): return "%d × %d" % [w.x, w.y]))
+	_setting_choice(grid, "Screen layout", "screen_layout", GameSettings.SCREEN_LAYOUTS)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	v.add_child(row)
@@ -2434,7 +2517,7 @@ func _show_run_info() -> void:
 	_dim(0.82)
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", _style(Color(0.08, 0.075, 0.08, 0.99), Color(0.5, 0.7, 0.9), 2, 16))
-	p.position = Vector2(40, 30)
+	p.position = Vector2(40.0 + fit.frame_x, 30.0)
 	p.size = Vector2(1520, 840)
 	overlay.add_child(p)
 	var outer := VBoxContainer.new()

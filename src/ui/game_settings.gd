@@ -22,7 +22,9 @@ var large_text := false     # bigger small text
 var touch_mode := false     # on-screen aim, power and shoot controls
 var frame_cap := 0          # index into FRAME_CAPS
 var window_size := 1        # index into WINDOW_SIZES
+var screen_layout := 0      # index into SCREEN_LAYOUTS
 
+const SCREEN_LAYOUTS := ["Classic", "Wide"]
 const FRAME_CAPS := [0, 30, 60, 120, 144, 240]
 const WINDOW_SIZES := [Vector2i(1280, 720), Vector2i(1440, 810), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440)]
 
@@ -37,7 +39,7 @@ const ACTIONS := {
 
 var keys := {}
 
-const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size"]
+const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout"]
 
 
 func load_file() -> void:
@@ -63,11 +65,12 @@ func _init() -> void:
 	_device_defaults()
 
 
-## Phones and tablets start with touch controls and larger text.
+## Phones and tablets start with touch controls, larger text and the Wide layout.
 func _device_defaults() -> void:
 	if OS.has_feature("mobile"):
 		touch_mode = true
 		large_text = true
+		screen_layout = 1
 
 
 func reset_keys() -> void:
@@ -119,6 +122,7 @@ func _clamp() -> void:
 	touch_mode = bool(touch_mode)
 	frame_cap = clampi(int(frame_cap), 0, FRAME_CAPS.size() - 1)
 	window_size = clampi(int(window_size), 0, WINDOW_SIZES.size() - 1)
+	screen_layout = clampi(int(screen_layout), 0, SCREEN_LAYOUTS.size() - 1)
 
 
 func reset() -> void:
@@ -137,6 +141,7 @@ func reset() -> void:
 	number_tags = false
 	large_text = false
 	touch_mode = false
+	screen_layout = 0
 	_device_defaults()
 	frame_cap = 0
 	window_size = 1
