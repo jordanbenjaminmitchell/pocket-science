@@ -78,6 +78,16 @@ func _go() -> void:
 				game.records.record(r, i == 5)
 			game.screens.show_records()
 			await _frames(4)
+		"lab":
+			game._new_run()
+			game.run.plan[0].lab = args[2]
+			if args[3] != "-":
+				game.run.plan[0].anomaly = args[3]
+			game.run.begin_table()
+			game._setup_table()
+			game._enter_aim()
+			args.resize(2)
+			await _frames(120)
 		"help":
 			game._show_help()
 			await _frames(4)

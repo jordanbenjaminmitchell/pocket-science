@@ -195,6 +195,10 @@ func _go() -> void:
 	for i in 10:
 		m.on_shot(hit([1], 20, {"lines": [{"label": "Bank ×1"}]}), fresh())
 	check(m.cue_unlocked("angle"), "10 banks unlocks the Angle Cue")
+	for lab in Catalog.LABS:
+		check(Catalog.LAB_ART.has(lab), "%s has table art" % lab)
+	for mood in Catalog.LABS.keys() + ["title", "boss", "shop", "endless", "victory"]:
+		check(ResourceLoader.exists("res://assets/music/%s.mp3" % Sfx.TRACKS.get(mood, "missing")), "%s has its music" % mood)
 	print("stakes")
 	var sk := []
 	for lvl in Catalog.STAKES.size():

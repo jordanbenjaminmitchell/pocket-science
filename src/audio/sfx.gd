@@ -16,7 +16,8 @@ var current_track := ""
 const TRACKS := {
 	"title": "velvet-orbit", "standard": "prism-pocket-jazz", "cryo": "cryo-cool",
 	"cyclotron": "cyclotron-bounce", "spring": "bumper-ballet", "gravity": "event-horizon-jam",
-	"current": "crystal-drift", "dense": "static-picnic", "magnetlab": "event-horizon-jam", "pinball": "bumper-ballet", "repulsor": "cyclotron-bounce", "boss": "last-pocket", "shop": "static-picnic", "endless": "mass-driver-groove", "drift": "crystal-drift",
+	"current": "crystal-drift", "dense": "split-circuit-funk", "magnetlab": "mirror-chrome", "pinball": "spectrum-shuffle", "repulsor": "ion-switch",
+	"boss": "last-pocket", "shop": "static-picnic", "endless": "mass-driver-groove", "victory": "solar-syncopation",
 }
 
 
@@ -76,6 +77,22 @@ func _music_db() -> float:
 	return linear_to_db(maxf(music_volume, 0.0001))
 
 
+## Pull the music down while the score tallies, then bring it back.
+func duck(on: bool) -> void:
+	var target := _music_db() - (7.0 if on else 0.0)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	for p in [music_a, music_b]:
+		if p.playing and p.stream != null and p == _current_player():
+			tw.tween_property(p, "volume_db", target, 0.2)
+	if tw.get_total_elapsed_time() == 0.0 and not (music_a.playing or music_b.playing):
+		tw.kill()
+
+
+func _current_player() -> AudioStreamPlayer:
+	return music_b if music_b.playing and music_b.volume_db > music_a.volume_db else music_a
+
+
 func set_music_volume(v: float) -> void:
 	music_volume = v
 	for p in [music_a, music_b]:
@@ -83,9 +100,18 @@ func set_music_volume(v: float) -> void:
 			p.volume_db = _music_db()
 
 
+var last_click_ms := 0
+
+
 func play(id: String, vol: float = 1.0, pitch: float = 1.0) -> void:
 	if not streams.has(id) or volume <= 0.0:
 		return
+	# On a break dozens of clicks land at once; a few per moment sound better.
+	if id.begins_with("click"):
+		var now := Time.get_ticks_msec()
+		if now - last_click_ms < 12:
+			return
+		last_click_ms = now
 	var p := players[next]
 	next = (next + 1) % players.size()
 	p.stream = streams[id]
@@ -157,3 +183,10 @@ func _fanfare(t: float) -> float:
 			var f: float = notes[k]
 			v += (sin(TAU * f * u) + 0.3 * sin(TAU * f * 2.0 * u)) * exp(-u * 3.0) * 0.18
 	return v
+
+
+## Release the music streams on shutdown so nothing is left playing at exit.
+func _exit_tree() -> void:
+	for p in [music_a, music_b]:
+		p.stop()
+		p.stream = null

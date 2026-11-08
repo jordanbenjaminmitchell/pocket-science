@@ -120,6 +120,7 @@ func _setup_table() -> void:
 	var lab: String = t.lab
 	view.setup(layout, F_SEMI, F_PIXB)
 	view.set_felt(Catalog.LABS[lab].felt)
+	view.set_lab(lab)
 	_new_rack(t.rack)
 	shot_log.clear()
 	if log_label:
@@ -606,8 +607,16 @@ func _consume_events() -> void:
 					view.spark((sim.pos[ia] + sim.pos[ib]) * 0.5, clampf(e.speed / 2000.0, 0.3, 1.0))
 				sfx.play("click" if v > 0.25 else "click_soft", v, 0.9 + randf() * 0.25)
 			"rail":
-				var v := clampf(e.speed / 1800.0, 0.03, 0.9)
+				var v := clampf(e.speed / 1800.0, 0.03, 0.9) * (0.3 if demo else 1.0)
 				sfx.play("rail", v, 0.9 + randf() * 0.2)
+				# A hard knock right at a pocket mouth is a rattle.
+				if not demo and e.has("at") and e.speed > 260.0:
+					for k in layout.pockets.size():
+						if not layout.pockets[k].closed and (e.at as Vector2).distance_to(layout.pockets[k].pos) < 72.0:
+							sfx.play("pocket", 0.35, 1.7)
+							view.add_shake(1.5)
+							view.popup(e.at, "rattle", Color(0.8, 0.85, 0.9), 15, 0.7)
+							break
 			"bumper":
 				sfx.play("bumper", 0.7)
 				var bi := sim.index_of(e.a)
@@ -657,7 +666,8 @@ func _settled() -> void:
 	shown_chips = 0.0
 	shown_mult = 1.0
 	state = S.TALLY
-	lbl_hint.text = ""
+	sfx.duck(true)
+	lbl_hint.text = "Click to skip the count."
 	if not result.scored:
 		var free_break: bool = is_break and result.foul == "Miss"
 		var insured: bool = run.formulas.has("insurance") and run.insured_used < 2
@@ -700,6 +710,10 @@ func _update_tally(delta: float) -> void:
 			view.popup(mid, "+%d" % total, Color(1.0, 0.85, 0.35), size, 1.6)
 			view.add_shake(clampf(total / 120.0, 1.0, 9.0))
 			view.punch(clampf(total / 20000.0, 0.008, 0.03))
+			if total * 2 >= run.target():
+				view.popup(mid + Vector2(0, 62), "HUGE SHOT!", Color(1.0, 0.5, 0.3), 30, 1.5)
+				view.burst(mid, Color(1.0, 0.75, 0.3), 60, 420)
+				sfx.play("clear", 0.45, 1.3)
 			_animate_score(run.score, run.score + total)
 	elif tally_phase == 1:
 		tally_phase = 2
@@ -746,6 +760,7 @@ func _apply_tally_line(l: Dictionary, i: int) -> void:
 
 
 func _after_shot() -> void:
+	sfx.duck(false)
 	var was_break := is_break
 	is_break = false
 	var out := run.apply_shot(result, was_break, sim.object_balls_left(), sim.alive[_cue_index()] == 1)
@@ -790,6 +805,7 @@ func _rebuild_layout() -> void:
 	guide_dirty = true
 	view.setup(layout, F_SEMI, F_PIXB)
 	view.set_felt(Catalog.LABS[run.current().lab].felt)
+	view.set_lab(run.current().lab)
 	view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(1, 0.5, 0.4), 12, 120)
 
 
@@ -1217,7 +1233,9 @@ func _build_ui() -> void:
 	lbl_rule.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl_rule.custom_minimum_size = Vector2(290, 0)
 	labv.add_child(lbl_rule)
-	lbl_bounty = _label("", 14, Color(1.0, 0.85, 0.35))
+	lbl_bounty = _label("", 13, Color(1.0, 0.85, 0.35), F_REG)
+	lbl_bounty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl_bounty.custom_minimum_size = Vector2(290, 0)
 	labv.add_child(lbl_bounty)
 	lbl_boss = _label("", 13, Color(1.0, 0.45, 0.4), F_REG)
 	lbl_boss.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1308,12 +1326,12 @@ func _build_ui() -> void:
 	lv.add_child(ctrl)
 	spin_w = SpinWidget.new()
 	spin_w.font = F_SEMI
-	spin_w.custom_minimum_size = Vector2(108, 108)
+	spin_w.custom_minimum_size = Vector2(96, 96)
 	spin_w.changed.connect(_on_spin)
 	ctrl.add_child(spin_w)
 	power_w = PowerMeter.new()
 	power_w.font = F_SEMI
-	power_w.custom_minimum_size = Vector2(40, 108)
+	power_w.custom_minimum_size = Vector2(40, 96)
 	ctrl.add_child(power_w)
 
 	var filler := Control.new()
@@ -1359,7 +1377,7 @@ func _build_ui() -> void:
 	bsb.content_margin_bottom = 10
 	banner.add_theme_stylebox_override("normal", bsb)
 	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	banner.position = Vector2(545, 150)
+	banner.position = Vector2(545, 636)   # over the bottom rail, clear of the balls
 	banner.size = Vector2(850, 70)
 	banner.pivot_offset = Vector2(425, 35)
 	banner.add_theme_constant_override("outline_size", 12)
@@ -1540,14 +1558,27 @@ func _formula_card(id: String, slot: int) -> Control:
 	p.tooltip_text = "%s (%s)\n%s" % [f.name, Catalog.rarity_name(f.r), f.desc]
 	p.mouse_filter = Control.MOUSE_FILTER_STOP
 	if state == S.SHOP:
-		var b := _button("Sell $%d" % run.sell_value(id), func():
-			run.sell_formula(slot)
-			sfx.play("coin", 0.7, 0.8)
-			_refresh_shop()
-			_refresh_hud(), Color(0.9, 0.4, 0.3))
+		var b := _button(("Really sell? $%d" if sell_armed == id else "Sell $%d") % run.sell_value(id), func(): _sell_click(id), Color(1.0, 0.75, 0.3) if sell_armed == id else Color(0.9, 0.4, 0.3))
 		b.add_theme_font_size_override("font_size", 13)
 		v.add_child(b)
 	return p
+
+
+var sell_armed := ""
+var shop_anim := false
+
+
+## Selling takes two clicks, so a stray click cannot throw away a build.
+func _sell_click(id: String) -> void:
+	if sell_armed != id:
+		sell_armed = id
+		_refresh_hud()
+		return
+	sell_armed = ""
+	run.sell_formula(run.formulas.find(id))
+	sfx.play("coin", 0.7, 0.8)
+	_refresh_shop()
+	_refresh_hud()
 
 
 func _reagent_card(id: String, slot: int) -> Control:
@@ -1921,8 +1952,11 @@ func _show_shop(rows: Array) -> void:
 	payout_rows = rows
 	state = S.SHOP
 	sfx.play_music("shop")
+	sell_armed = ""
 	run.roll_shop()
+	shop_anim = true
 	_refresh_shop()
+	shop_anim = false
 	_refresh_hud()
 
 
@@ -1980,7 +2014,9 @@ func _refresh_shop() -> void:
 	var rr := _button("Reroll formulas ($%d)" % run.reroll_cost, func():
 		if run.reroll():
 			sfx.play("coin", 0.6, 0.9)
+			shop_anim = true
 			_refresh_shop()
+			shop_anim = false
 			_refresh_hud()
 		else:
 			sfx.play("bad", 0.4))
@@ -1993,7 +2029,10 @@ func _refresh_shop() -> void:
 	go.custom_minimum_size = Vector2(220, 50)
 	go.add_theme_font_size_override("font_size", 22)
 	bar.add_child(go)
-	v.add_child(_label("Tip: you can sell a Formula from the bar below for half its price.", 13, Color(0.55, 0.55, 0.6), F_REG))
+	var tip := "Tip: you can sell a Formula from the bar below for half its price."
+	if _load_best().tables == 0:
+		tip = "New here? Formulas stay with you for the whole run. Cards glowing green work with Formulas you own. Hover a greyed price if you can't afford it yet."
+	v.add_child(_label(tip, 13, Color(0.55, 0.55, 0.6), F_REG))
 
 
 func _offer_card(i: int) -> Control:
@@ -2066,6 +2105,13 @@ func _offer_card(i: int) -> Control:
 	v.add_child(b)
 	if item.sold:
 		p.modulate = Color(1, 1, 1, 0.45)
+	elif shop_anim and not settings.reduced_motion:
+		# Cards deal in one after another.
+		p.modulate.a = 0.0
+		var tw := create_tween()
+		tw.tween_interval(i * 0.07)
+		tw.tween_property(p, "modulate:a", 1.0, 0.18)
+		sfx.play("ui", 0.3, 1.0 + i * 0.12)
 	return p
 
 
@@ -2364,6 +2410,10 @@ func _next_table() -> void:
 	lbl_line.text = "Overflow carried %d points" % run.score if run.score > 0 else "Pot balls to score Chips × Mult"
 	_enter_aim()
 	var t := run.current()
+	view.flash(Color(0.55, 0.08, 0.05) if t.anomaly != "" else Color(0.02, 0.02, 0.03))
+	if t.anomaly != "":
+		sfx.play("bad", 0.7, 0.6)
+		view.add_shake(5.0)
 	var msg := "TABLE %d  ·  TARGET %d" % [run.table_index + 1, run.target()]
 	if t.anomaly != "":
 		msg = "BOSS: %s" % Catalog.ANOMALIES[t.anomaly].name.to_upper()
@@ -2391,6 +2441,7 @@ func _show_game_over() -> void:
 
 
 func _show_victory(rows: Array) -> void:
+	sfx.play_music("victory")
 	_record_best()
 	records.record(run, true)
 	_clear_overlay()

@@ -91,6 +91,30 @@ func _layer(cb: Callable) -> Node2D:
 	return n
 
 
+var rail_color := Color(0.30, 0.15, 0.07)
+var trim_color := Color(0.92, 0.9, 0.82)
+var decal := ""
+var flash_col := Color(0, 0, 0, 0)
+var flash_t := 0.0
+
+
+func set_lab(id: String) -> void:
+	var art: Dictionary = Catalog.LAB_ART.get(id, Catalog.LAB_ART.standard)
+	rail_color = art.rail
+	trim_color = art.trim
+	decal = art.decal
+	queue_redraw()
+	cushions.queue_redraw()
+
+
+## Fades the table in from a colour (new tables, boss arrivals).
+func flash(c: Color, seconds: float = 0.4) -> void:
+	if reduced_motion:
+		return
+	flash_col = c
+	flash_t = seconds
+
+
 func set_felt(c: Color) -> void:
 	felt_color = c
 	felt_mat.set_shader_parameter("felt", c)
@@ -189,6 +213,16 @@ func _process(delta: float) -> void:
 	for r in rings:
 		r.life -= delta
 	rings = rings.filter(func(r): return r.life > 0.0)
+	# Embers rising from the hot pocket.
+	if hot_pocket >= 0 and not reduced_motion and hot_pocket < layout.pockets.size() and randf() < delta * 22.0:
+		var hp: Dictionary = layout.pockets[hot_pocket]
+		var a := randf() * TAU
+		particles.append({"pos": (hp.pos as Vector2) + Vector2(cos(a), sin(a)) * randf_range(10, hp.r), "vel": (hp.dir as Vector2) * randf_range(15, 45) + Vector2(randf_range(-10, 10), randf_range(-10, 10)),
+			"life": randf_range(0.5, 1.1), "max": 1.1, "color": Color(1.0, randf_range(0.4, 0.75), 0.15), "size": randf_range(1.2, 2.4), "drag": 0.5})
+	if particles.size() > 700:
+		particles = particles.slice(particles.size() - 700)
+	if flash_t > 0.0:
+		flash_t = maxf(0.0, flash_t - delta)
 	cushions.queue_redraw()
 	overlay.queue_redraw()
 	cue_layer.queue_redraw()
@@ -273,7 +307,7 @@ func _draw() -> void:
 		var g := 10.0 + i * 9.0
 		draw_rect(outer.grow(g * 0.6).grow_individual(0, 0, 0, g * 0.4), Color(0, 0, 0, 0.07), true)
 	# Wood rail with layered bevel.
-	var wood := Color(0.30, 0.15, 0.07)
+	var wood := rail_color
 	draw_rect(outer, wood.darkened(0.45), true)
 	# Rounded bevel: bands from dark outer edge to a lit crown.
 	for i in 10:
@@ -303,7 +337,7 @@ func _draw() -> void:
 			draw_line(Vector2(x, y0), Vector2(x + rng.randf_range(-1.5, 1.5), y0 + rng.randf_range(100, 400)), c, rng.randf_range(0.6, 2.0))
 	# Highlight lip on the inner edge of the wood.
 	var inner := Rect2(-CUSHION, -CUSHION, W + 2 * CUSHION, H + 2 * CUSHION)
-	draw_rect(inner.grow(6), Color(0.45, 0.25, 0.12), false, 3.0)
+	draw_rect(inner.grow(6), rail_color.lightened(0.3), false, 3.0)
 	draw_rect(inner.grow(2), Color(0.08, 0.04, 0.02), false, 3.0)
 	# Cushion rubber base.
 	draw_rect(inner, felt_color.darkened(0.38), true)
@@ -323,12 +357,14 @@ func _draw() -> void:
 
 func _diamond(p: Vector2) -> void:
 	var s := 5.5
-	draw_colored_polygon(PackedVector2Array([p + Vector2(0, -s), p + Vector2(s * 0.7, 0), p + Vector2(0, s), p + Vector2(-s * 0.7, 0)]), Color(0.92, 0.9, 0.82))
+	draw_colored_polygon(PackedVector2Array([p + Vector2(0, -s), p + Vector2(s * 0.7, 0), p + Vector2(0, s), p + Vector2(-s * 0.7, 0)]), trim_color)
 	draw_colored_polygon(PackedVector2Array([p + Vector2(0, -s), p + Vector2(s * 0.7, 0), p + Vector2(0, 0)]), Color(1, 1, 1, 0.5))
 
 
 func _draw_cushions() -> void:
 	var c := cushions
+	if decal != "":
+		IconArt.paint(c, decal, Vector2(W * 0.5, H * 0.5), 4.6, Color(1, 1, 1, 0.06), Color(0, 0, 0, 0), font_bold, 7.0)
 	# Cushion nose shading: a light lip right at the playfield edge.
 	var lip := felt_color.lightened(0.18)
 	var dark := felt_color.darkened(0.55)
@@ -581,6 +617,8 @@ func _draw_cue() -> void:
 ## ---------------------------------------------------------------- effects
 func _draw_fx() -> void:
 	var f := fx_layer
+	if flash_t > 0.0:
+		f.draw_rect(Rect2(-RAIL - CUSHION, -RAIL - CUSHION, W + 2 * (RAIL + CUSHION), H + 2 * (RAIL + CUSHION)), Color(flash_col, clampf(flash_t / 0.4, 0.0, 1.0)), true)
 	if number_tags:
 		for i in ball_nodes:
 			var b: BallNode = ball_nodes[i]

@@ -7,7 +7,8 @@ var font: Font
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(34, 120)
+	if custom_minimum_size == Vector2.ZERO:
+		custom_minimum_size = Vector2(34, 120)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 

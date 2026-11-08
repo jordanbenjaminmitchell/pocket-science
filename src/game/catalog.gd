@@ -157,6 +157,20 @@ const LABS := {
 	"repulsor": {"name": "Repulsor", "felt": Color(0.12, 0.13, 0.38), "desc": "The centre pushes moving balls away. Bank pots give +1 extra Mult per cushion."},
 }
 
+## Table dressing per lab: rail wood, inlay colour and a faint cloth emblem.
+const LAB_ART := {
+	"standard": {"rail": Color(0.30, 0.15, 0.07), "trim": Color(0.92, 0.9, 0.82), "decal": ""},
+	"cryo": {"rail": Color(0.23, 0.29, 0.36), "trim": Color(0.72, 0.92, 1.0), "decal": "l 0 -40 0 40;l -35 -20 35 20;l -35 20 35 -20;o -8 -32 0 -24 8 -32;o -8 32 0 24 8 32"},
+	"cyclotron": {"rail": Color(0.2, 0.15, 0.32), "trim": Color(0.75, 0.6, 1.0), "decal": "c 0 0 16;c 0 0 30;a 0 0 44 20 160;a 0 0 44 200 340"},
+	"spring": {"rail": Color(0.36, 0.12, 0.1), "trim": Color(1.0, 0.75, 0.5), "decal": "o -44 0 -32 -24 -18 24 -4 -24 10 24 24 -24 36 24 46 0"},
+	"gravity": {"rail": Color(0.11, 0.13, 0.27), "trim": Color(0.6, 0.72, 1.0), "decal": "c 0 0 10;c 0 0 22;c 0 0 36;c 0 0 48"},
+	"current": {"rail": Color(0.13, 0.27, 0.3), "trim": Color(0.55, 0.95, 0.95), "decal": "o -44 -18 -14 -18;o -24 -30 -10 -18 -24 -6;o -12 18 20 18;o 8 6 22 18 8 30;o 18 -18 44 -18"},
+	"magnetlab": {"rail": Color(0.3, 0.1, 0.22), "trim": Color(1.0, 0.6, 0.8), "decal": "a 0 4 30 0 180;l -30 4 -30 -34;l 30 4 30 -34"},
+	"dense": {"rail": Color(0.2, 0.22, 0.12), "trim": Color(0.8, 0.85, 0.5), "decal": "l -40 -30 40 -30;l -40 -10 40 -10;l -40 10 40 10;l -40 30 40 30"},
+	"pinball": {"rail": Color(0.38, 0.22, 0.05), "trim": Color(1.0, 0.85, 0.35), "decal": "o 0 -44 12 -14 44 -14 18 8 28 40 0 20 -28 40 -18 8 -44 -14 -12 -14 0 -44"},
+	"repulsor": {"rail": Color(0.12, 0.12, 0.3), "trim": Color(0.65, 0.65, 1.0), "decal": "c 0 0 12;l 0 -20 0 -44;l 0 20 0 44;l -20 0 -44 0;l 20 0 44 0;o -8 -36 0 -46 8 -36;o -8 36 0 46 8 36;o -36 -8 -46 0 -36 8;o 36 -8 46 0 36 8"},
+}
+
 ## Anomalies are boss rules on every third table.
 const ANOMALIES := {
 	"tight": {"name": "Tight Pockets", "desc": "Pockets are 12% narrower."},
@@ -166,7 +180,7 @@ const ANOMALIES := {
 	"dry": {"name": "Dry Chalk", "desc": "You start with 1 less Chalk."},
 	"cold": {"name": "Cold Pockets", "desc": "There is no hot pocket."},
 	"shrink": {"name": "Shrinking Pockets", "desc": "Every pocket narrows by 3% after each shot (down to 75%)."},
-	"onepocket": {"name": "Two Pockets", "desc": "Only the hot pocket and the pocket diagonally opposite it score. Pots elsewhere score nothing (no Chalk lost)."},
+	"onepocket": {"name": "Two Pockets", "desc": "Only the hot pocket and its diagonal opposite score. Other pots score nothing (no Chalk lost)."},
 	"rotation": {"name": "Rotation Rules", "desc": "Hit the lowest-numbered ball first, or the shot scores nothing and your streak resets (no Chalk lost)."},
 	"heavycue": {"name": "Heavy Cue Ball", "desc": "The cue ball is twice as heavy: it follows through and scratches more."},
 	"blackice": {"name": "Black Ice", "desc": "Almost no friction and lively cushions. Control is everything."},
@@ -198,8 +212,8 @@ const BOUNTIES := {
 	"quad": {"name": "Pot 4+ balls in one shot", "reward": 8},
 	"stripe": {"name": "Pot a striped ball", "reward": 2},
 	"solid": {"name": "Pot a solid ball", "reward": 1},
-	"soft": {"name": "Pot with a soft shot (35% power or less)", "reward": 3},
-	"hard": {"name": "Pot with a power shot (85% or more)", "reward": 3},
+	"soft": {"name": "Pot with a soft shot (35% or less)", "reward": 3},
+	"hard": {"name": "Pot with a power shot (85%+)", "reward": 3},
 	"breakpot": {"name": "Pot a ball on the break", "reward": 3},
 	"mult10": {"name": "Reach 10 Mult on a shot", "reward": 4},
 	"chips100": {"name": "Reach 100 Chips on a shot", "reward": 5},

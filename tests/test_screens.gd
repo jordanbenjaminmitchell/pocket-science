@@ -97,6 +97,21 @@ func _go() -> void:
 		if b > 890.0:
 			check(false, "side panel fits on a %s boss table (hint bottom %.0f)" % [an, b])
 	check(true, "side panel checked on all boss tables")
+	# Every bounty text, on the tallest boss rule, must keep the panel in its column.
+	var wide := 0.0
+	var tall := 0.0
+	g.run.plan[g.run.table_index].anomaly = "onepocket"
+	g.run.plan[g.run.table_index].boss = true
+	for bn in Catalog.BOUNTIES:
+		g.run.bounty = bn
+		g._refresh_hud()
+		g.left_panel.size = Vector2.ZERO
+		for i in 2:
+			await process_frame
+		wide = maxf(wide, g.left_panel.get_global_rect().end.x)
+		tall = maxf(tall, g.lbl_hint.get_global_rect().end.y)
+	check(wide <= 352.0, "side panel never overlaps the table (right edge %.0f)" % wide)
+	check(tall <= 890.0, "hint stays visible with any bounty (bottom %.0f)" % tall)
 	# Tab toggles run info from aim and returns to aim.
 	g._clear_overlay()
 	g.paused = false

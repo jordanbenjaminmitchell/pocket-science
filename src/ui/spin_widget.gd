@@ -12,7 +12,8 @@ var font: Font
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(120, 120)
+	if custom_minimum_size == Vector2.ZERO:
+		custom_minimum_size = Vector2(120, 120)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	tooltip_text = "Spin: click above centre for follow, below for draw, sides for english. Right-click resets. Keys W/S/A/D."
 

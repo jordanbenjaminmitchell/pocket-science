@@ -121,8 +121,12 @@ func _draw() -> void:
 	draw_circle(c, 49.0 * u, tint.darkened(0.55))
 	draw_circle(c, 45.0 * u, dark)
 	draw_arc(c, 47.0 * u, 0.0, TAU, 48, tint, maxf(1.5, 2.5 * u), true)
-	var w := maxf(1.5, 3.4 * u)
-	for op: String in motif.split(";", false):
+	paint(self, motif, c, u, tint, dark, font, maxf(1.5, 3.4 * u))
+
+
+## Draws a motif onto any canvas item (card medallions, table decals).
+static func paint(ci: CanvasItem, script: String, c: Vector2, u: float, tint: Color, dark: Color, f: Font, w: float) -> void:
+	for op: String in script.split(";", false):
 		var a := op.strip_edges().split(" ", false)
 		if a.is_empty():
 			continue
@@ -133,9 +137,9 @@ func _draw() -> void:
 				continue
 			var fs := int(round(float(a[3]) * u))
 			var txt := " ".join(a.slice(4))
-			var tw := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			var tw := f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			var pos := c + Vector2(float(a[1]), float(a[2])) * u + Vector2(-tw * 0.5, fs * 0.36)
-			draw_string(font, pos, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, tint if kind == "t" else Color.WHITE)
+			ci.draw_string(f, pos, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, tint if kind == "t" else Color.WHITE)
 			continue
 		for i in range(1, a.size()):
 			v.append(float(a[i]))
@@ -144,14 +148,14 @@ func _draw() -> void:
 			pts.append(c + Vector2(v[i], v[i + 1]) * u)
 		match kind:
 			"c":
-				draw_arc(c + Vector2(v[0], v[1]) * u, v[2] * u, 0.0, TAU, 40, tint, w, true)
+				ci.draw_arc(c + Vector2(v[0], v[1]) * u, v[2] * u, 0.0, TAU, 40, tint, w, true)
 			"C":
-				draw_circle(c + Vector2(v[0], v[1]) * u, v[2] * u, tint)
+				ci.draw_circle(c + Vector2(v[0], v[1]) * u, v[2] * u, tint)
 			"K":
-				draw_circle(c + Vector2(v[0], v[1]) * u, v[2] * u, dark)
+				ci.draw_circle(c + Vector2(v[0], v[1]) * u, v[2] * u, dark)
 			"l", "o":
-				draw_polyline(pts, tint, w, true)
+				ci.draw_polyline(pts, tint, w, true)
 			"P":
-				draw_colored_polygon(pts, tint)
+				ci.draw_colored_polygon(pts, tint)
 			"a":
-				draw_arc(c + Vector2(v[0], v[1]) * u, v[2] * u, deg_to_rad(v[3]), deg_to_rad(v[4]), 28, tint, w, true)
+				ci.draw_arc(c + Vector2(v[0], v[1]) * u, v[2] * u, deg_to_rad(v[3]), deg_to_rad(v[4]), 28, tint, w, true)
