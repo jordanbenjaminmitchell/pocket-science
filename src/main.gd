@@ -98,6 +98,13 @@ func _ready() -> void:
 	vis_rng.seed = 4242
 	sfx = Sfx.new()
 	add_child(sfx)
+	var room := ColorRect.new()
+	room.size = Vector2(1600, 900)
+	room.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var room_mat := ShaderMaterial.new()
+	room_mat.shader = preload("res://src/view/shaders/room.gdshader")
+	room.material = room_mat
+	add_child(room)
 	view = TableView.new()
 	view.base_position = TABLE_ORIGIN
 	view.home_position = TABLE_ORIGIN

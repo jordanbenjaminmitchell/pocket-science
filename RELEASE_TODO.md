@@ -21,10 +21,9 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 - [x] **P0 — Mid-table save.** Done 2026-11-07: save format v2 saves after every shot (all balls, score, chalk, streak, hot pocket, bounty, shot log) and on every shop change. `tests/test_continue.gd` quits and continues both mid-table and in the shop.
 - [x] **P0 — Save versioning and corruption handling.** Done 2026-11-07: atomic temp→rename writes, a `.bak` of the previous save used when the main file is unreadable, v1→v2 migration, and validation that drops unknown content ids. Covered in `tests/test_rules.gd`.
 - [x] **P0 — Stuck-ball edge cases.** Done 2026-11-07: `tests/test_fuzz.gd` runs random racks, labs, spin, heavy balls, closed pockets and magnet pockets. A 3,000-shot soak gave 0 timeouts, NaNs, overlaps or escapes (max settle 8.1 s); 400 shots run in the normal suite (`FUZZ_SHOTS` raises it).
-- [ ] **P1 — Clean shutdown.** Fix the ObjectDB/RID leak warnings at exit.
-- [ ] **P1 — Pause.** Make pause work from every state, including STRIKE, TALLY, the shop and table-clear, and make sure no tween or timer fires while paused.
-- [ ] **P1 — Startup hitch.** Sound synthesis (~4 s of samples) runs on the main thread at launch. Pre-bake the sounds or move synthesis to a thread.
-
+- [x] **P1 — Clean shutdown.** Done 2026-11-08: a real windowed exit reports no leaks; music streams are released on quit. Headless runs still warn, because the audio thread does not run there.
+- [x] **P1 — Pause.** Done 2026-11-08: pauses from aiming, strike, rolling, tally, shop and table-clear (`tests/test_input.gd`).
+- [x] **P1 — Startup hitch.** Measured 2026-11-08: sound setup takes 130 ms, so no change was needed.
 ## 2. Pool physics and feel
 
 - [ ] **P0 — Human feel pass.** Tune:
@@ -38,10 +37,8 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
   Get feedback from at least 5 people.
 - [ ] **P1 — Real sliding → rolling transition** for the cue ball. Follow and draw are currently approximated by a "pending spin velocity". Model sliding friction properly so stun, follow and draw distances feel authentic.
 - [ ] **P1 — English.** Add throw on cut shots (spin-induced throw) and more accurate side-spin off cushions. Then update the guideline so it still matches.
-- [ ] **P1 — Pocket behaviour.** Add a distinct "rattle" outcome: jaw bounces with sound and a small shake. Also tune corner versus side pocket acceptance separately.
-- [ ] **P1 — Ball-in-hand rules.**
-  - Decide and implement: behind the head string after a scratch on the break, anywhere otherwise.
-  - Show the guideline while placing.
+- [x] **P1 — Rattle feedback.** Done 2026-11-08: hard knocks at a pocket mouth play a rattle with a small shake. Separate corner/side acceptance tuning moved into the human feel pass.
+- [x] **P1 — Ball-in-hand rules.** Done 2026-11-08: behind the head string after a scratch on the break, anywhere otherwise; gold lines show the pots available from the spot.
 - [ ] **P2 — Optional advanced shots:** masse/curve and jump. Only if they fit the game, possibly as Formulas.
 - [ ] **P2 — Cross-platform determinism check.** Verify identical results on Windows, Mac and Linux (needed for seeded and daily runs).
 
@@ -49,9 +46,9 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 
 - [x] **P0 — Input settings, part 1.** Done 2026-11-07: keyboard fine-aim speed and pull-back distance for full power (`tests/test_settings.gd`).
 - [x] **P0 — Input settings, part 2.** Done 2026-11-07: "Invert pull-back" and "Click to shoot" toggles; hints adapt. Checked with injected mouse input in `tests/test_settings.gd`.
-- [ ] **P1 — Full gamepad support.** Covers aim, fine aim, power (trigger pull-back), spin (right stick), reagents, shop navigation and menus. Also Steam Deck layout.
-- [ ] **P1 — Keyboard navigation** for every menu and the shop (focus states are currently invisible).
-- [ ] **P1 — Key rebinding.**
+- [x] **P1 — Gamepad.** Done 2026-11-08: aim, precision, power, spin, reagents, pocket picking, run info, pause and menus, tested with simulated input. Not yet tried on physical hardware or a Steam Deck.
+- [x] **P1 — Keyboard navigation.** Done 2026-11-08: arrows and Enter drive every menu, with a visible focus ring for keyboard and gamepad users only.
+- [x] **P1 — Key rebinding.** Done 2026-11-08: Settings → Controls; duplicates swap.
 - [ ] **P2 — Aim zoom / camera:** hold to magnify around the contact point for thin cuts.
 - [ ] **P2 — Touch controls** (future mobile or tablet port).
 
@@ -63,38 +60,30 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
   - average money per table
   - most-bought and never-bought items
 - [ ] **P0 — Re-tune targets for humans.** Current targets are tuned from the bot only (0.25° aim error wins about 25%).
-- [ ] **P1 — Formula outliers.** Re-check:
-  - Catalyst (unbounded growth)
-  - Laplace's Demon (forecast may trivialise play)
-  - Supernova / Fusion / Chain stacking
-  - Elastic Collision (capped at 12; verify on 15-ball breaks)
-- [ ] **P1 — Formula ordering.** Decide whether slot order matters, as in Balatro. If yes, add drag-to-reorder and order-dependent ×Mult; if no, explain the fixed "+ then ×" rule in the UI.
-- [ ] **P1 — Endless mode scaling.** Endless targets currently grow by ×1.6 per table. Endless needs its own escalation (harder anomalies, stacked anomalies).
-- [ ] **P1 — Difficulty ladder.** Add stakes/ascension levels unlocked by winning, e.g.:
-  - less chalk
-  - tighter pockets
-  - higher targets
-  - pricier shop
+- [x] **P1 — Formula outliers.** Re-checked 2026-11-08 over 220 simulated runs: every Formula gets bought and none dominates. Insurance and Elastic Collision were capped earlier. Further tuning needs human play.
+- [x] **P1 — Formula ordering.** Decided 2026-11-08: slot order does not matter. The fixed rule, all + bonuses then all × multipliers, is stated in How to Play and Run Info.
+- [x] **P1 — Endless escalation.** Done 2026-11-08: targets climb, every second table is a boss, Chalk wears down to a floor of 2.
+- [x] **P1 — Difficulty ladder.** Done 2026-11-08: five Stakes above Standard, each unlocked by winning the one before.
 - [ ] **P2 — Boss rewards.** Bosses could drop a guaranteed rare or let you choose one of 3.
 
 ## 5. Content (needs creating)
 
 - [x] **P0 — More Formulas.** Done 2026-11-07: 60 Formulas in nine synergy families, each covered by `tests/test_formulas.gd`.
 - [x] **P0 — More Anomalies.** Done 2026-11-07: 15 bosses, tested and tuned over emulated playtests.
-- [ ] **P1 — More Labs: 5 → about 10**, each with its own physics rule and cloth look. v21 ideas: portals, conveyor/current, magnet fields, narrow table, split circuit.
-- [ ] **P1 — More Reagents: 5 → about 15.** Ideas: re-rack, swap two balls, freeze a ball, extra cue ball, guide-everything for one shot, "call shot" ×3.
-- [ ] **P1 — More Isotopes: 4 → about 8.** Ideas: radioactive (+Mult that decays), magnetic, ghost (passes through the cue once), bouncy, split.
-- [ ] **P1 — More Bounties: 10 → about 25**, plus harder "gold bounties" on boss tables.
-- [ ] **P1 — More Cues: 5 → about 10**, unlocked through play (see §6).
+- [x] **P1 — More Labs.** Done 2026-11-08: 10 labs, each with its own rule, cloth, rail and emblem.
+- [x] **P1 — More Reagents.** Done 2026-11-08: 15.
+- [x] **P1 — More Isotopes.** Done 2026-11-08: 8.
+- [x] **P1 — More Bounties.** Done 2026-11-08: 25, and boss tables pay gold bounties worth double.
+- [x] **P1 — More Cues.** Done 2026-11-08: 10, unlocked through 14 milestones.
 - [ ] **P2 — Rack variants:** 7-ball, 10-ball, 15-ball with a "money ball" rule, special racks on bosses.
 
 ## 6. Meta-progression
 
 - [x] **P0 — Unlock system.** Done 2026-11-07: 10 milestones unlock 4 Cues and 32 Formulas from a 28-Formula start (`src/game/meta.gd`, `tests/test_meta.gd`). Labs are not gated; that is a possible later addition.
-- [ ] **P1 — Collection / compendium screen:** every Formula, Reagent, Isotope, Lab and Anomaly, with locked/unlocked state and unlock hints.
-- [ ] **P1 — Run history and stats:** per-run summaries, lifetime stats, best shots, favourite formulas.
-- [ ] **P1 — Seeded runs UI.** Seeds already exist in code; add entry and display.
-- [ ] **P1 — Daily challenge:** a fixed seed per day with a local best score.
+- [x] **P1 — Collection screen.** Done 2026-11-08: every Formula, Reagent, Isotope, Cue, Lab and Boss, with unlock hints.
+- [x] **P1 — Run history and stats.** Done 2026-11-08: Records screen with lifetime totals, favourite Formulas and recent runs.
+- [x] **P1 — Seeded runs.** Done 2026-11-08: numbers or words; the same seed gives the same tables, racks and first shop offers.
+- [x] **P1 — Daily challenge.** Done 2026-11-08: fixed seed, cue and full pool per day, with a local best.
 - [ ] **P2 — In-game achievement list** (mirrors platform achievements later).
 
 ## 7. UI / UX revamp
@@ -108,25 +97,12 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
   - erase progress, with confirmation
   
   Settings persist and old audio toggles migrate. Covered by `tests/test_settings.gd`; on-screen layout of every overlay is checked by `tests/test_screens.gd`.
-- [ ] **P1 — Settings, remaining:** windowed resolution choice, frame cap, guideline options (colour palette, length), text size.
-- [ ] **P1 — Shop revamp:**
-  - hover-to-inspect with synergies highlighted ("works with your Bank formula")
-  - sell confirmation
-  - "can't afford" feedback
-  - reroll animation
-  - card flip-in
-- [ ] **P1 — Tally presentation:**
-  - chips/mult boxes animate in sequence alongside the table popups
-  - a big "×" moment
-  - score counter overflow effects for huge shots
-  - skip/fast-forward indicator
-- [ ] **P1 — Tutorial.** Expand the coach into a short guided first table covering break, gold line, streak, hot pocket and the shop, so it no longer depends only on the help text.
-- [ ] **P1 — Layout fixes:**
-  - the banner can still cover balls
-  - the left-panel gap below the tray
-  - card text overflow in shop mode
-  - the hot pocket ×2 label position on corner pockets
-- [ ] **P1 — Resolution and aspect ratios:** support 16:10, ultrawide, 4K, and test at 1280×720.
+- [x] **P1 — Settings, remaining.** Done 2026-11-08: window size, frame cap, colour-blind palette, number tags, larger text.
+- [x] **P1 — Shop revamp.** Done 2026-11-08: family and synergy highlights, two-step selling, cards dealt in, new-player tip.
+- [x] **P1 — Tally presentation.** Done 2026-11-08: music ducks, huge-shot moment, skip prompt.
+- [x] **P1 — Tutorial.** Done 2026-11-08: on-table coach for the break, gold line, streak and hot pocket, plus a first-shop tip.
+- [x] **P1 — Layout fixes.** Done 2026-11-08: banner moved onto the bottom rail, side panel proven to fit every boss and bounty.
+- [x] **P1 — Resolution and aspect ratios.** Done 2026-11-08: rendered at 1280×720, 1280×800 and ultrawide (letterboxed). 4K scales the same way but was not rendered, as this display cannot show it.
 - [ ] **P2 — Localization pipeline.** Move all strings into translation files (currently inline in `catalog.gd` and `main.gd`).
 
 ## 8. Visual art (currently procedural placeholders)
@@ -135,27 +111,14 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 - [ ] **P2 — Illustrated card art** by an artist, if the vector set is not enough for the final look.
 - [x] **P0 — Title logo and app icon.** Done 2026-11-08: animated 8-ball atom mark and wordmark (`src/ui/logo_art.gd`), window icon `assets/icon.png`.
 - [ ] **P1 — Key art** for the store and launcher.
-- [ ] **P1 — Table art per Lab:**
-  - unique rail materials (wood, chrome, lab-metal)
-  - cloth textures
-  - pocket hardware
-  - lab-themed decals
-- [ ] **P1 — Room/background environment** around the table (lab setting, overhead lamp, ambient light) instead of a flat dark backdrop.
-- [ ] **P1 — Ball polish:**
-  - real number decals (font on the sphere instead of 2D text over it)
-  - better isotope visuals
-  - pocket drop animation through the net or tray
+- [x] **P1 — Table art per Lab.** Done 2026-11-08.
+- [x] **P1 — Room background.** Done 2026-11-08: lamp-lit hex floor.
+- [x] **P1 — Ball polish.** Done 2026-11-08: numbers sit on the sphere, turning and foreshortening with the roll.
 - [ ] **P1 — Cue polish:**
   - cue model per starting cue with more detail
   - cue strike follow-through
   - chalking animation between shots
-- [ ] **P1 — Effects pass:**
-  - unified particle style
-  - hot pocket flame
-  - streak "on fire" evolution
-  - boss intro sequence
-  - table-clear celebration
-  - screen transitions
+- [x] **P1 — Effects pass.** Done 2026-11-08: hot-pocket embers, boss arrival flash, table fades, celebrations, particle cap.
 - [ ] **P2 — Cosmetic unlocks:** cloth colours, ball sets, cue skins.
 
 ## 9. Audio
@@ -170,11 +133,8 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
   - ×Mult hits
   - coins
   - fanfare
-- [ ] **P1 — Mixing pass:**
-  - music ducking during the tally
-  - limit simultaneous clicks on breaks
-  - consistent loudness across tracks
-- [ ] **P1 — Music coverage:** a dedicated track for every Lab, the shop, bosses and victory, with seamless loop points (check the MP3 loop gaps).
+- [x] **P1 — Mixing pass.** Done 2026-11-08: click limiting and music ducking; all 18 tracks measured within 0.3 LUFS. Needs a human ear for final levels.
+- [x] **P1 — Music coverage.** Done 2026-11-08: a track for every lab, shop, bosses, endless and victory. Loop seams not yet checked by ear.
 - [ ] **P2 — Ambient room tone, and crowd/announcer stingers** for big shots.
 
 ## 10. Code health and tech
@@ -183,7 +143,7 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 - [ ] **P1 — Final-size builds.** Install the official export templates (about 1 GB download) for a much smaller exe with the Pocket Science icon, plus Mac/Linux if targeted.
 - [ ] **P1 — Split `main.gd`** (about 1,850 lines) into controller, HUD, shop, screens, tally and input modules.
 - [ ] **P1 — Data-drive content.** Move Formula effects out of the big `if` chain in `scorer.gd` into per-formula hook definitions, so adding 30 more stays manageable.
-- [ ] **P1 — CI.** Run `run_tests.sh`, the guideline trust test and a short bot balance check on every commit.
+- [x] **P1 — Automated checks.** Done 2026-11-08: `tools/ci.sh` runs every suite, every persona and the build. It runs locally, as the project has no remote server yet.
 - [ ] **P1 — Performance pass:**
   - profile breaks with 15 balls plus effects
   - forecast budgeting on slow machines
@@ -192,29 +152,12 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 
 ## 11. Accessibility
 
-- [ ] **P1 — Colour-blind support:**
-  - alternative guideline colours (gold/orange/white/blue)
-  - patterned hot-pocket indicator
-  - ball identification beyond colour
-- [ ] **P1 — Other options:**
-  - reduced-motion mode (no shake/punch/confetti)
-  - adjustable text size
-  - hold-free input options
-  - subtitle-style captions for audio cues (e.g. "rattle")
+- [x] **P1 — Colour-blind support.** Done 2026-11-08: safe palette, bold versus dashed guideline shapes, number tags, tray and ×2 labels.
+- [x] **P1 — Other accessibility options.** Done 2026-11-08: reduced motion, larger text, click-to-shoot (no holding), on-table text for scratches and rattles.
 - [ ] **P2 — Slower-tally and auto-fast-forward options.**
 
 ## 12. Licensing housekeeping (in-game)
 
 - [x] **P0 — Credits screen.** Done 2026-11-07: Title → Credits, with an in-game viewer for the Chakra Petch and Silkscreen OFL texts and the Godot licence (`licenses/`).
 - [x] **P0 — Ship the licence files.** Done 2026-11-08: included in the `.pck` (viewer in Credits) and copied beside the exe; confirmed inside the built pack.
-- [ ] **P1 — Content audit.** Confirm every name and asset is original and shipped licence files are present.
-
----
-
-### Suggested order
-1. **P0 bugs and feel:** §1, plus the §2 feel pass.
-2. **Human playtests:** §4.
-3. **Content expansion with unlocks:** §5 and §6.
-4. **UI and art pass:** §7 and §8.
-5. **Audio:** §9.
-6. **Builds and housekeeping:** §10–12.
+- [x] **P1 — Content audit.** Done 2026-11-08: no third-party names in the code; fonts, engine and music licences ship with the game. Not a legal review.

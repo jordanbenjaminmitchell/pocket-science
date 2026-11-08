@@ -87,20 +87,32 @@ func _draw() -> void:
 	draw_circle(Vector2(0.6, 1.2), radius * 0.92, Color(0, 0, 0, 0.25 * fade))
 
 
+## The number is printed on the sphere: it turns with the ball and flattens
+## as its disc rolls toward the edge.
 func _draw_number() -> void:
 	if number == 0 or fade <= 0.05:
 		return
 	for s in [1.0, -1.0]:
 		var a: Vector3 = basis * Vector3(s, 0, 0)
-		if a.z <= 0.25:
+		if a.z <= 0.2:
 			continue
-		var c := Vector2(a.x, -a.y) * radius * 0.98
-		var facing := clampf((a.z - 0.25) / 0.75, 0.0, 1.0)
-		var fs := int(round(radius * 0.92 * (0.55 + 0.45 * facing)))
+		var c := Vector2(a.x, -a.y) * radius
+		var up: Vector3 = basis * Vector3(0, 0, s)
+		var angle := atan2(up.x, up.y)
+		var facing := clampf(a.z, 0.0, 1.0)
+		var fs := int(round(radius * 1.05))
 		var txt := str(number)
-		var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_CENTER, -1, fs).x
-		var col := Color(0.08, 0.08, 0.08, fade * (0.35 + 0.65 * facing))
-		label_node.draw_string(font, c + Vector2(-w * 0.5, fs * 0.36), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+		var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var col := Color(0.08, 0.08, 0.08, fade * smoothstep(0.2, 0.45, a.z))
+		# Foreshorten along the direction the disc is tipping away.
+		var radial := Vector2(a.x, -a.y)
+		var squash := 1.0
+		if radial.length() > 0.01:
+			var along := absf(cos(radial.angle() - angle))
+			squash = lerpf(1.0, facing, along)
+		label_node.draw_set_transform(c, angle, Vector2(squash, lerpf(facing, 1.0, absf(cos(radial.angle() - angle)))) if radial.length() > 0.01 else Vector2.ONE)
+		label_node.draw_string(font, Vector2(-w * 0.5, fs * 0.36), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+	label_node.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 func set_fade(f: float) -> void:
