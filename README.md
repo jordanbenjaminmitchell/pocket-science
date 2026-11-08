@@ -9,9 +9,24 @@ This is a ground-up rebuild of Pocket Science in Godot. It plays like real pool:
 - **Double-click `Play Pocket Science.cmd`.** It uses the bundled Godot 4.7.2 runtime in `runtime/`.
 - Or open `project.godot` in Godot 4.7.2 and press **F5**.
 
+### Install a build
+
+- **Windows:** unzip `PocketScience-Windows.zip` anywhere and run `PocketScience.exe`.
+- **Android:** copy `PocketScience.apk` to the phone, open it and allow installs from that app when asked. Needs Android 7 or newer on a 64-bit device. The APK is signed with a local debug key, which is fine for your own devices but not for the Play Store.
+
+### Make a build
+
+```bash
+./build_windows.sh      # export/windows/
+./build_android.sh      # export/android/PocketScience.apk
+./tools/ci.sh           # every test suite, every persona, then both builds
+```
+
+Both builds need the Godot 4.7.2 export templates. Android also needs the Android SDK and a debug keystore.
+
 ## How a run works
 
-1. **Choose a cue.** Each cue gives a different start: Classic Maple, Optic, Hot Rod, Momentum or Gilded.
+1. **Choose a cue.** Each of the 10 cues gives a different start, and more unlock through milestones.
 2. **Each table has a target score.** You keep shooting while you pot, as in real pool. A miss, scratch or no-contact costs one **Chalk**; a dry break is free. When Chalk runs out before you reach the target, the run is over.
 3. **Clear the rack** for +1 Chalk and a fresh rack.
 4. **Lab Supply** opens between tables, where you can buy:
@@ -44,7 +59,7 @@ While you aim, a tag on the rail shows exactly what the pot is worth. The guidel
 - **Blue dashes:** the cue ball's path after contact, including follow, draw and english.
 
 ### Extras
-- **Starting cues:** Classic Maple, Optic (Long Lens), Hot Rod (hot pocket ×3, one less chalk), Momentum (+2 Mult per streak step) or Gilded ($12 and interest).
+- **Cues:** 10 in all, such as Classic Maple, Optic (Long Lens), Hot Rod (hot pocket ×3, one less chalk), Momentum (+2 Mult per streak step) and Gilded ($12 and interest).
 - **Bounty:** every table has a side goal, such as "Sink a bank shot +$3", which pays immediately.
 - **Ball tray:** the side panel shows which balls are still up and which are down, plus their isotopes.
 - **Coach:** first-time players get on-table hints until they clear their first table.
@@ -64,12 +79,13 @@ While you aim, a tag on the rail shows exactly what the pot is worth. The guidel
 
 ## Labs and anomalies
 
-**Labs:**
-- **Standard**
+**Labs (10):** each has its own rule, cloth, rail and emblem. Examples:
 - **Cryo Felt:** low friction, +1 Mult per pot.
 - **Cyclotron:** spring bumpers, +10 Chips per bumper hit.
 - **Spring Rails:** lively cushions, extra Mult for banks.
 - **Gravity Well:** a central pull bends moving balls.
+
+The in-game Collection lists them all.
 
 **Boss anomalies (15):** Tight Pockets, Sealed Sides, Lead Rack, Fog, Dry Chalk, Cold Pockets, Shrinking Pockets, One Pocket, Rotation Rules, Heavy Cue Ball, Black Ice, The Taxman, Blind Pockets, Tilted Table, Cursed 8.
 

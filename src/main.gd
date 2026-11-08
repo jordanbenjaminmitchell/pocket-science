@@ -1229,6 +1229,7 @@ func _button(text: String, cb: Callable, accent: Color = Color(0.85, 0.65, 0.3))
 
 var log_title: Label
 var touch_box: VBoxContainer
+var reagent_title: Label
 var menu_btn: Button
 var info_btn_ref: Button
 var power_slider: HSlider
@@ -1282,6 +1283,7 @@ func _sync_touch_ui() -> void:
 	lbl_hint.visible = not t
 	menu_btn.visible = t
 	info_btn_ref.text = "Run info" if t else "Run info [Tab]"
+	reagent_title.text = "REAGENTS  (tap to use)" if t else "REAGENTS  (click or 1/2 to use)"
 
 
 func _notification(what: int) -> void:
@@ -1473,7 +1475,8 @@ func _build_ui() -> void:
 	bottom.add_child(rpanel)
 	var rv := VBoxContainer.new()
 	rpanel.add_child(rv)
-	rv.add_child(_label("REAGENTS  (click or 1/2 to use)", 12, Color(0.6, 0.6, 0.6)))
+	reagent_title = _label("REAGENTS  (click or 1/2 to use)", 12, Color(0.6, 0.6, 0.6))
+	rv.add_child(reagent_title)
 	reagent_row = HBoxContainer.new()
 	reagent_row.add_theme_constant_override("separation", 8)
 	rv.add_child(reagent_row)
@@ -1707,7 +1710,7 @@ func _reagent_card(id: String, slot: int) -> Control:
 	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	d.custom_minimum_size = Vector2(110, 0)
 	v.add_child(d)
-	v.add_child(_label("[%d] Use" % (slot + 1), 12, accent))
+	v.add_child(_label("Tap to use" if settings.touch_mode else "[%d] Use" % (slot + 1), 12, accent))
 	p.mouse_filter = Control.MOUSE_FILTER_STOP
 	p.tooltip_text = r.desc
 	p.gui_input.connect(func(e: InputEvent):

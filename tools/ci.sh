@@ -7,6 +7,7 @@ cd "$(dirname "$0")/.."
 fail=0
 ./run_tests.sh | grep -E "tests: |FAILED" || true
 ./run_tests.sh >/dev/null 2>&1 || fail=1
+REAL_APPDATA="$APPDATA"
 export APPDATA="$(cygpath -w "$(mktemp -d)")"
 OUT="$(mktemp -d)"
 for p in novice casual builder saver gambler expert; do
@@ -14,7 +15,11 @@ for p in novice casual builder saver gambler expert; do
     echo "### persona $p failed"; fail=1
   fi
 done
+export APPDATA="$REAL_APPDATA"   # the builds need the real export templates
+rm -f export/android/PocketScience.apk   # a stale APK must not pass the check below
 ./build_windows.sh >/dev/null 2>&1 || fail=1
-[ -s export/windows/PocketScience.pck ] || { echo "### build missing"; fail=1; }
+./build_android.sh >/dev/null 2>&1 || fail=1
+[ -s export/windows/PocketScience.pck ] || { echo "### Windows build missing"; fail=1; }
+[ -s export/android/PocketScience.apk ] || { echo "### Android build missing"; fail=1; }
 [ $fail -eq 0 ] && echo "CI PASSED" || echo "CI FAILED"
 exit $fail

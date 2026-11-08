@@ -140,7 +140,10 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 ## 10. Code health and tech
 
 - [x] **P0 — Windows build.** Done 2026-11-08: `./build_windows.sh` writes a standalone `export/windows/` (`PocketScience.exe` + `.pck`); launched and recorded from an empty folder. It uses the Godot runtime as the exe, so it is about 197 MB.
-- [ ] **P1 — Final-size builds.** Install the official export templates (about 1 GB download) for a much smaller exe with the Pocket Science icon, plus Mac/Linux if targeted.
+- [x] **P1 — Final-size builds.** Done 2026-11-08: official templates installed; `./build_windows.sh` and `./build_android.sh` make release builds.
+- [x] **Android build.** Done 2026-11-08: touch controls, landscape, back button. Installed and played on a Pixel 8 emulator (finger aim and SHOOT confirmed). Not yet tried on a physical phone.
+- [ ] **P1 — Windows exe icon.** The .exe file still shows Godot's icon; needs rcedit configured. The in-game window icon is correct.
+- [ ] **P1 — Play Store signing.** The APK uses the local debug key, fine for sideloading. A store release needs a private keystore.
 - [ ] **P1 — Split `main.gd`** (about 1,850 lines) into controller, HUD, shop, screens, tally and input modules.
 - [ ] **P1 — Data-drive content.** Move Formula effects out of the big `if` chain in `scorer.gd` into per-formula hook definitions, so adding 30 more stays manageable.
 - [x] **P1 — Automated checks.** Done 2026-11-08: `tools/ci.sh` runs every suite, every persona and the build. It runs locally, as the project has no remote server yet.
