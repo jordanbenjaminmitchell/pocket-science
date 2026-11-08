@@ -1,5 +1,7 @@
 # Pocket Science — Release To-Do (game only)
 
+> **2026-11-08 redesign:** Chips × Mult, Formulas, Reagents, Isotopes, Stakes and every-third-table bosses were replaced with Chain and Heat scoring, Perks, Imbues, Handicaps and nine boss tables, so the game no longer borrows Balatro's system. Items below that mention the old names describe work done before the redesign.
+
 What still needs to be **created** or **revamped** before a full 1.0 release. This list covers the game only: store page, marketing and trailer are out of scope.
 
 **Priorities**

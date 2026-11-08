@@ -2,7 +2,7 @@
 
 **Pot balls. Stack multipliers. Beat the target.**
 
-This is a ground-up rebuild of Pocket Science in Godot. It plays like real pool: a 2:1 table with six pockets, numbered balls, a cue stick and a clear, exact guideline. On top of that sits a Chips × Mult scoring roguelite. Earlier HTML versions (v12–v21) were used as design reference only; no code was merged from them.
+This is a ground-up rebuild of Pocket Science in Godot. It plays like real pool: a 2:1 table with six pockets, numbered balls, a cue stick and a clear, exact guideline. On top of that sits a roguelite built around Chain and Heat scoring. Earlier HTML versions (v12–v21) were used as design reference only; no code was merged from them.
 
 ## Play
 
@@ -27,30 +27,23 @@ Both builds need the Godot 4.7.2 export templates. Android also needs the Androi
 ## How a run works
 
 1. **Choose a cue.** Each of the 10 cues gives a different start, and more unlock through milestones.
-2. **Each table has a target score.** You keep shooting while you pot, as in real pool. A miss, scratch or no-contact costs one **Chalk**; a dry break is free. When Chalk runs out before you reach the target, the run is over.
+2. **Every table is its own boss** with its own rule and a target score. You keep shooting while you pot, as in real pool. A miss, scratch or no-contact costs one **Chalk**; a dry break is free. When Chalk runs out before you reach the target, the run is over.
 3. **Clear the rack** for +1 Chalk and a fresh rack.
-4. **Lab Supply** opens between tables, where you can buy:
-   - **Formulas**: 60 passive rules in synergy families (banks, cue control, combos, streaks, pockets, ball numbers, economy, risk, physics). 5 slots; sell for half.
-   - **Reagents**: one-use tricks, 2 slots.
-   - **Isotopes**: permanently enhance one numbered ball.
-5. **The run has 9 tables.** Every third table is a boss with an **Anomaly**. After table 9 you can continue in endless mode.
+4. **The Pro Shop** opens between tables, where you can buy:
+   - **Perks**: 59 passive rules in synergy families. 6 slots; sell for half.
+   - **Imbues**: permanently change one numbered ball.
+5. **The tour is 9 tables**, including the Element Table at table 5 and the Grand Final at table 9. After that you can continue in endless mode.
 
 ### Scoring
 
-Each shot scores **Chips × Mult**:
+Each ball pays as it drops: **value × Chain × Heat**.
 
-- **Chips:** each potted ball gives 10 + its number.
-- **+Mult bonuses** (added first):
-  - streak: +1 per consecutive scoring shot
-  - bank pots: +1 per cushion
-  - combinations: +2
-  - extra balls in one shot: +1 each
-  - kick shots: +2
-  - formulas and isotopes
-- **×Mult multipliers** (applied after the bonuses):
-  - the glowing **hot pocket**: ×2
-  - the black 8: ×2
-  - Golden Ratio, Supernova, Fusion, Blue Chalk, …
+- **Value:** 10 + the ball's number.
+- **Chain:** starts at 1 each shot and rises by 0.5 for every ball dropped in that shot, so the last ball of a big shot pays the most.
+- **Heat:** lasts the whole table. Every scoring shot adds 1, each point adds ×0.5, and a miss cuts it in half.
+- **Hot pocket** and the **black 8** each pay ×2.
+
+Bouncing off cushions or other balls earns nothing by itself. Only an owned Perk or Imbue, or a table whose own rule says so, makes contact count.
 
 While you aim, a tag on the rail shows exactly what the pot is worth. The guideline colours mean:
 - **Gold:** that ball goes in cleanly, including off one cushion. `tests/test_guide_trust.gd` checks this: 200/200 gold lines pot unless another moving ball gets in the way or the shot lacks pace.
@@ -59,8 +52,8 @@ While you aim, a tag on the rail shows exactly what the pot is worth. The guidel
 - **Blue dashes:** the cue ball's path after contact, including follow, draw and english.
 
 ### Extras
-- **Cues:** 10 in all, such as Classic Maple, Optic (Long Lens), Hot Rod (hot pocket ×3, one less chalk), Momentum (+2 Mult per streak step) and Gilded ($12 and interest).
-- **Bounty:** every table has a side goal, such as "Sink a bank shot +$3", which pays immediately.
+- **Cues:** 10 in all, such as Classic Maple, Optic (Long Lens), Hot Rod (hot pocket ×3, one less chalk), Momentum (extra Heat from multi-pot shots) and Gilded ($12 and Deep Pockets).
+- **Side bet:** every table has a side goal, such as "Pot a combination +$3", which pays immediately.
 - **Ball tray:** the side panel shows which balls are still up and which are down, plus their isotopes.
 - **Coach:** first-time players get on-table hints until they clear their first table.
 - **Saves:** runs save at the start of each table (title → Continue). Personal bests are shown on the title screen.
@@ -72,22 +65,19 @@ While you aim, a tag on the rail shows exactly what the pot is worth. The guidel
 | Aim | Mouse. Left/Right fine-tunes, Shift makes it finer. F toggles fine-aim (mouse stops steering). |
 | Shoot | Press on the table, drag **back**, release. Or wheel/Up/Down for power and Space to shoot. |
 | Spin | Click the cue-ball widget, or W/S (follow/draw) and A/D (english). Right-click resets. |
-| Reagents | Click the card, or press 1 / 2 |
 | Move cue on break | H |
 | Fast-forward | Click or Space while balls roll or during the tally |
 | Pause | Esc |
 
-## Labs and anomalies
+## Boss tables
 
-**Labs (10):** each has its own rule, cloth, rail and emblem. Examples:
-- **Cryo Felt:** low friction, +1 Mult per pot.
-- **Cyclotron:** spring bumpers, +10 Chips per bumper hit.
-- **Spring Rails:** lively cushions, extra Mult for banks.
-- **Gravity Well:** a central pull bends moving balls.
+Each run draws its tables from 22 authored bosses. Some fixed highlights:
+
+- **The Local:** your first table. The house forgives your first miss.
+- **The Element Table:** each corner pocket holds Fire, Water, Earth or Air, and side pockets copy your last element. Pot in the right order to fuse multipliers. A miss clears the mix.
+- **The Grand Final:** the 8 goes last. Pot it early and lose a Chalk; pot it last for ×5.
 
 The in-game Collection lists them all.
-
-**Boss anomalies (15):** Tight Pockets, Sealed Sides, Lead Rack, Fog, Dry Chalk, Cold Pockets, Shrinking Pockets, One Pocket, Rotation Rules, Heavy Cue Ball, Black Ice, The Taxman, Blind Pockets, Tilted Table, Cursed 8.
 
 ## Project layout
 

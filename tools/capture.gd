@@ -35,6 +35,16 @@ func _go() -> void:
 			await _frames(3)
 			game._show_run_info()
 			await _frames(4)
+		"elements":
+			game._new_run()
+			game.run.perks.assign(["golden", "bank", "catalyst", "heat", "streak", "ricochet"])
+			game.run.table_index = 4
+			game.run.begin_table()
+			game.run.element_mix = ["fire"]
+			game.run.heat = 3
+			game._setup_table()
+			game._enter_aim()
+			await _frames(70)
 		"credits":
 			game._show_credits()
 			await _frames(4)
