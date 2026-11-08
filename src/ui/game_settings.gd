@@ -16,8 +16,27 @@ var aim_speed := 1.0        # keyboard fine-aim speed multiplier
 var pull := 1.0             # drag distance for full power (0.6 short .. 1.6 long)
 var invert_drag := false    # push forward instead of pulling back
 var click_shoot := false    # set power with wheel/keys, click to shoot
+var colorblind := false     # safe guideline palette
+var number_tags := false    # flat, always-readable number on every ball
+var large_text := false     # bigger small text
+var frame_cap := 0          # index into FRAME_CAPS
+var window_size := 1        # index into WINDOW_SIZES
 
-const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot"]
+const FRAME_CAPS := [0, 30, 60, 120, 144, 240]
+const WINDOW_SIZES := [Vector2i(1280, 720), Vector2i(1440, 810), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440)]
+
+## Rebindable actions: id -> [label, default key].
+const ACTIONS := {
+	"shoot": ["Shoot / fast-forward", KEY_SPACE], "power_up": ["Power up", KEY_UP], "power_down": ["Power down", KEY_DOWN],
+	"aim_left": ["Aim left", KEY_LEFT], "aim_right": ["Aim right", KEY_RIGHT], "spin_up": ["Spin: follow", KEY_W],
+	"spin_down": ["Spin: draw", KEY_S], "spin_left": ["Spin: left", KEY_A], "spin_right": ["Spin: right", KEY_D],
+	"place": ["Move cue ball on break", KEY_H], "fine": ["Toggle fine aim", KEY_F],
+	"reagent1": ["Use reagent 1", KEY_1], "reagent2": ["Use reagent 2", KEY_2],
+}
+
+var keys := {}
+
+const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "frame_cap", "window_size"]
 
 
 func load_file() -> void:
@@ -32,6 +51,35 @@ func load_file() -> void:
 		if c.has_section_key("settings", k):
 			set(k, c.get_value("settings", k))
 	_clamp()
+	reset_keys()
+	for a in ACTIONS:
+		if c.has_section_key("keys", a):
+			keys[a] = int(c.get_value("keys", a))
+
+
+func _init() -> void:
+	reset_keys()
+
+
+func reset_keys() -> void:
+	keys = {}
+	for a in ACTIONS:
+		keys[a] = ACTIONS[a][1]
+
+
+## Binds a key to an action; if another action had it, they swap.
+func bind(action: String, key: int) -> void:
+	for other in keys:
+		if other != action and keys[other] == key:
+			keys[other] = keys[action]
+	keys[action] = key
+
+
+func action_for(key: int) -> String:
+	for a in keys:
+		if keys[a] == key:
+			return a
+	return ""
 
 
 func save_file() -> void:
@@ -39,6 +87,8 @@ func save_file() -> void:
 	c.load(PATH)
 	for k in KEYS:
 		c.set_value("settings", k, get(k))
+	for a in keys:
+		c.set_value("keys", a, keys[a])
 	c.save(PATH)
 
 
@@ -54,6 +104,11 @@ func _clamp() -> void:
 	reduced_motion = bool(reduced_motion)
 	invert_drag = bool(invert_drag)
 	click_shoot = bool(click_shoot)
+	colorblind = bool(colorblind)
+	number_tags = bool(number_tags)
+	large_text = bool(large_text)
+	frame_cap = clampi(int(frame_cap), 0, FRAME_CAPS.size() - 1)
+	window_size = clampi(int(window_size), 0, WINDOW_SIZES.size() - 1)
 
 
 func reset() -> void:
@@ -68,3 +123,9 @@ func reset() -> void:
 	pull = 1.0
 	invert_drag = false
 	click_shoot = false
+	colorblind = false
+	number_tags = false
+	large_text = false
+	frame_cap = 0
+	window_size = 1
+	reset_keys()

@@ -36,6 +36,9 @@ var preview_text := ""
 var preview_pocket := -1
 var cue_visible := false
 var cue_colors: Dictionary = {}
+var colorblind := false
+var number_tags := false
+var place_hints: Array = []   # [[ball pos, pocket pos], ...] pots available from the ball-in-hand spot
 var coach_text := ""
 var coach_pos := Vector2.ZERO
 var cue_pos := Vector2.ZERO
@@ -433,6 +436,9 @@ func _draw_overlay() -> void:
 		o.draw_circle(place_pos, R, Color(1, 1, 1, 0.25 if place_ok else 0.1))
 		o.draw_arc(place_pos, R, 0, TAU, 32, col, 2.0)
 		o.draw_arc(place_pos, R + 6 + sin(time * 6.0) * 2.0, 0, TAU, 32, Color(col, 0.35), 1.5)
+		for h in place_hints:
+			o.draw_line(h[0], h[1], Color(_pot_color(), 0.55), 2.0)
+			o.draw_arc(h[0], R + 3.0, 0, TAU, 24, Color(_pot_color(), 0.8), 2.0)
 	if not show_guide or guide.is_empty():
 		return
 	var glow := Color(1, 1, 1, 0.12)
@@ -452,20 +458,25 @@ func _draw_overlay() -> void:
 	if guide.has("obj"):
 		var op: PackedVector2Array = guide.obj
 		var pot: bool = guide.get("obj_pot", false)
-		var oc := Color(1.0, 0.82, 0.3) if pot else Color(0.75, 0.95, 1.0)
-		if guide.get("obj_edge", false):
-			oc = Color(1.0, 0.5, 0.2)
+		var edge: bool = guide.get("obj_edge", false)
+		var oc := _pot_color() if pot else Color(0.75, 0.95, 1.0)
+		if edge:
+			oc = _edge_color()
 		for i in op.size() - 1:
-			o.draw_line(op[i], op[i + 1], Color(oc, 0.18), 8.0)
-			o.draw_line(op[i], op[i + 1], oc, 2.5)
+			# Shape as well as colour: pots are bold, rattles are dashed.
+			if edge:
+				_dashed(o, op[i], op[i + 1], oc, 3.0, 12.0)
+			else:
+				o.draw_line(op[i], op[i + 1], Color(oc, 0.18), 8.0)
+				o.draw_line(op[i], op[i + 1], oc, 4.0 if pot else 2.0)
 		if op.size() >= 2:
 			_arrow(o, op[op.size() - 2], op[op.size() - 1], oc)
 	if guide.has("obj2"):
 		var op2: PackedVector2Array = guide.obj2
 		var pot2: bool = guide.get("obj2_pot", false)
-		var oc2 := Color(1.0, 0.82, 0.3) if pot2 else Color(0.75, 0.95, 1.0, 0.7)
+		var oc2 := _pot_color() if pot2 else Color(0.75, 0.95, 1.0, 0.7)
 		if guide.get("obj2_edge", false):
-			oc2 = Color(1.0, 0.5, 0.2)
+			oc2 = _edge_color()
 		for i in op2.size() - 1:
 			_dashed(o, op2[i], op2[i + 1], oc2, 2.0, 9.0)
 		if op2.size() >= 2:
@@ -489,6 +500,14 @@ func _draw_overlay() -> void:
 		o.draw_rect(rect, Color(0.05, 0.05, 0.08, 0.8), true)
 		o.draw_rect(rect, Color(1.0, 0.82, 0.3, 0.8), false, 1.5)
 		o.draw_string(font_bold, lp + Vector2(-w * 0.5, 4), preview_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1.0, 0.9, 0.55))
+
+
+func _pot_color() -> Color:
+	return Color(0.94, 0.89, 0.26) if colorblind else Color(1.0, 0.82, 0.3)
+
+
+func _edge_color() -> Color:
+	return Color(0.0, 0.62, 0.9) if colorblind else Color(1.0, 0.5, 0.2)
 
 
 func _txt(n: CanvasItem, p: Vector2, s: String, c: Color, fs: int) -> void:
@@ -562,6 +581,12 @@ func _draw_cue() -> void:
 ## ---------------------------------------------------------------- effects
 func _draw_fx() -> void:
 	var f := fx_layer
+	if number_tags:
+		for i in ball_nodes:
+			var b: BallNode = ball_nodes[i]
+			if b.visible and b.number != 0 and not b.sinking:
+				f.draw_circle(b.position, 8.5, Color(0.98, 0.97, 0.92))
+				_txt(f, b.position + Vector2(0, 0), str(b.number), Color(0.05, 0.05, 0.05), 12)
 	_draw_coach(f)
 	for r in rings:
 		var t: float = 1.0 - r.life / r.max

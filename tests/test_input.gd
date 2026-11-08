@@ -1,0 +1,230 @@
+extends SceneTree
+## Keyboard rebinding, gamepad play, menu navigation, pause and accessibility.
+
+var failures := 0
+var g: Node
+
+
+func check(c: bool, m: String) -> void:
+	print("  ", "ok  " if c else "FAIL ", m)
+	if not c:
+		failures += 1
+
+
+func _initialize() -> void:
+	call_deferred("_go")
+
+
+func _key(k: int) -> void:
+	var e := InputEventKey.new()
+	e.keycode = k
+	e.pressed = true
+	root.push_input(e)
+
+
+func _pad(b: int) -> void:
+	var e := InputEventJoypadButton.new()
+	e.button_index = b
+	e.pressed = true
+	root.push_input(e)
+
+
+func _stick(axis: int, v: float) -> void:
+	var e := InputEventJoypadMotion.new()
+	e.axis = axis
+	e.axis_value = v
+	root.push_input(e)
+
+
+func _frames(n: int) -> void:
+	for i in n:
+		await process_frame
+
+
+func _go() -> void:
+	create_timer(120.0).timeout.connect(func(): quit(2))
+	root.size = Vector2i(1600, 900)
+	g = load("res://main.tscn").instantiate()
+	root.add_child(g)
+	await _frames(2)
+	print("rebinding")
+	var s: GameSettings = g.settings
+	check(s.keys.shoot == KEY_SPACE and s.action_for(KEY_W) == "spin_up", "default bindings")
+	s.bind("shoot", KEY_B)
+	check(s.keys.shoot == KEY_B, "rebind works")
+	s.bind("shoot", KEY_W)
+	check(s.keys.shoot == KEY_W and s.keys.spin_up == KEY_B, "duplicate keys swap instead of clashing")
+	s.save_file()
+	var s2 := GameSettings.new()
+	s2.load_file()
+	check(s2.keys.shoot == KEY_W, "bindings persist")
+	s.reset_keys()
+	g.controls_back = g._show_title
+	g._show_controls()
+	await _frames(2)
+	g.rebinding = "fine"
+	_key(KEY_G)
+	await _frames(2)
+	check(s.keys.fine == KEY_G and g.rebinding == "", "the Controls screen captures a key press")
+	s.reset_keys()
+	s.save_file()
+	print("keyboard play")
+	g._new_run()
+	await _frames(2)
+	g.run.plan[0].target = 1000000
+	s.bind("shoot", KEY_B)
+	var p0: float = g.power
+	_key(KEY_UP)
+	await _frames(1)
+	check(g.power > p0 or p0 >= 1.0, "power key works")
+	_key(KEY_SPACE)
+	await _frames(1)
+	check(g.state == g.S.AIM, "old shoot key no longer fires")
+	_key(KEY_B)
+	await _frames(1)
+	check(g.state == g.S.STRIKE or g.state == g.S.ROLL, "rebound key fires")
+	s.reset_keys()
+	await _settle()
+	print("gamepad")
+	g._new_run()
+	await _frames(2)
+	g.run.plan[0].target = 1000000
+	var a0: Vector2 = g.aim_dir
+	_stick(JOY_AXIS_LEFT_X, 1.0)
+	await _frames(10)
+	check(g.aim_dir.angle_to(a0) != 0.0 and g.pad_active, "left stick aims")
+	_stick(JOY_AXIS_LEFT_X, 0.0)
+	var pw: float = g.power
+	_stick(JOY_AXIS_RIGHT_Y, 1.0)
+	await _frames(10)
+	check(g.power < pw, "right stick sets power")
+	_stick(JOY_AXIS_RIGHT_Y, 0.0)
+	_pad(JOY_BUTTON_DPAD_UP)
+	await _frames(1)
+	check(g.follow > 0.0, "D-pad sets spin")
+	_pad(JOY_BUTTON_X)
+	await _frames(1)
+	check(g.follow == 0.0, "X resets spin")
+	_pad(JOY_BUTTON_Y)
+	await _frames(1)
+	check(g.info_open, "Y opens run info")
+	g._close_run_info()
+	await _frames(1)
+	_pad(JOY_BUTTON_START)
+	await _frames(1)
+	check(g.paused, "Start pauses")
+	g._resume()
+	await _frames(1)
+	g.run.reagents.assign(["hotswap", "grant"])
+	g._refresh_hud()
+	_pad(JOY_BUTTON_LEFT_SHOULDER)
+	await _frames(2)
+	check(g.state == g.S.PICK, "LB uses reagent 1")
+	_pad(JOY_BUTTON_B)
+	await _frames(2)
+	check(g.state == g.S.AIM and g.run.reagents.has("hotswap"), "cancelling hands the reagent back")
+	g._use_reagent(g.run.reagents.find("hotswap"))
+	await _frames(1)
+	_stick(JOY_AXIS_LEFT_Y, 1.0)
+	_stick(JOY_AXIS_LEFT_X, 1.0)
+	await _frames(70)
+	_stick(JOY_AXIS_LEFT_Y, 0.0)
+	_stick(JOY_AXIS_LEFT_X, 0.0)
+	await _frames(1)
+	check(g.view.hover_pocket == 5, "stick moves the pocket cursor (%d)" % g.view.hover_pocket)
+	_pad(JOY_BUTTON_A)
+	await _frames(1)
+	check(g.run.hot_pocket == 5 and g.state == g.S.AIM, "A confirms the pocket")
+	_pad(JOY_BUTTON_A)
+	await _frames(1)
+	check(g.state == g.S.STRIKE or g.state == g.S.ROLL, "A shoots")
+	await _settle()
+	print("menus")
+	g.pad_active = false
+	g._show_title()
+	await _frames(3)
+	check(root.gui_get_focus_owner() == null, "no focus ring for mouse users")
+	_key(KEY_DOWN)
+	await _frames(1)
+	check(root.gui_get_focus_owner() is Button, "arrow key starts menu navigation")
+	var first: Control = root.gui_get_focus_owner()
+	_key(KEY_DOWN)
+	await _frames(1)
+	check(root.gui_get_focus_owner() != first, "arrow moves between buttons")
+	g.nav_active = false
+	print("pause")
+	g._new_run()
+	await _frames(2)
+	g.run.plan[0].target = 1000000
+	g._shoot(1.0)
+	await _frames(12)
+	check(g.state == g.S.ROLL, "ball is rolling")
+	g._show_pause()
+	var t0: float = g.sim.time
+	await _frames(20)
+	check(g.sim.time == t0 and g.paused, "pause freezes the simulation mid-shot")
+	g._resume()
+	await _frames(5)
+	check(g.sim.time > t0, "resume continues")
+	await _settle()
+	g._show_shop([["Table cleared", 3]])
+	await _frames(2)
+	g._show_pause()
+	await _frames(2)
+	check(g.paused, "can pause from the shop")
+	g._resume()
+	await _frames(2)
+	check(not g.paused and g.state == g.S.SHOP and g.overlay.get_child_count() > 0, "resume returns to the shop")
+	print("ball in hand")
+	g._new_run()
+	await _frames(2)
+	var ci: int = g._cue_index()
+	g.sim.alive[ci] = 0
+	g._begin_place(true)
+	g.mouse_pos = g.view.base_position + Vector2(900, 250) * g.TABLE_SCALE
+	await _frames(2)
+	check(g.view.place_pos.x <= Rack.HEAD.x, "scratch on the break: behind the head string")
+	g._begin_place(false)
+	g.mouse_pos = g.view.base_position + Vector2(500, 250) * g.TABLE_SCALE
+	await _frames(2)
+	check(g.view.place_pos.x > Rack.HEAD.x, "other scratches: anywhere")
+	check(g.sim.alive[ci] == 0, "pot hints do not disturb the table")
+	print("accessibility")
+	s.colorblind = true
+	s.number_tags = true
+	s.large_text = true
+	s.frame_cap = 2
+	g._apply_settings()
+	check(g.view.colorblind and g.view.number_tags and Engine.max_fps == 60, "options reach the game")
+	check(g.view._pot_color() != g.view._edge_color(), "pot and rattle colours differ")
+	var lb: Label = g._label("x", 13)
+	check(lb.get_theme_font_size("font_size") == 15, "larger text applies")
+	Engine.max_fps = 0
+	for name in ["settings", "controls", "title", "shop"]:
+		match name:
+			"settings":
+				g._show_settings(g._show_title)
+			"controls":
+				g._show_controls()
+			"title":
+				g._show_title()
+			"shop":
+				g._new_run()
+				g._show_shop([["Table cleared", 3]])
+		await _frames(4)
+		for p in g.overlay.get_children():
+			if p is PanelContainer:
+				var r: Rect2 = p.get_global_rect()
+				check(r.position.y >= 0 and r.end.y <= 900.5, "%s fits with larger text (%s)" % [name, r])
+	s.reset()
+	g._apply_settings()
+	print("input tests: %d failures" % failures)
+	quit(1 if failures > 0 else 0)
+
+
+func _settle() -> void:
+	var n := 0
+	while g.state != g.S.AIM and g.state != g.S.PLACE and n < 6000:
+		n += 1
+		g.fast = true
+		await process_frame

@@ -208,8 +208,34 @@ var mouse_pos := Vector2(800, 400)
 
 
 func _input(e: InputEvent) -> void:
+	if rebinding != "" and e is InputEventKey and e.pressed and not e.echo:
+		if e.keycode != KEY_ESCAPE:
+			settings.bind(rebinding, e.keycode)
+			_save_settings()
+		rebinding = ""
+		get_viewport().set_input_as_handled()
+		_show_controls()
+		return
 	if e is InputEventMouse:
 		mouse_pos = e.position
+		if e is InputEventMouseMotion:
+			pad_active = false
+			nav_active = false
+	if e is InputEventJoypadMotion:
+		joy_axes[e.axis] = e.axis_value
+	if e is InputEventJoypadButton and e.pressed:
+		pad_active = true
+		if not paused and overlay.get_child_count() == 0:
+			_joy_button(e.button_index)
+			get_viewport().set_input_as_handled()
+			return
+	# First arrow/D-pad press on a menu starts keyboard or gamepad navigation.
+	for act in ["ui_down", "ui_up", "ui_left", "ui_right"]:
+		if e.is_action_pressed(act) and overlay.get_child_count() > 0:
+			nav_active = true
+			if get_viewport().gui_get_focus_owner() == null and _focus_first(overlay):
+				get_viewport().set_input_as_handled()
+			break
 	# Tab is also Godot UI focus navigation, so take it before the GUI does.
 	if e is InputEventKey and e.pressed and not e.echo and e.keycode == KEY_TAB:
 		if info_open:
@@ -235,17 +261,27 @@ func _update_aim(delta: float) -> void:
 		view.cue_pull = drag_power * 90.0
 		power_w.set_power(drag_power)
 	else:
-		if not fine_aim and _mouse_over_table() and m.distance_to(sim.pos[ci]) > 4.0:
+		if not fine_aim and not pad_active and _mouse_over_table() and m.distance_to(sim.pos[ci]) > 4.0:
 			var nd := (m - sim.pos[ci]).normalized()
 			if nd.angle_to(aim_dir) != 0.0:
 				aim_dir = nd
 				guide_dirty = true
 		var rot := 0.0
 		var spd := (0.06 if Input.is_key_pressed(KEY_SHIFT) else 0.6) * settings.aim_speed
-		if Input.is_key_pressed(KEY_LEFT):
+		if Input.is_key_pressed(settings.keys.aim_left):
 			rot -= spd
-		if Input.is_key_pressed(KEY_RIGHT):
+		if Input.is_key_pressed(settings.keys.aim_right):
 			rot += spd
+		var jx := _joy(JOY_AXIS_LEFT_X)
+		if jx != 0.0:
+			pad_active = true
+			var precise: bool = joy_axes.get(JOY_AXIS_TRIGGER_LEFT, 0.0) > 0.5
+			rot += jx * absf(jx) * (0.25 if precise else 2.0) * settings.aim_speed
+		var jy := _joy(JOY_AXIS_RIGHT_Y)
+		if jy != 0.0:
+			pad_active = true
+			power = clampf(power - jy * delta * 0.8, 0.02, 1.0)
+			forecast_dirty = true
 		if rot != 0.0:
 			aim_dir = aim_dir.rotated(deg_to_rad(rot) * delta * 30.0)
 			guide_dirty = true
@@ -395,6 +431,7 @@ func _speed(p: float) -> float:
 
 
 func _update_place() -> void:
+	_pad_cursor(get_process_delta_time())
 	var m := _mouse_table()
 	var ci := _cue_index()
 	m.x = clampf(m.x, TableLayout.R, (Rack.HEAD.x if place_head_only else TableLayout.W - TableLayout.R))
@@ -404,9 +441,29 @@ func _update_place() -> void:
 	view.place_pos = m
 	view.place_ok = sim.is_clear_spot(m, ci)
 	view.show_guide = false
+	if m != last_place:
+		last_place = m
+		view.place_hints = _pots_from(m) if view.place_ok else []
+
+
+## Which pots would be on from a candidate cue-ball spot (ball in hand).
+func _pots_from(p: Vector2) -> Array:
+	var ci := _cue_index()
+	var old_pos := sim.pos[ci]
+	var old_alive := sim.alive[ci]
+	sim.pos[ci] = p
+	sim.alive[ci] = 1
+	var out: Array = []
+	var cands := AutoPlayer.candidates(sim, run)
+	for c in cands.slice(0, 8):
+		out.append([sim.pos[c.obj], layout.pockets[c.pocket].pos])
+	sim.pos[ci] = old_pos
+	sim.alive[ci] = old_alive
+	return out
 
 
 func _update_pick() -> void:
+	_pad_cursor(get_process_delta_time())
 	var m := _mouse_table()
 	var best := -1
 	var bd := 1.0e9
@@ -417,7 +474,7 @@ func _update_pick() -> void:
 		if d < bd:
 			bd = d
 			best = k
-	view.hover_pocket = best if bd < 160.0 else -1
+	view.hover_pocket = best if (bd < 160.0 or pad_active) else -1
 
 
 func _shoot(p: float) -> void:
@@ -718,7 +775,7 @@ func _after_shot() -> void:
 		_new_rack(run.current().rack)
 		_enter_aim()
 	elif out.ball_in_hand:
-		_begin_place(false)
+		_begin_place(was_break)   # scratch on the break: behind the head string
 	else:
 		_enter_aim()
 	_refresh_hud()
@@ -737,6 +794,9 @@ func _rebuild_layout() -> void:
 
 
 var pick_call := false
+var pick_reagent := ""
+var rebinding := ""
+var last_place := Vector2(-1, -1)
 var chosen_stake := 0
 
 
@@ -764,7 +824,8 @@ func _begin_place(head_only: bool) -> void:
 	state = S.PLACE
 	place_head_only = head_only
 	view.show_guide = false
-	lbl_hint.text = "Ball in hand: click a clear spot to place the cue ball."
+	last_place = Vector2(-1, -1)
+	lbl_hint.text = "Ball in hand%s: gold lines show the pots on from here. Click to place." % (" behind the line" if head_only else "")
 	_refresh_hud()
 
 
@@ -802,6 +863,8 @@ func _table_cleared() -> void:
 	var rows := run.payout()
 	_refresh_hud()
 	await get_tree().create_timer(1.6).timeout
+	while paused and state == S.CLEAR:
+		await get_tree().process_frame
 	if state != S.CLEAR:
 		return
 	if final and not run.endless:
@@ -839,42 +902,122 @@ func _unhandled_input(e: InputEvent) -> void:
 func _key(k: int) -> void:
 	if k == KEY_ESCAPE:
 		if state == S.PICK:
+			# Backing out hands the unused reagent back.
+			if pick_reagent != "" and run.reagents.size() < RunState.MAX_REAGENTS:
+				run.reagents.append(pick_reagent)
+			pick_reagent = ""
+			pick_call = false
 			state = S.AIM
 			view.pocket_pick = false
 			_enter_aim()
 		elif state != S.TITLE:
 			_show_pause()
 		return
+	var action := settings.action_for(k)
 	match state:
 		S.AIM:
-			match k:
-				KEY_SPACE, KEY_ENTER:
+			match action:
+				"shoot":
 					_shoot(power)
-				KEY_UP:
+				"power_up":
 					power = clampf(power + 0.05, 0.02, 1.0)
-				KEY_DOWN:
+				"power_down":
 					power = clampf(power - 0.05, 0.02, 1.0)
-				KEY_W:
+				"spin_up":
 					spin_w.set_spin(follow + 0.25, side)
-				KEY_S:
+				"spin_down":
 					spin_w.set_spin(follow - 0.25, side)
-				KEY_A:
+				"spin_left":
 					spin_w.set_spin(follow, side - 0.25)
-				KEY_D:
+				"spin_right":
 					spin_w.set_spin(follow, side + 0.25)
-				KEY_H:
+				"place":
 					if is_break:
 						_begin_place(true)
-				KEY_F:
+				"fine":
 					fine_aim = not fine_aim
-					lbl_hint.text = "Fine aim ON: use Left/Right (Shift = finer). F to release." if fine_aim else "Fine aim off."
-				KEY_1:
+					lbl_hint.text = "Fine aim ON: use your aim keys (Shift = finer). Toggle again to release." if fine_aim else "Fine aim off."
+				"reagent1":
 					_use_reagent(0)
-				KEY_2:
+				"reagent2":
 					_use_reagent(1)
+			if k == KEY_ENTER:
+				_shoot(power)
 		S.ROLL, S.TALLY:
-			if k == KEY_SPACE or k == KEY_ENTER:
+			if action == "shoot" or k == KEY_ENTER:
 				fast = true
+
+
+## ---------------------------------------------------------------- gamepad
+var joy_axes := {}
+var pad_active := false
+var nav_active := false
+
+
+func _joy(axis: int) -> float:
+	var v: float = joy_axes.get(axis, 0.0)
+	return v if absf(v) > 0.15 else 0.0
+
+
+func _joy_button(b: int) -> void:
+	if b == JOY_BUTTON_START:
+		_key(KEY_ESCAPE)
+		return
+	if b == JOY_BUTTON_Y and (state == S.AIM or state == S.PLACE or state == S.SHOP):
+		_show_run_info()
+		return
+	match state:
+		S.AIM:
+			match b:
+				JOY_BUTTON_A:
+					_shoot(power)
+				JOY_BUTTON_LEFT_SHOULDER:
+					_use_reagent(0)
+				JOY_BUTTON_RIGHT_SHOULDER:
+					_use_reagent(1)
+				JOY_BUTTON_DPAD_UP:
+					spin_w.set_spin(follow + 0.25, side)
+				JOY_BUTTON_DPAD_DOWN:
+					spin_w.set_spin(follow - 0.25, side)
+				JOY_BUTTON_DPAD_LEFT:
+					spin_w.set_spin(follow, side - 0.25)
+				JOY_BUTTON_DPAD_RIGHT:
+					spin_w.set_spin(follow, side + 0.25)
+				JOY_BUTTON_X:
+					spin_w.set_spin(0.0, 0.0)
+				JOY_BUTTON_BACK:
+					if is_break:
+						_begin_place(true)
+		S.PLACE:
+			if b == JOY_BUTTON_A:
+				_place_cue()
+		S.PICK:
+			if b == JOY_BUTTON_A and view.hover_pocket >= 0:
+				_confirm_pick()
+			elif b == JOY_BUTTON_B:
+				_key(KEY_ESCAPE)
+		S.ROLL, S.TALLY:
+			if b == JOY_BUTTON_A:
+				fast = true
+
+
+## Left stick steers the cursor when placing the cue ball or choosing a pocket.
+func _pad_cursor(delta: float) -> void:
+	var stick := Vector2(_joy(JOY_AXIS_LEFT_X), _joy(JOY_AXIS_LEFT_Y))
+	if stick != Vector2.ZERO:
+		pad_active = true
+		mouse_pos += stick * delta * 760.0
+		mouse_pos = mouse_pos.clamp(Vector2.ZERO, Vector2(1600, 900))
+
+
+func _focus_first(n: Node) -> bool:
+	for c in n.get_children():
+		if c is Button and not (c as Button).disabled and (c as Button).is_visible_in_tree():
+			(c as Button).grab_focus()
+			return true
+		if _focus_first(c):
+			return true
+	return false
 
 
 func _mouse_button(e: InputEventMouseButton) -> void:
@@ -907,19 +1050,24 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 				_place_cue()
 		S.PICK:
 			if e.button_index == MOUSE_BUTTON_LEFT and e.pressed and view.hover_pocket >= 0:
-				if pick_call:
-					run.called_pocket = view.hover_pocket
-					view.called_pocket = run.called_pocket
-					pick_call = false
-				else:
-					run.hot_pocket = view.hover_pocket
-					_sync_hot()
-				view.pocket_pick = false
-				sfx.play("xmult", 0.6)
-				_enter_aim()
+				_confirm_pick()
 		S.ROLL, S.TALLY:
 			if e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
 				fast = true
+
+
+func _confirm_pick() -> void:
+	if pick_call:
+		run.called_pocket = view.hover_pocket
+		view.called_pocket = run.called_pocket
+		pick_call = false
+	else:
+		run.hot_pocket = view.hover_pocket
+		_sync_hot()
+	pick_reagent = ""
+	view.pocket_pick = false
+	sfx.play("xmult", 0.6)
+	_enter_aim()
 
 
 func _on_spin(f: float, s: float) -> void:
@@ -950,11 +1098,13 @@ func _use_reagent(i: int) -> void:
 			forecast_dirty = true
 			forecast_timer = 0.0
 		"hotswap":
+			pick_reagent = id
 			pick_call = false
 			state = S.PICK
 			view.pocket_pick = true
 			lbl_hint.text = "Click a pocket to make it the hot pocket. Esc cancels."
 		"callshot":
+			pick_reagent = id
 			pick_call = true
 			state = S.PICK
 			view.pocket_pick = true
@@ -997,6 +1147,8 @@ func _style(bg: Color, border: Color = Color(0, 0, 0, 0), bw: int = 0, radius: i
 
 
 func _label(text: String, size: int, color: Color = Color.WHITE, font: Font = null) -> Label:
+	if settings.large_text and size <= 15:
+		size += 2
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_size_override("font_size", size)
@@ -1015,7 +1167,7 @@ func _button(text: String, cb: Callable, accent: Color = Color(0.85, 0.65, 0.3))
 	b.add_theme_stylebox_override("hover", _style(Color(0.2, 0.16, 0.11), accent, 2, 8))
 	b.add_theme_stylebox_override("pressed", _style(Color(0.3, 0.22, 0.12), accent.lightened(0.2), 2, 8))
 	b.add_theme_stylebox_override("disabled", _style(Color(0.08, 0.08, 0.08), Color(0.25, 0.25, 0.25), 2, 8))
-	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	b.add_theme_stylebox_override("focus", _style(Color(1, 1, 1, 0.06), Color(1.0, 1.0, 1.0, 0.95), 3, 8))
 	b.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
 	b.add_theme_color_override("font_disabled_color", Color(0.45, 0.45, 0.45))
 	b.pressed.connect(func():
@@ -1051,6 +1203,7 @@ func _build_ui() -> void:
 	var info_btn := _button("Run info [Tab]", _show_run_info, Color(0.5, 0.7, 0.9))
 	info_btn.add_theme_font_size_override("font_size", 12)
 	info_btn.custom_minimum_size = Vector2(0, 26)
+	info_btn.focus_mode = Control.FOCUS_NONE
 	round_row.add_child(info_btn)
 
 	var labbox := PanelContainer.new()
@@ -1453,6 +1606,8 @@ func _center_panel(w: float, h: float, accent: Color = Color(0.85, 0.65, 0.3), a
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
 	p.add_child(v)
+	if nav_active:
+		(func(): _focus_first(overlay)).call_deferred()
 	# Wrapping labels with no width would measure one word per line and balloon
 	# the panel; give them the panel's inner width once the content is built.
 	(func():
@@ -1733,10 +1888,12 @@ func _show_pause_again() -> void:
 func _resume() -> void:
 	paused = false
 	_clear_overlay()
+	if state == S.SHOP:
+		_refresh_shop()
 
 
 func _show_pause() -> void:
-	if state == S.SHOP or state == S.OVER or state == S.CLEAR:
+	if state == S.OVER:
 		return
 	paused = true
 	_clear_overlay()
@@ -1984,6 +2141,7 @@ func _record_best() -> void:
 
 
 var settings := GameSettings.new()
+var applied_window := -1
 
 
 func _save_settings() -> void:
@@ -2001,10 +2159,17 @@ func _apply_settings() -> void:
 	sfx.set_music_volume(settings.master * settings.music)
 	view.shake_scale = settings.shake
 	view.reduced_motion = settings.reduced_motion
+	view.colorblind = settings.colorblind
+	view.number_tags = settings.number_tags
+	Engine.max_fps = GameSettings.FRAME_CAPS[settings.frame_cap]
 	if DisplayServer.get_name() != "headless":
 		var want := DisplayServer.WINDOW_MODE_FULLSCREEN if settings.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 		if DisplayServer.window_get_mode() != want:
 			DisplayServer.window_set_mode(want)
+		if not settings.fullscreen and applied_window != settings.window_size:
+			if applied_window >= 0:
+				DisplayServer.window_set_size(GameSettings.WINDOW_SIZES[settings.window_size])
+			applied_window = settings.window_size
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if settings.vsync else DisplayServer.VSYNC_DISABLED)
 
 
@@ -2032,6 +2197,11 @@ func _show_settings(back: Callable) -> void:
 	_setting_toggle(grid, "Reduced motion (no shake, zoom or confetti)", "reduced_motion")
 	_setting_toggle(grid, "Invert pull-back (push forward for power)", "invert_drag")
 	_setting_toggle(grid, "Click to shoot (power from wheel / Up / Down)", "click_shoot")
+	_setting_toggle(grid, "Colour-blind guideline palette", "colorblind")
+	_setting_toggle(grid, "Number tags on every ball", "number_tags")
+	_setting_toggle(grid, "Larger small text", "large_text")
+	_setting_choice(grid, "Frame cap", "frame_cap", GameSettings.FRAME_CAPS.map(func(f): return "Unlimited" if f == 0 else "%d FPS" % f))
+	_setting_choice(grid, "Window size", "window_size", GameSettings.WINDOW_SIZES.map(func(w): return "%d × %d" % [w.x, w.y]))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	v.add_child(row)
@@ -2042,6 +2212,11 @@ func _show_settings(back: Callable) -> void:
 		_show_settings(back), Color(0.6, 0.75, 0.9))
 	reset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(reset)
+	var ctrl_btn := _button("Controls…", func():
+		controls_back = back
+		_show_controls(), Color(0.6, 0.75, 0.9))
+	ctrl_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(ctrl_btn)
 	var wipe := _button("Erase all progress…", func(): _confirm_wipe(back), Color(0.9, 0.4, 0.3))
 	wipe.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(wipe)
@@ -2073,6 +2248,58 @@ func _setting_slider(grid: GridContainer, title: String, key: String, lo: float,
 		if key == "sfx" or key == "master":
 			sfx.play("click", 0.6))
 	s.drag_ended.connect(func(_changed: bool): _save_settings())
+
+
+func _setting_choice(grid: GridContainer, title: String, key: String, options: Array) -> void:
+	grid.add_child(_label(title, 16, Color(0.85, 0.87, 0.9), F_REG))
+	var o := OptionButton.new()
+	for t in options:
+		o.add_item(t)
+	o.selected = int(settings.get(key))
+	o.name = "choice_" + key
+	grid.add_child(o)
+	grid.add_child(Control.new())
+	o.item_selected.connect(func(i: int):
+		settings.set(key, i)
+		_apply_settings()
+		_save_settings())
+
+
+var controls_back: Callable
+
+
+func _show_controls() -> void:
+	_clear_overlay()
+	_dim(0.8)
+	var v := _center_panel(640, 640)
+	v.add_child(_label("CONTROLS", 30, Color(0.98, 0.8, 0.4), F_PIXB))
+	v.add_child(_label("Mouse: aim, drag back to shoot. Gamepad: left stick aims (hold LT for precision), right stick power, A shoots, D-pad spin, LB/RB reagents, Y run info, Start pause.", 13, Color(0.7, 0.75, 0.8), F_REG))
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 20)
+	grid.add_theme_constant_override("v_separation", 6)
+	v.add_child(grid)
+	for a in GameSettings.ACTIONS:
+		grid.add_child(_label(GameSettings.ACTIONS[a][0], 16, Color(0.85, 0.87, 0.9), F_REG))
+		var txt: String = "Press a key…" if rebinding == a else OS.get_keycode_string(settings.keys[a])
+		var b := _button(txt, func():
+			rebinding = a
+			_show_controls(), Color(0.6, 0.75, 0.9))
+		b.custom_minimum_size = Vector2(220, 34)
+		b.name = "bind_" + a
+		grid.add_child(b)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	v.add_child(row)
+	var d := _button("Reset keys", func():
+		settings.reset_keys()
+		_save_settings()
+		_show_controls(), Color(0.6, 0.75, 0.9))
+	d.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(d)
+	var bk := _button("Back", func(): _show_settings(controls_back), Color(0.4, 0.9, 0.6))
+	bk.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(bk)
 
 
 func _setting_toggle(grid: GridContainer, title: String, key: String) -> void:
