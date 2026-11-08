@@ -3,6 +3,7 @@ shader_type canvas_item;
 // space to view space (X right, Y up, Z toward the viewer).
 
 uniform vec4 base_color : source_color = vec4(1.0, 0.8, 0.1, 1.0);
+uniform float disc_alpha = 1.0;   // fades the rolling number discs out at rest
 uniform float stripe = 0.0;     // 1 = striped ball
 uniform float is_cue = 0.0;
 uniform mat3 orient = mat3(1.0);
@@ -26,7 +27,7 @@ void fragment() {
 		vec3 white = vec3(0.97, 0.95, 0.9);
 		vec3 col = base_color.rgb;
 		if (stripe > 0.5) {
-			float band = smoothstep(0.56, 0.52, abs(l.z));
+			float band = smoothstep(0.64, 0.60, abs(l.z));
 			col = mix(white, base_color.rgb, band);
 		}
 		if (is_cue > 0.5) {
@@ -38,7 +39,7 @@ void fragment() {
 		} else {
 			// Number discs on +X and -X.
 			float disc = smoothstep(0.80, 0.83, abs(l.x));
-			col = mix(col, white, disc);
+			col = mix(col, white, disc * disc_alpha);
 		}
 		vec3 L = normalize(vec3(-0.35, 0.45, 0.82));
 		float diff = max(dot(n, L), 0.0);

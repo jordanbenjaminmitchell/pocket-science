@@ -164,6 +164,7 @@ func update_balls(sim: PoolSim) -> void:
 				b.roll_to(sim.pos[i])
 			if b.vel != sim.vel[i]:
 				b.vel = sim.vel[i]
+				b.refresh_label()
 				b.queue_redraw()
 		elif b.visible:
 			b.visible = false

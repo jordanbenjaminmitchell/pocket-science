@@ -45,6 +45,13 @@ func _go() -> void:
 			game._setup_table()
 			game._enter_aim()
 			await _frames(70)
+		"stripes":
+			game._new_run()
+			game.run.table_index = 7
+			game.run.begin_table()
+			game._setup_table()
+			game._enter_aim()
+			await _frames(40)
 		"credits":
 			game._show_credits()
 			await _frames(4)

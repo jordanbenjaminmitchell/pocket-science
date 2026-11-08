@@ -5,6 +5,8 @@ extends Node2D
 
 const SHADER := preload("res://src/view/shaders/ball.gdshader")
 const PAD := 1.18
+## Number disc (+X) toward the viewer; stripe axis (+Z) straight up, so the band is level.
+const REST_BASIS := Basis(Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 1, 0))
 
 var number := 0
 var radius := TableLayout.R
@@ -17,6 +19,7 @@ var glow := Color(0, 0, 0, 0)
 var sinking := false
 var fade := 1.0
 var vel := Vector2.ZERO
+var shown_settled := 1.0
 
 
 func setup(n: int, f: Font, rng: RandomNumberGenerator) -> void:
@@ -33,6 +36,7 @@ func setup(n: int, f: Font, rng: RandomNumberGenerator) -> void:
 	mat.set_shader_parameter("stripe", 1.0 if Catalog.is_stripe(n) else 0.0)
 	mat.set_shader_parameter("is_cue", 1.0 if n == 0 else 0.0)
 	mat.set_shader_parameter("radius_uv", 1.0 / PAD)
+	mat.set_shader_parameter("disc_alpha", 0.0)   # starts at rest, with the upright number
 	quad.material = mat
 	add_child(quad)
 	label_node = Node2D.new()
@@ -63,8 +67,13 @@ func roll_to(p: Vector2) -> void:
 
 
 func _push() -> void:
-	mat.set_shader_parameter("orient", basis)
+	_push_orientation()
 	label_node.queue_redraw()
+
+
+## A resting ball turns to show its number and any stripe squarely to the player.
+func _push_orientation() -> void:
+	mat.set_shader_parameter("orient", basis.slerp(REST_BASIS, shown_settled) if shown_settled > 0.0 else basis)
 
 
 func _draw() -> void:
@@ -87,10 +96,36 @@ func _draw() -> void:
 	draw_circle(Vector2(0.6, 1.2), radius * 0.92, Color(0, 0, 0, 0.25 * fade))
 
 
-## The number is printed on the sphere: it turns with the ball and flattens
-## as its disc rolls toward the edge.
+## 1 when the ball is at rest and easy to read, 0 when it is really moving.
+func _settled_amount() -> float:
+	return 1.0 - smoothstep(40.0, 180.0, vel.length())
+
+
+## Call when the speed changes: swaps between the rolling and resting number.
+func refresh_label() -> void:
+	var s := _settled_amount()
+	if s != shown_settled:
+		shown_settled = s
+		mat.set_shader_parameter("disc_alpha", 1.0 - s)
+		_push_orientation()
+		label_node.queue_redraw()
+
+
+## While rolling, the number is printed on the sphere and turns with it. As the
+## ball comes to rest it fades to an upright number on a centred white disc, so
+## every ball can be read while aiming.
 func _draw_number() -> void:
 	if number == 0 or fade <= 0.05:
+		return
+	var settled := shown_settled
+	if settled > 0.0:
+		var a2 := fade * settled
+		var txt2 := str(number)
+		var fs2 := int(round(radius * (1.2 if number < 10 else 0.86)))
+		label_node.draw_circle(Vector2.ZERO, radius * (0.62 if number < 10 else 0.68), Color(0.97, 0.96, 0.9, a2))
+		var w2 := font.get_string_size(txt2, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2).x
+		label_node.draw_string(font, Vector2(-w2 * 0.5, fs2 * 0.36), txt2, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2, Color(0.05, 0.05, 0.05, a2))
+	if settled >= 1.0:
 		return
 	for s in [1.0, -1.0]:
 		var a: Vector3 = basis * Vector3(s, 0, 0)
@@ -103,7 +138,7 @@ func _draw_number() -> void:
 		var fs := int(round(radius * 1.05))
 		var txt := str(number)
 		var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		var col := Color(0.08, 0.08, 0.08, fade * smoothstep(0.2, 0.45, a.z))
+		var col := Color(0.08, 0.08, 0.08, fade * smoothstep(0.2, 0.45, a.z) * (1.0 - settled))
 		# Foreshorten along the direction the disc is tipping away.
 		var radial := Vector2(a.x, -a.y)
 		var squash := 1.0
