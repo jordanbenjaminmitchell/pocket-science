@@ -1325,10 +1325,10 @@ func _formula_card(id: String, slot: int) -> Control:
 	var hb := HBoxContainer.new()
 	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(hb)
-	hb.add_child(_label(f.icon, 20, accent))
+	hb.add_child(IconArt.new().setup(id, F_SEMI, 34))
 	var name_l := _label(f.name, 14, Color.WHITE)
 	name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	name_l.custom_minimum_size = Vector2(118, 0)
+	name_l.custom_minimum_size = Vector2(104, 0)
 	hb.add_child(name_l)
 	var d := _label(f.desc, 11, Color(0.78, 0.8, 0.82), F_REG)
 	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1361,7 +1361,7 @@ func _reagent_card(id: String, slot: int) -> Control:
 	var hb := HBoxContainer.new()
 	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(hb)
-	hb.add_child(_label(r.icon, 18, accent))
+	hb.add_child(IconArt.new().setup(id, F_SEMI, 30))
 	var n := _label(r.name, 14, Color.WHITE)
 	n.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	n.custom_minimum_size = Vector2(84, 0)
@@ -1446,9 +1446,10 @@ func _show_title() -> void:
 	view.show_guide = false
 	_dim(0.35)
 	var v := _center_panel(560, 560)
-	var t := _label("POCKET SCIENCE", 52, Color(0.98, 0.8, 0.4), F_PIXB)
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(t)
+	var logo := LogoArt.new()
+	logo.font = F_PIXB
+	logo.custom_minimum_size = Vector2(0, 150)
+	v.add_child(logo)
 	var s := _label("A pool roguelite. Pot balls, stack multipliers, beat the target.", 17, Color(0.8, 0.85, 0.9), F_REG)
 	s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	s.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1731,7 +1732,6 @@ func _offer_card(i: int) -> Control:
 	var desc := ""
 	var kind := ""
 	var syn: Array = []
-	var icon := ""
 	match item.type:
 		"formula":
 			var f: Dictionary = Catalog.FORMULAS[item.id]
@@ -1739,7 +1739,6 @@ func _offer_card(i: int) -> Control:
 			title = f.name
 			desc = f.desc
 			kind = "%s · %s" % [Catalog.rarity_name(f.r), Catalog.family_name(item.id)]
-			icon = f.icon
 			syn = Catalog.synergies(item.id, run.formulas).map(func(o): return Catalog.FORMULAS[o].name)
 		"reagent":
 			var r: Dictionary = Catalog.REAGENTS[item.id]
@@ -1747,14 +1746,12 @@ func _offer_card(i: int) -> Control:
 			title = r.name
 			desc = r.desc
 			kind = "Reagent · single use"
-			icon = r.icon
 		"isotope":
 			var iso: Dictionary = Catalog.ISOTOPES[item.id]
 			accent = iso.color
 			title = "%s %d-ball" % [iso.name, item.ball]
 			desc = iso.desc + " Lasts the whole run."
 			kind = "Isotope"
-			icon = "●"
 			if run.isotopes.has(item.ball):
 				desc += " (Replaces %s.)" % Catalog.ISOTOPES[run.isotopes[item.ball]].name
 	var sh := _card_shell(accent, 188, 330)
@@ -1763,8 +1760,9 @@ func _offer_card(i: int) -> Control:
 	if item.type == "isotope":
 		v.add_child(_ball_icon(item.ball, iso_color(item.id)))
 	else:
-		var ic := _label(icon, 40, accent)
-		ic.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var ic := CenterContainer.new()
+		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		ic.add_child(IconArt.new().setup(item.id, F_SEMI, 56))
 		v.add_child(ic)
 	var t := _label(title, 18, Color.WHITE)
 	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2162,7 +2160,7 @@ func _show_run_info() -> void:
 		c1.add_child(_label("None yet - buy them in the Lab Supply between tables.", 15, Color(0.6, 0.6, 0.65), F_REG))
 	for id in run.formulas:
 		var fd: Dictionary = Catalog.FORMULAS[id]
-		var l := _label("%s  %s  (%s)  -  %s" % [fd.icon, fd.name, Catalog.rarity_name(fd.r), fd.desc], 15, Catalog.rarity_color(fd.r).lerp(Color.WHITE, 0.5), F_REG)
+		var l := _label("%s  (%s)  -  %s" % [fd.name, Catalog.rarity_name(fd.r), fd.desc], 15, Catalog.rarity_color(fd.r).lerp(Color.WHITE, 0.5), F_REG)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.custom_minimum_size = Vector2(560, 0)
 		c1.add_child(l)
@@ -2173,7 +2171,7 @@ func _show_run_info() -> void:
 		c1.add_child(_label("None.", 15, Color(0.6, 0.6, 0.65), F_REG))
 	for id in run.reagents:
 		var rd: Dictionary = Catalog.REAGENTS[id]
-		var l := _label("%s  %s  -  %s" % [rd.icon, rd.name, rd.desc], 15, Color(0.75, 0.85, 1.0), F_REG)
+		var l := _label("%s  -  %s" % [rd.name, rd.desc], 15, Color(0.75, 0.85, 1.0), F_REG)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.custom_minimum_size = Vector2(560, 0)
 		c1.add_child(l)

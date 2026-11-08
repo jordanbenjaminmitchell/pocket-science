@@ -79,25 +79,8 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 
 ## 5. Content (needs creating)
 
-- [ ] **P0 — More Formulas: 31 → about 60.** Build them in synergy families so builds feel different:
-  - banks / cushions
-  - combos / chain
-  - streak / momentum
-  - pocket-specific
-  - ball-number (odd/even/prime/stripes)
-  - economy
-  - risk/reward (e.g. "×4 Mult, but misses cost 2 chalk")
-  - physics-changers
-  
-  Use the 135 v21 tricks and the "Next 50" doc as an idea pool. Pick by fun and do not port blindly.
-- [ ] **P0 — More Anomalies (bosses): 6 → about 15**, so bosses rarely repeat. Ideas:
-  - moving hot pocket mid-shot
-  - one pocket only
-  - "no repeats" (each pocket scores once)
-  - double friction
-  - mirror table
-  - timed shots
-  - invisible 8
+- [x] **P0 — More Formulas.** Done 2026-11-07: 60 Formulas in nine synergy families, each covered by `tests/test_formulas.gd`.
+- [x] **P0 — More Anomalies.** Done 2026-11-07: 15 bosses, tested and tuned over emulated playtests.
 - [ ] **P1 — More Labs: 5 → about 10**, each with its own physics rule and cloth look. v21 ideas: portals, conveyor/current, magnet fields, narrow table, split circuit.
 - [ ] **P1 — More Reagents: 5 → about 15.** Ideas: re-rack, swap two balls, freeze a ball, extra cue ball, guide-everything for one shot, "call shot" ×3.
 - [ ] **P1 — More Isotopes: 4 → about 8.** Ideas: radioactive (+Mult that decays), magnetic, ghost (passes through the cue once), bouncy, split.
@@ -107,7 +90,7 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 
 ## 6. Meta-progression
 
-- [ ] **P0 — Unlock system.** Cues, Formulas and Labs unlock by playing (e.g. "win with Optic Cue", "pot 3 balls in one shot"). Start new players with a curated subset.
+- [x] **P0 — Unlock system.** Done 2026-11-07: 10 milestones unlock 4 Cues and 32 Formulas from a 28-Formula start (`src/game/meta.gd`, `tests/test_meta.gd`). Labs are not gated; that is a possible later addition.
 - [ ] **P1 — Collection / compendium screen:** every Formula, Reagent, Isotope, Lab and Anomaly, with locked/unlocked state and unlock hints.
 - [ ] **P1 — Run history and stats:** per-run summaries, lifetime stats, best shots, favourite formulas.
 - [ ] **P1 — Seeded runs UI.** Seeds already exist in code; add entry and display.
@@ -148,8 +131,10 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 
 ## 8. Visual art (currently procedural placeholders)
 
-- [ ] **P0 — Formula / Reagent / Isotope card art.** Cards currently use Unicode glyphs; each needs an illustrated icon in one consistent style.
-- [ ] **P0 — Title logo and key art.**
+- [x] **P0 — Card icons.** Done 2026-11-08: one consistent vector medallion per Formula and Reagent, coloured by family (`src/ui/icon_art.gd`); Isotopes use the ball itself. No system-font or emoji dependence.
+- [ ] **P2 — Illustrated card art** by an artist, if the vector set is not enough for the final look.
+- [x] **P0 — Title logo and app icon.** Done 2026-11-08: animated 8-ball atom mark and wordmark (`src/ui/logo_art.gd`), window icon `assets/icon.png`.
+- [ ] **P1 — Key art** for the store and launcher.
 - [ ] **P1 — Table art per Lab:**
   - unique rail materials (wood, chrome, lab-metal)
   - cloth textures
@@ -194,7 +179,8 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 
 ## 10. Code health and tech
 
-- [ ] **P0 — Desktop builds.** Install Godot export templates and set up export presets for Windows (and Mac/Linux if targeted). Currently the game runs only through the bundled editor binary.
+- [x] **P0 — Windows build.** Done 2026-11-08: `./build_windows.sh` writes a standalone `export/windows/` (`PocketScience.exe` + `.pck`); launched and recorded from an empty folder. It uses the Godot runtime as the exe, so it is about 197 MB.
+- [ ] **P1 — Final-size builds.** Install the official export templates (about 1 GB download) for a much smaller exe with the Pocket Science icon, plus Mac/Linux if targeted.
 - [ ] **P1 — Split `main.gd`** (about 1,850 lines) into controller, HUD, shop, screens, tally and input modules.
 - [ ] **P1 — Data-drive content.** Move Formula effects out of the big `if` chain in `scorer.gd` into per-formula hook definitions, so adding 30 more stays manageable.
 - [ ] **P1 — CI.** Run `run_tests.sh`, the guideline trust test and a short bot balance check on every commit.
@@ -220,7 +206,7 @@ What still needs to be **created** or **revamped** before a full 1.0 release. Th
 ## 12. Licensing housekeeping (in-game)
 
 - [x] **P0 — Credits screen.** Done 2026-11-07: Title → Credits, with an in-game viewer for the Chakra Petch and Silkscreen OFL texts and the Godot licence (`licenses/`).
-- [ ] **P0 — Ship the licence files.** When export presets are created, add `licenses/*` to the export include filter: non-resource `.txt`/`.md` files aren’t exported by default.
+- [x] **P0 — Ship the licence files.** Done 2026-11-08: included in the `.pck` (viewer in Credits) and copied beside the exe; confirmed inside the built pack.
 - [ ] **P1 — Content audit.** Confirm every name and asset is original and shipped licence files are present.
 
 ---

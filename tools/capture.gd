@@ -46,6 +46,19 @@ func _go() -> void:
 			game._setup_table()
 			game._enter_aim()
 			await _frames(110)
+		"icons":
+			var bg := ColorRect.new()
+			bg.color = Color(0.1, 0.1, 0.12)
+			bg.position = Vector2.ZERO
+			bg.size = Vector2(1600, 900)
+			game.root.add_child(bg)
+			var ids: Array = Catalog.FORMULAS.keys() + Catalog.REAGENTS.keys()
+			for i in ids.size():
+				var ic := IconArt.new().setup(ids[i], game.F_SEMI, 118)
+				ic.position = Vector2(8 + (i % 12) * 132, 8 + int(i / 12) * 150)
+				ic.size = Vector2(118, 118)
+				game.root.add_child(ic)
+			await _frames(4)
 		"help":
 			game._show_help()
 			await _frames(4)

@@ -28,6 +28,9 @@ func _go() -> void:
 	await _frames(2)
 	check(g.state == g.S.AIM, "new run enters aim")
 	# Real mouse input: aim at the rack, press, drag back, release.
+	# (Keep the table open: a strong break can reach a low target outright.)
+	var real_target: int = g.run.plan[0].target
+	g.run.plan[0].target = 1000000
 	root.size = Vector2i(1600, 900)
 	g.aim_dir = Vector2(0, 1)
 	await _frames(2)
@@ -46,6 +49,7 @@ func _go() -> void:
 	check(g.state == g.S.STRIKE or g.state == g.S.ROLL, "release fires the shot")
 	await _play_until(func(): return g.state == g.S.AIM or g.state == g.S.PLACE, 1)
 	check(g.run.shots_taken == 1, "break resolved")
+	g.run.plan[0].target = real_target
 	# Make table 1 easy to clear quickly and verify the clear/shop path.
 	var cleared := await _play_until(func(): return g.state == g.S.SHOP or g.state == g.S.OVER, 60)
 	check(cleared, "table resolves (state %s)" % g.state)
@@ -129,6 +133,9 @@ func _play_until(cond: Callable, max_shots: int) -> bool:
 	var guard := 0
 	while not cond.call() and guard < 20000:
 		guard += 1
+		# A run-ending screen will never satisfy a wait for play to resume.
+		if g.state == g.S.SHOP or g.state == g.S.OVER:
+			return cond.call()
 		match g.state:
 			g.S.AIM:
 				if shots >= max_shots:

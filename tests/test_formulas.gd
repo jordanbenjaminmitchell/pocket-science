@@ -168,6 +168,9 @@ func _initialize() -> void:
 	check(hb.money == m0 + 6, "bounty hunter doubles bounties")
 	check(Catalog.FORMULAS.size() == 60, "60 formulas (%d)" % Catalog.FORMULAS.size())
 	check(Catalog.ANOMALIES.size() == 15, "15 bosses (%d)" % Catalog.ANOMALIES.size())
+	for id in Catalog.FORMULAS.keys() + Catalog.REAGENTS.keys():
+		check(IconArt.MOTIFS.has(id), "%s has an icon" % id)
+	check(IconArt.MOTIFS.size() == Catalog.FORMULAS.size() + Catalog.REAGENTS.size(), "no orphan icons")
 	check(Catalog.synergies("ricochet", ["bank", "odd", "geometry"]) == ["bank", "geometry"], "synergy finds same-family formulas")
 	check(Catalog.synergies("lens", ["chalk", "insurance"]).is_empty(), "utility formulas never claim synergy")
 	for id in Catalog.FORMULAS:

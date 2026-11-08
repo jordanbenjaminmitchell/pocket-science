@@ -2,6 +2,10 @@
 # Runs every headless suite; fails on any script error.
 GODOT="${GODOT:-/c/Users/JordanMitchell/Documents/Codex/2026-09-08/can/work/godot/Godot_v4.7.2-stable_win64_console.exe}"
 cd "$(dirname "$0")"
+# Tests write saves and settings, so run them against a throwaway profile:
+# Godot derives user:// from APPDATA, and the player's real data stays untouched.
+TEST_HOME="$(mktemp -d)"
+export APPDATA="$(cygpath -w "$TEST_HOME")"
 status=0
 "$GODOT" --headless --path . --import >/dev/null 2>&1
 for t in tests/test_*.gd; do
