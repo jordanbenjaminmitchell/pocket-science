@@ -808,6 +808,9 @@ func _mouse_table() -> Vector2:
 	return (mouse_pos - view.base_position) / TABLE_SCALE
 
 
+var last_aim_mouse := Vector2.INF
+
+
 func _update_aim(delta: float) -> void:
 	var ci := _cue_index()
 	var m := _mouse_table()
@@ -820,7 +823,9 @@ func _update_aim(delta: float) -> void:
 		power_w.set_power(drag_power)
 	else:
 		var may_steer: bool = touch_aiming if settings.touch_mode else true
-		if not fine_aim and not plan_lock and not pad_active and may_steer and _mouse_over_table() and m.distance_to(sim.pos[ci]) > 4.0:
+		var mouse_moved := m.distance_to(last_aim_mouse) > 0.5
+		last_aim_mouse = m
+		if mouse_moved and not fine_aim and not plan_lock and not pad_active and may_steer and _mouse_over_table() and m.distance_to(sim.pos[ci]) > 4.0:
 			var nd := (m - sim.pos[ci]).normalized()
 			if nd.angle_to(aim_dir) != 0.0:
 				aim_dir = nd
