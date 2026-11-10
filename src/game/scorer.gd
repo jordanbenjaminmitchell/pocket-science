@@ -8,7 +8,7 @@ extends RefCounted
 
 const HEAT_STEP := 0.5
 const AFTER_POT := 0.5   # each ball that drops lifts the next one in the same shot
-const EIGHT_FOUL := "The 8 dropped"
+const EIGHT_FOUL := "The 8 sank"
 
 
 static func heat_mult(heat: int) -> float:

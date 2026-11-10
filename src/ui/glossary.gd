@@ -7,11 +7,11 @@ const LINK_COLOR := "#8fd8ff"
 
 const TERMS := {
 	"sink": {"title": "Sink", "text": "To knock a numbered ball into a pocket."},
-	"pay": {"title": "Pay", "text": "The points a ball earns as it drops: value × Chain × Heat, times any other multipliers."},
+	"pay": {"title": "Pay", "text": "The points a ball earns as it sinks: value × Chain × Heat, times any other multipliers."},
 	"value": {"title": "Value", "text": "What a ball is worth before multipliers: 10 plus its number."},
-	"chain": {"title": "Chain", "text": "A multiplier for this shot only, starting at 1 and rising as balls drop."},
+	"chain": {"title": "Chain", "text": "A multiplier for this shot only, starting at 1 and rising as balls sink."},
 	"heat": {"title": "Heat", "text": "A multiplier that lasts the whole table, rises with every scoring shot and halves on a miss."},
-	"bank": {"title": "Bank", "text": "A sink where the ball touches a cushion before it drops."},
+	"bank": {"title": "Bank", "text": "A sink where the ball touches a cushion before it sinks."},
 	"cushion": {"title": "Cushion", "text": "The padded rail around the edge of the table."},
 	"combination": {"title": "Combination", "text": "A sink where another numbered ball knocks the ball in, rather than the cue ball."},
 	"kick": {"title": "Kick shot", "text": "A shot where the cue ball hits a cushion before it hits any ball."},
@@ -24,7 +24,7 @@ const TERMS := {
 	"rack": {"title": "Rack", "text": "The full set of 15 balls at the start of a table."},
 	"solid": {"title": "Solids", "text": "Balls 1 to 7, coloured all over."},
 	"stripe": {"title": "Stripes", "text": "Balls 9 to 15, with a coloured band around the middle."},
-	"eight": {"title": "The 8-ball", "text": "Avoid it: dropping the 8 while other balls remain costs 15% of the table's target."},
+	"eight": {"title": "The 8-ball", "text": "Avoid it: sinking the 8 while other balls remain costs 15% of the table's target."},
 	"perk": {"title": "Perk", "text": "A passive item that sits in one of your six slots."},
 	"imbue": {"title": "Imbue", "text": "A lasting upgrade on one numbered ball for the rest of the run."},
 	"side_bet": {"title": "Side bet", "text": "An optional goal on each table that pays extra money."},

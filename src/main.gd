@@ -1698,7 +1698,7 @@ func _update_tally(delta: float) -> void:
 			var penalty: int = result.penalty
 			lbl_line.text = "Shot total: %d" % total
 			if penalty > 0:
-				lbl_line.text += "\nThe 8 dropped: -%d" % penalty
+				lbl_line.text += "\nThe 8 sank: -%d" % penalty
 				view.popup(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.38), "-%d" % penalty, Color(1.0, 0.4, 0.35), 34, 1.6)
 				sfx.play("bad", 0.7)
 			if result.money > 0:
@@ -2914,12 +2914,12 @@ func _show_help() -> void:
 [b]Guideline:[/b] The white line shows the cue ball's path, and the ring is where it will touch the object ball. After contact the line takes the colour of the ball you hit. A bold line ending in a [color=#ffd060]gold ring[/color] means that ball is going in, and the tag on the pocket shows what the sink is worth. Settings has a Prediction lines option that shows where every ball will land. The blue dashes show where the cue ball goes after contact, including spin.
 [b]Spin:[/b] Click the big cue ball (W/S/A/D). Hitting it high gives follow and low gives draw; the sides add english off the cushions.
 
-[b]Score:[/b] Each ball pays as it drops: its [color=#ffd060]value[/color] (10 + its number) × [color=#60d0a0]Chain[/color] × [color=#ff9040]Heat[/color]. Bouncing off cushions and other balls earns nothing by itself.
-[color=#60d0a0]Chain[/color] starts at 1 each shot and rises by 0.5 for every ball you drop in that shot, so the last ball of a big shot pays the most.
+[b]Score:[/b] Each ball pays as it sinks: its [color=#ffd060]value[/color] (10 + its number) × [color=#60d0a0]Chain[/color] × [color=#ff9040]Heat[/color]. Bouncing off cushions and other balls earns nothing by itself.
+[color=#60d0a0]Chain[/color] starts at 1 each shot and rises by 0.5 for every ball you sink in that shot, so the last ball of a big shot pays the most.
 [color=#ff9040]Heat[/color] lasts all table. Every scoring shot adds 1, and each point of Heat adds ×0.5. A miss cuts your Heat in half.
 The [color=#ff8a30]hot pocket[/color] pays ×2. The black 8 also pays ×2.
 
-[b]The 8-ball:[/b] Avoid it. If the 8 drops while other balls are still on the table, you lose 15% of the table's target, unless a Perk changes that. Once it is the last ball it is safe, and sinking it brings a fresh rack.
+[b]The 8-ball:[/b] Avoid it. If the 8 sinks while other balls are still on the table, you lose 15% of the table's target, unless a Perk changes that. Once it is the last ball it is safe, and sinking it brings a fresh rack.
 
 [b]Chalk:[/b] As in real pool, you keep shooting while you sink. A miss, a scratch or no contact costs 1 chalk. A dry break is free. Run out of chalk before reaching the target and the run is over. Clearing the whole rack gives +1 chalk and a fresh rack.
 
@@ -3719,7 +3719,7 @@ func _show_run_info() -> void:
 	var rules := [
 		"Each sink = value × Chain × Heat",
 		"Value: 10 + ball number",
-		"Chain: starts at 1, +0.5 per ball dropped this shot",
+		"Chain: starts at 1, +0.5 per ball sunk this shot",
 		"Heat: +1 per scoring shot, each point adds ×0.5, a miss halves it",
 		"Bounces score nothing unless a Perk, Imbue or table says so",
 		"Hot pocket ×%d, black 8 ×2, then Perks" % hot_x,
