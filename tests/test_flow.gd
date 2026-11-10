@@ -74,12 +74,12 @@ func _go() -> void:
 	g.run.score = 0
 	g._refresh_hud()
 	check(g.state == g.S.AIM and g.run.table_index == 1, "next table starts")
-	# Second Sight draws real ball paths.
-	g.run.perks.assign(["oracle"])
+	# The all-balls option draws real ball paths.
+	g.settings.guide_lines = 1
 	g.guide_dirty = true
 	await _frames(12)
-	check(g.view.forecast_paths.size() > 0, "Second Sight draws paths (%d)" % g.view.forecast_paths.size())
-	g.run.perks.clear()
+	check(g.view.forecast_paths.size() > 0, "the all-balls option draws paths (%d)" % g.view.forecast_paths.size())
+	g.settings.guide_lines = 0
 	# Force a game over: one chalk left, shoot into nothing.
 	await _play_until(func(): return g.state == g.S.AIM, 10)
 	g.run.chalk = 1

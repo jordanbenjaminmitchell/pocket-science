@@ -5,12 +5,27 @@ extends Node2D
 
 const SHADER := preload("res://src/view/shaders/ball.gdshader")
 const PAD := 1.18
-## Number disc (+X) toward the viewer; stripe axis (+Z) straight up, so the band is level.
+## The two poses a ball can come to rest in: a number disc facing the viewer, its
+## digit upright and the stripe level. Each ball has a number on both sides.
 const REST_BASIS := Basis(Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 1, 0))
+const REST_FLIPPED := Basis(Vector3(0, 0, -1), Vector3(-1, 0, 0), Vector3(0, 1, 0))
+## Above this much turn per frame the eye reads a spinning ball as turning backwards.
+const MAX_TURN_PER_FRAME := 0.85
+## Over its last stretch a ball eases into a rest pose: how much of each radian
+## rolled may go to correction, and how many radians from the stop that starts.
+const STEER_GAIN := 0.75
+const STEER_GAIN_LATE := 2.2
+const STEER_RANGE := 5.5
+## Any correction left at the stop is finished gently: longer the bigger it is.
+const REST_EASE_TIME := 0.16
+const REST_EASE_PER_RADIAN := 0.22
+## Digits are rasterised this much larger and scaled down, so they stay smooth
+## when the table is scaled up on a big or high-density screen.
+const DIGIT_SUPERSAMPLE := 2.5
 
 var number := 0
 var radius := TableLayout.R
-var basis := Basis()
+var basis := REST_BASIS
 var quad: ColorRect
 var mat: ShaderMaterial
 var label_node: Node2D
@@ -20,6 +35,7 @@ var sinking := false
 var fade := 1.0
 var vel := Vector2.ZERO
 var shown_settled := 1.0
+var rest_tween: Tween
 
 
 func setup(n: int, f: Font, rng: RandomNumberGenerator) -> void:
@@ -40,10 +56,10 @@ func setup(n: int, f: Font, rng: RandomNumberGenerator) -> void:
 	quad.material = mat
 	add_child(quad)
 	label_node = Node2D.new()
+	label_node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	label_node.draw.connect(_draw_number)
 	add_child(label_node)
-	# Random starting orientation, but keep the number roughly visible at rest.
-	basis = Basis(Vector3(0, 0, 1), rng.randf() * TAU) * Basis(Vector3(0, 1, 0), -PI * 0.5 + rng.randf_range(-0.5, 0.5))
+	basis = REST_FLIPPED if rng.randi() % 2 == 0 else REST_BASIS
 	_push()
 
 
@@ -53,17 +69,49 @@ func set_glow(c: Color) -> void:
 
 
 ## Move to a new table position, rolling the sphere by the distance travelled.
-func roll_to(p: Vector2) -> void:
+## `stop_in` is the distance left before the ball stops (negative if unknown).
+## `extra` is roll with no matching travel (draw and follow biting the cloth), and
+## `twist` is rotation about the vertical axis in radians (side english).
+func roll_to(p: Vector2, stop_in: float = -1.0, extra: Vector2 = Vector2.ZERO, twist: float = 0.0) -> void:
 	var d := p - position
 	position = p
-	var dist := d.length()
-	if dist > 0.0001:
+	var rolled := d + extra
+	var turn := rolled.length() / radius
+	if turn <= 0.0001 and twist == 0.0:
+		return
+	if turn > 0.0001:
 		# View space: X right, Y up (screen y flipped), Z toward the camera.
-		var v := Vector3(d.x, -d.y, 0.0)
-		var axis := Vector3(-v.y, v.x, 0.0).normalized()
-		basis = Basis(axis, dist / radius) * basis
-		basis = basis.orthonormalized()
-		_push()
+		var axis := Vector3(rolled.y, rolled.x, 0.0).normalized()
+		basis = Basis(axis, minf(turn, MAX_TURN_PER_FRAME)) * basis
+		if stop_in >= 0.0 and number != 0:
+			_steer_to_rest(axis, stop_in / radius, d.length() / radius)
+	if twist != 0.0:
+		basis = Basis(Vector3(0, 0, 1), twist) * basis
+	basis = basis.orthonormalized()
+	_push()
+
+
+## Bends the roll toward the pose that, rolled the remaining distance, lands on a
+## rest pose. Correction is paid for out of real travel, so a ball never turns
+## unless it is moving.
+func _steer_to_rest(axis: Vector3, turns_left: float, travelled: float) -> void:
+	if turns_left > STEER_RANGE:
+		return
+	var back := Basis(axis, -turns_left)
+	var now := Quaternion(basis)
+	var a := Quaternion(back * REST_BASIS)
+	var b := Quaternion(back * REST_FLIPPED)
+	var want := a if now.angle_to(a) <= now.angle_to(b) else b
+	var off := now.angle_to(want)
+	if off > 0.0001:
+		# A cushion can cut the roll short, so a late, large error is allowed to work harder.
+		var gain := clampf(off / maxf(turns_left, 0.05), STEER_GAIN, STEER_GAIN_LATE)
+		basis = Basis(now.slerp(want, minf(1.0, gain * travelled / off)))
+
+
+func nearest_rest() -> Basis:
+	var now := Quaternion(basis)
+	return REST_BASIS if now.angle_to(Quaternion(REST_BASIS)) <= now.angle_to(Quaternion(REST_FLIPPED)) else REST_FLIPPED
 
 
 func _push() -> void:
@@ -71,9 +119,8 @@ func _push() -> void:
 	label_node.queue_redraw()
 
 
-## A resting ball turns to show its number and any stripe squarely to the player.
 func _push_orientation() -> void:
-	mat.set_shader_parameter("orient", basis.slerp(REST_BASIS, shown_settled) if shown_settled > 0.0 else basis)
+	mat.set_shader_parameter("orient", basis)
 
 
 func _draw() -> void:
@@ -96,24 +143,50 @@ func _draw() -> void:
 	draw_circle(Vector2(0.6, 1.2), radius * 0.92, Color(0, 0, 0, 0.25 * fade))
 
 
-## 1 when the ball is at rest and easy to read, 0 when it is really moving.
-func _settled_amount() -> float:
-	return 1.0 - smoothstep(40.0, 180.0, vel.length())
-
-
-## Call when the speed changes: swaps between the rolling and resting number.
+## Call when the speed changes. A moving ball shows only what is printed on it.
+## Once stopped it finishes any small correction and shows its upright number.
 func refresh_label() -> void:
-	var s := _settled_amount()
+	if number == 0:
+		return
+	if vel != Vector2.ZERO:
+		if rest_tween != null:
+			rest_tween.kill()
+			rest_tween = null
+		_set_settled(0.0)
+	elif shown_settled < 1.0 and rest_tween == null:
+		_ease_to_rest()
+
+
+func _set_settled(s: float) -> void:
 	if s != shown_settled:
 		shown_settled = s
 		mat.set_shader_parameter("disc_alpha", 1.0 - s)
-		_push_orientation()
 		label_node.queue_redraw()
 
 
-## While rolling, the number is printed on the sphere and turns with it. As the
-## ball comes to rest it fades to an upright number on a centred white disc, so
-## every ball can be read while aiming.
+func _ease_to_rest() -> void:
+	var from := Quaternion(basis)
+	var to := Quaternion(nearest_rest())
+	var start := shown_settled
+	if not is_inside_tree():
+		basis = Basis(to)
+		_push()
+		_set_settled(1.0)
+		return
+	rest_tween = create_tween()
+	rest_tween.tween_method(func(t: float):
+		basis = Basis(from.slerp(to, t))
+		_push_orientation()
+		_set_settled(lerpf(start, 1.0, t)), 0.0, 1.0, REST_EASE_TIME + REST_EASE_PER_RADIAN * from.angle_to(to)).set_trans(Tween.TRANS_SINE)
+	rest_tween.tween_callback(func(): rest_tween = null)
+
+
+func _digit_size() -> int:
+	return int(round(radius * (1.2 if number < 10 else 0.86)))
+
+
+## While moving, the number is printed on the sphere and turns with it. At rest it
+## sits upright on a centred white disc, so every ball can be read while aiming.
 func _draw_number() -> void:
 	if number == 0 or fade <= 0.05:
 		return
@@ -121,10 +194,13 @@ func _draw_number() -> void:
 	if settled > 0.0:
 		var a2 := fade * settled
 		var txt2 := str(number)
-		var fs2 := int(round(radius * (1.2 if number < 10 else 0.86)))
+		var fs2 := _digit_size()
 		label_node.draw_circle(Vector2.ZERO, radius * (0.62 if number < 10 else 0.68), Color(0.97, 0.96, 0.9, a2))
-		var w2 := font.get_string_size(txt2, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2).x
-		label_node.draw_string(font, Vector2(-w2 * 0.5, fs2 * 0.36), txt2, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2, Color(0.05, 0.05, 0.05, a2))
+		var big2 := int(fs2 * DIGIT_SUPERSAMPLE)
+		var w2 := font.get_string_size(txt2, HORIZONTAL_ALIGNMENT_LEFT, -1, big2).x
+		label_node.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE / DIGIT_SUPERSAMPLE)
+		label_node.draw_string(font, Vector2(-w2 * 0.5, big2 * 0.36), txt2, HORIZONTAL_ALIGNMENT_LEFT, -1, big2, Color(0.05, 0.05, 0.05, a2))
+		label_node.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if settled >= 1.0:
 		return
 	for s in [1.0, -1.0]:
@@ -132,10 +208,10 @@ func _draw_number() -> void:
 		if a.z <= 0.2:
 			continue
 		var c := Vector2(a.x, -a.y) * radius
-		var up: Vector3 = basis * Vector3(0, 0, s)
+		var up: Vector3 = basis * Vector3(0, 0, 1)   # same way up on both sides, so a 9 never reads as a 6
 		var angle := atan2(up.x, up.y)
 		var facing := clampf(a.z, 0.0, 1.0)
-		var fs := int(round(radius * 1.05))
+		var fs := int(_digit_size() * DIGIT_SUPERSAMPLE)
 		var txt := str(number)
 		var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		var col := Color(0.08, 0.08, 0.08, fade * smoothstep(0.2, 0.45, a.z) * (1.0 - settled))
@@ -145,7 +221,8 @@ func _draw_number() -> void:
 		if radial.length() > 0.01:
 			var along := absf(cos(radial.angle() - angle))
 			squash = lerpf(1.0, facing, along)
-		label_node.draw_set_transform(c, angle, Vector2(squash, lerpf(facing, 1.0, absf(cos(radial.angle() - angle)))) if radial.length() > 0.01 else Vector2.ONE)
+		var shrink := Vector2(squash, lerpf(facing, 1.0, absf(cos(radial.angle() - angle)))) if radial.length() > 0.01 else Vector2.ONE
+		label_node.draw_set_transform(c, angle, shrink / DIGIT_SUPERSAMPLE)
 		label_node.draw_string(font, Vector2(-w * 0.5, fs * 0.36), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
 	label_node.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 

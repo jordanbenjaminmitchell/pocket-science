@@ -98,7 +98,7 @@ func _go() -> void:
 		ps.add_ball(0, Rack.HEAD)
 		var rr := RandomNumberGenerator.new()
 		rr.seed = 3
-		Rack.build(ps, "fifteen", rr)
+		Rack.build(ps, rr)
 		l.apply_physics(ps)
 		var clear_rack := true
 		for i in ps.count():

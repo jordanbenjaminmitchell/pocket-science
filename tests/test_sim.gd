@@ -70,7 +70,7 @@ func _test_break() -> void:
 	rng.seed = 7
 	var s := _sim()
 	s.add_ball(0, Rack.HEAD)
-	Rack.build(s, "fifteen", rng)
+	Rack.build(s, rng)
 	s.strike(Vector2(1, 0.004), 2400.0, 0.0, 0.0)
 	var t0 := Time.get_ticks_msec()
 	s.settle()
@@ -96,7 +96,7 @@ func _test_break() -> void:
 	rng2.seed = 7
 	var s2 := _sim()
 	s2.add_ball(0, Rack.HEAD)
-	Rack.build(s2, "fifteen", rng2)
+	Rack.build(s2, rng2)
 	s2.strike(Vector2(1, 0.004), 2400.0, 0.0, 0.0)
 	s2.settle()
 	check(s2.pos == s.pos, "deterministic replay")

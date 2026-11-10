@@ -143,7 +143,7 @@ func _go() -> void:
 			game._refresh_hud()
 			await _frames(6)
 			if scenario == "forecast":
-				game.run.perks.assign(["oracle"])
+				game.settings.guide_lines = 1
 				game.guide_dirty = true
 				await _frames(40)
 			if scenario == "potfx":

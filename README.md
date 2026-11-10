@@ -1,111 +1,89 @@
-# Pocket Science — real-pool roguelite (Godot 4.7 revamp)
+# Pocket Science
 
-**Pot balls. Stack multipliers. Beat the target.**
+**A real-pool roguelike. Pot balls, avoid the 8, stack multipliers, beat the target.**
 
-This is a ground-up rebuild of Pocket Science in Godot. It plays like real pool: a 2:1 table with six pockets, numbered balls, a cue stick and a clear, exact guideline. On top of that sits a roguelite built around Chain and Heat scoring. Earlier HTML versions (v12–v21) were used as design reference only; no code was merged from them.
+Pocket Science plays like real pool: a 2:1 table with six pockets, all 15 numbered balls, a cue stick and an exact prediction line. On top of that sits a roguelike run of nine boss tables, a Pro Shop of Perks and ball upgrades, and Chain and Heat scoring. Built in Godot 4.7.
 
-## Play
+## Download and play
 
-- **Double-click `Play Pocket Science.cmd`.** It uses the bundled Godot 4.7.2 runtime in `runtime/`.
-- Or open `project.godot` in Godot 4.7.2 and press **F5**.
+Get the newest build from **[Releases](../../releases/latest)**.
 
-### Install a build
+- **Android phone:** download `PocketScience.apk` on the phone and open it. Allow installs from your browser if asked. Each new release installs over the last one and keeps your progress. Needs Android 7 or newer on a 64-bit phone.
+- **Windows PC:** download `PocketScience-Windows.zip`, unzip it anywhere and run `PocketScience.exe`. Keep `PocketScience.pck` in the same folder.
 
-- **Windows:** unzip `PocketScience-Windows.zip` anywhere and run `PocketScience.exe`.
-- **Android:** copy `PocketScience.apk` to the phone, open it and allow installs from that app when asked. Needs Android 7 or newer on a 64-bit device. The APK is signed with a local debug key, which is fine for your own devices but not for the Play Store.
-
-### Make a build
-
-```bash
-./build_windows.sh      # export/windows/
-./build_android.sh      # export/android/PocketScience.apk
-./tools/ci.sh           # every test suite, every persona, then both builds
-```
-
-Both builds need the Godot 4.7.2 export templates. Android also needs the Android SDK and a debug keystore.
+The APK is signed with a personal key from the build PC, so it is for your own devices, not the Play Store.
 
 ## How a run works
 
-1. **Choose a cue.** Each of the 10 cues gives a different start, and more unlock through milestones.
-2. **Every table is its own boss** with its own rule and a target score. You keep shooting while you pot, as in real pool. A miss, scratch or no-contact costs one **Chalk**; a dry break is free. When Chalk runs out before you reach the target, the run is over.
-3. **Clear the rack** for +1 Chalk and a fresh rack.
-4. **The Pro Shop** opens between tables, where you can buy:
-   - **Perks**: 59 passive rules in synergy families. 6 slots; sell for half.
-   - **Imbues**: permanently change one numbered ball.
-5. **The tour is 9 tables**, including the Element Table at table 5 and the Grand Final at table 9. After that you can continue in endless mode.
+1. **Choose a cue.** Each cue starts the run differently. More unlock as you play.
+2. **Every table is a boss** with its own rule and a target score. As in real pool, you keep shooting while you pot. A miss or scratch costs one **Chalk**, and when your Chalk runs out before the target, the run ends.
+3. **Avoid the 8.** Dropping the 8 while other balls are still up costs 15% of the table's target, unless a Perk changes that. Once it is the last ball it is safe.
+4. **The Pro Shop** opens between tables: Perks for your six slots, Imbues that upgrade one ball for the rest of the run, and more.
+5. **Nine tables** make a run, including the Element Table at table 5 and the Grand Final at table 9. After that, endless mode.
 
 ### Scoring
 
 Each ball pays as it drops: **value × Chain × Heat**.
 
-- **Value:** 10 + the ball's number.
-- **Chain:** starts at 1 each shot and rises by 0.5 for every ball dropped in that shot, so the last ball of a big shot pays the most.
-- **Heat:** lasts the whole table. Every scoring shot adds 1, each point adds ×0.5, and a miss cuts it in half.
-- **Hot pocket** and the **black 8** each pay ×2.
+- **Value:** 10 plus the ball's number.
+- **Chain:** starts at 1 every shot and rises as balls drop, so the last ball of a big shot pays most.
+- **Heat:** lasts the whole table, rises with every scoring shot and halves on a miss.
+- **Hot pocket:** the glowing pocket pays ×2.
 
-Bouncing off cushions or other balls earns nothing by itself. Only an owned Perk or Imbue, or a table whose own rule says so, makes contact count.
+Bouncing off cushions or balls earns nothing by itself. Only a Perk, an Imbue or a table's own rule makes contact count. Tap or hover any highlighted word in the game for a one-line definition.
 
-While you aim, a tag on the rail shows exactly what the pot is worth. The guideline colours mean:
-- **Gold:** that ball goes in cleanly, including off one cushion. `tests/test_guide_trust.gd` checks this: 200/200 gold lines pot unless another moving ball gets in the way or the shot lacks pace.
-- **Orange:** the path is borderline and could rattle on a jaw.
-- **White:** the ball is not going in.
-- **Blue dashes:** the cue ball's path after contact, including follow, draw and english.
+### The prediction line
 
-### Extras
-- **Cues:** 10 in all, such as Classic Maple, Optic (Long Lens), Hot Rod (hot pocket ×3, one less chalk), Momentum (extra Heat from multi-pot shots) and Gilded ($12 and Deep Pockets).
-- **Side bet:** every table has a side goal, such as "Pot a combination +$3", which pays immediately.
-- **Ball tray:** the side panel shows which balls are still up and which are down, plus their isotopes.
-- **Coach:** first-time players get on-table hints until they clear their first table.
-- **Saves:** runs save at the start of each table (title → Continue). Personal bests are shown on the title screen.
+- **White line:** the cue ball's path, with a ring where it meets the object ball.
+- **Coloured line:** after contact, the line takes the colour of the ball you hit. Bold with a **gold ring** means it is going in. Dashed means it may rattle.
+- **Blue dashes:** where the cue ball goes after contact, including spin.
+- **Settings → Prediction lines → All balls** simulates the whole shot and shows where every ball will land.
+
+No table ever hides or bends the line. Tables that curve a ball's path draw the real curve as well.
 
 ## Controls
 
-| Action | Input |
-| --- | --- |
-| Aim | Mouse. Left/Right fine-tunes, Shift makes it finer. F toggles fine-aim (mouse stops steering). |
-| Shoot | Press on the table, drag **back**, release. Or wheel/Up/Down for power and Space to shoot. |
-| Spin | Click the cue-ball widget, or W/S (follow/draw) and A/D (english). Right-click resets. |
-| Move cue on break | H |
-| Fast-forward | Click or Space while balls roll or during the tally |
-| Pause | Esc |
+| Action | PC | Phone |
+| --- | --- | --- |
+| Aim | Mouse; Left/Right to fine-tune, Shift for finer | Drag on the table |
+| Shoot | Press on the table, drag back, release | Power slider, then Shoot |
+| Spin | Click the cue-ball widget, or W/A/S/D | Tap the cue-ball widget |
+| Move the cue ball on the break | H | Ball-in-hand button |
+| Fast-forward | Click or Space while balls roll | Tap |
+| Pause | Esc | Back |
 
-## Boss tables
+Gamepads work too. Every key can be rebound in Settings.
 
-Each run draws its tables from 22 authored bosses. Some fixed highlights:
+## Building it yourself
 
-- **The Local:** your first table. The house forgives your first miss.
-- **The Element Table:** each corner pocket holds Fire, Water, Earth or Air, and side pockets copy your last element. Pot in the right order to fuse multipliers. A miss clears the mix.
-- **The Grand Final:** the 8 goes last. Pot it early and lose a Chalk; pot it last for ×5.
+You need Godot 4.7.2 with export templates (bundled in `runtime/` on the build PC). Android also needs the Android SDK.
 
-The in-game Collection lists them all.
+```bash
+./run_tests.sh          # every headless test suite
+./tools/ci.sh           # tests, six simulated players, then both builds
+./build_windows.sh      # export/windows/
+./build_android.sh      # export/android/PocketScience.apk
+./tools/release.sh "What changed"   # bump version, check, build, push and publish a release
+```
 
 ## Project layout
 
 ```
-src/sim/       PoolSim (event-ordered deterministic physics), TableLayout, Rack
-src/game/      Catalog (all content), Scorer, RunState (rules + save), AutoPlayer (AI)
-src/view/      TableView (table, guideline, cue, FX), BallNode + shaders (rolling lit balls, felt)
-src/ui/        Spin widget, power meter, chalk pips
-src/audio/     Sfx: synthesized effects + soundtrack crossfades
-src/main.gd    Game controller: states, input, HUD, tally, shop, screens
-assets/music/  Original Pocket Science soundtrack (from the v21 project)
-tests/         Headless suites: physics, rules/persistence, end-to-end flow (incl. real mouse input)
-tools/         playtest.gd (six emulated player personas), playtest_report.mjs (balance report),
-               bot.gd (quick balance runs), capture.gd (real rendered screenshots), tune.gd (physics tuning)
-docs/playtests REPORT.md plus earlier rounds: emulated playtest results that drove the balance
+src/sim/      PoolSim: event-ordered, deterministic physics; table layout; racks
+src/game/     Catalog (all content), Scorer, RunState (rules and saves), AutoPlayer (AI)
+src/view/     Table view, guideline, cue, effects; rolling, lit ball shader
+src/ui/       HUD widgets, glossary popups, screen layouts, icons
+src/audio/    Sound effects and soundtrack
+src/main.gd   Game controller: states, input, HUD, tally, shop, screens
+tests/        Headless suites: physics, rules, saves, layout, end-to-end flow
+tools/        Simulated players for balance, screenshot capture, icon and release scripts
+docs/         Playtest reports and plans
 ```
 
-### Why the guideline is exact
+### Why the prediction line is exact
 
-The guideline is accurate because of how `PoolSim` handles contacts. It doesn't move balls and then look for overlaps. Instead, it finds the **earliest time of impact** across all balls, cushions, jaw knuckles and bumpers, moves every ball to that instant, resolves the contact and repeats. So an object ball always leaves along the line of centres, which is exactly what the ghost-ball guideline draws. `tests/test_sim.gd` checks the error is below 0.002 rad (in practice it is about 0.00002).
+`PoolSim` never moves balls and then looks for overlaps. It finds the earliest moment of impact between any balls, cushions, pocket jaws or bumpers, moves everything to that instant, resolves it and repeats. An object ball therefore always leaves along the line of centres, which is exactly what the guideline draws. The tests check that gold lines go in 200 times out of 200.
 
-## Verify
+## Credits and licences
 
-```bash
-./run_tests.sh                       # all headless suites (physics, rules, flow)
-godot --headless --path . --script res://tools/playtest.gd -- expert 30 1000 out.jsonl   # one persona, 30 runs
-node tools/playtest_report.mjs                                                          # aggregate docs/playtests/*.jsonl
-godot --path . --script res://tools/capture.gd -- pot shots/pot.png          # real rendered frame
-```
-
-The bot plays complete runs with the real physics and rules, adding Gaussian aim error. At 0.3° error it typically clears 1–4 tables and occasionally wins a run. Humans also have position play and spin, so expect a fair but real challenge.
+Game design and direction by Jordan Mitchell. Fonts are under the SIL Open Font License and the engine is MIT-licensed; see `licenses/`. The game's own code, art and music are © Jordan Mitchell, all rights reserved.

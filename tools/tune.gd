@@ -20,7 +20,7 @@ func _initialize() -> void:
 		s.ball_e = float(args[3]) if args.size() > 3 else 0.94
 		s.rail_e = float(args[4]) if args.size() > 4 else 0.78
 		s.add_ball(0, Rack.HEAD + Vector2(0, rng.randf_range(-60, 60)))
-		Rack.build(s, "nine" if k % 2 == 0 else "fifteen", rng)
+		Rack.build(s, rng)
 		var dir := (Rack.FOOT - s.pos[0]).normalized().rotated(rng.randf_range(-0.01, 0.01))
 		s.strike(dir, speed, 0.0, 0.0)
 		s.settle()

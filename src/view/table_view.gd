@@ -28,6 +28,7 @@ var ball_nodes := {}   # ball index -> BallNode
 var show_guide := false
 var guide := {}
 var forecast_paths: Array = []
+var forecast_text := ""        # Second Sight's preview of the whole shot
 var hot_pocket := -1
 var element_pockets: Array = []   # Element Table: one element id per pocket
 var second_pocket := -1   # Two Pockets boss: also scores, shown with a cooler ring
@@ -151,7 +152,12 @@ func refresh_glows(sim: PoolSim, imbues: Dictionary) -> void:
 			ball_nodes[i].set_glow(Color(0, 0, 0, 0))
 
 
+var last_sim_time := 0.0
+
+
 func update_balls(sim: PoolSim) -> void:
+	var dt := clampf(sim.time - last_sim_time, 0.0, 0.1)
+	last_sim_time = sim.time
 	for i in ball_nodes:
 		var b: BallNode = ball_nodes[i]
 		if b.sinking:
@@ -160,8 +166,10 @@ func update_balls(sim: PoolSim) -> void:
 			if not b.visible:
 				b.visible = true
 				b.set_fade(1.0)
-			if b.position != sim.pos[i]:
-				b.roll_to(sim.pos[i])
+			var extra := sim.visual_extra_roll(i) * dt
+			if b.position != sim.pos[i] or extra != Vector2.ZERO:
+				var travelled: float = b.position.distance_to(sim.pos[i])
+				b.roll_to(sim.pos[i], sim.stop_distance(i), extra, sim.visual_twist(i) * travelled / b.radius)
 			if b.vel != sim.vel[i]:
 				b.vel = sim.vel[i]
 				b.refresh_label()
@@ -460,10 +468,11 @@ func _draw_overlay() -> void:
 	for path in forecast_paths:
 		var pts: PackedVector2Array = path.points
 		var col: Color = path.color
-		for i in range(0, pts.size(), 2):
+		var halo: Color = path.get("halo", Color(0, 0, 0))
+		for i in pts.size():
 			var a := 1.0 - float(i) / maxf(1.0, pts.size())
-			o.draw_circle(pts[i], 2.6, Color(0, 0, 0, 0.35 * (0.4 + 0.6 * a)))
-			o.draw_circle(pts[i], 2.0, Color(col, 0.45 + 0.5 * a))
+			o.draw_circle(pts[i], 3.0, Color(halo, 0.4 * (0.4 + 0.6 * a)))
+			o.draw_circle(pts[i], 2.0, Color(col, 0.55 + 0.45 * a))
 		if pts.size() > 0:
 			var endp := pts[pts.size() - 1]
 			if path.get("end", false):
@@ -480,6 +489,12 @@ func _draw_overlay() -> void:
 			o.draw_arc(h[0], R + 3.0, 0, TAU, 24, Color(_pot_color(), 0.8), 2.0)
 	if not show_guide or guide.is_empty():
 		return
+	if forecast_text != "":
+		var ftw := font_bold.get_string_size(forecast_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
+		var fr := Rect2(Vector2(W * 0.5 - ftw * 0.5 - 12, 10), Vector2(ftw + 24, 34))
+		o.draw_rect(fr, Color(0.05, 0.05, 0.08, 0.85), true)
+		o.draw_rect(fr, Color(0.8, 0.7, 1.0, 0.9), false, 2.0)
+		_txt(o, fr.get_center(), forecast_text, Color(0.92, 0.86, 1.0), 20)
 	var glow := Color(1, 1, 1, 0.12)
 	var line := Color(1, 1, 1, 0.92)
 	var aim: PackedVector2Array = guide.aim
@@ -498,28 +513,11 @@ func _draw_overlay() -> void:
 		var op: PackedVector2Array = guide.obj
 		var pot: bool = guide.get("obj_pot", false)
 		var edge: bool = guide.get("obj_edge", false)
-		var oc := _pot_color() if pot else Color(0.75, 0.95, 1.0)
-		if edge:
-			oc = _edge_color()
-		for i in op.size() - 1:
-			# Shape as well as colour: pots are bold, rattles are dashed.
-			if edge:
-				_dashed(o, op[i], op[i + 1], oc, 3.0, 12.0)
-			else:
-				o.draw_line(op[i], op[i + 1], Color(oc, 0.18), 8.0)
-				o.draw_line(op[i], op[i + 1], oc, 4.0 if pot else 2.0)
-		if op.size() >= 2:
-			_arrow(o, op[op.size() - 2], op[op.size() - 1], oc)
+		_draw_ball_line(o, op, guide.get("obj_number", 1), pot, edge, false)
 	if guide.has("obj2"):
 		var op2: PackedVector2Array = guide.obj2
 		var pot2: bool = guide.get("obj2_pot", false)
-		var oc2 := _pot_color() if pot2 else Color(0.75, 0.95, 1.0, 0.7)
-		if guide.get("obj2_edge", false):
-			oc2 = _edge_color()
-		for i in op2.size() - 1:
-			_dashed(o, op2[i], op2[i + 1], oc2, 2.0, 9.0)
-		if op2.size() >= 2:
-			_arrow(o, op2[op2.size() - 2], op2[op2.size() - 1], oc2)
+		_draw_ball_line(o, op2, guide.get("obj2_number", 1), pot2, guide.get("obj2_edge", false), true)
 	if guide.has("cue"):
 		var cp: PackedVector2Array = guide.cue
 		for i in cp.size() - 1:
@@ -538,7 +536,31 @@ func _draw_overlay() -> void:
 		var rect := Rect2(lp + Vector2(-w * 0.5 - 8, -15), Vector2(w + 16, 24))
 		o.draw_rect(rect, Color(0.05, 0.05, 0.08, 0.8), true)
 		o.draw_rect(rect, Color(1.0, 0.82, 0.3, 0.8), false, 1.5)
-		o.draw_string(font_bold, lp + Vector2(-w * 0.5, 4), preview_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1.0, 0.9, 0.55))
+		o.draw_string(font_bold, lp + Vector2(-w * 0.5, 4), preview_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1.0, 0.45, 0.4) if preview_text.begins_with("-") else Color(1.0, 0.9, 0.55))
+
+
+## A struck ball's path, drawn in that ball's own colour. A pale casing keeps dark
+## colours readable on any cloth; stripes get a white core. Pots are bold and end
+## in a gold ring, rattles are dashed, so shape never depends on colour alone.
+func _draw_ball_line(o: CanvasItem, pts: PackedVector2Array, n: int, pot: bool, edge: bool, combo: bool) -> void:
+	var c := Catalog.ball_color(n)
+	if colorblind:
+		c = _edge_color() if edge else (_pot_color() if pot else Color(0.75, 0.95, 1.0))
+	var w := 5.0 if pot else 3.0
+	for i in pts.size() - 1:
+		if edge or combo:
+			_dashed(o, pts[i], pts[i + 1], Color(1, 1, 1, 0.7), w + 2.0, 12.0)
+			_dashed(o, pts[i], pts[i + 1], c, w, 12.0)
+		else:
+			o.draw_line(pts[i], pts[i + 1], Color(1, 1, 1, 0.6), w + 2.5)
+			o.draw_line(pts[i], pts[i + 1], c, w)
+			if Catalog.is_stripe(n):
+				o.draw_line(pts[i], pts[i + 1], Color(1, 1, 1, 0.9), 1.3)
+	if pts.size() >= 2:
+		var tip := pts[pts.size() - 1]
+		_arrow(o, pts[pts.size() - 2], tip, _pot_color() if pot else c)
+		if pot:
+			o.draw_arc(tip, R + 7.0, 0, TAU, 32, _pot_color(), 3.5)
 
 
 func _pot_color() -> Color:
@@ -660,7 +682,7 @@ static func _clean_pot(sim: PoolSim, from: Vector2, d: Vector2, ignore: int, poc
 ## Builds the aiming guide from the static table: cue path (with up to two
 ## cushion reflections), ghost ball, object-ball line (and one combination
 ## follow-on), and the cue ball's curved post-contact path.
-static func compute_guide(sim: PoolSim, aim: Vector2, follow: float, side: float, lens: bool, fog: bool) -> Dictionary:
+static func compute_guide(sim: PoolSim, aim: Vector2, follow: float, side: float, lens: bool) -> Dictionary:
 	var g := {}
 	var ci := sim.index_of(0)
 	if ci < 0 or sim.alive[ci] == 0:
@@ -699,9 +721,8 @@ static func compute_guide(sim: PoolSim, aim: Vector2, follow: float, side: float
 	var n: Vector2 = hit.normal
 	g["ghost"] = contact
 	g["obj_index"] = obj
+	g["obj_number"] = sim.num[obj]
 	g["rails_before"] = pts.size() - 2
-	if fog:
-		return g
 	# Object ball line.
 	var op := PackedVector2Array([sim.pos[obj]])
 	var od := n
@@ -740,6 +761,7 @@ static func compute_guide(sim: PoolSim, aim: Vector2, follow: float, side: float
 		g["obj2_edge"] = h2.kind == "pocket" and not clean2
 		g["obj2_pocket"] = h2.hit if clean2 else -1
 		g["obj2_index"] = b2
+		g["obj2_number"] = sim.num[b2]
 	# Cue ball after contact: tangent line plus follow/draw curve.
 	var e := sim.ball_e
 	var vin := d * 1000.0

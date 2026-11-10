@@ -38,7 +38,7 @@ func _initialize() -> void:
 	check(run_case([hit(0, 5), pot(5, 0), pot(3, 2)]).total == 34, "the second ball pays at Chain 1.5")
 	check(run_case(h5, {"heat": 2}).total == 30, "Heat 2 multiplies by 2")
 	check(run_case(h5, {"hot_pocket": 0}).total == 30, "hot pocket doubles")
-	check(run_case([hit(0, 8), pot(8, 0)]).total == 36, "the 8 doubles")
+	check(run_case([hit(0, 8), pot(8, 0)], {"objects": 1}).total == 18, "the 8 pays plainly when it is the last ball")
 	print("items make bounces count")
 	check(run_case([hit(0, 5), rail5, pot(5, 0)], {"perks": ["ricochet"]}).total == 18, "Ricochet: cushion adds Chain")
 	check(run_case([hit(0, 3), hit(3, 5), pot(5, 0)], {"perks": ["elastic"]}).total == 18, "Loud Table: ball hit adds Chain")
@@ -63,7 +63,7 @@ func _initialize() -> void:
 	check(run_case(h5, {"boss": "hustler"}).total == 12, "The Hustler skims 15%")
 	var early := run_case([hit(0, 8), pot(8, 0)], {"boss": "final", "anomaly": "cursed8", "objects": 5})
 	check(not early.scored and early.foul == "The 8 went early", "the Final punishes an early 8")
-	check(run_case([hit(0, 8), pot(8, 0)], {"boss": "final", "anomaly": "cursed8", "objects": 1}).total == 180, "the last 8 pays ×5")
+	check(run_case([hit(0, 8), pot(8, 0)], {"boss": "final", "anomaly": "cursed8", "objects": 1}).total == 90, "the last 8 pays ×5")
 	print("element table")
 	var el := {"boss": "elements", "anomaly": "elements"}
 	var two := run_case([hit(0, 5), pot(5, 0), pot(3, 2)], el)

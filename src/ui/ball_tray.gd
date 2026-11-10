@@ -37,6 +37,8 @@ func _draw() -> void:
 		var iso: String = imbues.get(n, "")
 		if iso != "":
 			draw_arc(c, r + 3.0, 0, TAU, 24, Color(Catalog.IMBUES[iso].color, a), 2.0)
+		elif n == 8:
+			draw_arc(c, r + 1.5, 0, TAU, 24, Color(1.0, 0.38, 0.32, a), 1.6)   # the ball to avoid
 		if Catalog.is_stripe(n):
 			draw_circle(c, r, Color(0.95, 0.93, 0.88, a))
 			draw_rect(Rect2(c + Vector2(-r * 0.92, -r * 0.5), Vector2(r * 1.84, r)), Color(base, a))

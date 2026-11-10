@@ -90,7 +90,7 @@ func new_rack(run: RunState, layout: TableLayout) -> PoolSim:
 	s.add_ball(0, Rack.HEAD)
 	var r := RandomNumberGenerator.new()
 	r.seed = run.rng.randi()
-	Rack.build(s, run.current().rack, r)
+	Rack.build(s, r)
 	if run.current().anomaly == "lead":
 		for i in s.count():
 			if s.num[i] != 0:

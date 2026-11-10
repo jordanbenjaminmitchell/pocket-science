@@ -21,6 +21,8 @@ const MILESTONES := {
 	"combos10": {"name": "Chain Gang", "hint": "Pot 10 combinations in total", "perks": [], "cue": "breaker"},
 	"banks10": {"name": "Rail Bird", "hint": "Sink 10 bank shots in total", "perks": [], "cue": "angle"},
 	"hot15": {"name": "Heat Seeker", "hint": "Pot 15 balls into hot pockets in total", "perks": [], "cue": "thermal"},
+	"eightlast": {"name": "Saved for Last", "hint": "Sink the 8 as the last ball on the table", "perks": ["lastcall", "darkhorse", "trouble"], "cue": ""},
+	"suited": {"name": "Suited Up", "hint": "Pot 2 or more solids, or 2 or more stripes, in one shot", "perks": ["solidsonly", "stripesonly", "lastsolid", "laststripe"], "cue": ""},
 	"rich": {"name": "Well Funded", "hint": "Hold $30 at once", "perks": [], "cue": "banker"},
 }
 
@@ -121,6 +123,11 @@ func on_shot(res: Dictionary, run: RunState) -> Array:
 		got.append("hot15")
 	if run.money >= 30:
 		got.append("rich")
+	if res.get("last_eight", false):
+		got.append("eightlast")
+	var potted: Array = res.potted
+	if potted.filter(func(n): return n <= 7).size() >= 2 or potted.filter(func(n): return n >= 9).size() >= 2:
+		got.append("suited")
 	return _earn(got)
 
 

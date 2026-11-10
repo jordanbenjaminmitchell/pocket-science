@@ -11,7 +11,6 @@ func _initialize() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 90210
 	var labs := ["standard", "cryo", "cyclotron", "spring", "gravity"]
-	var racks := ["six", "nine", "ten", "fifteen"]
 	var stats := {"timeouts": 0, "nan": 0, "overlap": 0, "escaped": 0, "in_jaws": 0, "max_time": 0.0, "pots": 0}
 	var bad: Array = []
 	var shots := 0
@@ -47,7 +46,7 @@ func _initialize() -> void:
 			s.drag = 0.03
 			s.rail_e = 0.9
 		s.add_ball(0, Rack.HEAD + Vector2(rng.randf_range(-100, 0), rng.randf_range(-150, 150)))
-		Rack.build(s, racks[rng.randi_range(0, racks.size() - 1)], rng)
+		Rack.build(s, rng)
 		var mass_mode := rng.randi_range(0, 4)
 		for i in s.count():
 			if mass_mode == 1 and s.num[i] != 0:

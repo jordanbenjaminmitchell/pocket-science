@@ -41,7 +41,7 @@ func _draw() -> void:
 	draw_arc(c, r, 0.0, TAU, 48, Color(0.3, 0.3, 0.36), maxf(1.0, h * 0.01), true)
 	draw_circle(c + Vector2(-r * 0.36, -r * 0.42), r * 0.2, Color(1, 1, 1, 0.3))
 	draw_circle(c, r * 0.5, Color(0.97, 0.95, 0.9))
-	var num_font: Font = font if font else ThemeDB.fallback_font
+	var num_font: Font = ThemeDB.fallback_font   # the wordmark is pixel art, numbers stay smooth
 	var fs := int(r * 0.8)
 	var w := num_font.get_string_size("8", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	draw_string(num_font, c + Vector2(-w * 0.5, fs * 0.36), "8", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.06, 0.06, 0.08))

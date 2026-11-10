@@ -119,6 +119,31 @@ func strike(dir: Vector2, speed: float, follow_amount: float, side_amount: float
 	spin[c] = Vector2.ZERO
 
 
+## How far ball i will still roll on the cloth if nothing interferes, or -1 if
+## that cannot be told. Exact integral of the deceleration in _forces.
+func stop_distance(i: int) -> float:
+	if frictionless or roll_decel <= 0.0 or spin[i] != Vector2.ZERO:
+		return -1.0
+	var v := vel[i].length()
+	if drag < 0.001:
+		return v * v / (2.0 * roll_decel)
+	return v / drag - roll_decel / (drag * drag) * log(1.0 + drag * v / roll_decel)
+
+
+## Roll per second the ball shows beyond its travel: pending draw or follow after
+## contact, and the tip's spin before the cue ball has reached anything.
+func visual_extra_roll(i: int) -> Vector2:
+	var extra := spin[i]
+	if num[i] == 0 and not cue_contacted and follow != 0.0:
+		extra += vel[i] * follow * 1.4
+	return extra
+
+
+## Radians about the vertical per radian rolled. Right english turns clockwise.
+func visual_twist(i: int) -> float:
+	return -side[i] * 0.7
+
+
 ## Run until everything stops (or the time cap). Returns the event log.
 func settle(max_time: float = 30.0) -> Array[Dictionary]:
 	while moving() and time < max_time:

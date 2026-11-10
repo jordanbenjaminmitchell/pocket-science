@@ -11,40 +11,15 @@ static func _slot(row: int, col: int) -> Vector2:
 	return FOOT + Vector2(row * gap * 0.8660254, (col - row * 0.5) * gap)
 
 
-## kind: "nine" (diamond 1-9), "fifteen" (triangle 1-15), "six" (small triangle 1-6),
-## "ten" (triangle 1-10). Returns the ball numbers racked.
-static func build(sim: PoolSim, kind: String, rng: RandomNumberGenerator, balls: Array = []) -> void:
+## Racks all 15 balls in a triangle: 1 at the apex, 8 in the middle.
+static func build(sim: PoolSim, rng: RandomNumberGenerator, balls: Array = []) -> void:
 	var slots: Array[Vector2] = []
-	var order: Array = []
-	match kind:
-		"six":
-			for r in 3:
-				for c in r + 1:
-					slots.append(_slot(r, c))
-			order = _shuffled([2, 3, 4, 5, 6], rng)
-			order.insert(0, 1)
-		"nine":
-			var shape := [[0, 0], [1, 0], [1, 1], [2, 0], [2, 1], [2, 2], [3, 1], [3, 2], [4, 2]]
-			for s in shape:
-				slots.append(_slot(s[0], s[1]))
-			order = _shuffled([2, 3, 4, 5, 6, 7, 8], rng)
-			order.insert(0, 1)
-			order.insert(4, 9)
-		"ten":
-			for r in 4:
-				for c in r + 1:
-					slots.append(_slot(r, c))
-			order = _shuffled([2, 3, 4, 5, 6, 7, 8, 9], rng)
-			order.insert(0, 1)
-			order.insert(4, 10)
-		_:
-			for r in 5:
-				for c in r + 1:
-					slots.append(_slot(r, c))
-			var rest := _shuffled([2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15], rng)
-			order = rest
-			order.insert(0, 1)
-			order.insert(4, 8)
+	for r in 5:
+		for c in r + 1:
+			slots.append(_slot(r, c))
+	var order: Array = _shuffled([2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15], rng)
+	order.insert(0, 1)
+	order.insert(4, 8)
 	if not balls.is_empty():
 		order = balls
 	for k in mini(slots.size(), order.size()):

@@ -20,7 +20,7 @@ func _initialize() -> void:
 				s.add_ball(placed + 1, p)
 				placed += 1
 		var aim := Vector2.RIGHT.rotated(rng.randf() * TAU)
-		var g := TableView.compute_guide(s, aim, 0.0, 0.0, false, false)
+		var g := TableView.compute_guide(s, aim, 0.0, 0.0, false)
 		if not g.get("obj_pot", false):
 			continue
 		gold += 1

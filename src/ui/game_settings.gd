@@ -23,8 +23,11 @@ var touch_mode := false     # on-screen aim, power and shoot controls
 var frame_cap := 0          # index into FRAME_CAPS
 var window_size := 1        # index into WINDOW_SIZES
 var screen_layout := 0      # index into SCREEN_LAYOUTS
+var guide_lines := 0        # index into GUIDE_LINES
 
 const SCREEN_LAYOUTS := ["Classic", "Wide"]
+## "All balls" also simulates the shot and draws where every ball will end up.
+const GUIDE_LINES := ["Standard", "All balls"]
 const FRAME_CAPS := [0, 30, 60, 120, 144, 240]
 const WINDOW_SIZES := [Vector2i(1280, 720), Vector2i(1440, 810), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440)]
 
@@ -39,7 +42,7 @@ const ACTIONS := {
 
 var keys := {}
 
-const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout"]
+const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout", "guide_lines"]
 
 
 func load_file() -> void:
@@ -123,6 +126,7 @@ func _clamp() -> void:
 	frame_cap = clampi(int(frame_cap), 0, FRAME_CAPS.size() - 1)
 	window_size = clampi(int(window_size), 0, WINDOW_SIZES.size() - 1)
 	screen_layout = clampi(int(screen_layout), 0, SCREEN_LAYOUTS.size() - 1)
+	guide_lines = clampi(int(guide_lines), 0, GUIDE_LINES.size() - 1)
 
 
 func reset() -> void:
@@ -142,6 +146,7 @@ func reset() -> void:
 	large_text = false
 	touch_mode = false
 	screen_layout = 0
+	guide_lines = 0
 	_device_defaults()
 	frame_cap = 0
 	window_size = 1

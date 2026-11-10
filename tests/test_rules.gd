@@ -34,8 +34,10 @@ func _initialize() -> void:
 	r = Scorer.score(c)
 	check(r.foul == "No contact", "no contact foul")
 	c.events = [{"type": "rail", "a": 0}, {"type": "ball", "a": 0, "b": 8}, {"type": "pocket", "a": 8, "pocket": 3, "rails": 0, "at": Vector2.ZERO}]
+	c["objects"] = 1
 	r = Scorer.score(c)
-	check(r.total == 36, "a kick earns nothing; the black 8 pays ×2 (%d)" % r.total)
+	check(r.total == 18, "a kick earns nothing; a last 8 pays its plain value (%d)" % r.total)
+	c.erase("objects")
 
 	print("run rules")
 	var run := RunState.new()

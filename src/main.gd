@@ -14,6 +14,8 @@ var F_REG: Font = preload("res://assets/fonts/ChakraPetch-Regular.ttf")
 var F_SEMI: Font = preload("res://assets/fonts/ChakraPetch-SemiBold.ttf")
 var F_PIX: Font = preload("res://assets/fonts/Silkscreen-Regular.ttf")
 var F_PIXB: Font = preload("res://assets/fonts/Silkscreen-Bold.ttf")
+## Rounded and smooth: every score, price and ball number uses this, so headings can stay pixel art.
+var F_NUM: Font = _number_font()
 
 var state := S.TITLE
 var run := RunState.new()
@@ -63,7 +65,8 @@ var ui: CanvasLayer
 var root: Control
 var lbl_round: Label
 var lbl_lab: Label
-var lbl_rule: Label
+var lbl_rule: RichTextLabel
+var term_tip: TermTip
 var lbl_boss: Label
 var lbl_target: Label
 var lbl_score: Label
@@ -136,12 +139,14 @@ func _ready() -> void:
 ## ================================================================ table setup
 func _setup_table() -> void:
 	var t := run.current()
+	if spin_w:
+		spin_w.modulate.a = 0.35 if t.anomaly == "nospin" else 1.0
 	layout = run.build_layout()
 	var lab: String = t.lab
-	view.setup(layout, F_SEMI, F_PIXB)
+	view.setup(layout, F_SEMI, F_NUM)
 	view.set_felt(Catalog.LABS[lab].felt)
 	view.set_lab(lab)
-	_new_rack(t.rack)
+	_new_rack()
 	shot_log.clear()
 	if log_label:
 		log_label.text = ""
@@ -161,12 +166,12 @@ func _make_sim() -> PoolSim:
 	return PoolSim.new(layout)
 
 
-func _new_rack(kind: String) -> void:
+func _new_rack() -> void:
 	sim = _make_sim()
 	sim.add_ball(0, Rack.HEAD)
 	var r := RandomNumberGenerator.new()
 	r.seed = run.rack_seed()
-	Rack.build(sim, kind, r)
+	Rack.build(sim, r)
 	run.apply_physics(sim)
 	view.sync_balls(sim, vis_rng, run.imbues)
 	is_break = true
@@ -316,22 +321,20 @@ func _update_aim(delta: float) -> void:
 		guide_dirty = false
 		forecast_dirty = true
 		forecast_timer = 0.09
-		var fog: bool = run.current().anomaly == "fog"
-		view.guide = TableView.compute_guide(sim, aim_dir, follow, side, run.perks.has("lens"), fog)
-		if run.current().anomaly == "blind":
-			for key in ["obj_pot", "obj2_pot", "obj_edge", "obj2_edge"]:
-				view.guide[key] = false
+		view.guide = TableView.compute_guide(sim, aim_dir, _shot_follow(), _shot_side(), run.perks.has("lens"))
 		view.show_guide = true
 		_update_preview()
-	if forecast_dirty and run.perks.has("oracle"):
+	if not _forecast_wanted():
+		view.forecast_paths = []
+		view.forecast_text = ""
+		fc_sim = null
+	elif forecast_dirty:
 		forecast_timer -= delta
 		if forecast_timer <= 0.0:
 			forecast_dirty = false
 			_compute_forecast()
 	elif fc_sim != null:
 		_step_forecast()
-	elif not run.perks.has("oracle"):
-		view.forecast_paths = []
 
 
 var coaching := false
@@ -347,9 +350,9 @@ func _update_coach() -> void:
 		view.coach_text = "Drag on the table to aim, set power with the slider,\nthen press SHOOT. Break the rack!" if settings.touch_mode else "Press on the table, drag BACK and release to shoot.\nFurther = harder. Break the rack!"
 	elif view.guide.get("obj_pot", false) or view.guide.get("obj2_pot", false):
 		coach_seen_pot = true
-		view.coach_text = "GOLD line = that ball is going in.\nThe tag on the pocket shows the points."
+		view.coach_text = "A gold ring = that ball is going in.\nThe tag on the pocket shows the points."
 	elif not coach_seen_pot:
-		view.coach_text = "Swing your aim until a line turns GOLD.\nThe ring shows where the cue ball hits."
+		view.coach_text = "Swing your aim until a line ends in a gold ring.\nThe white ring shows where the cue ball hits."
 	elif run.heat >= 1:
 		view.coach_text = "Heat is building! Every scoring shot raises it.\nThe glowing pocket pays ×2."
 	else:
@@ -403,24 +406,38 @@ func _update_preview() -> void:
 	var ctx := _shot_ctx()
 	ctx["events"] = ev
 	var r := Scorer.score(ctx)
-	if r.scored:
-		view.preview_text = "+%d" % r.total
+	if r.eight_fine > 0:
+		view.preview_text = "-$%d" % r.eight_fine
+		view.preview_pocket = pocket
+	elif r.scored or r.penalty > 0:
+		view.preview_text = "%+d" % (r.total - r.penalty)
 		view.preview_pocket = pocket
 
 
 var fc_sim: PoolSim
 var fc_paths := {}
-var fc_steps := 0
+const FORECAST_DOT_GAP := 12.0
 var fc_limit := 12.0
+
+
+## Paths are drawn with the all-balls option and on tables that bend a ball's
+## path, since a straight guideline alone would mislead there.
+func _show_paths() -> bool:
+	return settings.guide_lines == 1 or sim.tilt != Vector2.ZERO or sim.well_strength != 0.0
+
+
+func _forecast_wanted() -> bool:
+	return _show_paths() or run.perks.has("oracle")
 
 
 ## Starts an incremental forecast; _step_forecast advances it within a frame budget.
 func _compute_forecast() -> void:
 	fc_sim = sim.clone()
-	fc_sim.strike(aim_dir, _speed(_current_power()), follow, side)
-	fc_limit = 1.5
+	fc_sim.strike(aim_dir, _speed(_current_power()), _shot_follow(), _shot_side())
+	# Bent tables only need the opening curve; the full picture is the option or Perk.
+	fc_limit = 30.0 if settings.guide_lines == 1 or run.perks.has("oracle") else 2.5
 	fc_paths = {}
-	fc_steps = 0
+	view.forecast_text = ""
 	_step_forecast()
 
 
@@ -430,23 +447,45 @@ func _step_forecast() -> void:
 	var t0 := Time.get_ticks_usec()
 	while fc_sim.moving() and fc_sim.time < fc_limit and Time.get_ticks_usec() - t0 < 5000:
 		fc_sim.step(PoolSim.STEP)
-		fc_steps += 1
-		if fc_steps % 3 == 0:
-			for i in fc_sim.count():
-				if fc_sim.alive[i] == 1 and fc_sim.vel[i] != Vector2.ZERO:
-					if not fc_paths.has(i):
-						fc_paths[i] = PackedVector2Array([sim.pos[i]])
+		for i in fc_sim.count():
+			if fc_sim.alive[i] == 1 and fc_sim.vel[i] != Vector2.ZERO:
+				if not fc_paths.has(i):
+					fc_paths[i] = PackedVector2Array([sim.pos[i]])
+				var last: Vector2 = fc_paths[i][fc_paths[i].size() - 1]
+				if last.distance_squared_to(fc_sim.pos[i]) >= FORECAST_DOT_GAP * FORECAST_DOT_GAP:
 					fc_paths[i].append(fc_sim.pos[i])
+	var done := not fc_sim.moving() or fc_sim.time >= fc_limit
 	var out: Array = []
-	for i in fc_paths:
-		var c := Catalog.ball_color(fc_sim.num[i])
-		if fc_sim.num[i] == 0:
-			c = Color(1, 1, 1)
-		var done := not fc_sim.moving() or fc_sim.time >= fc_limit
-		out.append({"points": fc_paths[i], "color": c.lightened(0.25), "end": done and fc_sim.alive[i] == 1, "potted": fc_sim.alive[i] == 0})
+	if _show_paths():
+		for i in fc_paths:
+			var n: int = fc_sim.num[i]
+			if done and fc_sim.alive[i] == 1:
+				fc_paths[i].append(fc_sim.pos[i])
+			var c := Color(1, 1, 1) if n == 0 else Catalog.ball_color(n)
+			out.append({"points": fc_paths[i], "color": c if n == 8 else c.lightened(0.25), "halo": Color(1, 1, 1) if n == 8 else Color(0, 0, 0),
+				"end": done and fc_sim.alive[i] == 1, "potted": fc_sim.alive[i] == 0})
 	view.forecast_paths = out
-	if not fc_sim.moving() or fc_sim.time >= fc_limit:
+	if done:
+		if run.perks.has("oracle"):
+			_show_shot_forecast()
 		fc_sim = null
+
+
+## Second Sight: score the simulated shot with the same rules the real one will use.
+func _show_shot_forecast() -> void:
+	var ctx := _shot_ctx()
+	ctx["events"] = fc_sim.events
+	ctx["cue_end"] = fc_sim.pos[fc_sim.index_of(0)]
+	var r := Scorer.score(ctx)
+	view.forecast_text = "This shot: %+d" % (r.total - r.penalty) if r.scored or r.penalty > 0 else "This shot: " + str(r.foul)
+
+
+func _shot_follow() -> float:
+	return 0.0 if run.current().anomaly == "nospin" else follow
+
+
+func _shot_side() -> float:
+	return 0.0 if run.current().anomaly == "nospin" else side
 
 
 func _speed(p: float) -> float:
@@ -494,6 +533,7 @@ func _shoot(p: float) -> void:
 	view.show_guide = false
 	view.coach_text = ""
 	view.forecast_paths = []
+	view.forecast_text = ""
 	fc_sim = null
 	view.preview_text = ""
 
@@ -517,7 +557,7 @@ func _begin_roll() -> void:
 	live_chain = Scorer.start_chain(pre_ctx)
 	live_contacted = false
 	_set_meters(live_chain, run.heat)
-	sim.strike(aim_dir, _speed(shot_power), follow, side)
+	sim.strike(aim_dir, _speed(shot_power), _shot_follow(), _shot_side())
 	sfx.play("cue", 0.4 + shot_power * 0.8, 0.9 + randf() * 0.2)
 	if shot_power > 0.8:
 		view.add_shake(3.0 * shot_power)
@@ -583,7 +623,7 @@ func _update_demo(delta: float) -> void:
 	demo_timer = 1.4
 	var ci := _cue_index()
 	if sim.object_balls_left() == 0:
-		_new_rack("nine")
+		_new_rack()
 		return
 	if sim.alive[ci] == 0:
 		var p := AutoPlayer.place_spot(sim, run, demo_rng)
@@ -695,7 +735,9 @@ func _settled() -> void:
 		var free_break: bool = is_break and result.foul == "Miss"
 		var insured: bool = run.perks.has("insurance") and run.insured_used < 2
 		var msg: String = result.foul
-		if free_break:
+		if result.foul == Scorer.EIGHT_FOUL:
+			msg += " - lose %d points" % result.penalty if result.penalty > 0 else (" - pay $%d" % result.eight_fine if result.eight_fine > 0 else "")
+		elif free_break:
 			msg = "Dry break - no penalty"
 		elif insured:
 			msg += " - insured"
@@ -703,6 +745,8 @@ func _settled() -> void:
 			msg += " - the house lets this one go"
 		else:
 			msg += " - lose %d chalk" % (2 if run.perks.has("glasscannon") else 1)
+		if result.foul != Scorer.EIGHT_FOUL and result.penalty > 0:
+			msg += ", and %d points for the 8" % result.penalty
 		lbl_line.text = msg
 		_flash_banner(result.foul.to_upper(), Color(1, 0.4, 0.35) if not free_break else Color(0.8, 0.85, 0.9), 1.0)
 		if not free_break:
@@ -726,7 +770,12 @@ func _update_tally(delta: float) -> void:
 			tally_phase = 1
 			tally_timer = 0.55
 			var total: int = result.total
+			var penalty: int = result.penalty
 			lbl_line.text = "Shot total: %d" % total
+			if penalty > 0:
+				lbl_line.text += "\nThe 8 dropped: -%d" % penalty
+				view.popup(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.38), "-%d" % penalty, Color(1.0, 0.4, 0.35), 34, 1.6)
+				sfx.play("bad", 0.7)
 			if result.money > 0:
 				view.popup(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.62), "+$%d" % result.money, Color(1.0, 0.85, 0.3), 22, 1.2)
 				sfx.play("coin", 0.6)
@@ -740,7 +789,7 @@ func _update_tally(delta: float) -> void:
 				view.popup(mid + Vector2(0, 62), "HUGE SHOT!", Color(1.0, 0.5, 0.3), 30, 1.5)
 				view.burst(mid, Color(1.0, 0.75, 0.3), 60, 420)
 				sfx.play("clear", 0.45, 1.3)
-			_animate_score(run.score, run.score + total)
+			_animate_score(run.score, maxi(0, run.score + total - penalty))
 	elif tally_phase == 1:
 		tally_phase = 2
 		tally_timer = 0.05
@@ -797,7 +846,7 @@ func _after_shot() -> void:
 	if out.rack_cleared:
 		_flash_banner("RACK CLEARED  +1 CHALK", Color(0.5, 1.0, 0.7), 1.6)
 		sfx.play("clear", 0.6)
-		_new_rack(run.current().rack)
+		_new_rack()
 		_enter_aim()
 	elif out.ball_in_hand:
 		_begin_place(was_break)   # scratch on the break: behind the head string
@@ -813,7 +862,7 @@ func _rebuild_layout() -> void:
 	sim.layout = layout
 	run.apply_physics(sim)
 	guide_dirty = true
-	view.setup(layout, F_SEMI, F_PIXB)
+	view.setup(layout, F_SEMI, F_NUM)
 	view.set_felt(Catalog.LABS[run.current().lab].felt)
 	view.set_lab(run.current().lab)
 	view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(1, 0.5, 0.4), 12, 120)
@@ -1099,6 +1148,44 @@ func _label(text: String, size: int, color: Color = Color.WHITE, font: Font = nu
 	return l
 
 
+## Rich text with tappable terms. Pass text already run through Glossary.link.
+static func _number_font() -> Font:
+	var f := FontVariation.new()
+	f.base_font = ThemeDB.fallback_font
+	f.variation_embolden = 0.35
+	return f
+
+
+func _term_text(bbcode: String, size: int, color: Color, width: float, font: Font = null) -> RichTextLabel:
+	if settings.large_text and size <= 15:
+		size += 2
+	var r := RichTextLabel.new()
+	r.bbcode_enabled = true
+	r.fit_content = true
+	r.scroll_active = false
+	r.meta_underlined = false
+	r.custom_minimum_size = Vector2(width, 0)
+	r.mouse_filter = Control.MOUSE_FILTER_PASS
+	r.add_theme_font_override("normal_font", font if font else F_REG)
+	r.add_theme_font_size_override("normal_font_size", size)
+	r.add_theme_color_override("default_color", color)
+	r.meta_clicked.connect(func(m): term_tip.show_term(str(m), r.get_global_mouse_position()))
+	r.meta_hover_started.connect(func(m): term_tip.show_term(str(m), r.get_global_mouse_position()))
+	r.meta_hover_ended.connect(func(_m): term_tip.hide_tip())
+	r.text = bbcode
+	return r
+
+
+## Makes a whole control, such as a HUD heading, open a term's popup.
+func _make_term(c: Control, term: String) -> void:
+	c.mouse_filter = Control.MOUSE_FILTER_STOP
+	c.mouse_entered.connect(func(): term_tip.show_term(term, c.get_global_mouse_position()))
+	c.mouse_exited.connect(func(): term_tip.hide_tip())
+	c.gui_input.connect(func(e):
+		if (e is InputEventMouseButton or e is InputEventScreenTouch) and e.pressed:
+			term_tip.show_term.call_deferred(term, c.get_global_mouse_position()))
+
+
 func _button(text: String, cb: Callable, accent: Color = Color(0.85, 0.65, 0.3)) -> Button:
 	var b := Button.new()
 	b.text = text
@@ -1184,6 +1271,9 @@ func _notification(what: int) -> void:
 
 
 func _build_ui() -> void:
+	term_tip = TermTip.new()
+	add_child(term_tip)
+	term_tip.setup(_style(Color(0.07, 0.09, 0.13, 0.97), Color(0.56, 0.85, 1.0), 2, 8), F_SEMI, F_REG)
 	ui = CanvasLayer.new()
 	add_child(ui)
 	root = Control.new()
@@ -1226,9 +1316,7 @@ func _build_ui() -> void:
 	labbox.add_child(labv)
 	lbl_lab = _label("Standard Felt", 20, Color(0.6, 1.0, 0.85))
 	labv.add_child(lbl_lab)
-	lbl_rule = _label("", 13, Color(0.75, 0.78, 0.8), F_REG)
-	lbl_rule.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl_rule.custom_minimum_size = Vector2(290, 0)
+	lbl_rule = _term_text("", 13, Color(0.75, 0.78, 0.8), 290.0)
 	labv.add_child(lbl_rule)
 	lbl_bounty = _label("", 13, Color(1.0, 0.85, 0.35), F_REG)
 	lbl_bounty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1250,9 +1338,9 @@ func _build_ui() -> void:
 	var sp := Control.new()
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	th.add_child(sp)
-	lbl_target = _label("150", 22, Color(1.0, 0.85, 0.45), F_PIXB)
+	lbl_target = _label("150", 22, Color(1.0, 0.85, 0.45), F_NUM)
 	th.add_child(lbl_target)
-	lbl_score = _label("0", 38, Color.WHITE, F_PIXB)
+	lbl_score = _label("0", 38, Color.WHITE, F_NUM)
 	lbl_score.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tv.add_child(lbl_score)
 	score_bar = ProgressBar.new()
@@ -1267,7 +1355,7 @@ func _build_ui() -> void:
 
 	lbl_chain = _meter(lv, "CHAIN", Color(0.2, 0.75, 0.6))
 	lbl_heat = _meter(lv, "HEAT", Color(1.0, 0.5, 0.15))
-	lbl_line = _label("Pot balls. Stack Heat. Beat the target.", 14, Color(0.85, 0.85, 0.85))
+	lbl_line = _label("Pot balls, stack Heat, avoid the 8.", 14, Color(0.85, 0.85, 0.85))
 	lbl_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl_line.custom_minimum_size = Vector2(290, 32)
@@ -1277,18 +1365,20 @@ func _build_ui() -> void:
 	stats.columns = 2
 	stats.add_theme_constant_override("h_separation", 10)
 	lv.add_child(stats)
-	stats.add_child(_label("CHALK", 13, Color(0.6, 0.7, 0.85)))
+	var chalk_title := _label("CHALK", 13, Color(0.6, 0.7, 0.85))
+	_make_term(chalk_title, "chalk")
+	stats.add_child(chalk_title)
 	chalk_pips = ChalkPips.new()
 	stats.add_child(chalk_pips)
 	stats.add_child(_label("MONEY", 13, Color(0.6, 0.7, 0.85)))
-	lbl_money = _label("$4", 22, Color(1.0, 0.85, 0.3), F_PIXB)
+	lbl_money = _label("$4", 22, Color(1.0, 0.85, 0.3), F_NUM)
 	stats.add_child(lbl_money)
 	flags_label = _label("", 13, Color(0.5, 0.8, 1.0))
 	flags_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	flags_label.custom_minimum_size = Vector2(290, 0)
 	lv.add_child(flags_label)
 	tray = BallTray.new()
-	tray.font = F_SEMI
+	tray.font = F_NUM
 	lv.add_child(tray)
 	log_title = _label("RECENT SHOTS", 12, Color(0.5, 0.5, 0.55))
 	lv.add_child(log_title)
@@ -1366,7 +1456,8 @@ func _meter(parent: Control, title: String, accent: Color) -> Label:
 	var t := _label(title, 14, accent.lightened(0.25))
 	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(t)
-	var v := _label("1", 24, Color.WHITE, F_PIXB)
+	_make_term(box, title.to_lower())
+	var v := _label("1", 24, Color.WHITE, F_NUM)
 	row.add_child(v)
 	return v
 
@@ -1416,7 +1507,7 @@ func _refresh_hud() -> void:
 	else:
 		lbl_round.text = "%sTable %d / %d%s" % ["Daily · " if run.daily_key != "" else ("Handicap %d · " % run.handicap if run.handicap > 0 else ""), run.table_index + 1, total, ""]
 	lbl_lab.text = Catalog.BOSSES[t.id].name
-	lbl_rule.text = Catalog.BOSSES[t.id].desc
+	lbl_rule.text = Glossary.link(Catalog.BOSSES[t.id].desc)
 	lbl_rule.visible = true
 	lbl_boss.visible = false
 	lbl_target.text = str(run.target())
@@ -1497,16 +1588,13 @@ func _perk_card(id: String, slot: int) -> Control:
 	name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_l.custom_minimum_size = Vector2(card.x - 66.0, 0)
 	hb.add_child(name_l)
-	var d := _label(f.desc, 11, Color(0.78, 0.8, 0.82), F_REG)
-	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	d.custom_minimum_size = Vector2(card.x - 24.0, 0)
+	var d := _term_text(Glossary.link(f.desc), 11, Color(0.78, 0.8, 0.82), card.x - 24.0)
 	if state != S.SHOP:
 		v.add_child(d)
 	else:
 		v.add_child(_label(Catalog.rarity_name(f.r), 11, accent))
 	if id == "catalyst":
 		v.add_child(_label("Now: +%s" % _fmt(run.catalyst), 12, accent))
-	p.tooltip_text = "%s (%s)\n%s" % [f.name, Catalog.rarity_name(f.r), f.desc]
 	p.mouse_filter = Control.MOUSE_FILTER_STOP
 	if state == S.SHOP:
 		var b := _button(("Really sell? $%d" if sell_armed == id else "Sell $%d") % run.sell_value(id), func(): _sell_click(id), Color(1.0, 0.75, 0.3) if sell_armed == id else Color(0.9, 0.4, 0.3))
@@ -1793,7 +1881,7 @@ func _new_run() -> void:
 	_animate_score(0, 0)
 	shown_score = 0
 	_set_meters(1.0, run.heat)
-	lbl_line.text = "Pot balls. Stack Heat. Beat the target."
+	lbl_line.text = "Pot balls, stack Heat, avoid the 8."
 	coaching = _load_best().tables == 0
 	coach_seen_pot = false
 	_enter_aim()
@@ -1806,13 +1894,15 @@ func _show_help() -> void:
 	var v := _center_panel(900, 700)
 	v.add_child(_label("HOW TO PLAY", 30, Color(0.98, 0.8, 0.4), F_PIXB))
 	var txt := """[b]Shoot:[/b] Aim with the mouse. Press on the table and drag BACK from the cue ball to set power, then release. (Or use the wheel/Up/Down for power and Space to shoot.) Left/Right fine-tune your aim, and Shift makes it finer.
-[b]Guideline:[/b] The white line shows the cue ball's path, and the ring is where it will touch the object ball. The [color=#ffd060]gold line[/color] means that ball is heading into a pocket, and the tag on the pocket shows what the pot is worth. The blue dashes show where the cue ball goes after contact, including spin.
+[b]Guideline:[/b] The white line shows the cue ball's path, and the ring is where it will touch the object ball. After contact the line takes the colour of the ball you hit. A bold line ending in a [color=#ffd060]gold ring[/color] means that ball is going in, and the tag on the pocket shows what the pot is worth. Settings has a Prediction lines option that shows where every ball will land. The blue dashes show where the cue ball goes after contact, including spin.
 [b]Spin:[/b] Click the big cue ball (W/S/A/D). Hitting it high gives follow and low gives draw; the sides add english off the cushions.
 
 [b]Score:[/b] Each ball pays as it drops: its [color=#ffd060]value[/color] (10 + its number) × [color=#60d0a0]Chain[/color] × [color=#ff9040]Heat[/color]. Bouncing off cushions and other balls earns nothing by itself.
 [color=#60d0a0]Chain[/color] starts at 1 each shot and rises by 0.5 for every ball you drop in that shot, so the last ball of a big shot pays the most.
 [color=#ff9040]Heat[/color] lasts all table. Every scoring shot adds 1, and each point of Heat adds ×0.5. A miss cuts your Heat in half.
 The [color=#ff8a30]hot pocket[/color] pays ×2. The black 8 also pays ×2.
+
+[b]The 8-ball:[/b] Avoid it. If the 8 drops while other balls are still on the table, you lose 15% of the table's target, unless a Perk changes that. Once it is the last ball it is safe, and sinking it brings a fresh rack.
 
 [b]Chalk:[/b] As in real pool, you keep shooting while you pot. A miss, a scratch or no contact costs 1 chalk. A dry break is free. Run out of chalk before reaching the target and the run is over. Clearing the whole rack gives +1 chalk and a fresh rack.
 
@@ -1917,7 +2007,7 @@ func _refresh_shop() -> void:
 	var spc := Control.new()
 	spc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(spc)
-	head.add_child(_label("$%d" % run.money, 30, Color(1.0, 0.85, 0.3), F_PIXB))
+	head.add_child(_label("$%d" % run.money, 30, Color(1.0, 0.85, 0.3), F_NUM))
 	if not payout_rows.is_empty():
 		var parts: Array[String] = []
 		for r in payout_rows:
@@ -2007,9 +2097,7 @@ func _offer_card(i: int) -> Control:
 		sl.custom_minimum_size = Vector2(164, 0)
 		v.add_child(sl)
 		p.add_theme_stylebox_override("panel", _style(Color(0.1, 0.16, 0.11), Color(0.5, 1.0, 0.6), 3, 10))
-	var d := _label(desc, 13, Color(0.8, 0.82, 0.85), F_REG)
-	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	d.custom_minimum_size = Vector2(164, 0)
+	var d := _term_text(Glossary.link(desc), 13, Color(0.8, 0.82, 0.85), 164.0)
 	d.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(d)
 	var b := _button("SOLD" if item.sold else "Buy $%d" % item.cost, func():
@@ -2052,7 +2140,7 @@ func _continue_run() -> void:
 	run.rng.state = rng_state
 	spin_w.set_spin(0, 0)
 	_set_meters(1.0, run.heat)
-	lbl_line.text = "Pot balls. Stack Heat. Beat the target."
+	lbl_line.text = "Pot balls, stack Heat, avoid the 8."
 	if run.phase == "shop":
 		payout_rows = run.shop_payout
 		state = S.SHOP
@@ -2129,6 +2217,7 @@ func _apply_settings() -> void:
 	view.reduced_motion = settings.reduced_motion
 	_sync_touch_ui()
 	view.colorblind = settings.colorblind
+	guide_dirty = true
 	view.number_tags = settings.number_tags
 	Engine.max_fps = GameSettings.FRAME_CAPS[settings.frame_cap]
 	_apply_screen_layout()
@@ -2231,6 +2320,7 @@ func _show_settings(back: Callable) -> void:
 	_setting_toggle(grid, "Reduced motion (no shake, zoom or confetti)", "reduced_motion")
 	_setting_toggle(grid, "Invert pull-back (push forward for power)", "invert_drag")
 	_setting_toggle(grid, "Click to shoot (power from wheel / Up / Down)", "click_shoot")
+	_setting_choice(grid, "Prediction lines", "guide_lines", GameSettings.GUIDE_LINES)
 	_setting_toggle(grid, "Colour-blind guideline palette", "colorblind")
 	_setting_toggle(grid, "Number tags on every ball", "number_tags")
 	_setting_toggle(grid, "Larger small text", "large_text")
@@ -2397,7 +2487,7 @@ func _next_table() -> void:
 	shown_score = 0
 	_animate_score(0, run.score)
 	_set_meters(1.0, run.heat)
-	lbl_line.text = "Overflow carried %d points" % run.score if run.score > 0 else "Pot balls. Stack Heat. Beat the target."
+	lbl_line.text = "Overflow carried %d points" % run.score if run.score > 0 else "Pot balls, stack Heat, avoid the 8."
 	_enter_aim()
 	var t := run.current()
 	view.flash(Color(0.55, 0.08, 0.05))
@@ -2546,10 +2636,7 @@ func _show_run_info() -> void:
 		c1.add_child(_label("None yet - buy them in the Pro Shop between tables.", 15, Color(0.6, 0.6, 0.65), F_REG))
 	for id in run.perks:
 		var fd: Dictionary = Catalog.PERKS[id]
-		var l := _label("%s  (%s)  -  %s" % [fd.name, Catalog.rarity_name(fd.r), fd.desc], 15, Catalog.rarity_color(fd.r).lerp(Color.WHITE, 0.5), F_REG)
-		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		l.custom_minimum_size = Vector2(560, 0)
-		c1.add_child(l)
+		c1.add_child(_term_text("%s  (%s)  -  %s" % [fd.name, Catalog.rarity_name(fd.r), Glossary.link(fd.desc)], 15, Catalog.rarity_color(fd.r).lerp(Color.WHITE, 0.5), 560.0))
 	if run.perks.has("catalyst"):
 		c1.add_child(_label("Snowball: every ball is worth +%s." % _fmt(run.catalyst), 14, Color(1.0, 0.6, 0.3), F_REG))
 	c1.add_child(_label("IMBUED BALLS", 16, Color(0.6, 0.8, 1.0)))

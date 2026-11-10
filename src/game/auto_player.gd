@@ -15,7 +15,7 @@ static func ctx_for(run: RunState, pw: float, sim: PoolSim = null, is_break: boo
 	return {"perks": run.perks, "imbues": run.imbues, "hot_pocket": run.hot_pocket, "lab": run.current().lab,
 		"boss": run.current().id, "element_mix": run.element_mix,
 		"anomaly": run.current().anomaly, "heat": run.heat, "power": pw, "shots_taken": run.shots_taken,
-		"catalyst": run.catalyst, "chalk": run.chalk, "money": run.money,
+		"catalyst": run.catalyst, "chalk": run.chalk, "money": run.money, "target": run.target(),
 		"empty_slots": RunState.MAX_PERKS - run.perks.size(), "pockets_used": run.pockets_used}
 
 
@@ -33,7 +33,7 @@ static func candidates(sim: PoolSim, run: RunState) -> Array:
 			continue
 		if anomaly == "rotation" and sim.num[i] != lowest:
 			continue
-		if anomaly == "cursed8" and sim.num[i] == 8 and sim.object_balls_left() > 1:
+		if sim.num[i] == 8 and sim.object_balls_left() > 1 and (anomaly == "cursed8" or not run.wants_eight()):
 			continue
 		for k in sim.layout.pockets.size():
 			var pk: Dictionary = sim.layout.pockets[k]
@@ -92,7 +92,7 @@ static func choose(sim: PoolSim, run: RunState, tries: int = 5) -> Dictionary:
 			var r := Scorer.score(ctx)
 			# Prefer shots that leave another pot available (position play).
 			var follow_up := 1.0 if candidates(s, run).size() > 0 else 0.6
-			var v: float = r.total * c[j].ease * follow_up
+			var v: float = (r.total - int(r.penalty)) * c[j].ease * follow_up
 			if v > best_v:
 				best_v = v
 				best = {"dir": c[j].dir, "power": pw}

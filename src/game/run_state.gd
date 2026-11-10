@@ -78,12 +78,12 @@ func _build_plan() -> void:
 			var pool: Array = Catalog.BOSSES.keys().filter(func(k): return int(Catalog.BOSSES[k].tier) == int(slot.tier) and not used.has(k))
 			id = pool[rng.randi_range(0, pool.size() - 1)]
 		used[id] = true
-		plan.append(_table_entry(id, int(slot.target), slot.rack))
+		plan.append(_table_entry(id, int(slot.target)))
 
 
-func _table_entry(id: String, tgt: int, rack: String) -> Dictionary:
+func _table_entry(id: String, tgt: int) -> Dictionary:
 	var b: Dictionary = Catalog.BOSSES[id]
-	return {"id": id, "target": tgt, "rack": rack, "boss": true, "lab": b.lab, "anomaly": b.anomaly}
+	return {"id": id, "target": tgt, "boss": true, "lab": b.lab, "anomaly": b.anomaly}
 
 
 func current() -> Dictionary:
@@ -92,7 +92,7 @@ func current() -> Dictionary:
 	# Endless: targets keep climbing while the tour loops through the hard tables.
 	var extra := table_index - plan.size() + 1
 	var ids: Array = Catalog.BOSSES.keys().filter(func(k): return int(Catalog.BOSSES[k].tier) >= 2 and int(Catalog.BOSSES[k].tier) < 9)
-	return _table_entry(ids[(extra + seed_value) % ids.size()], int(plan[plan.size() - 1].target * pow(1.6, extra)), "fifteen")
+	return _table_entry(ids[(extra + seed_value) % ids.size()], int(plan[plan.size() - 1].target * pow(1.6, extra)))
 
 
 func begin_table() -> void:
@@ -107,9 +107,13 @@ func begin_table() -> void:
 	pockets_used = []
 	shrink_steps = 0
 	insured_used = 0
+	solid_run = 0
+	stripe_run = 0
 	roll_hot_pocket(-1)
 	var keys := Catalog.BOUNTIES.keys()
 	bounty = keys[rng.randi_range(0, keys.size() - 1)]
+	while hot_pocket < 0 and (bounty == "hot" or bounty == "hot2"):   # no hot pocket here to aim at
+		bounty = keys[rng.randi_range(0, keys.size() - 1)]
 	bounty_done = false
 
 
@@ -168,7 +172,7 @@ func bounty_met(res: Dictionary, _hot: int) -> bool:
 		"side":
 			return (res.pocket_list as Array).any(func(k): return k == 1 or k == 4)
 		"eight":
-			return pots.has(8)
+			return res.get("last_eight", false)
 		"stripe":
 			return pots.any(func(n): return n >= 9)
 		"solid":
@@ -187,7 +191,7 @@ func bounty_met(res: Dictionary, _hot: int) -> bool:
 
 
 func roll_hot_pocket(avoid: int) -> void:
-	if current().anomaly == "elements":
+	if current().anomaly == "elements" or current().anomaly == "blind":
 		hot_pocket = -1
 		return
 	var choices: Array = []
@@ -232,6 +236,11 @@ func closed_pockets() -> Array[int]:
 func table_name() -> String:
 	var t := current()
 	return Catalog.BOSSES[t.id].name
+
+
+## True if this build is happy to see the 8 go down early.
+func wants_eight() -> bool:
+	return perks.has("eight") or perks.has("darkhorse") or perks.has("trouble")
 
 
 ## Called after a table is cleared. Returns a breakdown of the payout.
@@ -301,16 +310,10 @@ func _roll_shop_items() -> void:
 	for i in 2:
 		var keys := Catalog.IMBUES.keys()
 		var iso: String = keys[rng.randi_range(0, keys.size() - 1)]
-		var ball := rng.randi_range(1, 15)
-		if current_rack_max() < 15:
-			ball = rng.randi_range(1, current_rack_max())
+		var ball := rng.randi_range(1, 14)   # never offered on the 8, which you are avoiding
+		if ball >= 8:
+			ball += 1
 		shop.append({"type": "imbue", "id": iso, "ball": ball, "cost": Catalog.IMBUES[iso].cost, "sold": false})
-
-
-func current_rack_max() -> int:
-	var nxt := table_index + 1
-	var rack: String = plan[mini(nxt, plan.size() - 1)].rack
-	return {"six": 6, "nine": 9, "ten": 10}.get(rack, 15)
 
 
 func _random_perk() -> String:
@@ -326,6 +329,10 @@ func _random_perk() -> String:
 			continue
 		var r: int = Catalog.PERKS[id].r
 		var w: int = [10, 5, 2][r]
+		# Once you have started a build, the shop leans toward it.
+		var fam: String = Catalog.PERKS[id].fam
+		if BUILD_FAMILIES.has(fam) and perks.any(func(o): return Catalog.PERKS[o].fam == fam):
+			w *= 3
 		for k in w:
 			pool.append(id)
 	if pool.is_empty():
@@ -405,6 +412,8 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		heat += 1 + int(res.get("heat_gain", 0))
 		best_heat = maxi(best_heat, heat)
 		element_mix = res.get("element_mix", [])
+		solid_run = int(res.get("solid_run", solid_run))
+		stripe_run = int(res.get("stripe_run", stripe_run))
 		money += res.money
 		catalyst += res.catalyst_gain
 		total_pots += res.potted.size()
@@ -417,7 +426,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 	else:
 		var free_break: bool = was_break and res.foul == "Miss"
 		# Boss "soft fouls": the shot scores nothing and the heat resets, but no chalk is lost.
-		var soft: bool = res.foul == "Wrong pocket" or res.foul == "Wrong ball first"
+		var soft: bool = res.foul == "Wrong pocket" or res.foul == "Wrong ball first" or res.foul == Scorer.EIGHT_FOUL
 		var insured: bool = perks.has("insurance") and insured_used < 2
 		var excused: bool = current().id == "local" and not forgiven and not free_break and not soft and not insured
 		if excused:
@@ -430,6 +439,8 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 			out.chalk_lost = true
 		heat = int(heat / 2.0)   # a miss cools the table but never wipes it out
 		element_mix = []
+	score = maxi(0, score - int(res.get("penalty", 0)))
+	money = maxi(0, money - int(res.get("eight_fine", 0)))
 	if current().anomaly == "shrink":
 		shrink_steps += 1
 		out["layout_changed"] = true
@@ -523,9 +534,11 @@ func apply_physics(s: PoolSim) -> void:
 func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 	var lowest := -1
 	var highest := -1
+	var on_table: Array = []
 	for i in s.count():
 		if s.alive[i] == 1 and s.num[i] != 0:
 			var n: int = s.num[i]
+			on_table.append(n)
 			if lowest < 0 or n < lowest:
 				lowest = n
 			if n > highest:
@@ -537,6 +550,8 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 		"catalyst": catalyst, "is_break": is_break, "chalk": chalk, "objects": s.object_balls_left(),
 		"money": money, "empty_slots": MAX_PERKS - perks.size(), "pockets_used": pockets_used,
 		"lowest": lowest, "highest": highest, "element_mix": element_mix,
+		"target": target(), "on_table": on_table, "total_pots": total_pots,
+		"solid_run": solid_run, "stripe_run": stripe_run,
 		"cue_start": s.pos[ci] if ci >= 0 else Vector2.ZERO,
 	}
 
@@ -547,8 +562,11 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 ## file that replaces the save atomically; the previous save is kept as a
 ## backup and used if the main file is ever unreadable.
 const SAVE_PATH := "user://pocket_science_run.json"
-const SAVE_VERSION := 3
+const SAVE_VERSION := 4
 
+const BUILD_FAMILIES := ["solid", "stripe", "eight"]
+var solid_run := 0            # solids potted in a row on this table
+var stripe_run := 0
 var phase := "table"            # "table" or "shop"
 var table_snapshot := {}        # balls + is_break, supplied by the game controller
 var shop_payout: Array = []
@@ -572,6 +590,7 @@ func to_dict() -> Dictionary:
 			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "element_mix": element_mix,
 			"forgiven": forgiven, "bounty": bounty, "bounty_done": bounty_done,
 			"pockets_used": pockets_used, "shrink_steps": shrink_steps, "insured_used": insured_used,
+				"solid_run": solid_run, "stripe_run": stripe_run,
 			"snapshot": table_snapshot,
 		}
 	else:
@@ -600,7 +619,7 @@ static func has_save() -> bool:
 	for p in [SAVE_PATH, SAVE_PATH + ".bak"]:
 		if FileAccess.file_exists(p):
 			var d = _read(p)
-			if typeof(d) == TYPE_DICTIONARY and int(d.get("v", 0)) >= 3 and int(d.get("v", 0)) <= SAVE_VERSION:
+			if typeof(d) == TYPE_DICTIONARY and int(d.get("v", 0)) == SAVE_VERSION:
 				return true
 	return false
 
@@ -631,7 +650,7 @@ func _load_from(path: String) -> bool:
 	if typeof(d) != TYPE_DICTIONARY:
 		return false
 	var v := int(d.get("v", 0))
-	if v < 3 or v > SAVE_VERSION:   # older saves used the retired scoring
+	if v != SAVE_VERSION:   # older saves used retired rules and racks
 		return false
 	for k in ["seed", "rng_state", "table_index", "money", "perks", "imbues", "plan"]:
 		if not d.has(k):
@@ -690,6 +709,8 @@ func _load_from(path: String) -> bool:
 		pockets_used = (t.get("pockets_used", []) as Array).map(func(x): return int(x))
 		shrink_steps = int(t.get("shrink_steps", 0))
 		insured_used = int(t.get("insured_used", 0))
+		solid_run = int(t.get("solid_run", 0))
+		stripe_run = int(t.get("stripe_run", 0))
 		if typeof(t.get("snapshot")) == TYPE_DICTIONARY:
 			table_snapshot = t.snapshot
 	elif phase == "shop" and d.has("shop") and typeof(d.shop) == TYPE_DICTIONARY:

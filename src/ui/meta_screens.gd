@@ -99,9 +99,7 @@ func _entry(r: Dictionary) -> Control:
 	v.add_child(g._label(r.title if not locked else "???", 17, Color.WHITE if not locked else Color(0.6, 0.6, 0.65)))
 	v.add_child(g._label(r.sub, 12, col))
 	var body: String = r.desc if not locked else "Locked - " + r.hint
-	var d: Label = g._label(body, 13, Color(0.8, 0.82, 0.85) if not locked else Color(1.0, 0.8, 0.45), g.F_REG)
-	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	d.custom_minimum_size = Vector2(380, 0)
+	var d: RichTextLabel = g._term_text(Glossary.link(body), 13, Color(0.8, 0.82, 0.85) if not locked else Color(1.0, 0.8, 0.45), 380.0)
 	v.add_child(d)
 	return p
 
