@@ -473,9 +473,21 @@ func _should_hold() -> bool:
 	return false
 
 
+## How loud the cloth should sound: the summed speed of everything rolling.
+func _roll_level() -> float:
+	if sim == null:
+		return 0.0
+	var total := 0.0
+	for i in sim.count():
+		if sim.alive[i] == 1:
+			total += sim.vel[i].length()
+	return clampf(total / 2600.0, 0.0, 1.0)
+
+
 func _hold(count: bool = true) -> void:
 	if count:
 		pauses += 1
+		sfx.play("pause", 0.6)
 		pause_at = -1.0
 		view.plan_marker = Vector2.INF
 		if run.perks.has("stillness") and pauses <= 4:
@@ -602,6 +614,7 @@ func _add_wall(a: Vector2, b: Vector2) -> void:
 		view.temp_walls.append([a, b])
 	_wall_preview = false
 	walls_up = true
+	sfx.play("wall", 0.7)
 
 
 func _after_hold_action(cue_move: bool) -> void:
@@ -626,6 +639,7 @@ func _play_on() -> void:
 	view.plan_hover = Vector2.INF
 	fc_sim = null
 	state = S.ROLL
+	sfx.play("resume", 0.6)
 	lbl_hint.text = "Click or press Space to fast-forward. P pauses."
 
 
@@ -736,6 +750,7 @@ func _process(delta: float) -> void:
 		banner.scale = Vector2(s, s)
 		if banner_t <= 0.0:
 			banner.visible = false
+	sfx.set_roll(_roll_level() if state == S.ROLL else 0.0)
 	var cue_i := _cue_index()
 	view.cue_visible = (state == S.AIM or state == S.STRIKE) and sim != null and sim.alive[cue_i] == 1
 	if sim:
@@ -1187,6 +1202,8 @@ func _consume_events() -> void:
 		if not demo:
 			_grow_chain(e)
 		match e.type:
+			"portal":
+				sfx.play("portal", 0.7)
 			"ball":
 				var v := clampf(e.speed / 1600.0, 0.05, 1.0) * (0.3 if demo else 1.0)
 				if e.speed > 900.0 and not demo:

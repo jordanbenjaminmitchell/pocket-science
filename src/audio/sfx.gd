@@ -13,6 +13,9 @@ var music_a: AudioStreamPlayer
 var music_b: AudioStreamPlayer
 var music_volume := 0.55
 var current_track := ""
+var variants := {}        # id -> several renders, picked at random so repeats never sound identical
+var roll_player: AudioStreamPlayer
+var roll_level := 0.0
 const TRACKS := {
 	"title": "velvet-orbit", "standard": "prism-pocket-jazz", "cryo": "cryo-cool",
 	"cyclotron": "cyclotron-bounce", "spring": "bumper-ballet", "gravity": "event-horizon-jam",
@@ -32,11 +35,29 @@ func _ready() -> void:
 		var p := AudioStreamPlayer.new()
 		add_child(p)
 		players.append(p)
-	streams["click"] = _render(0.09, _click)
-	streams["click_soft"] = _render(0.06, func(t): return _click(t) * 0.6)
-	streams["rail"] = _render(0.16, _rail)
-	streams["pocket"] = _render(0.42, _pocket)
-	streams["cue"] = _render(0.12, _cue)
+	# Ball on ball: a hard phenolic sphere rings at a few inharmonic modes for a few
+	# milliseconds. Each variant draws its own modes so a break never repeats a sample.
+	variants["click"] = []
+	variants["click_soft"] = []
+	for k in 5:
+		variants["click"].append(_render(0.07, _ball_click(91 + k, 1.0)))
+		variants["click_soft"].append(_render(0.06, _ball_click(301 + k, 0.45)))
+	streams["click"] = variants["click"][0]
+	streams["click_soft"] = variants["click_soft"][0]
+	variants["rail"] = []
+	for k in 3:
+		variants["rail"].append(_render(0.2, _cushion(17 + k)))
+	streams["rail"] = variants["rail"][0]
+	streams["pocket"] = _render(0.75, _pocket_drop(5))
+	streams["cue"] = _render(0.14, _cue_tip(3))
+	streams["portal"] = _render(0.45, _portal_whoosh(8))
+	streams["wall"] = _render(0.18, func(t): return sin(TAU * (260.0 + 900.0 * t) * t) * exp(-t * 18.0) * 0.45 + _noise() * exp(-t * 200.0) * 0.3)
+	streams["pause"] = _render(0.22, func(t): return sin(TAU * (660.0 - 300.0 * t) * t) * exp(-t * 11.0) * 0.3)
+	streams["resume"] = _render(0.22, func(t): return sin(TAU * (420.0 + 400.0 * t) * t) * exp(-t * 11.0) * 0.3)
+	roll_player = AudioStreamPlayer.new()
+	add_child(roll_player)
+	roll_player.stream = _rolling_loop(2.0)
+	roll_player.volume_db = -80.0
 	streams["tick"] = _render(0.09, func(t): return sin(TAU * 880.0 * t) * exp(-t * 40.0) * 0.5)
 	streams["mult"] = _render(0.14, func(t): return (sin(TAU * 660.0 * t) + 0.5 * sin(TAU * 990.0 * t)) * exp(-t * 22.0) * 0.4)
 	streams["xmult"] = _render(0.3, func(t): return (sin(TAU * 440.0 * t * (1.0 + t * 2.0)) + 0.4 * sin(TAU * 1320.0 * t)) * exp(-t * 9.0) * 0.45)
@@ -114,7 +135,8 @@ func play(id: String, vol: float = 1.0, pitch: float = 1.0) -> void:
 		last_click_ms = now
 	var p := players[next]
 	next = (next + 1) % players.size()
-	p.stream = streams[id]
+	var pool: Array = variants.get(id, [])
+	p.stream = pool[randi() % pool.size()] if not pool.is_empty() else streams[id]
 	p.volume_db = linear_to_db(clampf(vol * volume, 0.001, 2.0))
 	p.pitch_scale = clampf(pitch, 0.25, 4.0)
 	p.play()
@@ -129,7 +151,7 @@ func _render(length: float, f: Callable) -> AudioStreamWAV:
 		var t := float(i) / RATE
 		var v: float = f.call(t)
 		# Short fade-out to avoid clicks.
-		var tail := clampf((length - t) / 0.01, 0.0, 1.0)
+		var tail := clampf((length - t) / 0.01, 0.0, 1.0) * clampf(t / 0.0007, 0.0, 1.0)
 		var s := int(clampf(v * tail, -1.0, 1.0) * 32000.0)
 		data.encode_s16(i * 2, s)
 	var w := AudioStreamWAV.new()
@@ -146,6 +168,102 @@ var _noise_seed := 1
 func _noise() -> float:
 	_noise_seed = (_noise_seed * 1103515245 + 12345) & 0x7fffffff
 	return float(_noise_seed) / float(0x7fffffff) * 2.0 - 1.0
+
+
+## The cloth hum of rolling balls, louder and brighter the faster they move.
+func set_roll(level: float) -> void:
+	roll_level = lerpf(roll_level, clampf(level, 0.0, 1.0), 0.25)
+	if roll_player == null:
+		return
+	if roll_level < 0.01 or volume <= 0.0:
+		if roll_player.playing:
+			roll_player.stop()
+		return
+	if not roll_player.playing:
+		roll_player.play()
+	roll_player.volume_db = linear_to_db(roll_level * volume * 0.5)
+	roll_player.pitch_scale = 0.8 + roll_level * 0.5
+
+
+func _ball_click(seed: int, hardness: float) -> Callable:
+	var r := RandomNumberGenerator.new()
+	r.seed = seed
+	var base := r.randf_range(2500.0, 3300.0) * lerpf(0.7, 1.0, hardness)
+	var modes: Array = []
+	for ratio in [1.0, 1.51, 2.07, 2.74, 3.36]:
+		var f: float = base * ratio * r.randf_range(0.97, 1.03)
+		modes.append([f, r.randf_range(0.35, 1.0) / sqrt(ratio) * (1.0 if ratio < 2.5 else hardness), r.randf_range(120.0, 180.0) * pow(ratio, 0.35), r.randf() * TAU])
+	var body := r.randf_range(700.0, 950.0)
+	var lp := [0.0]
+	return func(t: float) -> float:
+		var v := 0.0
+		for m in modes:
+			v += sin(TAU * m[0] * t + m[3]) * m[1] * exp(-t * m[2])
+		lp[0] += (_noise() - lp[0]) * lerpf(0.25, 0.8, hardness)
+		return (v * 0.42 + sin(TAU * body * t) * exp(-t * 70.0) * 0.22 + lp[0] * exp(-t * 1400.0) * 0.7) * lerpf(0.6, 1.0, hardness)
+
+
+## Rubber cushion: a falling low thump with a short woody knock from the rail.
+func _cushion(seed: int) -> Callable:
+	var r := RandomNumberGenerator.new()
+	r.seed = seed
+	var f0 := r.randf_range(105.0, 135.0)
+	var wood := r.randf_range(280.0, 340.0)
+	var lp := [0.0]
+	return func(t: float) -> float:
+		var f := f0 + 70.0 * exp(-t * 45.0)
+		lp[0] += (_noise() - lp[0]) * 0.12
+		return (sin(TAU * f * t) * exp(-t * 26.0) * 0.85 + sin(TAU * wood * t) * exp(-t * 48.0) * 0.28 + lp[0] * exp(-t * 90.0) * 0.5) * 0.72
+
+
+## Into the pocket: a leather thud, then the ball rumbling down the return with a
+## couple of soft knocks against balls already there.
+func _pocket_drop(seed: int) -> Callable:
+	var r := RandomNumberGenerator.new()
+	r.seed = seed
+	var lp := [0.0, 0.0]
+	var knocks := [0.3 + r.randf() * 0.05, 0.47 + r.randf() * 0.06]
+	return func(t: float) -> float:
+		var v := sin(TAU * (80.0 + 40.0 * exp(-t * 30.0)) * t) * exp(-t * 11.0) * 0.8
+		lp[0] += (_noise() - lp[0]) * 0.09
+		v += lp[0] * exp(-t * 45.0) * 0.45
+		lp[1] += (_noise() - lp[1]) * 0.025
+		var roll := smoothstep(0.06, 0.14, t) * exp(-maxf(t - 0.12, 0.0) * 4.5)
+		v += lp[1] * roll * (0.75 + 0.25 * sin(TAU * 11.0 * t)) * 0.9
+		for k in knocks.size():
+			if t > knocks[k]:
+				var u: float = t - knocks[k]
+				v += (sin(TAU * 2100.0 * u) * 0.5 + sin(TAU * 3150.0 * u) * 0.3) * exp(-u * 160.0) * (0.22 - k * 0.07)
+		return v
+
+
+## Leather tip on the cue ball: a short woody tock and a puff of chalk.
+func _cue_tip(seed: int) -> Callable:
+	var lp := [0.0]
+	return func(t: float) -> float:
+		lp[0] += (_noise() - lp[0]) * 0.5
+		return sin(TAU * 720.0 * t) * exp(-t * 85.0) * 0.55 + sin(TAU * 1480.0 * t) * exp(-t * 140.0) * 0.22 + sin(TAU * 190.0 * t) * exp(-t * 45.0) * 0.3 + lp[0] * exp(-t * 900.0) * 0.5
+
+
+func _portal_whoosh(seed: int) -> Callable:
+	var lp := [0.0, 0.0]
+	return func(t: float) -> float:
+		var a := clampf(t / 0.45, 0.0, 1.0)
+		lp[0] += (_noise() - lp[0]) * lerpf(0.02, 0.3, a)
+		lp[1] += (lp[0] - lp[1]) * 0.3
+		return lp[1] * sin(PI * a) * 0.9 + sin(TAU * (300.0 + 700.0 * a) * t) * sin(PI * a) * 0.18
+
+
+func _rolling_loop(length: float) -> AudioStreamWAV:
+	var lp := [0.0, 0.0]
+	var w := _render(length, func(t: float) -> float:
+		lp[0] += (_noise() - lp[0]) * 0.035
+		lp[1] += (lp[0] - lp[1]) * 0.08
+		return lp[1] * (0.85 + 0.15 * sin(TAU * 3.0 * t)) * 2.2)
+	w.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	w.loop_begin = 0
+	w.loop_end = int(length * RATE) - 1
+	return w
 
 
 func _click(t: float) -> float:
@@ -187,6 +305,8 @@ func _fanfare(t: float) -> float:
 
 ## Release the music streams on shutdown so nothing is left playing at exit.
 func _exit_tree() -> void:
+	if roll_player:
+		roll_player.stop()
 	for p in [music_a, music_b]:
 		p.stop()
 		p.stream = null
