@@ -636,6 +636,7 @@ func _play_on() -> void:
 	view.placing = false
 	if not plan_lock:
 		view.forecast_paths = []
+		fc_complete = false
 	plan_lock = false
 	view.plan_hover = Vector2.INF
 	fc_sim = null
@@ -866,6 +867,7 @@ func _update_aim(delta: float) -> void:
 	_update_plan_hover()
 	if not _forecast_wanted():
 		view.forecast_paths = []
+		fc_complete = false
 		view.forecast_text = ""
 		fc_sim = null
 	elif forecast_dirty:
@@ -960,6 +962,7 @@ func _update_preview() -> void:
 var fc_sim: PoolSim
 var fc_paths := {}
 const FORECAST_DOT_GAP := 7.0
+var fc_complete := false       # a finished prediction is on screen
 var fc_limit := 12.0
 
 
@@ -990,7 +993,7 @@ func _step_forecast() -> void:
 		return
 	var t0 := Time.get_ticks_usec()
 	# Paused or planning, nothing else needs the frame, so the prediction gets most of it.
-	var budget := 14000 if state == S.HOLD or plan_lock else 5000
+	var budget := 14000 if state == S.HOLD or plan_lock else 10000
 	while fc_sim.moving() and fc_sim.time < fc_limit and Time.get_ticks_usec() - t0 < budget:
 		fc_sim.step(PoolSim.STEP)
 		for i in fc_sim.count():
@@ -1012,7 +1015,12 @@ func _step_forecast() -> void:
 			var c := Color(1, 1, 1) if n == 0 else Catalog.ball_color(n)
 			out.append({"points": fc_paths[i], "color": c if n == 8 else c.lightened(0.25), "halo": Color(1, 1, 1) if n == 8 else Color(0, 0, 0),
 				"end": done and fc_sim.alive[i] == 1, "potted": fc_sim.alive[i] == 0})
-	view.forecast_paths = out
+	# The last finished prediction stays up while the next is worked out, so the
+	# lines never shrink back to stubs while you aim; partial ones show only at first.
+	if done or not fc_complete:
+		view.forecast_paths = out
+	if done:
+		fc_complete = true
 	if done:
 		if run.perks.has("oracle"):
 			_show_shot_forecast()
@@ -1081,6 +1089,7 @@ func _shoot(p: float) -> void:
 	view.show_guide = false
 	view.coach_text = ""
 	view.forecast_paths = []
+	fc_complete = false
 	view.forecast_text = ""
 	fc_sim = null
 	view.preview_text = ""

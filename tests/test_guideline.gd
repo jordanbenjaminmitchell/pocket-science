@@ -65,6 +65,9 @@ func _go() -> void:
 	await _load_table("local")
 	await _aim_at(6)
 	check(g.view.guide.obj_number == 6, "the line knows which ball it is following")
+	g.settings.guide_lines = 0
+	g.guide_dirty = true
+	await _frames(3)
 	check(g.view.forecast_paths.is_empty(), "Standard shows no extra lines")
 
 	g.run.perks.clear()
@@ -119,6 +122,6 @@ func _go() -> void:
 		check(g.run.bounty != "hot" and g.run.bounty != "hot2", "no hot-pocket side bet without a hot pocket") if g.run.bounty == "hot" or g.run.bounty == "hot2" else null
 
 	var fresh := GameSettings.new()
-	check(fresh.guide_lines == 0, "Standard is the default")
+	check(fresh.guide_lines == 1, "All balls is the default")
 	print("guideline tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -23,7 +23,8 @@ var touch_mode := false     # on-screen aim, power and shoot controls
 var frame_cap := 0          # index into FRAME_CAPS
 var window_size := 1        # index into WINDOW_SIZES
 var screen_layout := 0      # index into SCREEN_LAYOUTS
-var guide_lines := 0        # index into GUIDE_LINES
+var guide_lines := 1        # index into GUIDE_LINES; All balls by default
+var guide_rev := 2          # settings saved before All balls became the default get it once
 var pause_on_hit := false   # pause a shot by itself the moment the cue ball first hits a ball
 
 const SCREEN_LAYOUTS := ["Classic", "Wide"]
@@ -44,7 +45,7 @@ const ACTIONS := {
 
 var keys := {}
 
-const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout", "guide_lines", "pause_on_hit"]
+const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout", "guide_lines", "pause_on_hit", "guide_rev"]
 
 
 func load_file() -> void:
@@ -58,6 +59,9 @@ func load_file() -> void:
 	for k in KEYS:
 		if c.has_section_key("settings", k):
 			set(k, c.get_value("settings", k))
+	if not c.has_section_key("settings", "guide_rev"):
+		guide_lines = 1
+		guide_rev = 2
 	_clamp()
 	reset_keys()
 	for a in ACTIONS:
@@ -149,7 +153,7 @@ func reset() -> void:
 	large_text = false
 	touch_mode = false
 	screen_layout = 0
-	guide_lines = 0
+	guide_lines = 1
 	pause_on_hit = false
 	_device_defaults()
 	frame_cap = 0
