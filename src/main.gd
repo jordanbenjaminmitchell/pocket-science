@@ -3377,7 +3377,7 @@ func _show_settings(back: Callable) -> void:
 	var grid := GridContainer.new()
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 14)
-	grid.add_theme_constant_override("v_separation", 10)
+	grid.add_theme_constant_override("v_separation", 5)
 	v.add_child(grid)
 	_setting_slider(grid, "Master volume", "master", 0.0, 1.0, func(x): return "%d%%" % int(round(x * 100)))
 	_setting_slider(grid, "Music", "music", 0.0, 1.0, func(x): return "%d%%" % int(round(x * 100)))

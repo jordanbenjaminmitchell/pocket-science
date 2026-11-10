@@ -224,11 +224,9 @@ func _go() -> void:
 	g.power_slider.value = 0.42
 	check(is_equal_approx(g.power, 0.42), "slider sets power")
 	var a2: Vector2 = g.aim_dir
-	g.touch_rot = 1.0
-	await _frames(6)
-	g.touch_rot = 0.0
+	g._step_aim(1.0)   # what a tap of the touch arrow button does
 	var moved_deg: float = rad_to_deg(absf(g.aim_dir.angle_to(a2)))
-	check(moved_deg > 0.0 and moved_deg < 3.0, "nudge buttons make fine adjustments (%.2f deg)" % moved_deg)
+	check(absf(moved_deg - 1.0) < 0.01, "a tap of a nudge button turns exactly 1 degree (%.2f deg)" % moved_deg)
 	var ci2: int = g._cue_index()
 	g.sim.alive[ci2] = 0
 	g._begin_place(false)
