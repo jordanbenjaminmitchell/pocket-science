@@ -43,16 +43,16 @@ func _initialize() -> void:
 	var run := RunState.new()
 	run.start(99)
 	run.begin_table()
-	check(run.chalk == 5, "5 chalk to start")
+	check(run.chalk == RunState.BASE_CHALK, "%d chalk to start" % RunState.BASE_CHALK)
 	var miss := {"scored": false, "foul": "Miss", "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [], "shattered": []}
 	var o := run.apply_shot(miss, true, 9, true)
-	check(run.chalk == 5 and not o.chalk_lost, "dry break is free")
+	check(run.chalk == RunState.BASE_CHALK and not o.chalk_lost, "dry break is free")
 	run.forgiven = true   # past The Local's one free miss
 	o = run.apply_shot(miss, false, 9, true)
-	check(run.chalk == 4 and o.chalk_lost, "miss costs chalk")
+	check(run.chalk == RunState.BASE_CHALK - 1 and o.chalk_lost, "miss costs chalk")
 	var hit := {"scored": true, "foul": "", "total": 30, "money": 1, "catalyst_gain": 0.0, "potted": [1], "shattered": [], "lines": []}
 	o = run.apply_shot(hit, false, 0, true)
-	check(o.rack_cleared and run.chalk == 5 and run.heat == 1, "clearing the rack refunds chalk")
+	check(o.rack_cleared and run.chalk == RunState.BASE_CHALK and run.heat == 1, "clearing the rack refunds chalk")
 	run.score = run.target() - 1
 	o = run.apply_shot(hit, false, 5, true)
 	check(o.cleared, "reaching the target clears the table")
