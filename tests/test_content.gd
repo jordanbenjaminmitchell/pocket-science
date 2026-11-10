@@ -49,7 +49,7 @@ func _go() -> void:
 	create_timer(120.0).timeout.connect(func(): quit(2))
 	var h5 := [{"type": "ball", "a": 0, "b": 5}, pot(5, 0)]
 	print("counts")
-	check(Catalog.IMBUES.size() == 8, "8 imbues")
+	check(Catalog.IMBUES.size() >= 16, "16 imbues")
 	check(Catalog.BOUNTIES.size() == 25, "25 bounties")
 	check(Catalog.CUES.size() >= 14, "14 or more cues")
 	check(Catalog.BOSSES.size() >= 20, "at least 20 boss tables")

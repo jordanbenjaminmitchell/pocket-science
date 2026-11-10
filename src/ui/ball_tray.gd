@@ -48,7 +48,12 @@ func _draw() -> void:
 		if font:
 			var t := str(n)
 			var w := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
-			draw_string(font, c + Vector2(-w * 0.5, 3.5), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.05, 0.05, 0.05, a))
+			if n > 15:
+				var bt: Dictionary = Catalog.BALL_TYPES.get(Catalog.kind_of(n), {})
+				if not bt.is_empty():
+					IconArt.paint(self, bt.motif, c, r * 0.4 / 34.0, Color((bt.color as Color).darkened(0.3), a), Color(0.97, 0.95, 0.9, a), font, 1.2)
+			else:
+				draw_string(font, c + Vector2(-w * 0.5, 3.5), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.05, 0.05, 0.05, a))
 		draw_circle(c + Vector2(-r * 0.35, -r * 0.4), r * 0.22, Color(1, 1, 1, 0.35 * a))
 		if down:
 			draw_line(c + Vector2(-r * 0.6, -r * 0.6), c + Vector2(r * 0.6, r * 0.6), Color(1, 0.85, 0.3, 0.5), 1.5)

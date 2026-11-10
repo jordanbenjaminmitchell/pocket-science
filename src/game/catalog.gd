@@ -112,6 +112,9 @@ const PERKS := {
 	"tinkerer": {"name": "Tinkerer", "r": 1, "cost": 6, "fam": "gear", "desc": "Start every table with a random item, if you have a free slot."},
 	"enchanter": {"name": "Enchanter", "r": 0, "cost": 4, "fam": "imbue", "desc": "Imbues cost $2 less."},
 	"secondcoat": {"name": "Second Coat", "r": 1, "cost": 7, "fam": "imbue", "desc": "Imbued balls pay ×1.5."},
+	"goldrush": {"name": "Gold Rush", "r": 1, "cost": 6, "fam": "special", "desc": "Special balls pay ×2."},
+	"menagerie": {"name": "Menagerie", "r": 1, "cost": 6, "fam": "special", "desc": "Shots start with +0.25 Chain for each special ball in your set."},
+	"alchemy": {"name": "Alchemy", "r": 2, "cost": 8, "fam": "special", "desc": "After each table, one plain ball in your set (never the 8) turns into a random special ball."},
 	"velvet": {"name": "Velvet Cloth", "r": 0, "cost": 5, "fam": "physics", "desc": "30% less cloth friction: balls roll further."},
 }
 
@@ -142,8 +145,64 @@ const IMBUES := {
 	"ember": {"name": "Ember", "cost": 5, "color": Color(1.0, 0.45, 0.2), "desc": "+1 Heat when sunk."},
 	"vein": {"name": "Vein", "cost": 5, "color": Color(1.0, 0.55, 0.95), "desc": "+1 Chain as this ball drops, and it is worth +20."},
 	"lucky": {"name": "Lucky", "cost": 4, "color": Color(0.35, 0.95, 0.5), "desc": "1 in 3 chance to pay ×4 when sunk."},
+	"frosted": {"name": "Frosted", "cost": 4, "color": Color(0.7, 0.92, 1.0), "desc": "When it drops, your next miss on this table keeps your Heat."},
+	"magnetic": {"name": "Magnetic", "cost": 5, "color": Color(1.0, 0.35, 0.35), "desc": "Pockets pull this ball in."},
+	"charged": {"name": "Charged", "cost": 4, "color": Color(1.0, 1.0, 0.45), "desc": "+0.5 Chain every time this ball touches a cushion."},
+	"prismatic": {"name": "Prismatic", "cost": 4, "color": Color(0.95, 0.6, 1.0), "desc": "Counts as both a solid and a stripe."},
+	"hollow": {"name": "Hollow", "cost": 3, "color": Color(0.85, 0.85, 0.75), "desc": "Half the weight: it flies further when struck."},
+	"leaded": {"name": "Leaded", "cost": 4, "color": Color(0.5, 0.55, 0.65), "desc": "Twice as heavy, and worth +30."},
+	"bounty": {"name": "Bounty", "cost": 4, "color": Color(0.6, 1.0, 0.4), "desc": "Pays $1 for every point of Heat when it drops."},
+	"starry": {"name": "Starry", "cost": 5, "color": Color(1.0, 0.85, 0.55), "desc": "Every ball after it in the same shot gets +0.5 Chain."},
 	"twin": {"name": "Twin", "cost": 4, "color": Color(0.5, 0.65, 1.0), "desc": "This ball's value counts twice."},
 }
+
+## Special balls you can add to your set. They rack with the numbered balls and
+## count as neither solids nor stripes unless they say so. Each has its own
+## finish ("pattern" in the ball shader), colours and emblem.
+const BALL_TYPES := {
+	"gold": {"name": "Gold", "cost": 6, "value": 30, "color": Color(1.0, 0.78, 0.2), "accent": Color(1.0, 0.96, 0.62), "pattern": 1, "motif": "t 0 0 34 $", "desc": "Worth 30 and pays $2."},
+	"void": {"name": "Void", "cost": 7, "value": 0, "color": Color(0.12, 0.03, 0.2), "accent": Color(0.62, 0.25, 1.0), "pattern": 2, "motif": "c 0 0 26;c 0 0 14;C 0 0 5", "desc": "Worth nothing itself, but every other ball in the same shot pays ×2."},
+	"glass": {"name": "Glass", "cost": 6, "value": 20, "color": Color(0.7, 0.9, 1.0), "accent": Color(1.0, 1.0, 1.0), "pattern": 3, "motif": "o 0 -30 22 -8 0 30 -22 -8 0 -30", "desc": "Pays ×3, but 1 in 3 times it shatters and leaves your set."},
+	"iron": {"name": "Iron", "cost": 5, "value": 45, "color": Color(0.45, 0.47, 0.52), "accent": Color(0.78, 0.8, 0.85), "pattern": 1, "motif": "P -26 -14 26 -14 18 0 10 0 14 18 -14 18 -10 0 -18 0", "desc": "Twice as heavy. Worth 45."},
+	"feather": {"name": "Feather", "cost": 4, "value": 25, "color": Color(0.95, 0.95, 0.98), "accent": Color(0.55, 0.7, 1.0), "pattern": 4, "motif": "l -24 26 22 -22;o -14 16 -12 -10 18 -24 8 6 -14 16", "desc": "Half the weight. Worth 25, and adds +0.5 Chain as it drops."},
+	"ember": {"name": "Ember", "cost": 5, "value": 22, "color": Color(0.9, 0.3, 0.05), "accent": Color(1.0, 0.8, 0.2), "pattern": 5, "motif": "P 0 -32 14 -10 18 8 8 26 -8 26 -18 8 -12 -6 -6 4", "desc": "+1 Heat when it drops."},
+	"frost": {"name": "Frost", "cost": 5, "value": 22, "color": Color(0.55, 0.85, 1.0), "accent": Color(1.0, 1.0, 1.0), "pattern": 6, "motif": "l 0 -30 0 30;l -26 -15 26 15;l -26 15 26 -15", "desc": "When it drops, your next miss on this table keeps your Heat."},
+	"magnet": {"name": "Magnet", "cost": 5, "value": 20, "color": Color(0.85, 0.15, 0.15), "accent": Color(0.2, 0.35, 0.95), "pattern": 7, "motif": "a 0 -4 20 0 180;l -20 -4 -20 -26;l 20 -4 20 -26", "desc": "Pockets pull this ball in."},
+	"prism": {"name": "Prism", "cost": 5, "value": 22, "color": Color(0.9, 0.5, 0.9), "accent": Color(0.4, 0.95, 0.9), "pattern": 8, "motif": "o 0 -28 26 18 -26 18 0 -28", "desc": "Counts as both a solid and a stripe."},
+	"wild": {"name": "Wild", "cost": 5, "value": 20, "color": Color(0.45, 0.1, 0.6), "accent": Color(1.0, 0.85, 0.2), "pattern": 9, "motif": "P 0 -32 8 -8 32 -8 12 6 20 30 0 14 -20 30 -12 6 -32 -8 -8 -8 0 -32", "desc": "Counts as odd, even, prime and lucky for every number Perk."},
+	"clock": {"name": "Clock", "cost": 5, "value": 10, "color": Color(0.1, 0.6, 0.6), "accent": Color(0.9, 1.0, 1.0), "pattern": 6, "motif": "c 0 0 26;l 0 0 0 -18;l 0 0 12 6", "desc": "Worth 10, plus 6 for every shot already taken on this table."},
+	"coin": {"name": "Coin", "cost": 4, "value": 18, "color": Color(0.95, 0.75, 0.2), "accent": Color(0.65, 0.45, 0.1), "pattern": 7, "motif": "c 0 0 26;c 0 0 17", "desc": "Pays $1 every time the cue ball hits it in a scoring shot."},
+	"bomb": {"name": "Bomb", "cost": 6, "value": 20, "color": Color(0.12, 0.12, 0.14), "accent": Color(1.0, 0.3, 0.2), "pattern": 4, "motif": "C 0 6 20;l 10 -12 20 -26;C 22 -28 4", "desc": "When it drops, the nearest ball (never the 8) drops with it."},
+	"seed": {"name": "Seed", "cost": 4, "value": 20, "color": Color(0.35, 0.7, 0.25), "accent": Color(0.85, 1.0, 0.5), "pattern": 0, "motif": "l 0 30 0 -6;o 0 -6 -18 -24 -2 -20 0 -6;o 0 -6 18 -24 2 -20 0 -6", "desc": "Worth 20, and 10 more every time you sink it this run."},
+	"clover": {"name": "Clover", "cost": 5, "value": 20, "color": Color(0.15, 0.62, 0.3), "accent": Color(0.7, 1.0, 0.7), "pattern": 4, "motif": "C -10 -10 10;C 10 -10 10;C -10 10 10;C 10 10 10;l 0 10 8 30", "desc": "A 1 in 4 chance to pay ×5."},
+	"star": {"name": "Star", "cost": 5, "value": 20, "color": Color(0.98, 0.95, 0.75), "accent": Color(1.0, 0.82, 0.1), "pattern": 5, "motif": "o 0 -32 8 -8 32 -8 12 6 20 30 0 14 -20 30 -12 6 -32 -8 -8 -8 0 -32", "desc": "+1 Chain as it drops."},
+	"heart": {"name": "Heart", "cost": 6, "value": 20, "color": Color(1.0, 0.4, 0.6), "accent": Color(1.0, 0.82, 0.9), "pattern": 0, "motif": "P 0 28 -26 2 -26 -14 -14 -24 0 -12 14 -24 26 -14 26 2", "desc": "The first time it drops on a table, +1 Chalk."},
+	"dice": {"name": "Dice", "cost": 4, "value": 35, "color": Color(0.96, 0.96, 0.96), "accent": Color(0.15, 0.15, 0.2), "pattern": 0, "motif": "C -14 -14 5;C 14 -14 5;C 0 0 5;C -14 14 5;C 14 14 5", "desc": "Worth a random 10 to 60 each time it drops."},
+	"moon": {"name": "Moon", "cost": 5, "value": 24, "color": Color(0.75, 0.78, 0.86), "accent": Color(0.3, 0.32, 0.46), "pattern": 7, "motif": "a 0 0 24 60 300;a 12 0 20 100 260", "desc": "Pays ×2 in a side pocket."},
+	"sun": {"name": "Sun", "cost": 5, "value": 24, "color": Color(1.0, 0.6, 0.1), "accent": Color(1.0, 0.92, 0.35), "pattern": 5, "motif": "C 0 0 12;l 0 -30 0 -20;l 0 20 0 30;l -30 0 -20 0;l 20 0 30 0;l -21 -21 -14 -14;l 14 14 21 21;l -21 21 -14 14;l 14 -14 21 -21", "desc": "Pays ×2 in a corner pocket."},
+	"anchor": {"name": "Anchor", "cost": 6, "value": 70, "color": Color(0.1, 0.18, 0.4), "accent": Color(0.6, 0.7, 0.9), "pattern": 1, "motif": "l 0 -24 0 26;c 0 -29 5;a 0 4 22 20 160;l -12 -14 12 -14", "desc": "Three times as heavy. Worth 70."},
+	"eraser": {"name": "Eraser", "cost": 3, "value": 10, "color": Color(1.0, 0.55, 0.6), "accent": Color(0.4, 0.5, 1.0), "pattern": 9, "motif": "o -26 8 6 -24 26 -4 -6 28 -26 8;l -10 -8 10 12", "desc": "When it drops it pays $4 and leaves your set for good."},
+	"echo": {"name": "Echo", "cost": 6, "value": 20, "color": Color(0.55, 0.3, 0.85), "accent": Color(0.9, 0.8, 1.0), "pattern": 6, "motif": "C -14 0 7;a -14 0 20 -50 50;a -14 0 32 -40 40", "desc": "Pays out twice."},
+	"comet": {"name": "Comet", "cost": 5, "value": 22, "color": Color(0.2, 0.5, 1.0), "accent": Color(0.9, 0.95, 1.0), "pattern": 9, "motif": "C 14 -14 10;l 4 -4 -30 30;l 8 4 -20 30;l -4 -8 -30 20", "desc": "Pays ×2 if it travels 600 or more before it drops."},
+}
+
+## Which special type each ball number above 15 is, for this run. RunState keeps
+## it in step, so every view and rule can look a special ball up by number.
+static var kinds := {}
+
+
+static func kind_of(n: int) -> String:
+	return kinds.get(n, "") if n > 15 else ""
+
+
+static func is_solid(n: int) -> bool:
+	return n >= 1 and n <= 7
+
+
+static func ball_label(n: int) -> String:
+	var k := kind_of(n)
+	return BALL_TYPES[k].name + " ball" if k != "" else "%d-ball" % n
+
 
 ## Starting cues: each run begins by choosing one. "shaft"/"butt"/"accent" colour the stick.
 const CUES := {
@@ -173,6 +232,8 @@ const CUES := {
 		"shaft": Color(0.9, 0.86, 0.78), "butt": Color(0.36, 0.3, 0.24), "accent": Color(0.95, 0.95, 0.9)},
 	"black": {"name": "Black Cue", "desc": "Starts with Behind the 8: the 8 costs nothing and pays $3. $3.", "money": 3, "perks": ["eight"], "chalk": 0,
 		"shaft": Color(0.3, 0.3, 0.32), "butt": Color(0.05, 0.05, 0.06), "accent": Color(0.82, 0.8, 0.98)},
+	"alchemist": {"name": "Alchemist's Cue", "desc": "Starts with a Gold ball in your set and Gold Rush: special balls pay ×2. $3.", "money": 3, "perks": ["goldrush"], "chalk": 0, "add": ["gold"],
+		"shaft": Color(0.95, 0.86, 0.6), "butt": Color(0.4, 0.2, 0.5), "accent": Color(1.0, 0.8, 0.3)},
 	"glass": {"name": "Glass Cue", "desc": "Starts with All In (every sink ×2, misses cost 2 Chalk). 1 less Chalk. $4.", "money": 4, "perks": ["glasscannon"], "chalk": -1,
 		"shaft": Color(0.85, 0.92, 1.0), "butt": Color(0.55, 0.7, 0.9), "accent": Color(1.0, 0.35, 0.65)},
 }
@@ -294,7 +355,7 @@ const TABLES := [
 
 const FAMILY_NAMES := {
 	"bank": "Banks & cushions", "cue": "Cue control", "combo": "Combos & clusters", "streak": "Streaks",
-	"pocket": "Pockets", "number": "Ball numbers", "solid": "Solids", "stripe": "Stripes", "eight": "The 8-ball", "clear": "Clearing your set", "gear": "Gear", "imbue": "Imbues", "money": "Economy", "risk": "Risk & scaling",
+	"pocket": "Pockets", "number": "Ball numbers", "solid": "Solids", "stripe": "Stripes", "eight": "The 8-ball", "clear": "Clearing your set", "gear": "Gear", "imbue": "Imbues", "special": "Special balls", "money": "Economy", "risk": "Risk & scaling",
 	"physics": "Physics", "utility": "Utility",
 }
 
@@ -312,15 +373,17 @@ static func synergies(id: String, owned: Array) -> Array:
 
 
 static func ball_points(n: int) -> int:
-	return 10 + n
+	var k := kind_of(n)
+	return int(BALL_TYPES[k].value) if k != "" else 10 + n
 
 
 static func is_stripe(n: int) -> bool:
-	return n >= 9
+	return n >= 9 and n <= 15
 
 
 static func ball_color(n: int) -> Color:
-	return BALL_COLORS.get(n, Color.WHITE)
+	var k := kind_of(n)
+	return BALL_TYPES[k].color if k != "" else BALL_COLORS.get(n, Color.WHITE)
 
 
 static func rarity_name(r: int) -> String:

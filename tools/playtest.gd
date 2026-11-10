@@ -292,6 +292,8 @@ func shop(run: RunState, rec: Dictionary) -> void:
 
 func item_value(run: RunState, it: Dictionary) -> float:
 	match it.type:
+		"ball":
+			return 1.4 if ["gold", "star", "ember", "echo", "anchor", "iron", "sun", "moon", "heart"].has(it.id) and P.shop != "random" else 0.5
 		"item":
 			return 1.6 if RunState.STATE_ITEMS.has(it.id) and run.items.size() < run.item_slots() else 0.0
 		"perk":

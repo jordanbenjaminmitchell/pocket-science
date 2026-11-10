@@ -356,6 +356,75 @@ func _end_pick() -> void:
 	_enter_aim()
 
 
+## The Pro Shop's removal service: pick a ball to take out of your set.
+func _show_remove_picker() -> void:
+	var p := PanelContainer.new()
+	p.add_theme_stylebox_override("panel", _style(Color(0.08, 0.075, 0.08, 0.99), Color(1.0, 0.55, 0.55), 2, 14))
+	overlay.add_child(p)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	p.add_child(v)
+	v.add_child(_label("REMOVE A BALL  ($%d)" % run.removal_cost(), 26, Color(1.0, 0.62, 0.55), F_PIXB))
+	v.add_child(_label("It leaves your set for the rest of the run. The 8 always stays.", 14, Color(0.8, 0.82, 0.85), F_REG))
+	var grid := GridContainer.new()
+	grid.columns = 8
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	v.add_child(grid)
+	for n in run.ball_set:
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(58, 58)
+		b.focus_mode = Control.FOCUS_ALL
+		b.tooltip_text = Catalog.ball_label(n)
+		b.add_theme_stylebox_override("normal", _style(Color(0.12, 0.12, 0.14), Color(1, 1, 1, 0.15), 1, 8))
+		b.add_theme_stylebox_override("hover", _style(Color(0.22, 0.14, 0.14), Color(1.0, 0.55, 0.55), 2, 8))
+		var icon := _set_ball_icon(n)
+		icon.position = Vector2(9, 9)
+		b.add_child(icon)
+		if n == 8:
+			b.disabled = true
+			b.tooltip_text = "The 8 always stays"
+		var num: int = n
+		b.pressed.connect(func():
+			var err := run.buy_removal(num)
+			if err == "":
+				sfx.play("coin", 0.7, 0.7)
+				_refresh_shop()
+				_refresh_hud()
+			else:
+				sfx.play("bad", 0.4)
+				_flash_banner(err.to_upper(), Color(1, 0.5, 0.4), 1.0))
+		grid.add_child(b)
+	v.add_child(_button("Cancel", func(): p.queue_free(), Color(0.6, 0.65, 0.7)))
+	p.reset_size()
+	p.position = ((fit.view - p.get_combined_minimum_size()) * 0.5).round()
+
+
+## A small flat drawing of any ball in the set, numbered or special.
+func _set_ball_icon(n: int) -> Control:
+	var c := Control.new()
+	c.custom_minimum_size = Vector2(40, 40)
+	c.size = Vector2(40, 40)
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	c.draw.connect(func():
+		var m := Vector2(20, 20)
+		var col := Catalog.ball_color(n)
+		if Catalog.is_stripe(n):
+			c.draw_circle(m, 18, Color(0.95, 0.93, 0.88))
+			c.draw_rect(Rect2(m + Vector2(-17, -9), Vector2(34, 18)), col)
+		else:
+			c.draw_circle(m, 18, col)
+		c.draw_circle(m, 10, Color(0.97, 0.95, 0.9))
+		var k := Catalog.kind_of(n)
+		if k != "":
+			IconArt.paint(c, Catalog.BALL_TYPES[k].motif, m, 0.27, col.darkened(0.3) if col.get_luminance() < 0.7 else (Catalog.BALL_TYPES[k].accent as Color).darkened(0.25), Color(0.97, 0.95, 0.9), F_SEMI, 1.3)
+		else:
+			var t := str(n)
+			var w := F_NUM.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+			c.draw_string(F_NUM, m + Vector2(-w * 0.5, 5), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.05, 0.05, 0.05)))
+	return c
+
+
 func _cue_index() -> int:
 	if sim == null:
 		return 0
@@ -1010,6 +1079,10 @@ func _after_shot() -> void:
 		sfx.play("coin", 1.0, 1.1)
 		_flash_banner("SIDE BET WON!  +$%d" % run.bounty_reward(), Color(1.0, 0.85, 0.35), 1.3)
 		view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(1.0, 0.85, 0.35), 40, 300)
+	for n in result.get("lost_balls", []):
+		view.popup(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.66), "%s left your set" % Catalog.ball_label(n), Color(1.0, 0.6, 0.6), 20, 1.5)
+	if out.has("heart"):
+		_flash_banner("+1 CHALK FROM THE HEART", Color(1.0, 0.5, 0.65), 1.2)
 	for n in result.shattered:
 		view.popup(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.6), "Glass %d-ball shattered!" % n, Color(0.7, 0.85, 1.0), 20, 1.5)
 		view.refresh_glows(sim, run.imbues)
@@ -2248,6 +2321,9 @@ func _refresh_shop() -> void:
 			sfx.play("bad", 0.4))
 	rr.disabled = run.money < run.reroll_cost
 	bar.add_child(rr)
+	var rm := _button("Remove a ball ($%d)" % run.removal_cost(), _show_remove_picker, Color(1.0, 0.55, 0.55))
+	rm.disabled = run.money < run.removal_cost() or run.ball_set.size() <= 2
+	bar.add_child(rm)
 	var spc2 := Control.new()
 	spc2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.add_child(spc2)
@@ -2284,6 +2360,12 @@ func _offer_card(i: int) -> Control:
 			kind = "Imbue"
 			if run.imbues.has(item.ball):
 				desc += " (Replaces %s.)" % Catalog.IMBUES[run.imbues[item.ball]].name
+		"ball":
+			var bt: Dictionary = Catalog.BALL_TYPES[item.id]
+			accent = bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent
+			title = "%s ball" % bt.name
+			desc = bt.desc + " Joins your set for the rest of the run."
+			kind = "New ball · set %d / %d" % [run.ball_set.size(), Rack.MAX_BALLS]
 		"item":
 			var itd: Dictionary = Catalog.ITEMS[item.id]
 			accent = Color(0.45, 0.85, 1.0)
@@ -2298,7 +2380,7 @@ func _offer_card(i: int) -> Control:
 	else:
 		var ic := CenterContainer.new()
 		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		ic.add_child(IconArt.new().setup(item.id, F_SEMI, 46))
+		ic.add_child(IconArt.new().setup(("ball_" + item.id) if item.type == "ball" else item.id, F_SEMI, 46))
 		v.add_child(ic)
 	var t := _label(title, 18, Color.WHITE)
 	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

@@ -10,6 +10,8 @@ uniform mat3 orient = mat3(1.0);
 uniform float radius_uv = 0.86; // ball radius as a fraction of the half-quad
 uniform vec4 glow_color : source_color = vec4(0.0);
 uniform float fade = 1.0;       // used for pocketing
+uniform int pattern = 0;        // special balls: 1 metal, 2 swirl, 3 glass, 4 speckle, 5 glow, 6 rings, 7 halves, 8 checks, 9 band
+uniform vec4 accent_color : source_color = vec4(1.0);
 
 void fragment() {
 	vec2 q = (UV * 2.0 - 1.0) / radius_uv;
@@ -29,6 +31,24 @@ void fragment() {
 		if (stripe > 0.5) {
 			float band = smoothstep(0.64, 0.60, abs(l.z));
 			col = mix(white, base_color.rgb, band);
+		}
+		if (pattern == 1) {
+			col = mix(base_color.rgb * 0.72, accent_color.rgb, 0.22 + 0.22 * sin(l.y * 7.0 + l.x * 3.0));
+		} else if (pattern == 2) {
+			col = mix(base_color.rgb, accent_color.rgb, smoothstep(0.3, 0.9, sin(atan(l.y, l.x) * 3.0 + l.z * 7.0)));
+		} else if (pattern == 3) {
+			col = mix(base_color.rgb, accent_color.rgb, 0.15);
+		} else if (pattern == 4) {
+			float h = fract(sin(dot(floor(l * 6.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+			col = mix(base_color.rgb, accent_color.rgb, step(0.72, h));
+		} else if (pattern == 6) {
+			col = mix(base_color.rgb, accent_color.rgb, step(0.55, 0.5 + 0.5 * sin(l.z * 16.0)));
+		} else if (pattern == 7) {
+			col = l.x > 0.0 ? accent_color.rgb : base_color.rgb;
+		} else if (pattern == 8) {
+			col = mix(base_color.rgb, accent_color.rgb, step(0.0, sin(l.x * 6.0) * sin(l.y * 6.0) * sin(l.z * 6.0)));
+		} else if (pattern == 9) {
+			col = mix(base_color.rgb, accent_color.rgb, smoothstep(0.3, 0.26, abs(l.z)));
 		}
 		if (is_cue > 0.5) {
 			col = white;
@@ -51,7 +71,13 @@ void fragment() {
 		vec3 shade = col * (0.28 + 0.78 * diff) * (1.0 - rim * 0.45);
 		shade += vec3(spec + lamp);
 		shade += vec3(0.05, 0.12, 0.08) * rim * 0.6; // felt bounce light
-		COLOR = vec4(shade, alpha * fade);
+		if (pattern == 1) {
+			shade += vec3(spec) * 1.2;
+		} else if (pattern == 5) {
+			shade += accent_color.rgb * (0.25 + 0.15 * sin(TIME * 3.0));
+		}
+		float glass = pattern == 3 ? 0.55 + 0.45 * rim : 1.0;
+		COLOR = vec4(shade, alpha * fade * glass);
 		COLOR.rgb = mix(COLOR.rgb, glow_color.rgb, ring * 0.0);
 	}
 }

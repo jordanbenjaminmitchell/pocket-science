@@ -43,6 +43,11 @@ var carry := 0           # Overflow: score carried into the next table
 var items: Array[String] = []   # usable items held
 var ball_set: Array = []        # the balls this run racks; starts as 1-15
 var table_mods := {}            # this table only: placed bumpers and portals, wider pockets
+var ball_kinds := {}            # special ball number (16+) -> type
+var seed_growth := {}           # Seed balls: times sunk, keyed by number as a string
+var removals := 0               # balls removed in the Pro Shop this run
+var frost_shield := false       # this table: the next miss keeps Heat
+var heart_used := false         # this table: a Heart ball has already given Chalk
 var next_boost := 1.0           # Double Down
 var next_all_hot := false       # Spotlight
 var next_magnet := false        # Magnet Charm
@@ -71,6 +76,12 @@ func start(s: int, cue_id: String = "maple", handicap_level: int = 0) -> void:
 	perks.assign(c.perks)
 	items.assign(c.get("items", []))
 	ball_set = range(1, 16).filter(func(n): return not (c.get("remove", []) as Array).has(n))
+	ball_kinds = {}
+	seed_growth = {}
+	removals = 0
+	Catalog.kinds = ball_kinds
+	for t in c.get("add", []):
+		add_special(t)
 	imbues.clear()
 	catalyst = 0.0
 	total_pots = 0
@@ -121,6 +132,8 @@ func begin_table() -> void:
 	solid_run = 0
 	stripe_run = 0
 	table_mods = {"bumpers": [], "portals": [], "wide": false}
+	frost_shield = false
+	heart_used = false
 	next_boost = 1.0
 	next_all_hot = false
 	next_magnet = false
@@ -258,6 +271,51 @@ func table_name() -> String:
 	return Catalog.BOSSES[t.id].name
 
 
+## Adds a special ball to the set and returns its number (16 and up).
+func add_special(type: String) -> int:
+	var num := 16
+	while ball_kinds.has(num) or ball_set.has(num):
+		num += 1
+	ball_kinds[num] = type
+	ball_set.append(num)
+	Catalog.kinds = ball_kinds
+	return num
+
+
+## Takes a ball out of the set for the rest of the run. Never the 8.
+func remove_ball(n: int) -> bool:
+	if n == 8 or n == 0 or not ball_set.has(n):
+		return false
+	ball_set.erase(n)
+	imbues.erase(n)
+	ball_kinds.erase(n)
+	Catalog.kinds = ball_kinds
+	return true
+
+
+func removal_cost() -> int:
+	return 0 if perks.has("cleanhouse") else 3 + removals
+
+
+## The Pro Shop service: pay to take a ball out of your set.
+func buy_removal(n: int) -> String:
+	var cost := removal_cost()
+	if money < cost:
+		return "Not enough money"
+	if not remove_ball(n):
+		return "That ball can't be removed"
+	money -= cost
+	removals += 1
+	return ""
+
+
+func _kinds_out() -> Dictionary:
+	var o := {}
+	for k in ball_kinds:
+		o[str(k)] = ball_kinds[k]
+	return o
+
+
 func item_slots() -> int:
 	return ITEM_SLOTS + (2 if perks.has("packrat") else 0)
 
@@ -322,6 +380,15 @@ func payout() -> Array:
 		var nxt := table_index + 1
 		var next_target: int = plan[nxt].target if nxt < plan.size() else int(target() * 1.6)
 		carry = mini(maxi(score - target(), 0), int(next_target * 0.25))
+	if perks.has("alchemy"):
+		var plain: Array = ball_set.filter(func(n): return n >= 1 and n <= 15 and n != 8)
+		if not plain.is_empty():
+			var turned: int = plain[rng.randi_range(0, plain.size() - 1)]
+			var types := Catalog.BALL_TYPES.keys()
+			var bt: String = types[rng.randi_range(0, types.size() - 1)]
+			remove_ball(turned)
+			add_special(bt)
+			rows.append(["Alchemy: the %d became %s" % [turned, Catalog.BALL_TYPES[bt].name], 0])
 	var total := 0
 	for r in rows:
 		total += r[1]
@@ -380,6 +447,10 @@ func _roll_shop_items() -> void:
 		if ball >= 8:
 			ball += 1
 		shop.append({"type": "imbue", "id": iso, "ball": ball, "cost": imbue_cost(iso), "sold": false})
+	if ball_set.size() < Rack.MAX_BALLS:
+		var types := Catalog.BALL_TYPES.keys()
+		var bt: String = types[rng.randi_range(0, types.size() - 1)]
+		shop.append({"type": "ball", "id": bt, "cost": int(Catalog.BALL_TYPES[bt].cost), "sold": false})
 	for i in 2:
 		var ids := Catalog.ITEMS.keys()
 		var it: String = ids[rng.randi_range(0, ids.size() - 1)]
@@ -446,6 +517,10 @@ func buy(i: int) -> String:
 			perks.append(item.id)
 		"imbue":
 			imbues[item.ball] = item.id
+		"ball":
+			if ball_set.size() >= Rack.MAX_BALLS:
+				return "Your ball set is full"
+			add_special(item.id)
 		"item":
 			if items.size() >= item_slots():
 				return "Item slots full - use one first"
@@ -490,6 +565,16 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		best_heat = maxi(best_heat, heat)
 		element_mix = res.get("element_mix", [])
 		solid_run = int(res.get("solid_run", solid_run))
+		if res.get("frost", false):
+			frost_shield = true
+		if res.get("heart", false) and not heart_used:
+			heart_used = true
+			chalk += 1
+			out["heart"] = true
+		for n in res.get("lost_balls", []):
+			remove_ball(int(n))
+		for n in res.get("grown", []):
+			seed_growth[str(n)] = int(seed_growth.get(str(n), 0)) + 1
 		stripe_run = int(res.get("stripe_run", stripe_run))
 		money += res.money
 		catalyst += res.catalyst_gain
@@ -514,7 +599,10 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		if not free_break and not soft and not insured and not excused:
 			chalk -= 2 if perks.has("glasscannon") else 1
 			out.chalk_lost = true
-		heat = int(heat / 2.0)   # a miss cools the table but never wipes it out
+		if frost_shield:
+			frost_shield = false   # Frost: this miss keeps the Heat
+		else:
+			heat = int(heat / 2.0)   # a miss cools the table but never wipes it out
 		element_mix = []
 	score = maxi(0, score - int(res.get("penalty", 0)))
 	money = maxi(0, money - int(res.get("eight_fine", 0)))
@@ -619,6 +707,20 @@ func apply_physics(s: PoolSim) -> void:
 				m = 1.6
 			if perks.has("featherweight"):
 				m *= 0.75
+			match Catalog.kind_of(s.num[i]):
+				"iron":
+					m *= 2.0
+				"anchor":
+					m *= 3.0
+				"feather":
+					m *= 0.5
+			match imbues.get(s.num[i], ""):
+				"hollow":
+					m *= 0.5
+				"leaded":
+					m *= 2.0
+		if i < s.pull.size():
+			s.pull[i] = 1.0 if Catalog.kind_of(s.num[i]) == "magnet" or imbues.get(s.num[i], "") == "magnetic" else 0.0
 		s.mass[i] = m
 
 
@@ -631,9 +733,9 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 		if s.alive[i] == 1 and s.num[i] != 0:
 			var n: int = s.num[i]
 			on_table.append(n)
-			if lowest < 0 or n < lowest:
+			if n <= 15 and (lowest < 0 or n < lowest):
 				lowest = n
-			if n > highest:
+			if n > highest and n <= 15:
 				highest = n
 	var ci := s.index_of(0)
 	return {
@@ -645,6 +747,7 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 		"target": target(), "on_table": on_table, "total_pots": total_pots,
 		"solid_run": solid_run, "stripe_run": stripe_run,
 		"boost": next_boost, "all_hot": next_all_hot, "removed": removed_count(),
+		"specials": ball_kinds.size(), "seed_growth": seed_growth,
 		"cue_start": s.pos[ci] if ci >= 0 else Vector2.ZERO,
 	}
 
@@ -676,6 +779,7 @@ func to_dict() -> Dictionary:
 		"best_shot": best_shot, "tables_cleared": tables_cleared, "best_heat": best_heat,
 		"phase": phase, "carry": carry, "record_id": record_id, "daily_key": daily_key,
 		"handicap": handicap, "total_score": total_score, "items": items, "ball_set": ball_set,
+		"ball_kinds": _kinds_out(), "seed_growth": seed_growth, "removals": removals,
 	}
 	if phase == "table":
 		d["table"] = {
@@ -684,6 +788,7 @@ func to_dict() -> Dictionary:
 			"forgiven": forgiven, "bounty": bounty, "bounty_done": bounty_done,
 			"pockets_used": pockets_used, "shrink_steps": shrink_steps, "insured_used": insured_used,
 				"solid_run": solid_run, "stripe_run": stripe_run, "mods": table_mods,
+				"frost": frost_shield, "heart_used": heart_used,
 				"boost": next_boost, "all_hot": next_all_hot, "magnet": next_magnet,
 			"snapshot": table_snapshot,
 		}
@@ -782,6 +887,15 @@ func _load_from(path: String) -> bool:
 	total_score = int(d.get("total_score", 0))
 	items.assign((d.get("items", []) as Array).filter(func(x): return Catalog.ITEMS.has(x)))
 	ball_set = (d.get("ball_set", range(1, 16)) as Array).map(func(x): return int(x))
+	ball_kinds = {}
+	var bk = d.get("ball_kinds", {})
+	if typeof(bk) == TYPE_DICTIONARY:
+		for k in bk:
+			if Catalog.BALL_TYPES.has(bk[k]):
+				ball_kinds[int(k)] = bk[k]
+	Catalog.kinds = ball_kinds
+	seed_growth = d.get("seed_growth", {}) if typeof(d.get("seed_growth", {})) == TYPE_DICTIONARY else {}
+	removals = int(d.get("removals", 0))
 	# v1 saves only knew "start of table".
 	phase = str(d.get("phase", "table"))
 	table_snapshot = {}
@@ -812,6 +926,8 @@ func _load_from(path: String) -> bool:
 		next_boost = float(t.get("boost", 1.0))
 		next_all_hot = bool(t.get("all_hot", false))
 		next_magnet = bool(t.get("magnet", false))
+		frost_shield = bool(t.get("frost", false))
+		heart_used = bool(t.get("heart_used", false))
 		if typeof(t.get("snapshot")) == TYPE_DICTIONARY:
 			table_snapshot = t.snapshot
 	elif phase == "shop" and d.has("shop") and typeof(d.shop) == TYPE_DICTIONARY:

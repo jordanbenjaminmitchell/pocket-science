@@ -36,6 +36,8 @@ var fade := 1.0
 var vel := Vector2.ZERO
 var shown_settled := 1.0
 var rest_tween: Tween
+var emblem := ""          # special balls show this motif instead of a number
+var emblem_ink := Color.BLACK
 
 
 func setup(n: int, f: Font, rng: RandomNumberGenerator) -> void:
@@ -50,6 +52,14 @@ func setup(n: int, f: Font, rng: RandomNumberGenerator) -> void:
 	mat.shader = SHADER
 	mat.set_shader_parameter("base_color", Catalog.ball_color(n))
 	mat.set_shader_parameter("stripe", 1.0 if Catalog.is_stripe(n) else 0.0)
+	var kind := Catalog.kind_of(n)
+	if kind != "":
+		var bt: Dictionary = Catalog.BALL_TYPES[kind]
+		mat.set_shader_parameter("pattern", int(bt.pattern))
+		mat.set_shader_parameter("accent_color", bt.accent)
+		emblem = bt.motif
+		var c: Color = bt.color
+		emblem_ink = c.darkened(0.2) if c.get_luminance() < 0.7 else (bt.accent as Color).darkened(0.25)
 	mat.set_shader_parameter("is_cue", 1.0 if n == 0 else 0.0)
 	mat.set_shader_parameter("radius_uv", 1.0 / PAD)
 	mat.set_shader_parameter("disc_alpha", 0.0)   # starts at rest, with the upright number
@@ -196,6 +206,10 @@ func _draw_number() -> void:
 		var txt2 := str(number)
 		var fs2 := _digit_size()
 		label_node.draw_circle(Vector2.ZERO, radius * (0.62 if number < 10 else 0.68), Color(0.97, 0.96, 0.9, a2))
+		if emblem != "":
+			IconArt.paint(label_node, emblem, Vector2.ZERO, radius * 0.5 / 34.0, Color(emblem_ink, a2), Color(0.97, 0.96, 0.9, a2), font, maxf(1.0, radius * 0.08))
+			if settled >= 1.0:
+				return
 		var big2 := int(fs2 * DIGIT_SUPERSAMPLE)
 		var w2 := font.get_string_size(txt2, HORIZONTAL_ALIGNMENT_LEFT, -1, big2).x
 		label_node.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE / DIGIT_SUPERSAMPLE)
@@ -222,6 +236,10 @@ func _draw_number() -> void:
 			var along := absf(cos(radial.angle() - angle))
 			squash = lerpf(1.0, facing, along)
 		var shrink := Vector2(squash, lerpf(facing, 1.0, absf(cos(radial.angle() - angle)))) if radial.length() > 0.01 else Vector2.ONE
+		if emblem != "":
+			label_node.draw_set_transform(c, angle, shrink)
+			IconArt.paint(label_node, emblem, Vector2.ZERO, radius * 0.42 / 34.0, Color(emblem_ink, col.a), Color(0.97, 0.96, 0.9, col.a), font, maxf(1.0, radius * 0.07))
+			continue
 		label_node.draw_set_transform(c, angle, shrink / DIGIT_SUPERSAMPLE)
 		label_node.draw_string(font, Vector2(-w * 0.5, fs * 0.36), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
 	label_node.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

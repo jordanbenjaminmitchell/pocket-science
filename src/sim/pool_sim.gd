@@ -39,6 +39,7 @@ var tilt := Vector2.ZERO     # constant acceleration on moving balls (Tilted Tab
 var spin_power := 1.0        # strength of draw and follow (Backspin Wax)
 var side_power := 1.0        # how much english bends off cushions (Massé Master)
 var portal_lock := PackedInt32Array()   # the portal end a ball just came out of
+var pull := PackedFloat64Array()        # per-ball pocket pull (Magnet balls and Imbues)
 
 
 func _init(l: TableLayout = null) -> void:
@@ -71,6 +72,7 @@ func clone() -> PoolSim:
 	s.spin_power = spin_power
 	s.side_power = side_power
 	s.portal_lock = portal_lock.duplicate()
+	s.pull = pull.duplicate()
 	return s
 
 
@@ -84,6 +86,7 @@ func add_ball(number: int, p: Vector2, m: float = 1.0) -> int:
 	side.append(0.0)
 	rails.append(0)
 	portal_lock.append(-1)
+	pull.append(0.0)
 	return pos.size() - 1
 
 
@@ -359,14 +362,15 @@ func _forces(dt: float) -> void:
 			var d := well_pos - pos[i]
 			var dist := maxf(d.length(), 40.0)
 			v += d / dist * (well_strength * 9000.0 / dist) * dt
-		if pocket_pull > 0.0:
+		var pp := maxf(pocket_pull, pull[i])
+		if pp > 0.0:
 			for p in layout.pockets:
 				if p.closed:
 					continue
 				var d: Vector2 = p.pos - pos[i]
 				var dl := d.length()
 				if dl < 110.0:
-					v += d / dl * pocket_pull * (110.0 - dl) * 9.0 * dt
+					v += d / dl * pp * (110.0 - dl) * 9.0 * dt
 		if not frictionless:
 			var sp := v.length()
 			var ns := sp - (roll_decel + drag * sp) * dt
@@ -441,6 +445,18 @@ func _pot(i: int, k: int) -> void:
 	vel[i] = Vector2.ZERO
 	spin[i] = Vector2.ZERO
 	events.append({"t": time, "type": "pocket", "a": num[i], "pocket": k, "rails": rails[i], "speed": speed, "at": pos[i]})
+	if Catalog.kind_of(num[i]) == "bomb":
+		# The nearest ball goes down with it, never the cue ball or the 8.
+		var best := -1
+		var bd := INF
+		for j in pos.size():
+			if alive[j] == 1 and num[j] != 0 and num[j] != 8:
+				var dd := pos[j].distance_squared_to(pos[i])
+				if dd < bd:
+					bd = dd
+					best = j
+		if best >= 0:
+			_pot(best, k)
 
 
 ## ---------------------------------------------------------------- guideline casts

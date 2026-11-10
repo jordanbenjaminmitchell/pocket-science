@@ -26,6 +26,7 @@ const MILESTONES := {
 	"pots100": {"name": "Old Hand", "hint": "Sink 100 balls in total", "perks": [], "cue": "engineer"},
 	"items5": {"name": "Handy", "hint": "Use 5 items in total", "perks": [], "cue": "gearhead"},
 	"table4": {"name": "Halfway There", "hint": "Clear table 4", "perks": [], "cue": "lean"},
+	"collector3": {"name": "Odd Collection", "hint": "Clear a table with 3 special balls in your set", "perks": [], "cue": "alchemist"},
 	"rich": {"name": "Well Funded", "hint": "Hold $30 at once", "perks": [], "cue": "banker"},
 }
 
@@ -146,6 +147,8 @@ func on_table_cleared(run: RunState) -> Array:
 		got.append("boss")
 	if run.table_index >= 3:
 		got.append("table4")
+	if run.ball_kinds.size() >= 3:
+		got.append("collector3")
 	if run.table_index >= 5:
 		got.append("table6")
 	if t.lab != "standard":

@@ -107,6 +107,9 @@ const MOTIFS := {
 	"tinkerer": "l -30 28 -4 2;o -4 2 -8 -12 6 -28 22 -26 14 -14 26 -6 14 4 -4 2",
 	"enchanter": "C 0 10 13;P 0 -34 6 -22 18 -22 8 -14 12 -2 0 -10 -12 -2 -8 -14 -18 -22 -6 -22",
 	"secondcoat": "C 0 0 20;c 0 0 28;c 0 0 36",
+	"goldrush": "C -10 6 18;t -10 6 22 $;l 16 -30 16 -10;l 6 -20 26 -20;l 22 -2 30 -10",
+	"menagerie": "C -18 -14 9;c 14 -16 10;C -14 16 9;c 18 14 9;l -6 0 6 0",
+	"alchemy": "o -10 -30 -10 -8 -26 24 26 24 10 -8 10 -30;l -16 -30 16 -30;C 0 12 6;l 18 -20 30 -32",
 	"handchalk": CUBE + ";l 18 -30 30 -30;l 24 -36 24 -24",
 	"heatpack": FLAME + ";l 20 -30 32 -30;l 26 -36 26 -24",
 	"doubledown": "t -8 2 34 2;l 12 -10 28 6;l 28 -10 12 6",
@@ -146,15 +149,25 @@ const FAMILY_COLORS := {
 }
 
 var motif := ""
+
+
+## Perks and items use MOTIFS; special balls ("ball_<type>") use their own emblem.
+static func motif_for(id: String) -> String:
+	if id.begins_with("ball_") and Catalog.BALL_TYPES.has(id.substr(5)):
+		return Catalog.BALL_TYPES[id.substr(5)].motif
+	return MOTIFS.get(id, "")
 var tint := Color.WHITE
 var font: Font
 
 
 func setup(id: String, f: Font, px: float) -> IconArt:
-	motif = MOTIFS.get(id, "")
+	motif = motif_for(id)
 	font = f
 	var fam: String = Catalog.PERKS[id].get("fam", "utility") if Catalog.PERKS.has(id) else ("item" if Catalog.ITEMS.has(id) else "reagent")
 	tint = FAMILY_COLORS.get(fam, Color.WHITE)
+	if id.begins_with("ball_"):
+		var bt: Dictionary = Catalog.BALL_TYPES[id.substr(5)]
+		tint = bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent
 	custom_minimum_size = Vector2(px, px)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return self

@@ -31,6 +31,8 @@ static func start_chain(ctx: Dictionary) -> float:
 		c += 0.5 * (ctx.get("pockets_used", []) as Array).size()
 	if perks.has("venture"):
 		c += minf(1.5, 0.25 * int(int(ctx.get("money", 0)) / 5))
+	if perks.has("menagerie"):
+		c += 0.25 * int(ctx.get("specials", 0))
 	if perks.has("missing"):
 		c += minf(3.0, 0.5 * int(ctx.get("removed", 0)))
 	return c
@@ -54,6 +56,8 @@ static func chain_step(e: Dictionary, ctx: Dictionary, contacted: bool) -> float
 					add += 1.0
 		"rail":
 			if e.a != 0:
+				if imbues.get(e.a, "") == "charged":
+					add += 0.5
 				if perks.has("ricochet"):
 					add += 0.25
 				if boss == "frozen":
@@ -102,7 +106,7 @@ static func score(ctx: Dictionary) -> Dictionary:
 		"power": ctx.get("power", 0.5), "is_break": ctx.get("is_break", false),
 		"banks": 0, "max_rails": 0, "combos": 0, "kick": kick, "hot_pots": 0, "pocket_list": [],
 		"element_mix": ctx.get("element_mix", []),
-		"penalty": 0, "eight_fine": 0, "last_eight": false,
+		"penalty": 0, "eight_fine": 0, "last_eight": false, "frost": false, "heart": false, "lost_balls": [], "grown": [],
 		"solid_run": int(ctx.get("solid_run", 0)), "stripe_run": int(ctx.get("stripe_run", 0)),
 	}
 	# The 8 is an obstacle while other balls remain. The break is luck, so it is let off.
@@ -167,10 +171,15 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 	var solid_run := int(out.solid_run)
 	var stripe_run := int(out.stripe_run)
 	var stirred := false
+	var void_shot: bool = pots.any(func(p): return Catalog.kind_of(p.a) == "void")
+	var coin_hits := {}
 	var boomerang: bool = ctx.has("cue_start") and ctx.has("cue_end") and (ctx.cue_start as Vector2).distance_to(ctx.cue_end) <= 120.0
 	for e in events:
 		if e.type == "ball":
 			contacted = contacted or e.a == 0 or e.b == 0
+			if e.a == 0 or e.b == 0:
+				var other: int = e.b if e.a == 0 else e.a
+				coin_hits[other] = int(coin_hits.get(other, 0)) + 1
 		if e.type != "pocket":
 			chain += chain_step(e, ctx, contacted)
 			continue
@@ -188,22 +197,29 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			# An early 8 earns nothing unless a Perk says it does.
 			if not (perks.has("eight") or perks.has("darkhorse")):
 				continue
+		var kind := Catalog.kind_of(n)
+		var prism: bool = kind == "prism" or imbues.get(n, "") == "prismatic"
+		var solid: bool = Catalog.is_solid(n) or prism
+		var stripe: bool = Catalog.is_stripe(n) or prism
+		var odd: bool = (n <= 15 and n % 2 == 1) or kind == "wild"
+		var even: bool = (n <= 15 and n % 2 == 0) or kind == "wild"
+		var bonus_after := 0.0
 		var facts := {
-			"any": true, "odd": n % 2 == 1, "even": n % 2 == 0, "stripe": n >= 9, "solid": n <= 7,
+			"any": true, "odd": odd, "even": even, "stripe": stripe, "solid": solid,
 			"corner": not (k == 1 or k == 4), "side": k == 1 or k == 4, "hot": k == hot or all_hot, "eight": n == 8,
 			"bank": rails > 0, "combo": by != 0, "clean": rails == 0 and by == 0 and not kick,
 			"first": idx == 0, "extra": idx >= 1, "kick": kick, "triple": pots.size() >= 3,
 			"repeat_pocket": seen_pocket.has(k), "soft": float(ctx.get("power", 0.5)) <= 0.35,
-			"prime": Catalog.PRIMES.has(n), "fib": [1, 2, 3, 5, 8, 13].has(n),
+			"prime": Catalog.PRIMES.has(n) or kind == "wild", "fib": [1, 2, 3, 5, 8, 13].has(n) or kind == "wild",
 			"lowest": n == int(ctx.get("lowest", -1)), "highest": n == int(ctx.get("highest", -1)),
 			"heat3": heat >= 3, "last_chalk": int(ctx.get("chalk", 99)) == 1, "third": int(ctx.get("shots_taken", 0)) % 3 == 2,
 			"boomerang": boomerang, "long": _long_pot(ctx, n, e),
 			"follow_shot": float(ctx.get("follow", 0.0)) > 0.2, "draw_shot": float(ctx.get("follow", 0.0)) < -0.2,
 			"last_eight": n == 8 and left_after == 0, "no_eight_touch": not toucher.has(8),
 			"eight_count": (int(ctx.get("total_pots", 0)) + idx + 1) % 8 == 0,
-			"stripe_hard": n >= 9 and float(ctx.get("power", 0.5)) >= 0.6,
-			"last_solid": n <= 7 and not ctx.get("on_table", []).is_empty() and not remaining.any(func(b): return b <= 7),
-			"last_stripe": n >= 9 and not ctx.get("on_table", []).is_empty() and not remaining.any(func(b): return b >= 9),
+			"stripe_hard": stripe and float(ctx.get("power", 0.5)) >= 0.6,
+			"last_solid": solid and not ctx.get("on_table", []).is_empty() and not remaining.any(func(b): return Catalog.is_solid(b)),
+			"last_stripe": stripe and not ctx.get("on_table", []).is_empty() and not remaining.any(func(b): return Catalog.is_stripe(b)),
 		}
 		if facts.last_eight:
 			out.last_eight = true
@@ -235,7 +251,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			x *= 3.0 if perks.has("heat") else 2.0
 			tags.append("Hot pocket")
 			out.hot_pots += 1
-		if n <= 7:
+		if solid:
 			if perks.has("steadyrun"):
 				value += 8.0 * mini(solid_run, 8)
 			if perks.has("solidsonly"):
@@ -244,7 +260,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 				x *= 0.5
 			solid_run += 1
 			stripe_run = 0
-		elif n >= 9:
+		elif stripe:
 			if perks.has("tiger"):
 				pre_chain += 0.25 * mini(stripe_run, 8)
 			if perks.has("stripesonly"):
@@ -283,6 +299,63 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 					tags.append("Lucky")
 			"twin":
 				value += float(Catalog.ball_points(n))
+			"frosted":
+				out.frost = true
+			"leaded":
+				value += 30.0
+			"bounty":
+				money += heat
+			"starry":
+				bonus_after += 0.5
+		# Special balls.
+		match kind:
+			"gold":
+				money += 2
+			"glass":
+				x *= 3.0
+				if rng != null and rng.randf() < 1.0 / 3.0:
+					out.lost_balls.append(n)
+					tags.append("Shattered")
+			"feather":
+				pre_chain += 0.5
+			"ember":
+				out.heat_gain += 1
+			"frost":
+				out.frost = true
+			"clock":
+				value += 6.0 * int(ctx.get("shots_taken", 0))
+			"coin":
+				money += int(coin_hits.get(n, 0))
+			"seed":
+				value += 10.0 * int((ctx.get("seed_growth", {}) as Dictionary).get(str(n), 0))
+				out.grown.append(n)
+			"clover":
+				if rng != null and rng.randf() < 0.25:
+					x *= 5.0
+					tags.append("Clover")
+			"star":
+				pre_chain += 1.0
+			"heart":
+				out.heart = true
+			"dice":
+				value = 10.0 + float(rng.randi_range(0, 50) if rng != null else 25) + float(ctx.get("catalyst", 0.0))
+			"moon":
+				if k == 1 or k == 4:
+					x *= 2.0
+			"sun":
+				if not (k == 1 or k == 4):
+					x *= 2.0
+			"eraser":
+				money += 4
+				out.lost_balls.append(n)
+			"comet":
+				var st: Dictionary = ctx.get("start_pos", {})
+				if st.has(n) and (st[n] as Vector2).distance_to(e.get("at", Vector2.ZERO)) >= 600.0:
+					x *= 2.0
+		if void_shot and kind != "void":
+			x *= 2.0
+		if kind != "" and perks.has("goldrush"):
+			x *= 2.0
 		# The table's own rule.
 		match boss:
 			"drift":
@@ -319,16 +392,18 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			x *= 1.5
 		chain += pre_chain
 		var pts := value * chain * hm * x
+		if kind == "echo":
+			pts *= 2.0
 		if idx == 0 and perks.has("echo"):
 			pts *= 2.0
 			tags.append("Double Take")
 		var pays := int(floor(pts))
 		total += pays
 		out.lines.append({
-			"label": "%d-ball" % n, "kind": "pot", "ball": n, "pocket": k, "value": value, "chain": chain,
+			"label": Catalog.ball_label(n), "kind": "pot", "ball": n, "pocket": k, "value": value, "chain": chain,
 			"heat": hm, "x": x, "points": pays, "tags": tags,
 		})
-		chain += AFTER_POT
+		chain += AFTER_POT + bonus_after
 		seen_pocket[k] = true
 		out.pocket_list.append(k)
 		idx += 1
@@ -337,7 +412,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		return out
 	out.solid_run = solid_run
 	out.stripe_run = stripe_run
-	if perks.has("bedrock") and idx > 0 and pots.all(func(p): return p.a <= 7):
+	if perks.has("bedrock") and idx > 0 and pots.all(func(p): return Catalog.is_solid(p.a)):
 		out.heat_gain += 1
 	if perks.has("streak") and pots.size() >= 2:
 		out.heat_gain += 1

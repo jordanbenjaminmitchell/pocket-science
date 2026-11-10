@@ -2,7 +2,7 @@ class_name MetaScreens
 extends RefCounted
 ## Collection and Records screens. Built on the game controller's UI helpers.
 
-const TABS := ["Perks", "Imbues", "Cues", "Tables"]
+const TABS := ["Perks", "Items", "Balls", "Imbues", "Cues", "Tables"]
 
 var g: Node
 var tab := "Perks"
@@ -63,6 +63,14 @@ func _rows() -> Array:
 				var locked: bool = g.meta.locked_perks().has(id)
 				rows.append({"icon": id, "title": f.name, "sub": "%s · %s · $%d" % [Catalog.rarity_name(f.r), Catalog.family_name(id), f.cost],
 					"desc": f.desc, "color": Catalog.rarity_color(f.r), "hint": g.meta.perk_hint(id) if locked else ""})
+		"Items":
+			for id in Catalog.ITEMS:
+				var it: Dictionary = Catalog.ITEMS[id]
+				rows.append({"icon": id, "title": it.name, "sub": "Item · $%d" % it.cost, "desc": it.desc, "color": Color(0.45, 0.85, 1.0), "hint": ""})
+		"Balls":
+			for id in Catalog.BALL_TYPES:
+				var bt: Dictionary = Catalog.BALL_TYPES[id]
+				rows.append({"icon": "ball_" + id, "title": bt.name + " ball", "sub": "Special ball · $%d" % bt.cost, "desc": bt.desc, "color": bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent, "hint": ""})
 		"Imbues":
 			for id in Catalog.IMBUES:
 				var r: Dictionary = Catalog.IMBUES[id]
