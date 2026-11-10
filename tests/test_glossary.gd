@@ -20,11 +20,11 @@ func _go() -> void:
 		check(s.ends_with(".") and s.count(". ") == 0 and s.length() <= 110, "%s is one short sentence" % t)
 	for w in Glossary.WORDS:
 		check(Glossary.TERMS.has(Glossary.WORDS[w]), "%s opens a real term" % w)
-	for needed in ["bank", "pay", "pot", "chain"]:
+	for needed in ["bank", "pay", "sink", "chain"]:
 		check(Glossary.TERMS.has(needed), "%s is defined" % needed)
-	var linked := Glossary.link("Bank pots pay ×2 and bank pots add Chain.")
+	var linked := Glossary.link("Bank sinks pay ×2 and bank sinks add Chain.")
 	check(linked.count("[url=bank]") == 1, "a term links only once per text")
-	check(linked.contains("[url=pot]") and linked.contains("[url=pay]") and linked.contains("[url=chain]"), "several terms link in one sentence")
+	check(linked.contains("[url=sink]") and linked.contains("[url=pay]") and linked.contains("[url=chain]"), "several terms link in one sentence")
 	check(linked.contains("]Bank[/color]"), "the original wording and capitals are kept")
 	check(Glossary.link("Spotted the deposit") == "Spotted the deposit", "words are only matched whole")
 	for id in Catalog.PERKS:

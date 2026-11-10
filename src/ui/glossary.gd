@@ -6,20 +6,20 @@ extends RefCounted
 const LINK_COLOR := "#8fd8ff"
 
 const TERMS := {
-	"pot": {"title": "Pot", "text": "To knock a numbered ball into a pocket."},
+	"sink": {"title": "Sink", "text": "To knock a numbered ball into a pocket."},
 	"pay": {"title": "Pay", "text": "The points a ball earns as it drops: value × Chain × Heat, times any other multipliers."},
 	"value": {"title": "Value", "text": "What a ball is worth before multipliers: 10 plus its number."},
 	"chain": {"title": "Chain", "text": "A multiplier for this shot only, starting at 1 and rising as balls drop."},
 	"heat": {"title": "Heat", "text": "A multiplier that lasts the whole table, rises with every scoring shot and halves on a miss."},
-	"bank": {"title": "Bank", "text": "A pot where the ball touches a cushion before it drops."},
+	"bank": {"title": "Bank", "text": "A sink where the ball touches a cushion before it drops."},
 	"cushion": {"title": "Cushion", "text": "The padded rail around the edge of the table."},
-	"combination": {"title": "Combination", "text": "A pot where another numbered ball knocks the ball in, rather than the cue ball."},
+	"combination": {"title": "Combination", "text": "A sink where another numbered ball knocks the ball in, rather than the cue ball."},
 	"kick": {"title": "Kick shot", "text": "A shot where the cue ball hits a cushion before it hits any ball."},
-	"clean": {"title": "Clean pot", "text": "A pot straight from the cue ball, with no cushions or other balls involved."},
+	"clean": {"title": "Clean sink", "text": "A sink straight from the cue ball, with no cushions or other balls involved."},
 	"hot": {"title": "Hot pocket", "text": "The glowing pocket, which pays ×2 and moves after each shot."},
 	"chalk": {"title": "Chalk", "text": "Your lives on a table: a miss or scratch costs one, and at zero the run ends."},
 	"scratch": {"title": "Scratch", "text": "Knocking the cue ball into a pocket."},
-	"miss": {"title": "Miss", "text": "A shot that pots nothing."},
+	"miss": {"title": "Miss", "text": "A shot that sinks nothing."},
 	"break": {"title": "Break", "text": "The first shot at a fresh rack."},
 	"rack": {"title": "Rack", "text": "The full set of 15 balls at the start of a table."},
 	"solid": {"title": "Solids", "text": "Balls 1 to 7, coloured all over."},
@@ -34,7 +34,7 @@ const TERMS := {
 
 ## Words as they appear in text, mapped to the term they open.
 const WORDS := {
-	"pot": "pot", "pots": "pot", "potted": "pot", "potting": "pot",
+	"sink": "sink", "sinks": "sink", "sunk": "sink", "sinking": "sink",
 	"pay": "pay", "pays": "pay", "worth": "value", "value": "value",
 	"chain": "chain", "heat": "heat",
 	"bank": "bank", "banks": "bank", "cushion": "cushion", "cushions": "cushion",

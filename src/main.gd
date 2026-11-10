@@ -900,7 +900,7 @@ func _begin_place(head_only: bool) -> void:
 	place_head_only = head_only
 	view.show_guide = false
 	last_place = Vector2(-1, -1)
-	lbl_hint.text = "Ball in hand%s: gold lines show the pots on from here. Click to place." % (" behind the line" if head_only else "")
+	lbl_hint.text = "Ball in hand%s: gold lines show the sinks on from here. Click to place." % (" behind the line" if head_only else "")
 	_refresh_hud()
 
 
@@ -1355,7 +1355,7 @@ func _build_ui() -> void:
 
 	lbl_chain = _meter(lv, "CHAIN", Color(0.2, 0.75, 0.6))
 	lbl_heat = _meter(lv, "HEAT", Color(1.0, 0.5, 0.15))
-	lbl_line = _label("Pot balls, stack Heat, avoid the 8.", 14, Color(0.85, 0.85, 0.85))
+	lbl_line = _label("Sink balls, stack Heat, avoid the 8.", 14, Color(0.85, 0.85, 0.85))
 	lbl_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl_line.custom_minimum_size = Vector2(290, 32)
@@ -1693,7 +1693,7 @@ func _show_title() -> void:
 	logo.font = F_PIXB
 	logo.custom_minimum_size = Vector2(0, 150)
 	v.add_child(logo)
-	var s := _label("A pool roguelite. Pot balls, stack multipliers, beat the target.", 17, Color(0.8, 0.85, 0.9), F_REG)
+	var s := _label("A pool roguelite. Sink balls, stack multipliers, beat the target.", 17, Color(0.8, 0.85, 0.9), F_REG)
 	s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	s.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(s)
@@ -1881,7 +1881,7 @@ func _new_run() -> void:
 	_animate_score(0, 0)
 	shown_score = 0
 	_set_meters(1.0, run.heat)
-	lbl_line.text = "Pot balls, stack Heat, avoid the 8."
+	lbl_line.text = "Sink balls, stack Heat, avoid the 8."
 	coaching = _load_best().tables == 0
 	coach_seen_pot = false
 	_enter_aim()
@@ -1894,7 +1894,7 @@ func _show_help() -> void:
 	var v := _center_panel(900, 700)
 	v.add_child(_label("HOW TO PLAY", 30, Color(0.98, 0.8, 0.4), F_PIXB))
 	var txt := """[b]Shoot:[/b] Aim with the mouse. Press on the table and drag BACK from the cue ball to set power, then release. (Or use the wheel/Up/Down for power and Space to shoot.) Left/Right fine-tune your aim, and Shift makes it finer.
-[b]Guideline:[/b] The white line shows the cue ball's path, and the ring is where it will touch the object ball. After contact the line takes the colour of the ball you hit. A bold line ending in a [color=#ffd060]gold ring[/color] means that ball is going in, and the tag on the pocket shows what the pot is worth. Settings has a Prediction lines option that shows where every ball will land. The blue dashes show where the cue ball goes after contact, including spin.
+[b]Guideline:[/b] The white line shows the cue ball's path, and the ring is where it will touch the object ball. After contact the line takes the colour of the ball you hit. A bold line ending in a [color=#ffd060]gold ring[/color] means that ball is going in, and the tag on the pocket shows what the sink is worth. Settings has a Prediction lines option that shows where every ball will land. The blue dashes show where the cue ball goes after contact, including spin.
 [b]Spin:[/b] Click the big cue ball (W/S/A/D). Hitting it high gives follow and low gives draw; the sides add english off the cushions.
 
 [b]Score:[/b] Each ball pays as it drops: its [color=#ffd060]value[/color] (10 + its number) × [color=#60d0a0]Chain[/color] × [color=#ff9040]Heat[/color]. Bouncing off cushions and other balls earns nothing by itself.
@@ -1904,7 +1904,7 @@ The [color=#ff8a30]hot pocket[/color] pays ×2. The black 8 also pays ×2.
 
 [b]The 8-ball:[/b] Avoid it. If the 8 drops while other balls are still on the table, you lose 15% of the table's target, unless a Perk changes that. Once it is the last ball it is safe, and sinking it brings a fresh rack.
 
-[b]Chalk:[/b] As in real pool, you keep shooting while you pot. A miss, a scratch or no contact costs 1 chalk. A dry break is free. Run out of chalk before reaching the target and the run is over. Clearing the whole rack gives +1 chalk and a fresh rack.
+[b]Chalk:[/b] As in real pool, you keep shooting while you sink. A miss, a scratch or no contact costs 1 chalk. A dry break is free. Run out of chalk before reaching the target and the run is over. Clearing the whole rack gives +1 chalk and a fresh rack.
 
 [b]Between tables:[/b] Spend money in the Pro Shop on Perks (six slots, always active) and Imbues (permanently change one numbered ball). Leftover chalk pays $1 each.
 
@@ -2140,7 +2140,7 @@ func _continue_run() -> void:
 	run.rng.state = rng_state
 	spin_w.set_spin(0, 0)
 	_set_meters(1.0, run.heat)
-	lbl_line.text = "Pot balls, stack Heat, avoid the 8."
+	lbl_line.text = "Sink balls, stack Heat, avoid the 8."
 	if run.phase == "shop":
 		payout_rows = run.shop_payout
 		state = S.SHOP
@@ -2487,7 +2487,7 @@ func _next_table() -> void:
 	shown_score = 0
 	_animate_score(0, run.score)
 	_set_meters(1.0, run.heat)
-	lbl_line.text = "Overflow carried %d points" % run.score if run.score > 0 else "Pot balls, stack Heat, avoid the 8."
+	lbl_line.text = "Overflow carried %d points" % run.score if run.score > 0 else "Sink balls, stack Heat, avoid the 8."
 	_enter_aim()
 	var t := run.current()
 	view.flash(Color(0.55, 0.08, 0.05))
@@ -2505,7 +2505,7 @@ func _show_game_over() -> void:
 	var v := _center_panel(560, 460, Color(0.9, 0.35, 0.3))
 	v.add_child(_label("EXPERIMENT FAILED", 36, Color(1, 0.45, 0.4), F_PIXB))
 	v.add_child(_label("Reached table %d. Score %d / %d" % [run.table_index + 1, run.score, run.target()], 18, Color(0.9, 0.9, 0.9), F_REG))
-	v.add_child(_label("Tables cleared: %d\nBalls potted: %d\nBest shot: %d\nBest Heat: %d\nSeed: %d" % [run.tables_cleared, run.total_pots, run.best_shot, run.best_heat, run.seed_value], 17, Color(0.8, 0.82, 0.85), F_REG))
+	v.add_child(_label("Tables cleared: %d\nBalls sunk: %d\nBest shot: %d\nBest Heat: %d\nSeed: %d" % [run.tables_cleared, run.total_pots, run.best_shot, run.best_heat, run.seed_value], 17, Color(0.8, 0.82, 0.85), F_REG))
 	var b := _button("New Run", _new_run)
 	b.custom_minimum_size = Vector2(0, 50)
 	v.add_child(b)
@@ -2525,7 +2525,7 @@ func _show_victory(rows: Array) -> void:
 	var v := _center_panel(620, 470, Color(1.0, 0.85, 0.35))
 	v.add_child(_label("ALL TRIALS CLEARED!", 36, Color(1.0, 0.85, 0.4), F_PIXB))
 	v.add_child(_label("You beat all 9 tables of Pocket Science.", 18, Color(0.9, 0.9, 0.9), F_REG))
-	v.add_child(_label("Balls potted: %d\nBest shot: %d\nBest Heat: %d" % [run.total_pots, run.best_shot, run.best_heat], 17, Color(0.8, 0.82, 0.85), F_REG))
+	v.add_child(_label("Balls sunk: %d\nBest shot: %d\nBest Heat: %d" % [run.total_pots, run.best_shot, run.best_heat], 17, Color(0.8, 0.82, 0.85), F_REG))
 	var b := _button("Keep going (Endless)", func(): _show_shop(rows), Color(0.4, 0.9, 0.6))
 	b.custom_minimum_size = Vector2(0, 50)
 	v.add_child(b)
@@ -2678,7 +2678,7 @@ func _show_run_info() -> void:
 	c3.add_child(_label("SCORING", 16, Color(0.6, 0.8, 1.0)))
 	var hot_x := 3 if run.perks.has("heat") else 2
 	var rules := [
-		"Each pot = value × Chain × Heat",
+		"Each sink = value × Chain × Heat",
 		"Value: 10 + ball number",
 		"Chain: starts at 1, +0.5 per ball dropped this shot",
 		"Heat: +1 per scoring shot, each point adds ×0.5, a miss halves it",

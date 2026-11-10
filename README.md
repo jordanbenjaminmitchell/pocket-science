@@ -1,6 +1,6 @@
 # Pocket Science
 
-**A real-pool roguelike. Pot balls, avoid the 8, stack multipliers, beat the target.**
+**A real-pool roguelike. Sink balls, avoid the 8, stack multipliers, beat the target.**
 
 Pocket Science plays like real pool: a 2:1 table with six pockets, all 15 numbered balls, a cue stick and an exact prediction line. On top of that sits a roguelike run of nine boss tables, a Pro Shop of Perks and ball upgrades, and Chain and Heat scoring. Built in Godot 4.7.
 
@@ -16,7 +16,7 @@ The APK is signed with a personal key from the build PC, so it is for your own d
 ## How a run works
 
 1. **Choose a cue.** Each cue starts the run differently. More unlock as you play.
-2. **Every table is a boss** with its own rule and a target score. As in real pool, you keep shooting while you pot. A miss or scratch costs one **Chalk**, and when your Chalk runs out before the target, the run ends.
+2. **Every table is a boss** with its own rule and a target score. As in real pool, you keep shooting while you sink. A miss or scratch costs one **Chalk**, and when your Chalk runs out before the target, the run ends.
 3. **Avoid the 8.** Dropping the 8 while other balls are still up costs 15% of the table's target, unless a Perk changes that. Once it is the last ball it is safe.
 4. **The Pro Shop** opens between tables: Perks for your six slots, Imbues that upgrade one ball for the rest of the run, and more.
 5. **Nine tables** make a run, including the Element Table at table 5 and the Grand Final at table 9. After that, endless mode.

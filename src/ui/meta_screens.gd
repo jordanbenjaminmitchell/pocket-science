@@ -119,7 +119,7 @@ func show_records() -> void:
 	cols.add_child(left)
 	left.add_child(g._label("LIFETIME", 16, Color(0.6, 0.8, 1.0)))
 	var win_rate := "%d%%" % int(round(100.0 * l.wins / l.runs)) if l.runs > 0 else "-"
-	left.add_child(g._label("Runs played: %d\nWins: %d  (%s)\nTables cleared: %d\nBalls potted: %d\nBest shot: %d\nBest Heat: %d\nDeepest run: %d tables" % [l.runs, l.wins, win_rate, l.tables, l.pots, l.best_shot, l.best_heat, l.best_tables], 17, Color(0.85, 0.87, 0.9), g.F_REG))
+	left.add_child(g._label("Runs played: %d\nWins: %d  (%s)\nTables cleared: %d\nBalls sunk: %d\nBest shot: %d\nBest Heat: %d\nDeepest run: %d tables" % [l.runs, l.wins, win_rate, l.tables, l.pots, l.best_shot, l.best_heat, l.best_tables], 17, Color(0.85, 0.87, 0.9), g.F_REG))
 	left.add_child(g._label("FAVOURITE PERKS", 16, Color(0.6, 0.8, 1.0)))
 	var favs := rec.favourites()
 	if favs.is_empty():
