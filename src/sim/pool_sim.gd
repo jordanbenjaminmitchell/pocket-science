@@ -42,6 +42,11 @@ var portal_lock := PackedInt32Array()   # the portal end a ball just came out of
 var pull := PackedFloat64Array()        # per-ball pocket pull (Magnetic Imbue)
 var bounce := PackedFloat64Array()      # per-ball cushion liveliness; 0 = the table's own (Star balls)
 const GLASS_BREAK := 700.0              # impact speed that shatters a Glass ball
+# One-shot effects from items, cleared by clear_shot_flags() after each shot.
+var ghost := -1                         # Ghost Chalk: nothing collides with this ball
+var glide := PackedByteArray()          # Polish: no cloth friction until the first hit
+var pinned := PackedByteArray()         # Freeze Frame: held still like a post
+var extra_wells: Array = []             # Gravity Pebbles: [position, strength]
 const MAGNET_REACH := 150.0
 
 
@@ -77,6 +82,10 @@ func clone() -> PoolSim:
 	s.portal_lock = portal_lock.duplicate()
 	s.pull = pull.duplicate()
 	s.bounce = bounce.duplicate()
+	s.ghost = ghost
+	s.glide = glide.duplicate()
+	s.pinned = pinned.duplicate()
+	s.extra_wells = extra_wells.duplicate(true)
 	return s
 
 
@@ -92,6 +101,8 @@ func add_ball(number: int, p: Vector2, m: float = 1.0) -> int:
 	portal_lock.append(-1)
 	pull.append(0.0)
 	bounce.append(0.0)
+	glide.append(0)
+	pinned.append(0)
 	return pos.size() - 1
 
 
@@ -137,7 +148,7 @@ func strike(dir: Vector2, speed: float, follow_amount: float, side_amount: float
 ## How far ball i will still roll on the cloth if nothing interferes, or -1 if
 ## that cannot be told. Exact integral of the deceleration in _forces.
 func stop_distance(i: int) -> float:
-	if frictionless or roll_decel <= 0.0 or spin[i] != Vector2.ZERO or (_kind(i) == "comet" and rails[i] == 0):
+	if frictionless or roll_decel <= 0.0 or spin[i] != Vector2.ZERO or (_kind(i) == "comet" and rails[i] == 0) or glide[i] == 1 or not extra_wells.is_empty():
 		return -1.0
 	var v := vel[i].length()
 	if drag < 0.001:
@@ -183,7 +194,7 @@ func step(dt: float) -> void:
 			var vi := vel[i]
 			var mv := vi != Vector2.ZERO
 			for j in range(i + 1, n):
-				if alive[j] == 0:
+				if alive[j] == 0 or i == ghost or j == ghost:
 					continue
 				if not mv and vel[j] == Vector2.ZERO:
 					continue
@@ -314,6 +325,12 @@ func _resolve_balls(i: int, j: int) -> void:
 	# Anchor: only the cue ball can move it; anything else bounces off it.
 	if _kind(i) == "anchor" and not cue_j:
 		mi = 1.0e6
+	if pinned[i] == 1:
+		mi = 1.0e6
+	if pinned[j] == 1:
+		mj = 1.0e6
+	glide[i] = 0
+	glide[j] = 0
 	if _kind(j) == "anchor" and not cue_i:
 		mj = 1.0e6
 	var jimp := (1.0 + ball_e) * rel / (1.0 / mi + 1.0 / mj)
@@ -327,6 +344,9 @@ func _resolve_balls(i: int, j: int) -> void:
 			vel[c] *= cue_damp
 			spin[c] *= cue_damp
 	events.append({"t": time, "type": "ball", "a": num[i], "b": num[j], "speed": rel})
+	for pnd in [i, j]:
+		if pinned[pnd] == 1:
+			vel[pnd] = Vector2.ZERO
 	# Frost stops dead whatever touches it; Glass shatters if struck hard.
 	if _kind(i) == "frost":
 		vel[j] = Vector2.ZERO
@@ -347,6 +367,7 @@ func _resolve_wall(i: int, nrm: Vector2, _seg: int) -> void:
 	if vn >= 0.0:
 		return
 	var tangent := Vector2(-nrm.y, nrm.x)
+	glide[i] = 0
 	vel[i] -= nrm * vn * (1.0 + rail_e_of(i))
 	vel[i] -= tangent * vel[i].dot(tangent) * 0.04
 	if side[i] != 0.0:
@@ -407,7 +428,12 @@ func _forces(dt: float) -> void:
 				var dl := d.length()
 				if dl < 110.0:
 					v += d / dl * pp * (110.0 - dl) * 9.0 * dt
-		if not frictionless and not (_kind(i) == "comet" and rails[i] == 0):
+		for w in extra_wells:
+			var wd: Vector2 = w[0] - pos[i]
+			var wl := maxf(wd.length(), 30.0)
+			if wl < 260.0:
+				v += wd / wl * (float(w[1]) * 9000.0 / wl) * dt
+		if not frictionless and glide[i] == 0 and not (_kind(i) == "comet" and rails[i] == 0):
 			var sp := v.length()
 			var ns := sp - (roll_decel + drag * sp) * dt
 			if ns <= STOP_SPEED and spin[i] == Vector2.ZERO:
@@ -443,6 +469,13 @@ func _pockets() -> void:
 					bd = d
 					best = k
 			_pot(i, best)
+
+
+func clear_shot_flags() -> void:
+	ghost = -1
+	glide.fill(0)
+	pinned.fill(0)
+	extra_wells.clear()
 
 
 func _kind(i: int) -> String:
@@ -530,7 +563,7 @@ func cast(p: Vector2, d: Vector2, ignore: int, max_len: float = 3000.0, ignore2:
 	var best_t := max_len
 	var res := {"kind": "none", "hit": -1, "normal": Vector2.ZERO}
 	for j in pos.size():
-		if j == ignore or j == ignore2 or alive[j] == 0:
+		if j == ignore or j == ignore2 or alive[j] == 0 or j == ghost or (ignore >= 0 and ignore == ghost):
 			continue
 		var t := _toi_circle(pos[j] - p, -d, R * 2.0)
 		if t < best_t:

@@ -34,6 +34,10 @@ var plan_hover := Vector2.INF    # where the cursor would plan one
 var temp_walls: Array = []       # Pop-up Walls for this shot: [a, b]
 var strike_line: Array = []      # Second Strike aim: [from, to]
 var hold_text := ""
+var call_ball := -1           # Called Shot: the ball and pocket called
+var call_pocket := -1
+var ghost_ball := -1          # Ghost Chalk
+var pebbles: Array = []       # Gravity Pebbles this shot
 var hot_pocket := -1
 var element_pockets: Array = []   # Element Table: one element id per pocket
 var second_pocket := -1   # Two Pockets boss: also scores, shown with a cooler ring
@@ -509,6 +513,20 @@ func _draw_overlay() -> void:
 		for h in place_hints:
 			o.draw_line(h[0], h[1], Color(_pot_color(), 0.55), 2.0)
 			o.draw_arc(h[0], R + 3.0, 0, TAU, 24, Color(_pot_color(), 0.8), 2.0)
+	if call_ball >= 0 and ball_nodes.has(call_ball) and call_pocket >= 0 and call_pocket < layout.pockets.size():
+		var cbp: Vector2 = ball_nodes[call_ball].position
+		var cpp: Vector2 = layout.pockets[call_pocket].pos
+		o.draw_arc(cbp, R + 5.0, 0, TAU, 32, Color(1.0, 0.85, 0.35), 2.5, true)
+		_dashed(o, cbp, cpp, Color(1.0, 0.85, 0.35, 0.5), 1.5, 8.0)
+		_txt(o, cpp + (Vector2(W, H) * 0.5 - cpp).normalized() * 46.0, "CALLED ×3", Color(1.0, 0.85, 0.35), 13)
+	if ghost_ball >= 0 and ball_nodes.has(ghost_ball):
+		var gp: Vector2 = ball_nodes[ghost_ball].position
+		for k in 12:
+			o.draw_arc(gp, R + 4.0, k * TAU / 12.0, k * TAU / 12.0 + 0.3, 4, Color(0.85, 0.9, 1.0, 0.85), 2.0, true)
+	for pb in pebbles:
+		for k in 3:
+			o.draw_arc(pb, 14.0 + k * 12.0, 0, TAU, 32, Color(0.7, 0.6, 1.0, 0.5 - k * 0.12), 2.0, true)
+		o.draw_circle(pb, 6.0, Color(0.55, 0.45, 1.0))
 	for w in temp_walls:
 		o.draw_line(w[0], w[1], Color(0.3, 0.9, 1.0, 0.35), 12.0, true)
 		o.draw_line(w[0], w[1], Color(0.75, 0.97, 1.0), 5.0, true)

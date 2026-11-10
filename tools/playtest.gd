@@ -91,7 +91,7 @@ func play_table(run: RunState, rec: Dictionary) -> bool:
 	var is_break := true
 	var guard := 0
 	for id in run.items.duplicate():
-		if id != "handchalk" and run.use_state_item(id):
+		if id != "slip" and run.use_state_item(id):
 			run.items.erase(id)
 	if run.table_mods.get("wide", false):
 		layout = run.build_layout()
@@ -125,9 +125,9 @@ func play_table(run: RunState, rec: Dictionary) -> bool:
 		if out.has("bounty"):
 			rec.bounties += 1
 		is_break = false
-		if run.chalk == 1 and run.items.has("handchalk") and not out.over and not out.cleared:
-			run.use_state_item("handchalk")
-			run.items.erase("handchalk")
+		if run.last_chalk_lost and run.items.has("slip") and not out.over and not out.cleared:
+			run.use_state_item("slip")
+			run.items.erase("slip")
 		if out.cleared:
 			return true
 		if out.over:

@@ -394,12 +394,16 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 					x *= 5.0
 					tags.append("The Last 8")
 			"elements":
-				var fused := _fuse(mix, Catalog.POCKET_ELEMENTS[k])
+				var fused := _fuse(mix, Catalog.POCKET_ELEMENTS[k] if k < Catalog.POCKET_ELEMENTS.size() else "wild")
 				x *= fused.x
 				if fused.label != "":
 					tags.append(fused.label)
 				out.heat_gain += fused.heat
 		x *= float(ctx.get("boost", 1.0))
+		var call: Dictionary = ctx.get("called", {})
+		if not call.is_empty() and int(call.ball) == n and int(call.pocket) == k:
+			x *= 3.0
+			tags.append("Called")
 		if perks.has("secondcoat") and imbues.has(n):
 			x *= 1.5
 		chain += pre_chain

@@ -66,14 +66,14 @@ var root: Control
 var lbl_round: Label
 var lbl_lab: Label
 var lbl_rule: RichTextLabel
-var item_bar: HBoxContainer
+var item_bar: HFlowContainer
 var touch_shoot: Button
 var pick_item := ""
 var pick_slot := -1
 var pick_points: Array = []
 var pick_return := 0            # the state a bumper or portal placement returns to
 var hold_action := ""           # while paused: "strike", "wall" or "blink" waiting for a click
-var hold_slot := -1
+var hold_slot := ""
 var wall_start := Vector2.INF
 var plan_lock := false          # prediction frozen so the cursor can pick a pause point
 var pause_at := -1.0            # sim time at which the running shot pauses itself
@@ -154,6 +154,9 @@ func _ready() -> void:
 ## ================================================================ table setup
 func _setup_table() -> void:
 	var t := run.current()
+	armed.clear()
+	temp_pockets.clear()
+	rewind_point = {}
 	if spin_w:
 		spin_w.modulate.a = 0.35 if t.anomaly == "nospin" else 1.0
 	layout = run.build_layout()
@@ -196,94 +199,175 @@ func _new_rack() -> void:
 	forecast_dirty = true
 
 
-## ================================================================ usable items
+## ================================================================ the Hustler's Kit
+## Tools (one charge per table) and consumables share one bar. Set-up items are
+## "armed": their effect shows on the prediction at once, tapping them again
+## takes them back, and they are only spent when you shoot.
+var armed: Array = []            # [{id, undo: Callable}]
+var temp_pockets: Array = []     # Trapdoors for the next shot
+var rewind_point := {}
+var pick_mode := ""              # "spot", "ball", "pocket", "cushion" or "direction"
+var pick_ball := -1
+
+
 func _refresh_items() -> void:
 	if item_bar == null:
 		return
 	for c in item_bar.get_children():
 		item_bar.remove_child(c)
 		c.queue_free()
+	for i in run.tool_slots():
+		var id: String = run.tools[i] if i < run.tools.size() else ""
+		item_bar.add_child(_item_button(id, true))
 	for i in run.item_slots():
-		var b := Button.new()
-		b.custom_minimum_size = Vector2(52, 52) if settings.touch_mode else Vector2(44, 44)
-		b.focus_mode = Control.FOCUS_NONE
-		b.add_theme_stylebox_override("normal", _style(Color(0.1, 0.12, 0.16), Color(0.45, 0.85, 1.0, 0.5), 1, 8))
-		b.add_theme_stylebox_override("hover", _style(Color(0.16, 0.2, 0.26), Color(0.45, 0.85, 1.0), 2, 8))
-		b.add_theme_stylebox_override("pressed", _style(Color(0.2, 0.26, 0.32), Color(0.6, 0.95, 1.0), 2, 8))
-		item_bar.add_child(b)
-		if i >= run.items.size():
-			b.disabled = true
-			b.add_theme_stylebox_override("disabled", _style(Color(0, 0, 0, 0.25), Color(1, 1, 1, 0.1), 1, 8))
-			continue
-		var id: String = run.items[i]
-		var ic := IconArt.new().setup(id, F_SEMI, 34)
-		ic.position = Vector2(5, 5)
-		ic.size = Vector2(34, 34)
-		b.add_child(ic)
-		var it: Dictionary = Catalog.ITEMS[id]
-		b.tooltip_text = "%s\n%s" % [it.name, it.desc]
-		var slot := i
-		b.pressed.connect(func(): _use_item(slot))
+		var id: String = run.items[i] if i < run.items.size() else ""
+		item_bar.add_child(_item_button(id, false))
 
 
-func _use_item(slot: int) -> void:
-	if slot < 0 or slot >= run.items.size():
-		return
-	var id: String = run.items[slot]
+func _item_button(id: String, tool: bool) -> Control:
+	var b := Button.new()
+	var sz := 46.0 if settings.touch_mode else 40.0
+	b.custom_minimum_size = Vector2(sz, sz)
+	b.focus_mode = Control.FOCUS_NONE
+	if id == "":
+		b.disabled = true
+		b.add_theme_stylebox_override("disabled", _style(Color(0, 0, 0, 0.25), Color(1, 1, 1, 0.1 if not tool else 0.2), 1, 6 if tool else 10))
+		b.tooltip_text = "Empty Tool slot" if tool else "Empty Consumable slot"
+		return b
 	var it: Dictionary = Catalog.ITEMS[id]
-	if state == S.HOLD:
-		if it.use == "aim":
-			_flash_banner("USE THIS WHILE AIMING", Color(0.6, 0.85, 1.0), 1.0)
+	var col: Color = Catalog.WHEN_COLORS[it.when]
+	var is_armed := armed.any(func(a): return a.id == id)
+	var charges := int(run.tool_charges.get(id, 0)) if tool else 1
+	b.add_theme_stylebox_override("normal", _style(Color(0.2, 0.17, 0.08) if is_armed else Color(0.1, 0.12, 0.16), Color(1.0, 0.85, 0.35) if is_armed else Color(col, 0.6), 3 if is_armed else 2, 6 if tool else 10))
+	b.add_theme_stylebox_override("hover", _style(Color(0.16, 0.2, 0.26), col, 2, 6 if tool else 10))
+	b.add_theme_stylebox_override("pressed", _style(Color(0.2, 0.26, 0.32), col.lightened(0.3), 2, 6 if tool else 10))
+	var ic := IconArt.new().setup(id, F_SEMI, sz - 10.0)
+	ic.position = Vector2(5, 5)
+	ic.size = Vector2(sz - 10.0, sz - 10.0)
+	b.add_child(ic)
+	if tool:
+		var pip := _label(str(charges), 12, Color(1.0, 0.9, 0.5) if charges > 0 else Color(0.6, 0.6, 0.6), F_NUM)
+		pip.position = Vector2(sz - 14.0, sz - 18.0)
+		b.add_child(pip)
+		if charges <= 0:
+			b.modulate = Color(1, 1, 1, 0.45)
+	b.tooltip_text = "%s (%s)\n%s\n%s" % [it.name, "Tool, one charge per table" if tool else "Consumable", Catalog.WHEN_NAMES[it.when], it.desc]
+	b.pressed.connect(func(): _use(id))
+	return b
+
+
+## Can this item be used right now?
+func _item_ready(id: String) -> String:
+	var it: Dictionary = Catalog.ITEMS[id]
+	if it.kind == "tool" and int(run.tool_charges.get(id, 0)) <= 0:
+		return "NO CHARGE LEFT ON THIS TABLE"
+	match it.when:
+		"setup":
+			return "" if state == S.AIM else "USE THIS WHILE AIMING"
+		"pause":
+			return "" if state == S.HOLD else "USE THIS WHILE A SHOT IS PAUSED"
+		"after":
+			if state != S.AIM:
+				return "USE THIS AFTER A SHOT"
+			if run.shots_taken == 0:
+				return "NO SHOT TO WORK WITH YET"
+			if id == "rewind" and rewind_point.is_empty():
+				return "NOTHING TO REWIND"
+			if id == "slip" and not run.last_chalk_lost:
+				return "YOUR LAST SHOT DIDN'T COST CHALK"
+			return ""
+		_:
+			return "" if state == S.AIM or state == S.HOLD else "USE THIS WHILE AIMING OR PAUSED"
+	return ""
+
+
+func _use(id: String) -> void:
+	for a in armed:
+		if a.id == id:
+			_disarm(a)
 			return
-		match id:
-			"secondstrike":
-				_begin_hold_action("strike", slot)
-			"wall":
-				_begin_hold_action("wall", slot)
-			"blink":
-				_begin_hold_action("blink", slot)
-			"bumperkit", "portal":
-				_begin_pick(id, slot)
-		return
-	if it.use == "pause":
-		_flash_banner("USE THIS WHILE A SHOT IS PAUSED", Color(0.6, 0.85, 1.0), 1.2)
-		return
-	if state != S.AIM:
-		_flash_banner("USE ITEMS WHILE AIMING", Color(0.6, 0.85, 1.0), 1.0)
+	var why := _item_ready(id)
+	if why != "":
+		_flash_banner(why, Color(0.6, 0.85, 1.0), 1.1)
 		return
 	match id:
-		"ballinhand":
-			_spend_item(slot)
-			_begin_place(false)
-			return
-		"freshrack":
-			_spend_item(slot)
+		"calledshot", "ghostchalk", "polish", "leadweight", "swap", "freezeframe", "nudge":
+			_begin_pick(id, "ball")
+		"pocketcover":
+			_begin_pick(id, "pocket")
+		"trapdoor":
+			_begin_pick(id, "cushion")
+		"post", "portal", "gravitypebble":
+			_begin_pick(id, "spot")
+		"secondstrike":
+			_begin_hold_action("strike", id)
+		"wall":
+			_begin_hold_action("wall", id)
+		"blink":
+			_begin_hold_action("blink", id)
+		"englishdial":
+			var ci := _cue_index()
+			sim.side[ci] = _shot_side()
+			sim.spin[ci] = sim.vel[ci].normalized() * _shot_follow() * sim.vel[ci].length() * 0.62 * sim.spin_power
+			_spend(id)
+			_hold(false)
+		"spotter":
+			_show_spotter()
+		"rewind":
+			_rewind()
+		"slip":
+			if run.use_state_item("slip"):
+				_spend(id)
+				_flash_banner("CHALK BACK", Color(0.5, 1.0, 0.7), 1.0)
+		"triangle":
+			_spend(id)
 			_fresh_rack()
-			return
-		"bumperkit", "portal":
-			_begin_pick(id, slot)
-			return
-	if run.use_state_item(id):
-		_spend_item(slot)
-		if id == "wideopen":
-			_rebuild_layout()
-		elif id == "magnetcharm":
-			run.apply_physics(sim)
-		_flash_banner(str(it.name).to_upper(), Color(0.6, 0.9, 1.0), 1.0)
-		_refresh_hud()
+		"ballinhand":
+			_spend(id)
+			_begin_place(false)
 
 
-func _spend_item(slot: int) -> void:
-	var it: Dictionary = Catalog.ITEMS[run.items[slot]]
-	if it.use == "pause" and run.perks.has("quickhands") and not run.quick_used:
-		run.quick_used = true   # Quick Hands: this one stays
-		_flash_banner("QUICK HANDS - ITEM KEPT", Color(0.55, 0.95, 0.85), 1.0)
-	else:
-		run.items.remove_at(slot)
-	_announce_unlocks(meta.on_item_used())
-	sfx.play("coin", 0.5, 1.3)
+func _spend(id: String) -> void:
+	if run.spend(id):
+		sfx.play("coin", 0.5, 1.3)
+		_announce_unlocks(meta.on_item_used())
 	_refresh_hud()
 	_save_progress()
+
+
+## Arms a set-up item: its effect is live now and it is spent when you shoot.
+func _arm(id: String, undo: Callable) -> void:
+	armed.append({"id": id, "undo": undo})
+	sfx.play("click_soft", 0.7, 1.2)
+	guide_dirty = true
+	_refresh_hud()
+
+
+func _disarm(a: Dictionary) -> void:
+	(a.undo as Callable).call()
+	armed.erase(a)
+	guide_dirty = true
+	_refresh_hud()
+
+
+## When the shot is struck, every armed item is spent.
+func _spend_armed() -> void:
+	for a in armed:
+		run.spend(a.id)
+	if not armed.is_empty():
+		_announce_unlocks(meta.on_item_used())
+	armed.clear()
+
+
+func _apply_temp_pockets() -> void:
+	layout = run.build_layout()
+	for tp in temp_pockets:
+		layout.pockets.append(tp)
+	sim.layout = layout
+	view.setup(layout, F_SEMI, F_NUM)
+	view.set_felt(Catalog.LABS[run.current().lab].felt)
+	view.set_lab(run.current().lab)
+	guide_dirty = true
 
 
 ## Re-racks the balls still on the table and gives a fresh break.
@@ -304,26 +388,124 @@ func _fresh_rack() -> void:
 	_enter_aim()
 
 
-## Choosing a spot on the table for a bumper or portal.
-func _begin_pick(id: String, slot: int) -> void:
+## Spotter: choose a ball sunk on this table to bring back.
+func _show_spotter() -> void:
+	var sunk: Array = []
+	for i in sim.count():
+		if sim.alive[i] == 0 and sim.num[i] != 0 and sim.num[i] != 8:
+			sunk.append(sim.num[i])
+	if sunk.is_empty():
+		_flash_banner("NOTHING SUNK ON THIS TABLE YET", Color(0.6, 0.85, 1.0), 1.1)
+		return
+	var p := PanelContainer.new()
+	p.add_theme_stylebox_override("panel", _style(Color(0.08, 0.075, 0.08, 0.99), Color(0.45, 0.7, 1.0), 2, 14))
+	overlay.add_child(p)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	p.add_child(v)
+	v.add_child(_label("SPOTTER - BRING ONE BACK", 24, Color(0.6, 0.8, 1.0), F_PIXB))
+	var grid := GridContainer.new()
+	grid.columns = 8
+	v.add_child(grid)
+	for n in sunk:
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(58, 58)
+		b.tooltip_text = Catalog.ball_label(n)
+		var icon := _set_ball_icon(n)
+		icon.position = Vector2(9, 9)
+		b.add_child(icon)
+		var num: int = n
+		b.pressed.connect(func():
+			_spot_back(num)
+			p.queue_free())
+		grid.add_child(b)
+	v.add_child(_button("Cancel", func(): p.queue_free(), Color(0.6, 0.65, 0.7)))
+	p.reset_size()
+	p.position = ((fit.view - p.get_combined_minimum_size()) * 0.5).round()
+
+
+func _spot_back(n: int) -> void:
+	var i := sim.index_of(n)
+	if i < 0 or sim.alive[i] == 1:
+		return
+	var spot := Rack.FOOT
+	var tries := 0
+	while not sim.is_clear_spot(spot, i) and tries < 40:
+		spot = Rack.FOOT + Vector2(-TableLayout.R * 2.2 * (tries / 6 + 1), 0).rotated(tries * TAU / 6.0)
+		tries += 1
+	sim.alive[i] = 1
+	sim.pos[i] = spot
+	sim.vel[i] = Vector2.ZERO
+	view.update_balls(sim)
+	_spend("spotter")
+	guide_dirty = true
+
+
+## Rewind: the table, score, Heat and Chalk go back to just before the last shot.
+func _rewind() -> void:
+	var point := rewind_point
+	if point.is_empty() or not run.load_dict(point):
+		return
+	rewind_point = {}
+	run.locked = meta.locked_perks()
+	layout = run.build_layout()
+	view.setup(layout, F_SEMI, F_NUM)
+	view.set_felt(Catalog.LABS[run.current().lab].felt)
+	view.set_lab(run.current().lab)
+	_restore_snapshot(run.table_snapshot)
+	run.spend("rewind")
+	shown_score = run.score
+	_animate_score(run.score, run.score)
+	_sync_hot()
+	_flash_banner("REWOUND", Color(0.6, 0.85, 1.0), 1.0)
+	sfx.play("resume", 0.7, 0.7)
+	_enter_aim()
+	_save_progress()
+
+
+## The run as it stands, with every ball, so Rewind can bring it back.
+func _capture_rewind_point() -> void:
+	var balls: Array = []
+	for i in sim.count():
+		balls.append({"n": sim.num[i], "x": sim.pos[i].x, "y": sim.pos[i].y, "alive": sim.alive[i], "m": sim.mass[i]})
+	run.table_snapshot = {"balls": balls, "is_break": is_break, "log": shot_log}
+	run.phase = "table"
+	rewind_point = JSON.parse_string(JSON.stringify(run.to_dict()))
+
+
+## ---------------------------------------------------------------- picking a target
+func _begin_pick(id: String, mode: String) -> void:
 	pick_item = id
-	pick_slot = slot
+	pick_mode = mode
+	pick_ball = -1
 	pick_points = []
 	pick_return = state
 	state = S.PICK
 	view.show_guide = false
-	lbl_hint.text = "Click where the %s goes. Right-click or Esc to cancel." % ("bumper" if id == "bumperkit" else "first portal")
+	var what := {"ball": "Click a ball.", "pocket": "Click a pocket to cover.", "cushion": "Click a cushion where the Trapdoor opens.", "spot": "Click where it goes."}
+	lbl_hint.text = "%s %s Right-click or Esc to cancel." % [Catalog.ITEMS[id].name, what.get(mode, "")]
+	if id == "calledshot":
+		lbl_hint.text = "Called Shot: click the ball you're calling. Right-click or Esc to cancel."
 	_refresh_hud()
 
 
 func _pick_radius() -> float:
-	return TableLayout.BUMPER_R if pick_item == "bumperkit" else TableLayout.PORTAL_R
+	match pick_item:
+		"post":
+			return TableLayout.BUMPER_R
+		"portal":
+			return TableLayout.PORTAL_R
+		"gravitypebble":
+			return 10.0
+	return TableLayout.R
 
 
 func _pick_ok(p: Vector2) -> bool:
 	var r := _pick_radius()
 	if p.x < r + 4 or p.y < r + 4 or p.x > TableLayout.W - r - 4 or p.y > TableLayout.H - r - 4:
 		return false
+	if pick_item == "gravitypebble":
+		return true
 	for pk in layout.pockets:
 		if (pk.pos as Vector2).distance_to(p) < pk.r + r + 12.0:
 			return false
@@ -342,45 +524,212 @@ func _pick_ok(p: Vector2) -> bool:
 	return true
 
 
+func _hover_ball(m: Vector2) -> int:
+	var best := -1
+	var bd := (TableLayout.R * 1.8) * (TableLayout.R * 1.8)
+	for i in sim.count():
+		if sim.alive[i] == 0 or sim.num[i] == 0:
+			continue
+		if pick_item == "swap" and pick_ball == i:
+			continue
+		var d := sim.pos[i].distance_squared_to(m)
+		if d < bd:
+			bd = d
+			best = i
+	return best
+
+
+func _hover_pocket(m: Vector2) -> int:
+	var best := -1
+	var bd := 50.0 * 50.0
+	for k in layout.pockets.size():
+		var pk: Dictionary = layout.pockets[k]
+		if pk.closed or k >= 6:
+			continue
+		var d := (pk.pos as Vector2).distance_squared_to(m)
+		if d < bd:
+			bd = d
+			best = k
+	return best
+
+
+## The nearest point on a cushion, kept clear of the real pockets.
+func _cushion_point(m: Vector2) -> Vector2:
+	var W := TableLayout.W
+	var H := TableLayout.H
+	var cands := [Vector2(clampf(m.x, 0, W), 0), Vector2(clampf(m.x, 0, W), H), Vector2(0, clampf(m.y, 0, H)), Vector2(W, clampf(m.y, 0, H))]
+	var best: Vector2 = cands[0]
+	for c in cands:
+		if c.distance_to(m) < best.distance_to(m):
+			best = c
+	for pk in layout.pockets:
+		if (pk.pos as Vector2).distance_to(best) < 90.0:
+			return Vector2.INF
+	return best
+
+
 func _update_pick() -> void:
 	_pad_cursor(get_process_delta_time())
 	var m := _mouse_table()
 	view.placing = true
 	view.head_only = false
-	view.place_radius = _pick_radius()
-	view.place_pos = m
-	view.place_ok = _pick_ok(m)
 	view.place_hints = []
 	view.show_guide = false
+	match pick_mode:
+		"spot":
+			view.place_radius = _pick_radius()
+			view.place_pos = m
+			view.place_ok = _pick_ok(m)
+		"ball":
+			var b := _hover_ball(m)
+			view.place_radius = TableLayout.R + 4.0
+			view.place_pos = sim.pos[b] if b >= 0 else m
+			view.place_ok = b >= 0
+		"pocket":
+			var k := _hover_pocket(m)
+			view.place_radius = layout.pockets[k].r if k >= 0 else 20.0
+			view.place_pos = layout.pockets[k].pos if k >= 0 else m
+			view.place_ok = k >= 0
+		"cushion":
+			var c := _cushion_point(m)
+			view.place_radius = 26.0
+			view.place_pos = c if c != Vector2.INF else m
+			view.place_ok = c != Vector2.INF
+		"direction":
+			view.place_radius = 6.0
+			view.place_pos = m
+			view.place_ok = m.distance_to(sim.pos[pick_ball]) > 6.0
+			view.strike_line = [sim.pos[pick_ball], sim.pos[pick_ball] + (m - sim.pos[pick_ball]).normalized() * 70.0]
 
 
 func _pick_click() -> void:
-	var p: Vector2 = view.place_pos
-	if not _pick_ok(p):
+	if not view.place_ok:
 		sfx.play("bad", 0.4)
 		return
-	pick_points.append(p)
-	if pick_item == "portal" and pick_points.size() < 2:
-		lbl_hint.text = "Now click where the second portal goes."
-		sfx.play("click_soft", 0.6)
-		return
-	if pick_item == "bumperkit":
-		run.table_mods.bumpers.append([p.x, p.y])
-	else:
-		var a: Vector2 = pick_points[0]
-		run.table_mods.portals.append([a.x, a.y, p.x, p.y])
-	_spend_item(pick_slot)
-	_end_pick()
-	_rebuild_layout()
+	var m := _mouse_table()
+	var id := pick_item
+	match pick_mode:
+		"ball":
+			var b := _hover_ball(m)
+			_picked_ball(id, b)
+		"pocket":
+			var k := _hover_pocket(m)
+			if id == "calledshot_pocket":
+				var cb := pick_ball
+				run.called = {"ball": sim.num[cb], "pocket": k}
+				view.call_ball = cb
+				view.call_pocket = k
+				_end_pick()
+				_arm("calledshot", func():
+					run.called = {}
+					view.call_ball = -1
+					view.call_pocket = -1)
+				return
+			run.table_mods.covered.append(k)
+			_spend(id)
+			_end_pick()
+			_apply_temp_pockets()
+		"cushion":
+			var c := _cushion_point(m)
+			var n := Vector2.ZERO
+			if c.y <= 0.0:
+				n = Vector2(0, 1)
+			elif c.y >= TableLayout.H:
+				n = Vector2(0, -1)
+			elif c.x <= 0.0:
+				n = Vector2(1, 0)
+			else:
+				n = Vector2(-1, 0)
+			var tp := {"pos": c - n * 6.0, "r": 26.0, "side": true, "dir": -n, "closed": false, "temp": true}
+			temp_pockets.append(tp)
+			_end_pick()
+			_apply_temp_pockets()
+			_arm(id, func():
+				temp_pockets.erase(tp)
+				_apply_temp_pockets())
+		"spot":
+			var p: Vector2 = view.place_pos
+			pick_points.append(p)
+			if id == "portal" and pick_points.size() < 2:
+				lbl_hint.text = "Now click where the second portal goes."
+				sfx.play("click_soft", 0.6)
+				return
+			match id:
+				"post":
+					run.table_mods.bumpers.append([p.x, p.y])
+				"portal":
+					var a: Vector2 = pick_points[0]
+					run.table_mods.portals.append([a.x, a.y, p.x, p.y])
+				"gravitypebble":
+					sim.extra_wells.append([p, 1.0])
+					view.temp_walls = view.temp_walls   # keeps the overlay drawing
+					view.pebbles.append(p)
+			_spend(id)
+			_end_pick()
+			if id != "gravitypebble":
+				_rebuild_layout()
+		"direction":
+			var d := (m - sim.pos[pick_ball]).normalized()
+			sim.vel[pick_ball] += d * 260.0
+			view.strike_line = []
+			_spend(id)
+			_end_pick()
+
+
+func _picked_ball(id: String, b: int) -> void:
+	match id:
+		"calledshot":
+			pick_item = "calledshot_pocket"
+			pick_ball = b
+			pick_mode = "pocket"
+			lbl_hint.text = "Now click the pocket you're calling for the %s." % Catalog.ball_label(sim.num[b])
+		"ghostchalk":
+			sim.ghost = b
+			_end_pick()
+			_arm(id, func(): sim.ghost = -1)
+			view.ghost_ball = b
+		"polish":
+			sim.glide[b] = 1
+			_end_pick()
+			_arm(id, func(): sim.glide[b] = 0)
+		"leadweight":
+			sim.mass[b] *= 4.0
+			_end_pick()
+			_arm(id, func(): sim.mass[b] /= 4.0)
+		"swap":
+			if pick_ball < 0:
+				pick_ball = b
+				lbl_hint.text = "Swap: now click the ball to trade places with."
+				return
+			var p := sim.pos[pick_ball]
+			sim.pos[pick_ball] = sim.pos[b]
+			sim.pos[b] = p
+			view.ball_nodes[pick_ball].position = sim.pos[pick_ball]
+			view.ball_nodes[b].position = sim.pos[b]
+			_spend(id)
+			_end_pick()
+		"freezeframe":
+			sim.vel[b] = Vector2.ZERO
+			sim.spin[b] = Vector2.ZERO
+			sim.pinned[b] = 1
+			_spend(id)
+			_end_pick()
+		"nudge":
+			pick_ball = b
+			pick_mode = "direction"
+			lbl_hint.text = "Nudge: click the direction to push it."
 
 
 func _cancel_pick() -> void:
+	view.strike_line = []
 	_end_pick()
 
 
 func _end_pick() -> void:
+	if pick_item == "calledshot_pocket":
+		pass
 	pick_item = ""
-	pick_slot = -1
+	pick_mode = ""
 	pick_points = []
 	view.place_radius = 0.0
 	view.placing = false
@@ -548,7 +897,7 @@ func _wall_end(m: Vector2) -> Vector2:
 const WALL_MAX := 170.0
 
 
-func _begin_hold_action(kind: String, slot: int) -> void:
+func _begin_hold_action(kind: String, slot: String) -> void:
 	hold_action = kind
 	hold_slot = slot
 	wall_start = Vector2.INF
@@ -621,7 +970,7 @@ func _add_wall(a: Vector2, b: Vector2) -> void:
 func _after_hold_action(cue_move: bool) -> void:
 	if cue_move and run.perks.has("afterimage"):
 		sim.events.append({"t": sim.time, "type": "boost", "chain": 1.0})
-	_spend_item(hold_slot)
+	_spend(hold_slot)
 	hold_action = ""
 	view.strike_line = []
 	_hold(false)
@@ -1105,6 +1454,8 @@ func _update_strike(delta: float) -> void:
 
 
 func _begin_roll() -> void:
+	_spend_armed()
+	_capture_rewind_point()
 	sim_accum = 0.0
 	pre_ctx = run.shot_ctx(shot_power, sim, is_break)
 	pre_ctx["follow"] = _shot_follow()
@@ -1392,6 +1743,14 @@ func _apply_tally_line(l: Dictionary, i: int) -> void:
 
 func _after_shot() -> void:
 	sfx.duck(false)
+	sim.clear_shot_flags()
+	view.ghost_ball = -1
+	view.call_ball = -1
+	view.call_pocket = -1
+	view.pebbles = []
+	if not temp_pockets.is_empty():
+		temp_pockets.clear()
+		_apply_temp_pockets()
 	pause_at = -1.0
 	view.plan_marker = Vector2.INF
 	if walls_up:
@@ -2023,8 +2382,10 @@ func _build_ui() -> void:
 	stats.add_child(lbl_money)
 	var gear_title := _label("ITEMS", 13, Color(0.6, 0.7, 0.85))
 	stats.add_child(gear_title)
-	item_bar = HBoxContainer.new()
-	item_bar.add_theme_constant_override("separation", 6)
+	item_bar = HFlowContainer.new()   # wraps onto a second row when the kit is full
+	item_bar.add_theme_constant_override("h_separation", 5)
+	item_bar.add_theme_constant_override("v_separation", 5)
+	item_bar.custom_minimum_size = Vector2(220, 0)
 	stats.add_child(item_bar)
 	flags_label = _label("", 13, Color(0.5, 0.8, 1.0))
 	flags_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2678,7 +3039,7 @@ func _refresh_shop() -> void:
 		next_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		v.add_child(next_l)
 	var row := GridContainer.new()
-	row.columns = 4
+	row.columns = 5
 	row.add_theme_constant_override("h_separation", 12)
 	row.add_theme_constant_override("v_separation", 10)
 	v.add_child(row)
@@ -2748,8 +3109,9 @@ func _offer_card(i: int) -> Control:
 			accent = Color(0.45, 0.85, 1.0)
 			title = itd.name
 			desc = itd.desc
-			kind = {"aim": "Item · use while aiming", "pause": "Item · use while paused", "any": "Item · aiming or paused"}[itd.use]
-	var sh := _card_shell(accent, 236, 236)
+			kind = "%s · %s" % ["Tool, one charge per table" if itd.kind == "tool" else "Consumable", Catalog.WHEN_NAMES[itd.when]]
+			accent = Catalog.WHEN_COLORS[itd.when]
+	var sh := _card_shell(accent, 196, 214)
 	var p: PanelContainer = sh[0]
 	var v: VBoxContainer = sh[1]
 	if item.type == "imbue":
@@ -2757,20 +3119,23 @@ func _offer_card(i: int) -> Control:
 	else:
 		var ic := CenterContainer.new()
 		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		ic.add_child(IconArt.new().setup(("ball_" + item.id) if item.type == "ball" else item.id, F_SEMI, 46))
+		ic.add_child(IconArt.new().setup(("ball_" + item.id) if item.type == "ball" else item.id, F_SEMI, 40))
 		v.add_child(ic)
 	var t := _label(title, 18, Color.WHITE)
 	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	t.custom_minimum_size = Vector2(212, 0)
+	t.custom_minimum_size = Vector2(172, 0)
 	v.add_child(t)
-	v.add_child(_label(kind, 12, accent))
+	var kind_l := _label(kind, 12, accent)
+	kind_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	kind_l.custom_minimum_size = Vector2(172, 0)
+	v.add_child(kind_l)
 	if not syn.is_empty():
 		var sl := _label("+ Synergy: " + ", ".join(syn), 12, Color(0.5, 1.0, 0.6))
 		sl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		sl.custom_minimum_size = Vector2(212, 0)
+		sl.custom_minimum_size = Vector2(172, 0)
 		v.add_child(sl)
 		p.add_theme_stylebox_override("panel", _style(Color(0.1, 0.16, 0.11), Color(0.5, 1.0, 0.6), 3, 10))
-	var d := _term_text(Glossary.link(desc), 13, Color(0.8, 0.82, 0.85), 212.0)
+	var d := _term_text(Glossary.link(desc), 13, Color(0.8, 0.82, 0.85), 172.0)
 	d.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(d)
 	var b := _button("SOLD" if item.sold else "Buy $%d" % item.cost, func():

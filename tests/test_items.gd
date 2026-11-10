@@ -25,10 +25,10 @@ func score(events: Array, extra: Dictionary = {}) -> Dictionary:
 func _initialize() -> void:
 	var h5 := [{"type": "ball", "a": 0, "b": 5}, pot(5)]
 	print("content")
-	check(Catalog.ITEMS.size() >= 13, "13 usable items (%d)" % Catalog.ITEMS.size())
+	check(Catalog.ITEMS.size() == 21, "21 items in the Kit (%d)" % Catalog.ITEMS.size())
 	for id in Catalog.ITEMS:
 		check(IconArt.MOTIFS.has(id), "%s has an icon" % id) if not IconArt.MOTIFS.has(id) else null
-		check(["aim", "pause", "any"].has(Catalog.ITEMS[id].use), "%s says when it is used" % id)
+		check(["setup", "pause", "after", "any"].has(Catalog.ITEMS[id].when) and ["tool", "consumable"].has(Catalog.ITEMS[id].kind), "%s says when it is used and what kind it is" % id)
 	var motifs := {}
 	for id in Catalog.PERKS.keys() + Catalog.ITEMS.keys():
 		var m: String = IconArt.MOTIFS.get(id, "")
@@ -64,23 +64,38 @@ func _initialize() -> void:
 	print("items")
 	run.perks.clear()
 	run.begin_table()
-	var chalk0 := run.chalk
-	check(run.use_state_item("handchalk") and run.chalk == chalk0 + 1, "Hand Chalk adds Chalk")
-	check(run.use_state_item("heatpack") and run.heat == 2, "Heat Pack adds Heat")
-	check(run.use_state_item("doubledown") and run.next_boost == 2.0, "Double Down arms")
-	var sc := run.pocket_scale()
-	check(run.use_state_item("wideopen") and is_equal_approx(run.pocket_scale(), sc * 1.2), "Wide Open widens pockets")
-	check(not run.use_state_item("portal"), "placed items are not applied blind")
-	run.apply_shot({"scored": false, "foul": "Miss", "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [], "shattered": [], "lines": []}, false, 9, true)
-	check(run.next_boost == 1.0, "one-shot items are spent by the next shot")
+	check(not run.use_state_item("slip"), "an Insurance Slip needs a shot that cost Chalk")
+	var miss := {"scored": false, "foul": "Miss", "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [], "shattered": [], "lines": []}
+	run.apply_shot(miss, false, 9, true)
+	run.apply_shot(miss, false, 9, true)
+	var chalk_now := run.chalk
+	check(run.last_chalk_lost and run.use_state_item("slip") and run.chalk == chalk_now + 1, "the Slip gives the Chalk back")
+	check(not run.use_state_item("slip"), "only once")
 	run.money = 50
-	run.shop = [{"type": "item", "id": "heatpack", "cost": 3, "sold": false}]
+	run.shop = [{"type": "item", "id": "rewind", "cost": 9, "sold": false}]
+	check(run.buy(0) == "" and run.tools.has("rewind") and int(run.tool_charges.rewind) == 1, "Tools go in Tool slots with one charge")
+	check(run.spend("rewind") and not run.spend("rewind"), "one charge per table")
+	run.begin_table()
+	check(int(run.tool_charges.rewind) == 1, "and it comes back on the next table")
+	run.perks.assign(["overclock"])
+	run.begin_table()
+	check(int(run.tool_charges.rewind) == 2, "Overclock gives Tools two charges")
+	run.perks.clear()
 	run.items.assign(["wall", "blink", "portal"])
-	check(run.buy(0) != "", "item slots are limited")
+	run.shop = [{"type": "item", "id": "slip", "cost": 3, "sold": false}]
+	check(run.buy(0) != "", "Consumable slots are limited")
 	run.perks.assign(["packrat"])
-	check(run.buy(0) == "" and run.items.size() == 4, "Pack Rat adds slots")
+	check(run.buy(0) == "" and run.items.size() == 4 and run.tool_slots() == 3, "Pack Rat adds a slot of each kind")
 	run.perks.assign(["quartermaster", "enchanter"])
 	check(run.item_cost("portal") == 4 and run.imbue_cost("glass") == 3, "Quartermaster and Enchanter cut prices")
+	run.perks.clear()
+	run.table_mods.covered.append(0)
+	var covered := run.build_layout()
+	var plain := TableLayout.new().build(run.pocket_scale(), [])
+	check(covered.pockets[0].closed and covered.pockets[5].r > plain.pockets[5].r * 1.25, "Pocket Cover closes one pocket and widens the opposite")
+	var c5 := [{"type": "ball", "a": 0, "b": 5}, pot(5, 2)]
+	check(score(c5, {"called": {"ball": 5, "pocket": 2}}).total == 45, "a Called Shot that comes off pays ×3")
+	check(score(c5, {"called": {"ball": 5, "pocket": 3}}).total == 15, "a wrong call pays nothing extra")
 
 	print("ball set")
 	var lean := RunState.new()

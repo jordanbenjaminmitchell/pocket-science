@@ -40,7 +40,11 @@ var pockets_used: Array = []
 var shrink_steps := 0
 var insured_used := 0
 var carry := 0           # Overflow: score carried into the next table
-var items: Array[String] = []   # usable items held
+var items: Array[String] = []   # consumables held
+var tools: Array[String] = []   # tools held all run
+var tool_charges := {}          # this table: charges left per tool
+var called := {}                # Called Shot for the next shot: {ball, pocket}
+var last_chalk_lost := false    # the last shot cost Chalk (Insurance Slip)
 var ball_set: Array = []        # the balls this run racks; starts as 1-15
 var table_mods := {}            # this table only: placed bumpers and portals, wider pockets
 var ball_kinds := {}            # special ball number (16+) -> type
@@ -55,9 +59,10 @@ var echo_used := {}             # Echo balls that have already come back this ta
 var next_boost := 1.0           # Double Down
 var next_all_hot := false       # Spotlight
 var next_magnet := false        # Magnet Charm
-const ITEM_SLOTS := 3
+const ITEM_SLOTS := 3            # consumables
+const TOOL_SLOTS := 2
 ## Items the rules can apply on their own, with no aiming or placing.
-const STATE_ITEMS := ["handchalk", "heatpack", "doubledown", "spotlight", "magnetcharm", "wideopen"]
+const STATE_ITEMS := ["slip"]
 
 # Run stats
 var total_pots := 0
@@ -79,6 +84,7 @@ func start(s: int, cue_id: String = "maple", handicap_level: int = 0) -> void:
 	perks.clear()
 	perks.assign(c.perks)
 	items.assign(c.get("items", []))
+	tools.assign(c.get("tools", []))
 	ball_set = range(1, 16).filter(func(n): return not (c.get("remove", []) as Array).has(n))
 	ball_kinds = {}
 	seed_growth = {}
@@ -135,14 +141,17 @@ func begin_table() -> void:
 	insured_used = 0
 	solid_run = 0
 	stripe_run = 0
-	table_mods = {"bumpers": [], "portals": [], "wide": false}
+	table_mods = {"bumpers": [], "portals": [], "covered": []}
 	frost_shield = false
 	heart_used = false
 	quick_used = false
 	echo_used = {}
 	_roll_faces()
-	if perks.has("overclock") and items.size() < item_slots():
-		items.append("secondstrike")
+	called = {}
+	last_chalk_lost = false
+	tool_charges = {}
+	for t in tools:
+		tool_charges[t] = 2 if perks.has("overclock") else 1
 	next_boost = 1.0
 	next_all_hot = false
 	next_magnet = false
@@ -153,7 +162,7 @@ func begin_table() -> void:
 		bounty = keys[rng.randi_range(0, keys.size() - 1)]
 	bounty_done = false
 	if perks.has("tinkerer") and items.size() < item_slots():
-		var ids := Catalog.ITEMS.keys()
+		var ids := consumable_ids()
 		items.append(ids[rng.randi_range(0, ids.size() - 1)])
 
 
@@ -360,7 +369,32 @@ func _kinds_out() -> Dictionary:
 
 
 func item_slots() -> int:
-	return ITEM_SLOTS + (2 if perks.has("packrat") else 0)
+	return ITEM_SLOTS + (1 if perks.has("packrat") else 0)
+
+
+func tool_slots() -> int:
+	return TOOL_SLOTS + (1 if perks.has("packrat") else 0)
+
+
+func consumable_ids() -> Array:
+	return Catalog.ITEMS.keys().filter(func(k): return Catalog.ITEMS[k].kind == "consumable")
+
+
+## Tools spend a charge, consumables leave the bag (Quick Hands may save one).
+## Returns false if there was nothing to spend.
+func spend(id: String) -> bool:
+	if Catalog.ITEMS[id].kind == "tool":
+		if int(tool_charges.get(id, 0)) <= 0:
+			return false
+		tool_charges[id] = int(tool_charges[id]) - 1
+		return true
+	if not items.has(id):
+		return false
+	if Catalog.ITEMS[id].when == "pause" and perks.has("quickhands") and not quick_used:
+		quick_used = true
+		return true
+	items.erase(id)
+	return true
 
 
 func item_cost(id: String) -> int:
@@ -387,19 +421,11 @@ func power_mult(is_break: bool) -> float:
 ## Applies an item that needs no aiming or placing. Returns false for the others.
 func use_state_item(id: String) -> bool:
 	match id:
-		"handchalk":
+		"slip":
+			if not last_chalk_lost:
+				return false
 			chalk += 1
-		"heatpack":
-			heat += 2
-			best_heat = maxi(best_heat, heat)
-		"doubledown":
-			next_boost = 2.0
-		"spotlight":
-			next_all_hot = true
-		"magnetcharm":
-			next_magnet = true
-		"wideopen":
-			table_mods["wide"] = true
+			last_chalk_lost = false
 		_:
 			return false
 	return true
@@ -494,10 +520,14 @@ func _roll_shop_items() -> void:
 		var types := Catalog.BALL_TYPES.keys()
 		var bt: String = types[rng.randi_range(0, types.size() - 1)]
 		shop.append({"type": "ball", "id": bt, "cost": int(Catalog.BALL_TYPES[bt].cost), "sold": false})
+	var cons := consumable_ids()
 	for i in 2:
-		var ids := Catalog.ITEMS.keys()
-		var it: String = ids[rng.randi_range(0, ids.size() - 1)]
+		var it: String = cons[rng.randi_range(0, cons.size() - 1)]
 		shop.append({"type": "item", "id": it, "cost": item_cost(it), "sold": false})
+	var free_tools: Array = Catalog.ITEMS.keys().filter(func(k): return Catalog.ITEMS[k].kind == "tool" and not tools.has(k))
+	if tools.size() < tool_slots() and not free_tools.is_empty():
+		var tl: String = free_tools[rng.randi_range(0, free_tools.size() - 1)]
+		shop.append({"type": "item", "id": tl, "cost": item_cost(tl), "sold": false})
 
 
 func _random_perk() -> String:
@@ -565,9 +595,17 @@ func buy(i: int) -> String:
 				return "Your ball set is full"
 			add_special(item.id)
 		"item":
-			if items.size() >= item_slots():
-				return "Item slots full - use one first"
-			items.append(item.id)
+			if Catalog.ITEMS[item.id].kind == "tool":
+				if tools.has(item.id):
+					return "You already have that Tool"
+				if tools.size() >= tool_slots():
+					return "Tool slots full"
+				tools.append(item.id)
+				tool_charges[item.id] = 2 if perks.has("overclock") else 1
+			else:
+				if items.size() >= item_slots():
+					return "Consumable slots full - use one first"
+				items.append(item.id)
 	money -= item.cost
 	item.sold = true
 	return ""
@@ -592,6 +630,8 @@ func sell_value(id: String) -> int:
 ## {cleared, over, rack_cleared, ball_in_hand, chalk_lost}
 func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table: bool) -> Dictionary:
 	shots_taken += 1
+	called = {}
+	last_chalk_lost = false
 	if res.get("scored", false):
 		for n in res.get("potted", []):
 			if int(n) >= 1 and int(n) <= 15:
@@ -646,6 +686,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 			insured_used += 1
 		if not free_break and not soft and not insured and not excused and not res.get("safe", false):
 			chalk -= 2 if perks.has("glasscannon") else 1
+			last_chalk_lost = true
 			out.chalk_lost = true
 		if frost_shield:
 			frost_shield = false   # Frost: this miss keeps the Heat
@@ -679,6 +720,10 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 ## the bots and the tests.
 func build_layout() -> TableLayout:
 	var layout := TableLayout.new().build(pocket_scale(), closed_pockets())
+	for k in table_mods.get("covered", []):
+		layout.pockets[k].closed = true
+		var opp: int = 5 - int(k)
+		layout.pockets[opp].r *= 1.3
 	for bp in table_mods.get("bumpers", []):
 		layout.add_bumper(Vector2(bp[0], bp[1]), TableLayout.BUMPER_R)
 	for pt in table_mods.get("portals", []):
@@ -797,7 +842,7 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 		"lowest": lowest, "highest": highest, "element_mix": element_mix,
 		"target": target(), "on_table": on_table, "total_pots": total_pots,
 		"solid_run": solid_run, "stripe_run": stripe_run,
-		"boost": next_boost, "all_hot": next_all_hot, "removed": removed_count(),
+		"boost": next_boost, "all_hot": next_all_hot, "removed": removed_count(), "called": called,
 		"specials": ball_kinds.size(), "seed_growth": seed_growth,
 		"cue_start": s.pos[ci] if ci >= 0 else Vector2.ZERO,
 	}
@@ -830,7 +875,7 @@ func to_dict() -> Dictionary:
 		"best_shot": best_shot, "tables_cleared": tables_cleared, "best_heat": best_heat,
 		"phase": phase, "carry": carry, "record_id": record_id, "daily_key": daily_key,
 		"handicap": handicap, "total_score": total_score, "items": items, "ball_set": ball_set,
-		"ball_kinds": _kinds_out(), "seed_growth": seed_growth, "removals": removals,
+		"ball_kinds": _kinds_out(), "seed_growth": seed_growth, "removals": removals, "tools": tools,
 	}
 	if phase == "table":
 		d["table"] = {
@@ -839,7 +884,7 @@ func to_dict() -> Dictionary:
 			"forgiven": forgiven, "bounty": bounty, "bounty_done": bounty_done,
 			"pockets_used": pockets_used, "shrink_steps": shrink_steps, "insured_used": insured_used,
 				"solid_run": solid_run, "stripe_run": stripe_run, "mods": table_mods,
-				"frost": frost_shield, "heart_used": heart_used,
+				"frost": frost_shield, "heart_used": heart_used, "tool_charges": tool_charges, "chalk_lost": last_chalk_lost,
 				"boost": next_boost, "all_hot": next_all_hot, "magnet": next_magnet,
 			"snapshot": table_snapshot,
 		}
@@ -899,6 +944,11 @@ func _load_from(path: String) -> bool:
 	var d = _read(path)
 	if typeof(d) != TYPE_DICTIONARY:
 		return false
+	return load_dict(d)
+
+
+## Restores a run from a saved dictionary (a save file, or a Rewind point).
+func load_dict(d: Dictionary) -> bool:
 	var v := int(d.get("v", 0))
 	if v != SAVE_VERSION:   # older saves used retired rules and racks
 		return false
@@ -936,7 +986,9 @@ func _load_from(path: String) -> bool:
 	daily_key = str(d.get("daily_key", ""))
 	handicap = int(d.get("handicap", 0))
 	total_score = int(d.get("total_score", 0))
-	items.assign((d.get("items", []) as Array).filter(func(x): return Catalog.ITEMS.has(x)))
+	items.assign((d.get("items", []) as Array).filter(func(x): return Catalog.ITEMS.has(x) and Catalog.ITEMS[x].kind == "consumable"))
+	tools.assign((d.get("tools", []) as Array).filter(func(x): return Catalog.ITEMS.has(x) and Catalog.ITEMS[x].kind == "tool"))
+	var held_items := items.duplicate()
 	ball_set = (d.get("ball_set", range(1, 16)) as Array).map(func(x): return int(x))
 	ball_kinds = {}
 	var bk = d.get("ball_kinds", {})
@@ -978,6 +1030,10 @@ func _load_from(path: String) -> bool:
 		next_all_hot = bool(t.get("all_hot", false))
 		next_magnet = bool(t.get("magnet", false))
 		frost_shield = bool(t.get("frost", false))
+		items.assign(held_items)   # begin_table may have added a Tinkerer item
+		if typeof(t.get("tool_charges")) == TYPE_DICTIONARY:
+			tool_charges = t.tool_charges
+		last_chalk_lost = bool(t.get("chalk_lost", false))
 		heart_used = bool(t.get("heart_used", false))
 		if typeof(t.get("snapshot")) == TYPE_DICTIONARY:
 			table_snapshot = t.snapshot

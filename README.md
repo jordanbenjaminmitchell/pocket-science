@@ -21,7 +21,7 @@ The APK is signed with a personal key from the build PC, so it is for your own d
 4. **The Pro Shop** opens between tables:
    - **Perks:** 100 passive rules for your six slots.
    - **Imbues:** 16 lasting upgrades for one ball.
-   - **Items:** 13 usable items, held in item slots.
+   - **The Hustler's Kit:** 21 items. **Tools** stay all run with one charge per table; **Consumables** are used once. Each works at one moment: while aiming, while a shot is paused, or after a shot. Set-up items show their effect on the prediction first, and are spent only when you shoot.
    - **Special balls:** 24 types to add to your set.
    - **Removal:** take a ball out of your set, never the 8.
 5. **Nine tables** make a run, including the Element Table at table 5 and the Grand Final at table 9. After that, endless mode.

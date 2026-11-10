@@ -107,38 +107,52 @@ const PERKS := {
 	"thinrack": {"name": "Thin Rack", "r": 1, "cost": 6, "fam": "clear", "desc": "Every ball removed from your set makes all balls worth +6."},
 	"missing": {"name": "Missing Piece", "r": 1, "cost": 7, "fam": "clear", "desc": "Shots start with +0.5 Chain for each ball removed from your set (max +3)."},
 	"cleanhouse": {"name": "Clean House", "r": 0, "cost": 3, "fam": "clear", "desc": "Removing a ball in the Pro Shop is free."},
-	"packrat": {"name": "Pack Rat", "r": 0, "cost": 4, "fam": "gear", "desc": "+2 item slots."},
+	"packrat": {"name": "Pack Rat", "r": 0, "cost": 4, "fam": "gear", "desc": "+1 Tool slot and +1 Consumable slot."},
 	"quartermaster": {"name": "Quartermaster", "r": 0, "cost": 4, "fam": "gear", "desc": "Items cost $1 less."},
-	"tinkerer": {"name": "Tinkerer", "r": 1, "cost": 6, "fam": "gear", "desc": "Start every table with a random item, if you have a free slot."},
+	"tinkerer": {"name": "Tinkerer", "r": 1, "cost": 6, "fam": "gear", "desc": "Start every table with a random Consumable, if you have room."},
 	"enchanter": {"name": "Enchanter", "r": 0, "cost": 4, "fam": "imbue", "desc": "Imbues cost $2 less."},
 	"secondcoat": {"name": "Second Coat", "r": 1, "cost": 7, "fam": "imbue", "desc": "Imbued balls pay ×1.5."},
 	"goldrush": {"name": "Gold Rush", "r": 1, "cost": 6, "fam": "special", "desc": "Special balls pay ×2."},
 	"menagerie": {"name": "Menagerie", "r": 1, "cost": 6, "fam": "special", "desc": "Shots start with +0.25 Chain for each special ball in your set."},
 	"alchemy": {"name": "Alchemy", "r": 2, "cost": 8, "fam": "special", "desc": "After each table, one plain ball in your set (never the 8) turns into a random special ball."},
 	"stillness": {"name": "Stillness", "r": 1, "cost": 6, "fam": "pause", "desc": "Every time you pause a shot, it gains +0.5 Chain (max +2 a shot)."},
-	"quickhands": {"name": "Quick Hands", "r": 0, "cost": 4, "fam": "pause", "desc": "The first pause item you use on each table is not used up."},
+	"quickhands": {"name": "Quick Hands", "r": 0, "cost": 4, "fam": "pause", "desc": "The first mid-shot Consumable you use on each table is not used up."},
 	"afterimage": {"name": "Afterimage", "r": 1, "cost": 6, "fam": "pause", "desc": "Second Strike and Blink each add +1 Chain to the shot."},
-	"overclock": {"name": "Overclock", "r": 2, "cost": 8, "fam": "pause", "desc": "Start every table with a Second Strike, if you have a free item slot."},
+	"overclock": {"name": "Overclock", "r": 2, "cost": 8, "fam": "pause", "desc": "Your Tools get two charges on every table."},
 	"velvet": {"name": "Velvet Cloth", "r": 0, "cost": 5, "fam": "physics", "desc": "30% less cloth friction: balls roll further."},
 }
 
-## Usable items: held in item slots and spent on the current table. "use" says
-## when: "aim" before a shot, "pause" while a shot is paused, "any" for both.
+## Usable items, the Hustler's Kit: pool-hall props that each bend one rule of the
+## table. "kind": a tool stays all run with one charge per table; a consumable is
+## used once. "when": setup (aiming), pause (a shot is paused), after (the balls
+## have stopped after a shot) or any.
 const ITEMS := {
-	"handchalk": {"name": "Hand Chalk", "cost": 3, "use": "aim", "desc": "+1 Chalk on this table."},
-	"heatpack": {"name": "Heat Pack", "cost": 3, "use": "aim", "desc": "+2 Heat right now."},
-	"doubledown": {"name": "Double Down", "cost": 5, "use": "aim", "desc": "Your next shot pays ×2."},
-	"spotlight": {"name": "Spotlight", "cost": 4, "use": "aim", "desc": "Every pocket is the hot pocket for your next shot."},
-	"magnetcharm": {"name": "Magnet Charm", "cost": 4, "use": "aim", "desc": "For your next shot, pockets pull nearby balls in."},
-	"wideopen": {"name": "Wide Open", "cost": 4, "use": "aim", "desc": "Pockets are 20% wider for the rest of this table."},
-	"ballinhand": {"name": "Ball in Hand", "cost": 3, "use": "aim", "desc": "Pick up the cue ball and place it anywhere."},
-	"freshrack": {"name": "Fresh Rack", "cost": 4, "use": "aim", "desc": "Re-rack every ball still on the table and break again."},
-	"bumperkit": {"name": "Bumper Kit", "cost": 4, "use": "any", "desc": "Place a bumper anywhere on this table."},
-	"portal": {"name": "Portal Pair", "cost": 5, "use": "any", "desc": "Place two linked portals. A ball rolling into one comes out of the other at the same speed."},
-	"secondstrike": {"name": "Second Strike", "cost": 4, "use": "pause", "desc": "While a shot is paused, hit the cue ball again."},
-	"wall": {"name": "Pop-up Wall", "cost": 4, "use": "pause", "desc": "While a shot is paused, raise a short wall for the rest of the shot."},
-	"blink": {"name": "Blink", "cost": 4, "use": "pause", "desc": "While a shot is paused, move the cue ball anywhere. It keeps its speed and direction."},
+	"calledshot": {"name": "Called Shot", "kind": "consumable", "when": "setup", "cost": 4, "desc": "Pick a ball and a pocket. If that ball drops there on your next shot, it pays ×3."},
+	"trapdoor": {"name": "Trapdoor", "kind": "consumable", "when": "setup", "cost": 5, "desc": "Open a seventh pocket anywhere along a cushion for your next shot."},
+	"ghostchalk": {"name": "Ghost Chalk", "kind": "consumable", "when": "setup", "cost": 4, "desc": "Pick a ball. Your next shot passes straight through it."},
+	"swap": {"name": "Swap", "kind": "tool", "when": "setup", "cost": 7, "desc": "Swap the places of two balls (not the cue ball)."},
+	"polish": {"name": "Polish", "kind": "consumable", "when": "setup", "cost": 3, "desc": "Pick a ball. On your next shot it glides with no cloth friction until it first hits something."},
+	"leadweight": {"name": "Lead Weight", "kind": "tool", "when": "setup", "cost": 6, "desc": "Pick a ball. On your next shot it is four times as heavy."},
+	"spotter": {"name": "Spotter", "kind": "consumable", "when": "setup", "cost": 4, "desc": "Bring a ball you sank on this table back to the foot spot. Never the 8."},
+	"pocketcover": {"name": "Pocket Cover", "kind": "tool", "when": "setup", "cost": 7, "desc": "Cover a pocket for the rest of this table. The pocket opposite opens 30% wider."},
+	"secondstrike": {"name": "Second Strike", "kind": "tool", "when": "pause", "cost": 7, "desc": "While a shot is paused, hit the cue ball again."},
+	"wall": {"name": "Pop-up Wall", "kind": "consumable", "when": "pause", "cost": 4, "desc": "While a shot is paused, raise a short wall for the rest of the shot."},
+	"blink": {"name": "Blink", "kind": "consumable", "when": "pause", "cost": 4, "desc": "While a shot is paused, move the cue ball anywhere. It keeps its speed and direction."},
+	"freezeframe": {"name": "Freeze Frame", "kind": "consumable", "when": "pause", "cost": 4, "desc": "While a shot is paused, stop one ball dead. It holds still like a post for the rest of the shot."},
+	"nudge": {"name": "Nudge", "kind": "tool", "when": "pause", "cost": 6, "desc": "While a shot is paused, push one ball a short way in any direction."},
+	"englishdial": {"name": "English Dial", "kind": "consumable", "when": "pause", "cost": 3, "desc": "While a shot is paused, put the spin you have set onto the rolling cue ball."},
+	"gravitypebble": {"name": "Gravity Pebble", "kind": "consumable", "when": "pause", "cost": 4, "desc": "While a shot is paused, drop a small well that bends rolling balls for the rest of the shot."},
+	"rewind": {"name": "Rewind", "kind": "tool", "when": "after", "cost": 9, "desc": "Undo your last shot entirely: balls, score, Heat and Chalk."},
+	"slip": {"name": "Insurance Slip", "kind": "consumable", "when": "after", "cost": 3, "desc": "If your last shot cost Chalk, get it back."},
+	"triangle": {"name": "Triangle", "kind": "consumable", "when": "after", "cost": 4, "desc": "Re-rack every ball still on the table and break again."},
+	"ballinhand": {"name": "Ball in Hand", "kind": "consumable", "when": "after", "cost": 3, "desc": "Pick up the cue ball and place it anywhere."},
+	"post": {"name": "Post", "kind": "consumable", "when": "any", "cost": 4, "desc": "Place a bumper anywhere on this table."},
+	"portal": {"name": "Portal Pair", "kind": "consumable", "when": "any", "cost": 5, "desc": "Place two linked portals. A ball rolling into one comes out of the other at the same speed."},
 }
+
+const WHEN_NAMES := {"setup": "Set-up · while aiming", "pause": "Mid-shot · while paused", "after": "Aftermath · after a shot", "any": "Any time"}
+const WHEN_COLORS := {"setup": Color(0.45, 0.7, 1.0), "pause": Color(0.45, 0.95, 0.75), "after": Color(1.0, 0.72, 0.35), "any": Color(0.85, 0.85, 0.9)}
+
 
 ## Imbues live on one numbered ball for the rest of the run.
 const IMBUES := {
@@ -232,7 +246,7 @@ const CUES := {
 		"shaft": Color(0.8, 0.85, 0.8), "butt": Color(0.1, 0.4, 0.3), "accent": Color(0.35, 0.8, 0.5)},
 	"engineer": {"name": "Engineer's Cue", "desc": "Starts with Backspin Wax: draw and follow 50% stronger. $3.", "money": 3, "perks": ["backspin"], "chalk": 0,
 		"shaft": Color(0.82, 0.8, 0.74), "butt": Color(0.2, 0.22, 0.26), "accent": Color(1.0, 0.62, 0.2)},
-	"gearhead": {"name": "Gear Cue", "desc": "Starts with Pack Rat, a Hand Chalk and a Bumper Kit. $2.", "money": 2, "perks": ["packrat"], "chalk": 0, "items": ["handchalk", "bumperkit"],
+	"gearhead": {"name": "Gear Cue", "desc": "Starts with Pack Rat, a Second Strike and a Post. $2.", "money": 2, "perks": ["packrat"], "chalk": 0, "items": ["post"], "tools": ["secondstrike"],
 		"shaft": Color(0.78, 0.82, 0.86), "butt": Color(0.12, 0.3, 0.42), "accent": Color(0.4, 0.85, 1.0)},
 	"lean": {"name": "Lean Cue", "desc": "Starts with Thin Rack, and the 1 and 2 are already out of your set. $3.", "money": 3, "perks": ["thinrack"], "chalk": 0, "remove": [1, 2],
 		"shaft": Color(0.9, 0.86, 0.78), "butt": Color(0.36, 0.3, 0.24), "accent": Color(0.95, 0.95, 0.9)},

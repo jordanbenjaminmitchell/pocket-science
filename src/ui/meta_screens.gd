@@ -66,7 +66,7 @@ func _rows() -> Array:
 		"Items":
 			for id in Catalog.ITEMS:
 				var it: Dictionary = Catalog.ITEMS[id]
-				rows.append({"icon": id, "title": it.name, "sub": "Item · $%d" % it.cost, "desc": it.desc, "color": Color(0.45, 0.85, 1.0), "hint": ""})
+				rows.append({"icon": id, "title": it.name, "sub": "%s · %s · $%d" % ["Tool" if it.kind == "tool" else "Consumable", Catalog.WHEN_NAMES[it.when], it.cost], "desc": it.desc, "color": Catalog.WHEN_COLORS[it.when], "hint": ""})
 		"Balls":
 			for id in Catalog.BALL_TYPES:
 				var bt: Dictionary = Catalog.BALL_TYPES[id]
