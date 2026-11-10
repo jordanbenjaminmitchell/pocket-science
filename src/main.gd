@@ -825,7 +825,7 @@ func _update_aim(delta: float) -> void:
 		var may_steer: bool = touch_aiming if settings.touch_mode else true
 		var mouse_moved := m.distance_to(last_aim_mouse) > 0.5
 		last_aim_mouse = m
-		if mouse_moved and not fine_aim and not plan_lock and not pad_active and may_steer and _mouse_over_table() and m.distance_to(sim.pos[ci]) > 4.0:
+		if (mouse_moved or settings.touch_mode) and not fine_aim and not plan_lock and not pad_active and may_steer and _mouse_over_table() and m.distance_to(sim.pos[ci]) > 4.0:
 			var nd := (m - sim.pos[ci]).normalized()
 			if nd.angle_to(aim_dir) != 0.0:
 				aim_dir = nd
