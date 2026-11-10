@@ -18,7 +18,12 @@ The APK is signed with a personal key from the build PC, so it is for your own d
 1. **Choose a cue.** Each cue starts the run differently. More unlock as you play.
 2. **Every table is a boss** with its own rule and a target score. As in real pool, you keep shooting while you sink. A miss or scratch costs one **Chalk**, and when your Chalk runs out before the target, the run ends.
 3. **Avoid the 8.** Dropping the 8 while other balls are still up costs 15% of the table's target, unless a Perk changes that. Once it is the last ball it is safe.
-4. **The Pro Shop** opens between tables: Perks for your six slots, Imbues that upgrade one ball for the rest of the run, and more.
+4. **The Pro Shop** opens between tables:
+   - **Perks:** 100 passive rules for your six slots.
+   - **Imbues:** 16 lasting upgrades for one ball.
+   - **Items:** 13 usable items, held in item slots.
+   - **Special balls:** 24 types to add to your set.
+   - **Removal:** take a ball out of your set, never the 8.
 5. **Nine tables** make a run, including the Element Table at table 5 and the Grand Final at table 9. After that, endless mode.
 
 ### Scoring
@@ -41,6 +46,16 @@ Bouncing off cushions or balls earns nothing by itself. Only a Perk, an Imbue or
 
 No table ever hides or bends the line. Tables that curve a ball's path draw the real curve as well.
 
+## Pausing a shot
+
+Press **P** (or the Pause button on a phone) while the balls roll and the shot freezes. While it's paused:
+
+- The prediction shows exactly where every ball will go from that moment.
+- Pause items such as **Second Strike**, **Pop-up Wall** and **Blink** change the shot, and bumpers and portals can be placed too.
+- Press **L** (Plan a pause) to lock the prediction, then slide along the cue ball's line and click to make the shot pause itself there. This works while aiming as well.
+
+Settings can also pause every shot automatically the moment the cue ball first hits a ball.
+
 ## Controls
 
 | Action | PC | Phone |
@@ -50,6 +65,8 @@ No table ever hides or bends the line. Tables that curve a ball's path draw the 
 | Spin | Click the cue-ball widget, or W/A/S/D | Tap the cue-ball widget |
 | Move the cue ball on the break | H | Ball-in-hand button |
 | Fast-forward | Click or Space while balls roll | Tap |
+| Pause a shot / play on | P | Pause / Play on button |
+| Lock the prediction to plan a pause | L | Plan a pause button |
 | Pause | Esc | Back |
 
 Gamepads work too. Every key can be rebound in Settings.
