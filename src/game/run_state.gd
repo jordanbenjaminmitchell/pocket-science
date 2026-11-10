@@ -49,6 +49,9 @@ var removals := 0               # balls removed in the Pro Shop this run
 var frost_shield := false       # this table: the next miss keeps Heat
 var heart_used := false         # this table: a Heart ball has already given Chalk
 var quick_used := false         # this table: Quick Hands has saved an item
+var faces := {}                 # Dice and Wild balls: the number each shows
+var last_sunk := 0              # Wild copies this
+var echo_used := {}             # Echo balls that have already come back this table
 var next_boost := 1.0           # Double Down
 var next_all_hot := false       # Spotlight
 var next_magnet := false        # Magnet Charm
@@ -136,6 +139,8 @@ func begin_table() -> void:
 	frost_shield = false
 	heart_used = false
 	quick_used = false
+	echo_used = {}
+	_roll_faces()
 	if perks.has("overclock") and items.size() < item_slots():
 		items.append("secondstrike")
 	next_boost = 1.0
@@ -295,6 +300,40 @@ func remove_ball(n: int) -> bool:
 	ball_kinds.erase(n)
 	Catalog.kinds = ball_kinds
 	return true
+
+
+## Dice show a fresh number every shot; Wild shows the last ball you sank.
+func _roll_faces() -> void:
+	faces = {}
+	for n in ball_kinds:
+		match ball_kinds[n]:
+			"dice":
+				faces[n] = rng.randi_range(1, 15)
+			"wild":
+				faces[n] = last_sunk
+	Catalog.faces = faces
+
+
+## Echo: the first time an Echo ball drops on a table it comes back to the foot spot.
+func respot_echo(res: Dictionary, s: PoolSim) -> Array:
+	var back: Array = []
+	for n in res.get("potted", []):
+		if Catalog.kind_of(int(n)) != "echo" or echo_used.has(n):
+			continue
+		var i := s.index_of(int(n))
+		if i < 0 or s.alive[i] == 1:
+			continue
+		var spot := Rack.FOOT
+		var tries := 0
+		while not s.is_clear_spot(spot, i) and tries < 40:
+			spot = Rack.FOOT + Vector2(-TableLayout.R * 2.2 * (tries / 6 + 1), 0).rotated(tries * TAU / 6.0)
+			tries += 1
+		s.alive[i] = 1
+		s.pos[i] = spot
+		s.vel[i] = Vector2.ZERO
+		echo_used[n] = true
+		back.append(n)
+	return back
 
 
 func removal_cost() -> int:
@@ -553,6 +592,11 @@ func sell_value(id: String) -> int:
 ## {cleared, over, rack_cleared, ball_in_hand, chalk_lost}
 func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table: bool) -> Dictionary:
 	shots_taken += 1
+	if res.get("scored", false):
+		for n in res.get("potted", []):
+			if int(n) >= 1 and int(n) <= 15:
+				last_sunk = int(n)
+	_roll_faces()
 	next_boost = 1.0   # one-shot items are spent whatever happened
 	next_all_hot = false
 	next_magnet = false
@@ -600,7 +644,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 			out["forgiven"] = true
 		if not free_break and not soft and insured:
 			insured_used += 1
-		if not free_break and not soft and not insured and not excused:
+		if not free_break and not soft and not insured and not excused and not res.get("safe", false):
 			chalk -= 2 if perks.has("glasscannon") else 1
 			out.chalk_lost = true
 		if frost_shield:
@@ -621,6 +665,8 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		return out
 	if not (res.scored and perks.has("migration")):
 		roll_hot_pocket(hot_pocket)
+	if int(res.get("new_hot", -1)) >= 0 and hot_pocket >= 0:
+		hot_pocket = int(res.new_hot)   # Ember chose it
 	if balls_left == 0:
 		racks_cleared += 1
 		chalk += 1
@@ -717,14 +763,15 @@ func apply_physics(s: PoolSim) -> void:
 				"anchor":
 					m *= 3.0
 				"feather":
-					m *= 0.5
+					m *= 0.25
 			match imbues.get(s.num[i], ""):
 				"hollow":
 					m *= 0.5
 				"leaded":
 					m *= 2.0
 		if i < s.pull.size():
-			s.pull[i] = 1.0 if Catalog.kind_of(s.num[i]) == "magnet" or imbues.get(s.num[i], "") == "magnetic" else 0.0
+			s.pull[i] = 1.0 if imbues.get(s.num[i], "") == "magnetic" else 0.0
+			s.bounce[i] = 1.0 if Catalog.kind_of(s.num[i]) == "star" else 0.0
 		s.mass[i] = m
 
 

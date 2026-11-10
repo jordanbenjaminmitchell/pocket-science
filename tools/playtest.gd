@@ -121,6 +121,7 @@ func play_table(run: RunState, rec: Dictionary) -> bool:
 		if not res.scored:
 			rec.fouls[res.foul] = rec.fouls.get(res.foul, 0) + 1
 		var out := run.apply_shot(res, is_break, sim.object_balls_left(), sim.alive[ci] == 1)
+		run.respot_echo(res, sim)
 		if out.has("bounty"):
 			rec.bounties += 1
 		is_break = false

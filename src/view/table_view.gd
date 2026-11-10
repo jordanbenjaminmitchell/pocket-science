@@ -789,7 +789,7 @@ static func compute_guide(sim: PoolSim, aim: Vector2, follow: float, side: float
 		if oh.kind == "rail" and b < reach:
 			# Identical cushion response to PoolSim._resolve_wall.
 			var rn: Vector2 = oh.normal
-			var v := od - rn * od.dot(rn) * (1.0 + sim.rail_e)
+			var v := od - rn * od.dot(rn) * (1.0 + sim.rail_e_of(obj))
 			var rt := Vector2(-rn.y, rn.x)
 			v -= rt * v.dot(rt) * 0.04
 			od = v.normalized()

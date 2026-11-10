@@ -1403,12 +1403,20 @@ func _after_shot() -> void:
 	is_break = false
 	var out := run.apply_shot(result, was_break, sim.object_balls_left(), sim.alive[_cue_index()] == 1)
 	run.apply_physics(sim)   # one-shot items such as Magnet Charm wear off
+	for n in run.respot_echo(result, sim):
+		view.popup(Rack.FOOT + Vector2(0, -40), "Echo returns", Color(0.75, 0.6, 1.0), 20, 1.3)
+	for b in view.ball_nodes.values():
+		b.label_node.queue_redraw()   # Dice and Wild show their new numbers
 	_log_shot(was_break, out)
 	_announce_unlocks(meta.on_shot(result, run))
 	if out.has("bounty"):
 		sfx.play("coin", 1.0, 1.1)
 		_flash_banner("SIDE BET WON!  +$%d" % run.bounty_reward(), Color(1.0, 0.85, 0.35), 1.3)
 		view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(1.0, 0.85, 0.35), 40, 300)
+	for e in sim.events:
+		if e.type == "shatter":
+			view.burst(e.at, Color(0.75, 0.9, 1.0), 26, 260)
+			sfx.play("bad", 0.5, 1.6)
 	for n in result.get("lost_balls", []):
 		view.popup(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.66), "%s left your set" % Catalog.ball_label(n), Color(1.0, 0.6, 0.6), 20, 1.5)
 	if out.has("heart"):

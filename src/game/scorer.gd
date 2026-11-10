@@ -54,6 +54,8 @@ static func chain_step(e: Dictionary, ctx: Dictionary, contacted: bool) -> float
 			for n in [e.a, e.b]:
 				if imbues.get(n, "") == "spark":
 					add += 1.0
+				if imbues.get(n, "") == "prismatic":
+					add += 0.25
 		"rail":
 			if e.a != 0:
 				if imbues.get(e.a, "") == "charged":
@@ -83,9 +85,15 @@ static func score(ctx: Dictionary) -> Dictionary:
 	var first_contact := -1
 	var kick := false
 	var toucher := {}
+	var clover := false
+	var shattered_balls: Array = []
 	for e in events:
 		match e.type:
+			"shatter":
+				shattered_balls.append(e.a)
 			"ball":
+				if Catalog.kind_of(e.a) == "clover" or Catalog.kind_of(e.b) == "clover":
+					clover = true
 				if first_contact < 0 and (e.a == 0 or e.b == 0):
 					first_contact = e.b if e.a == 0 else e.a
 				if not toucher.has(e.a):
@@ -96,6 +104,8 @@ static func score(ctx: Dictionary) -> Dictionary:
 				if e.a == 0 and first_contact < 0:
 					kick = true
 			"pocket":
+				if Catalog.kind_of(e.a) == "clover":
+					clover = true
 				if e.a == 0:
 					scratch = true
 				else:
@@ -108,9 +118,11 @@ static func score(ctx: Dictionary) -> Dictionary:
 		"power": ctx.get("power", 0.5), "is_break": ctx.get("is_break", false),
 		"banks": 0, "max_rails": 0, "combos": 0, "kick": kick, "hot_pots": 0, "pocket_list": [],
 		"element_mix": ctx.get("element_mix", []),
-		"penalty": 0, "eight_fine": 0, "last_eight": false, "frost": false, "heart": false, "lost_balls": [], "grown": [],
+		"penalty": 0, "eight_fine": 0, "last_eight": false, "frost": false, "heart": false, "lost_balls": [], "grown": [], "safe": false, "new_hot": -1,
 		"solid_run": int(ctx.get("solid_run", 0)), "stripe_run": int(ctx.get("stripe_run", 0)),
 	}
+	out.safe = clover
+	out.lost_balls.append_array(shattered_balls)
 	# The 8 is an obstacle while other balls remain. The break is luck, so it is let off.
 	var left_after := int(ctx.get("objects", 99)) - pots.size()
 	var eight_early: bool = pots.any(func(p): return p.a == 8) and left_after > 0 and not ctx.get("is_break", false) and anomaly != "cursed8"
@@ -175,6 +187,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 	var stirred := false
 	var void_shot: bool = pots.any(func(p): return Catalog.kind_of(p.a) == "void")
 	var coin_hits := {}
+	var last_touch := {}
 	var boomerang: bool = ctx.has("cue_start") and ctx.has("cue_end") and (ctx.cue_start as Vector2).distance_to(ctx.cue_end) <= 120.0
 	for e in events:
 		if e.type == "ball":
@@ -182,6 +195,8 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			if e.a == 0 or e.b == 0:
 				var other: int = e.b if e.a == 0 else e.a
 				coin_hits[other] = int(coin_hits.get(other, 0)) + 1
+			last_touch[e.a] = e.b
+			last_touch[e.b] = e.a
 		if e.type != "pocket":
 			chain += chain_step(e, ctx, contacted)
 			continue
@@ -200,11 +215,12 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			if not (perks.has("eight") or perks.has("darkhorse")):
 				continue
 		var kind := Catalog.kind_of(n)
-		var prism: bool = kind == "prism" or imbues.get(n, "") == "prismatic"
+		var prism: bool = kind == "prism"
+		var face := int(Catalog.faces.get(n, 0))
 		var solid: bool = Catalog.is_solid(n) or prism
 		var stripe: bool = Catalog.is_stripe(n) or prism
-		var odd: bool = (n <= 15 and n % 2 == 1) or kind == "wild"
-		var even: bool = (n <= 15 and n % 2 == 0) or kind == "wild"
+		var odd: bool = (n <= 15 and n % 2 == 1) or (face > 0 and face % 2 == 1)
+		var even: bool = (n <= 15 and n % 2 == 0) or (face > 0 and face % 2 == 0)
 		var bonus_after := 0.0
 		var facts := {
 			"any": true, "odd": odd, "even": even, "stripe": stripe, "solid": solid,
@@ -212,7 +228,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			"bank": rails > 0, "combo": by != 0, "clean": rails == 0 and by == 0 and not kick,
 			"first": idx == 0, "extra": idx >= 1, "kick": kick, "triple": pots.size() >= 3,
 			"repeat_pocket": seen_pocket.has(k), "soft": float(ctx.get("power", 0.5)) <= 0.35,
-			"prime": Catalog.PRIMES.has(n) or kind == "wild", "fib": [1, 2, 3, 5, 8, 13].has(n) or kind == "wild",
+			"prime": Catalog.PRIMES.has(n) or Catalog.PRIMES.has(face), "fib": [1, 2, 3, 5, 8, 13].has(n) or [1, 2, 3, 5, 8, 13].has(face),
 			"lowest": n == int(ctx.get("lowest", -1)), "highest": n == int(ctx.get("highest", -1)),
 			"heat3": heat >= 3, "last_chalk": int(ctx.get("chalk", 99)) == 1, "third": int(ctx.get("shots_taken", 0)) % 3 == 2,
 			"boomerang": boomerang, "long": _long_pot(ctx, n, e),
@@ -312,18 +328,14 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		# Special balls.
 		match kind:
 			"gold":
-				money += 2
+				money += int(e.get("rails", 0))
 			"glass":
 				x *= 3.0
-				if rng != null and rng.randf() < 1.0 / 3.0:
-					out.lost_balls.append(n)
-					tags.append("Shattered")
 			"feather":
 				pre_chain += 0.5
 			"ember":
-				out.heat_gain += 1
-			"frost":
-				out.frost = true
+				out.new_hot = k
+				tags.append("New hot pocket")
 			"clock":
 				value += 6.0 * int(ctx.get("shots_taken", 0))
 			"coin":
@@ -338,9 +350,8 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			"star":
 				pre_chain += 1.0
 			"heart":
-				out.heart = true
-			"dice":
-				value = 10.0 + float(rng.randi_range(0, 50) if rng != null else 25) + float(ctx.get("catalyst", 0.0))
+				if left_after == 0:
+					out.heart = true
 			"moon":
 				if k == 1 or k == 4:
 					x *= 2.0
@@ -350,10 +361,9 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			"eraser":
 				money += 4
 				out.lost_balls.append(n)
-			"comet":
-				var st: Dictionary = ctx.get("start_pos", {})
-				if st.has(n) and (st[n] as Vector2).distance_to(e.get("at", Vector2.ZERO)) >= 600.0:
-					x *= 2.0
+				var victim := int(last_touch.get(n, 0))
+				if victim != 0 and victim != 8:
+					out.lost_balls.append(victim)
 		if void_shot and kind != "void":
 			x *= 2.0
 		if kind != "" and perks.has("goldrush"):
@@ -394,8 +404,6 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			x *= 1.5
 		chain += pre_chain
 		var pts := value * chain * hm * x
-		if kind == "echo":
-			pts *= 2.0
 		if idx == 0 and perks.has("echo"):
 			pts *= 2.0
 			tags.append("Double Take")

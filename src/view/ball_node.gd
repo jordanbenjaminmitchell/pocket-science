@@ -192,7 +192,8 @@ func _ease_to_rest() -> void:
 
 
 func _digit_size() -> int:
-	return int(round(radius * (1.2 if number < 10 else 0.86)))
+	var shown: int = int(Catalog.faces.get(number, 0)) if number > 15 else number
+	return int(round(radius * (1.2 if shown < 10 else 0.86)))
 
 
 ## While moving, the number is printed on the sphere and turns with it. At rest it
@@ -201,12 +202,15 @@ func _draw_number() -> void:
 	if number == 0 or fade <= 0.05:
 		return
 	var settled := shown_settled
+	# Dice and Wild balls show the number they currently count as.
+	var shown: int = int(Catalog.faces.get(number, 0)) if number > 15 else number
+	var use_emblem := emblem != "" and shown == 0
 	if settled > 0.0:
 		var a2 := fade * settled
-		var txt2 := str(number)
+		var txt2 := str(shown)
 		var fs2 := _digit_size()
 		label_node.draw_circle(Vector2.ZERO, radius * (0.62 if number < 10 else 0.68), Color(0.97, 0.96, 0.9, a2))
-		if emblem != "":
+		if use_emblem:
 			IconArt.paint(label_node, emblem, Vector2.ZERO, radius * 0.5 / 34.0, Color(emblem_ink, a2), Color(0.97, 0.96, 0.9, a2), font, maxf(1.0, radius * 0.08))
 			if settled >= 1.0:
 				return
@@ -226,7 +230,7 @@ func _draw_number() -> void:
 		var angle := atan2(up.x, up.y)
 		var facing := clampf(a.z, 0.0, 1.0)
 		var fs := int(_digit_size() * DIGIT_SUPERSAMPLE)
-		var txt := str(number)
+		var txt := str(shown)
 		var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		var col := Color(0.08, 0.08, 0.08, fade * smoothstep(0.2, 0.45, a.z) * (1.0 - settled))
 		# Foreshorten along the direction the disc is tipping away.
@@ -236,7 +240,7 @@ func _draw_number() -> void:
 			var along := absf(cos(radial.angle() - angle))
 			squash = lerpf(1.0, facing, along)
 		var shrink := Vector2(squash, lerpf(facing, 1.0, absf(cos(radial.angle() - angle)))) if radial.length() > 0.01 else Vector2.ONE
-		if emblem != "":
+		if use_emblem:
 			label_node.draw_set_transform(c, angle, shrink)
 			IconArt.paint(label_node, emblem, Vector2.ZERO, radius * 0.42 / 34.0, Color(emblem_ink, col.a), Color(0.97, 0.96, 0.9, col.a), font, maxf(1.0, radius * 0.07))
 			continue

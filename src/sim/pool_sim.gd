@@ -39,7 +39,10 @@ var tilt := Vector2.ZERO     # constant acceleration on moving balls (Tilted Tab
 var spin_power := 1.0        # strength of draw and follow (Backspin Wax)
 var side_power := 1.0        # how much english bends off cushions (Massé Master)
 var portal_lock := PackedInt32Array()   # the portal end a ball just came out of
-var pull := PackedFloat64Array()        # per-ball pocket pull (Magnet balls and Imbues)
+var pull := PackedFloat64Array()        # per-ball pocket pull (Magnetic Imbue)
+var bounce := PackedFloat64Array()      # per-ball cushion liveliness; 0 = the table's own (Star balls)
+const GLASS_BREAK := 700.0              # impact speed that shatters a Glass ball
+const MAGNET_REACH := 150.0
 
 
 func _init(l: TableLayout = null) -> void:
@@ -73,6 +76,7 @@ func clone() -> PoolSim:
 	s.side_power = side_power
 	s.portal_lock = portal_lock.duplicate()
 	s.pull = pull.duplicate()
+	s.bounce = bounce.duplicate()
 	return s
 
 
@@ -87,6 +91,7 @@ func add_ball(number: int, p: Vector2, m: float = 1.0) -> int:
 	rails.append(0)
 	portal_lock.append(-1)
 	pull.append(0.0)
+	bounce.append(0.0)
 	return pos.size() - 1
 
 
@@ -132,7 +137,7 @@ func strike(dir: Vector2, speed: float, follow_amount: float, side_amount: float
 ## How far ball i will still roll on the cloth if nothing interferes, or -1 if
 ## that cannot be told. Exact integral of the deceleration in _forces.
 func stop_distance(i: int) -> float:
-	if frictionless or roll_decel <= 0.0 or spin[i] != Vector2.ZERO:
+	if frictionless or roll_decel <= 0.0 or spin[i] != Vector2.ZERO or (_kind(i) == "comet" and rails[i] == 0):
 		return -1.0
 	var v := vel[i].length()
 	if drag < 0.001:
@@ -252,7 +257,10 @@ func step(dt: float) -> void:
 			4:
 				_resolve_bumper(bi, bj)
 			5:
-				_pot(bi, bj)
+				if _rejects(bi, bj):
+					_reject(bi, bj)
+				else:
+					_pot(bi, bj)
 			_:
 				break
 	if remaining > 0.0:
@@ -303,6 +311,11 @@ func _resolve_balls(i: int, j: int) -> void:
 		pre_dir = vel[c] / maxf(pre_speed, 0.001)
 	var mi := mass[i]
 	var mj := mass[j]
+	# Anchor: only the cue ball can move it; anything else bounces off it.
+	if _kind(i) == "anchor" and not cue_j:
+		mi = 1.0e6
+	if _kind(j) == "anchor" and not cue_i:
+		mj = 1.0e6
 	var jimp := (1.0 + ball_e) * rel / (1.0 / mi + 1.0 / mj)
 	vel[i] -= nrm * (jimp / mi)
 	vel[j] += nrm * (jimp / mj)
@@ -314,6 +327,19 @@ func _resolve_balls(i: int, j: int) -> void:
 			vel[c] *= cue_damp
 			spin[c] *= cue_damp
 	events.append({"t": time, "type": "ball", "a": num[i], "b": num[j], "speed": rel})
+	# Frost stops dead whatever touches it; Glass shatters if struck hard.
+	if _kind(i) == "frost":
+		vel[j] = Vector2.ZERO
+		spin[j] = Vector2.ZERO
+	if _kind(j) == "frost":
+		vel[i] = Vector2.ZERO
+		spin[i] = Vector2.ZERO
+	for g in [i, j]:
+		if _kind(g) == "glass" and rel > GLASS_BREAK and alive[g] == 1:
+			alive[g] = 0
+			vel[g] = Vector2.ZERO
+			spin[g] = Vector2.ZERO
+			events.append({"t": time, "type": "shatter", "a": num[g], "at": pos[g]})
 
 
 func _resolve_wall(i: int, nrm: Vector2, _seg: int) -> void:
@@ -321,7 +347,7 @@ func _resolve_wall(i: int, nrm: Vector2, _seg: int) -> void:
 	if vn >= 0.0:
 		return
 	var tangent := Vector2(-nrm.y, nrm.x)
-	vel[i] -= nrm * vn * (1.0 + rail_e)
+	vel[i] -= nrm * vn * (1.0 + rail_e_of(i))
 	vel[i] -= tangent * vel[i].dot(tangent) * 0.04
 	if side[i] != 0.0:
 		vel[i] += tangent * side[i] * -vn * 0.32 * side_power
@@ -343,6 +369,10 @@ func _resolve_bumper(i: int, k: int) -> void:
 
 
 func _forces(dt: float) -> void:
+	var magnets: Array = []
+	for i in pos.size():
+		if alive[i] == 1 and num[i] > 15 and _kind(i) == "magnet":
+			magnets.append(i)
 	for i in pos.size():
 		if alive[i] == 0:
 			continue
@@ -358,6 +388,12 @@ func _forces(dt: float) -> void:
 			continue
 		if tilt != Vector2.ZERO:
 			v += tilt * dt
+		for mg in magnets:
+			if mg != i:
+				var md: Vector2 = pos[mg] - pos[i]
+				var ml := md.length()
+				if ml < MAGNET_REACH and ml > R * 2.0:
+					v += md / ml * 2600.0 * (1.0 - ml / MAGNET_REACH) * dt
 		if well_strength != 0.0:
 			var d := well_pos - pos[i]
 			var dist := maxf(d.length(), 40.0)
@@ -371,7 +407,7 @@ func _forces(dt: float) -> void:
 				var dl := d.length()
 				if dl < 110.0:
 					v += d / dl * pp * (110.0 - dl) * 9.0 * dt
-		if not frictionless:
+		if not frictionless and not (_kind(i) == "comet" and rails[i] == 0):
 			var sp := v.length()
 			var ns := sp - (roll_decel + drag * sp) * dt
 			if ns <= STOP_SPEED and spin[i] == Vector2.ZERO:
@@ -393,7 +429,10 @@ func _pockets() -> void:
 			if pk.closed:
 				continue
 			if p.distance_squared_to(pk.pos) < pk.r * pk.r:
-				_pot(i, k)
+				if _rejects(i, k):
+					_reject(i, k)
+				else:
+					_pot(i, k)
 				break
 		if alive[i] == 1 and (p.x < -50.0 or p.y < -50.0 or p.x > TableLayout.W + 50.0 or p.y > TableLayout.H + 50.0):
 			var best := 0
@@ -404,6 +443,30 @@ func _pockets() -> void:
 					bd = d
 					best = k
 			_pot(i, best)
+
+
+func _kind(i: int) -> String:
+	return Catalog.kind_of(num[i]) if num[i] > 15 else ""
+
+
+func rail_e_of(i: int) -> float:
+	return bounce[i] if i < bounce.size() and bounce[i] > 0.0 else rail_e
+
+
+## Moon balls bounce off corner pockets, Sun balls off side pockets.
+func _rejects(i: int, k: int) -> bool:
+	var kind := _kind(i)
+	var side_pocket := k == 1 or k == 4
+	return (kind == "moon" and not side_pocket) or (kind == "sun" and side_pocket)
+
+
+func _reject(i: int, k: int) -> void:
+	var n: Vector2 = (pos[i] - layout.pockets[k].pos).normalized()
+	var vn := vel[i].dot(n)
+	if vn < 0.0:
+		vel[i] -= n * vn * 1.6
+	pos[i] = layout.pockets[k].pos + n * (layout.pockets[k].r + 0.05)
+	events.append({"t": time, "type": "rail", "a": num[i], "speed": -vn, "at": pos[i]})
 
 
 ## Portal end e: pair e / 2, end e % 2.
@@ -507,7 +570,10 @@ func cast(p: Vector2, d: Vector2, ignore: int, max_len: float = 3000.0, ignore2:
 		var t := _toi_circle(pk.pos - p, -d, pk.r)
 		if t < best_t:
 			best_t = t
-			res = {"kind": "pocket", "hit": k, "normal": Vector2.ZERO}
+			if ignore >= 0 and _rejects(ignore, k):
+				res = {"kind": "rail", "hit": -1, "normal": (p + d * t - pk.pos).normalized()}
+			else:
+				res = {"kind": "pocket", "hit": k, "normal": Vector2.ZERO}
 	if use_portals:
 		for k in layout.portals.size() * 2:
 			var t := _toi_circle(portal_end(k) - p, -d, TableLayout.PORTAL_R)
