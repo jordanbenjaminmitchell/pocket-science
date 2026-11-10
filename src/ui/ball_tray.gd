@@ -18,6 +18,8 @@ func set_state(rack: Array, down: Dictionary, iso: Dictionary) -> void:
 	balls = rack
 	potted = down
 	imbues = iso
+	# Grows a row at a time as the ball set grows past 16.
+	custom_minimum_size.y = 6.0 + ceilf(maxf(1.0, rack.size()) / 8.0) * 26.0
 	queue_redraw()
 
 

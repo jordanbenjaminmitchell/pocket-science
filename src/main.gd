@@ -67,6 +67,7 @@ var lbl_round: Label
 var lbl_lab: Label
 var lbl_rule: RichTextLabel
 var item_bar: HBoxContainer
+var touch_shoot: Button
 var pick_item := ""
 var pick_slot := -1
 var pick_points: Array = []
@@ -204,7 +205,7 @@ func _refresh_items() -> void:
 		c.queue_free()
 	for i in run.item_slots():
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(44, 44)
+		b.custom_minimum_size = Vector2(52, 52) if settings.touch_mode else Vector2(44, 44)
 		b.focus_mode = Control.FOCUS_NONE
 		b.add_theme_stylebox_override("normal", _style(Color(0.1, 0.12, 0.16), Color(0.45, 0.85, 1.0, 0.5), 1, 8))
 		b.add_theme_stylebox_override("hover", _style(Color(0.16, 0.2, 0.26), Color(0.45, 0.85, 1.0), 2, 8))
@@ -751,6 +752,10 @@ func _process(delta: float) -> void:
 		if banner_t <= 0.0:
 			banner.visible = false
 	sfx.set_roll(_roll_level() if state == S.ROLL else 0.0)
+	if touch_shoot:
+		var label := "PAUSE" if state == S.ROLL else ("PLAY ON" if state == S.HOLD else "SHOOT")
+		if touch_shoot.text != label:
+			touch_shoot.text = label
 	var cue_i := _cue_index()
 	view.cue_visible = (state == S.AIM or state == S.STRIKE) and sim != null and sim.alive[cue_i] == 1
 	if sim:
@@ -979,7 +984,9 @@ func _step_forecast() -> void:
 	if fc_sim == null:
 		return
 	var t0 := Time.get_ticks_usec()
-	while fc_sim.moving() and fc_sim.time < fc_limit and Time.get_ticks_usec() - t0 < 5000:
+	# Paused or planning, nothing else needs the frame, so the prediction gets most of it.
+	var budget := 14000 if state == S.HOLD or plan_lock else 5000
+	while fc_sim.moving() and fc_sim.time < fc_limit and Time.get_ticks_usec() - t0 < budget:
 		fc_sim.step(PoolSim.STEP)
 		for i in fc_sim.count():
 			if fc_sim.alive[i] == 1 and fc_sim.vel[i] != Vector2.ZERO:
@@ -1862,6 +1869,13 @@ func _build_touch_controls(parent: Control) -> void:
 			shoot.focus_mode = Control.FOCUS_NONE
 			shoot.add_theme_font_size_override("font_size", 24)
 			row.add_child(shoot)
+			touch_shoot = shoot
+	var plan := _button("PLAN A PAUSE", func():
+		if state == S.AIM or state == S.HOLD:
+			_toggle_plan(), Color(0.55, 0.95, 0.85))
+	plan.custom_minimum_size = Vector2(0, 46)
+	plan.focus_mode = Control.FOCUS_NONE
+	touch_box.add_child(plan)
 
 
 func _sync_touch_ui() -> void:
@@ -2206,7 +2220,7 @@ func _perk_card(id: String, slot: int) -> Control:
 	name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_l.custom_minimum_size = Vector2(card.x - 66.0, 0)
 	hb.add_child(name_l)
-	var d := _term_text(Glossary.link(f.desc), 11, Color(0.78, 0.8, 0.82), card.x - 24.0)
+	var d := _term_text(Glossary.link(f.desc), 13 if settings.touch_mode else 11, Color(0.78, 0.8, 0.82), card.x - 24.0)
 	if state != S.SHOP:
 		v.add_child(d)
 	else:
