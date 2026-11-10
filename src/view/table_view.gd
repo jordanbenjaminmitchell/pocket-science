@@ -40,6 +40,7 @@ var cue_colors: Dictionary = {}
 var colorblind := false
 var number_tags := false
 var place_hints: Array = []   # [[ball pos, pocket pos], ...] pots available from the ball-in-hand spot
+var place_radius := 0.0       # 0 = a ball; otherwise the size of the thing being placed
 var coach_text := ""
 var coach_pos := Vector2.ZERO
 var cue_pos := Vector2.ZERO
@@ -460,6 +461,15 @@ func _draw_cushions() -> void:
 		c.draw_circle(p, r - 4, Color(0.25, 0.85, 0.85))
 		c.draw_circle(p, r - 9, Color(0.1, 0.3, 0.35))
 		c.draw_circle(p + Vector2(-r * 0.3, -r * 0.35), r * 0.22, Color(1, 1, 1, 0.35))
+	for k in layout.portals.size() * 2:
+		var pt: Dictionary = layout.portals[k / 2]
+		var pp: Vector2 = pt.a if k % 2 == 0 else pt.b
+		var pc := Color(0.6, 0.4, 1.0) if k % 2 == 0 else Color(0.3, 0.85, 1.0)
+		var pr := TableLayout.PORTAL_R
+		c.draw_circle(pp, pr + 5.0, Color(pc, 0.22))
+		c.draw_circle(pp, pr, Color(0.04, 0.03, 0.1))
+		c.draw_arc(pp, pr, 0, TAU, 36, pc, 3.0, true)
+		c.draw_arc(pp, pr * 0.55, 0, TAU, 24, Color(pc, 0.7), 2.0, true)
 
 
 ## ---------------------------------------------------------------- guideline
@@ -481,9 +491,10 @@ func _draw_overlay() -> void:
 				o.draw_circle(endp, 5.0, Color(1.0, 0.85, 0.3, 0.9))
 	if placing:
 		var col := Color(1, 1, 1, 0.55) if place_ok else Color(1, 0.3, 0.3, 0.6)
-		o.draw_circle(place_pos, R, Color(1, 1, 1, 0.25 if place_ok else 0.1))
-		o.draw_arc(place_pos, R, 0, TAU, 32, col, 2.0)
-		o.draw_arc(place_pos, R + 6 + sin(time * 6.0) * 2.0, 0, TAU, 32, Color(col, 0.35), 1.5)
+		var prr := place_radius if place_radius > 0.0 else R
+		o.draw_circle(place_pos, prr, Color(1, 1, 1, 0.25 if place_ok else 0.1))
+		o.draw_arc(place_pos, prr, 0, TAU, 32, col, 2.0)
+		o.draw_arc(place_pos, prr + 6 + sin(time * 6.0) * 2.0, 0, TAU, 32, Color(col, 0.35), 1.5)
 		for h in place_hints:
 			o.draw_line(h[0], h[1], Color(_pot_color(), 0.55), 2.0)
 			o.draw_arc(h[0], R + 3.0, 0, TAU, 24, Color(_pot_color(), 0.8), 2.0)
@@ -498,7 +509,10 @@ func _draw_overlay() -> void:
 	var glow := Color(1, 1, 1, 0.12)
 	var line := Color(1, 1, 1, 0.92)
 	var aim: PackedVector2Array = guide.aim
+	var gaps: Array = guide.get("aim_gaps", [])
 	for i in aim.size() - 1:
+		if gaps.has(i):
+			continue
 		o.draw_line(aim[i], aim[i + 1], glow, 7.0)
 		o.draw_line(aim[i], aim[i + 1], line, 2.0)
 	if guide.has("scratch"):
@@ -692,24 +706,36 @@ static func compute_guide(sim: PoolSim, aim: Vector2, follow: float, side: float
 	var pts := PackedVector2Array([p])
 	var bounces := 3 if lens else 2
 	var hit := {}
-	for b in bounces + 1:
-		hit = sim.cast(p, d, ci)
+	var gaps: Array = []
+	var through_portal := false
+	var bounce := 0
+	for guard in 10:
+		hit = sim.cast(p, d, ci, 3000.0, -1, not through_portal)
 		pts.append(hit.point)
+		if hit.kind == "portal":
+			# Jump to the other end: no line is drawn across the gap.
+			gaps.append(pts.size() - 1)
+			p = sim.portal_exit(hit.hit, hit.point)
+			pts.append(p)
+			through_portal = true
+			continue
 		if hit.kind != "rail":
 			break
-		if b == bounces:
+		if bounce == bounces:
 			break
+		bounce += 1
 		# Same response as PoolSim._resolve_wall for a unit-speed ball.
 		var n: Vector2 = hit.normal
 		var vn := d.dot(n)
 		var v := d - n * vn * (1.0 + sim.rail_e)
 		var t := Vector2(-n.y, n.x)
 		v -= t * v.dot(t) * 0.04
-		if side != 0.0 and b == 0:
-			v += t * side * -vn * 0.32
+		if side != 0.0 and bounce == 1:
+			v += t * side * -vn * 0.32 * sim.side_power
 		d = v.normalized()
 		p = hit.point
 	g["aim"] = pts
+	g["aim_gaps"] = gaps
 	g["first"] = hit.kind
 	if hit.kind == "pocket":
 		g["scratch"] = hit.point
@@ -769,7 +795,7 @@ static func compute_guide(sim: PoolSim, aim: Vector2, follow: float, side: float
 	var mc := sim.mass[ci]
 	var mo := sim.mass[obj]
 	var vc := vin - n * vin.dot(n) * (1.0 + e) * mo / (mc + mo)
-	var spin := d * follow * 1000.0 * 0.62
+	var spin := d * follow * 1000.0 * 0.62 * sim.spin_power
 	if sim.cue_damp < 1.0:
 		vc *= sim.cue_damp
 		spin *= sim.cue_damp

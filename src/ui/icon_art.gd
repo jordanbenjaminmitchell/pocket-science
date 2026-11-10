@@ -90,6 +90,34 @@ const MOTIFS := {
 	"tiger": "P -30 -24 -16 -24 -6 24 -20 24;P -7 -24 7 -24 17 24 3 24;P 16 -24 28 -24 36 24 26 24",
 	"stripesonly": "c -12 0 21;P -33 -7 9 -7 9 7 -33 7;C 24 0 11;K 24 0 4",
 	"laststripe": "c 0 0 34;c 0 0 23;P -22 -8 22 -8 22 8 -22 8",
+	"heavyhit": "C 0 6 24;l -18 -26 18 -26;l 0 -26 0 -18",
+	"liverails": "l -34 -26 34 -26;o -28 26 -10 -22 8 26 26 -22",
+	"slowcloth": "o -34 -12 -20 -22 -6 -12 8 -22 20 -12 34 -22;C 2 16 9;l -30 16 -12 16",
+	"backspin": "C 0 6 18;K 0 6 11;a 0 6 30 200 340;P -32 -4 -22 -16 -16 0",
+	"bigbreak": "C 4 -16 8;C -5 0 8;C 13 0 8;C -14 16 8;C 4 16 8;C 22 16 8;l -40 -32 -18 -20",
+	"longarm": "l -34 30 26 -22;C 28 -24 6;l -22 30 -34 18",
+	"masse": "a 0 8 28 200 340;C 0 22 9;P 26 -12 32 0 20 -2",
+	"followthru": "C -14 8 14;l 4 8 32 8;o 22 -2 32 8 22 18",
+	"drawartist": "C 14 8 14;l -4 8 -32 8;o -22 -2 -32 8 -22 18",
+	"thinrack": "C 0 -18 7;C -8 -2 7;c 8 -2 7;C 0 14 7;l -26 28 26 -28",
+	"missing": "C -16 -12 9;C 16 -12 9;c -16 14 9;C 16 14 9",
+	"cleanhouse": "o -24 30 -14 -6 14 -6 24 30 -24 30;l 0 -6 0 -34;l -14 30 -10 8;l 0 30 0 8;l 14 30 10 8",
+	"packrat": "o -26 -10 26 -10 22 30 -22 30 -26 -10;o -14 -10 -14 -24 14 -24 14 -10",
+	"quartermaster": "o -26 -10 26 -10 22 30 -22 30 -26 -10;t 0 10 22 $",
+	"tinkerer": "l -30 28 -4 2;o -4 2 -8 -12 6 -28 22 -26 14 -14 26 -6 14 4 -4 2",
+	"enchanter": "C 0 10 13;P 0 -34 6 -22 18 -22 8 -14 12 -2 0 -10 -12 -2 -8 -14 -18 -22 -6 -22",
+	"secondcoat": "C 0 0 20;c 0 0 28;c 0 0 36",
+	"handchalk": CUBE + ";l 18 -30 30 -30;l 24 -36 24 -24",
+	"heatpack": FLAME + ";l 20 -30 32 -30;l 26 -36 26 -24",
+	"doubledown": "t -8 2 34 2;l 12 -10 28 6;l 28 -10 12 6",
+	"spotlight": "P -8 -34 8 -34 26 18 -26 18;C 0 28 6",
+	"magnetcharm": "a 0 -4 21 0 180;l -21 -4 -21 -26;l 21 -4 21 -26;C 0 28 6",
+	"ballinhand": "C 0 -6 13;o -30 2 -26 24 26 24 30 2",
+	"bumperkit": "C 0 0 15;c 0 0 26;l -34 30 -22 18;l 34 30 22 18",
+	"portal": "c -16 0 16;c -16 0 7;c 16 0 16;C 16 0 7",
+	"secondstrike": "l -34 6 0 6;l -34 20 0 20;C 18 14 12;o 4 -30 18 -12 32 -30",
+	"wall": "P -30 -9 30 -9 30 9 -30 9;l -30 -22 -30 22;l 30 -22 30 22",
+	"blink": "c -20 0 11;C 22 0 11;l -6 0 8 0;o 0 -7 8 0 0 7",
 	# Reagents
 	"bluechalk": CUBE,
 	"hand": "c 0 10 19;l 0 -34 0 -14;o -10 -24 0 -12 10 -24",
@@ -114,6 +142,7 @@ const FAMILY_COLORS := {
 	"money": Color(0.75, 0.9, 0.3), "risk": Color(1.0, 0.35, 0.65), "physics": Color(0.4, 0.9, 0.9),
 	"utility": Color(0.75, 0.78, 0.85), "reagent": Color(0.4, 0.65, 1.0),
 	"solid": Color(1.0, 0.68, 0.25), "stripe": Color(0.4, 0.95, 0.75), "eight": Color(0.82, 0.8, 0.98),
+	"clear": Color(1.0, 0.55, 0.55), "gear": Color(0.95, 0.75, 0.45), "imbue": Color(0.85, 0.6, 1.0), "item": Color(0.45, 0.85, 1.0),
 }
 
 var motif := ""
@@ -124,7 +153,7 @@ var font: Font
 func setup(id: String, f: Font, px: float) -> IconArt:
 	motif = MOTIFS.get(id, "")
 	font = f
-	var fam: String = Catalog.PERKS[id].get("fam", "utility") if Catalog.PERKS.has(id) else "reagent"
+	var fam: String = Catalog.PERKS[id].get("fam", "utility") if Catalog.PERKS.has(id) else ("item" if Catalog.ITEMS.has(id) else "reagent")
 	tint = FAMILY_COLORS.get(fam, Color.WHITE)
 	custom_minimum_size = Vector2(px, px)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE

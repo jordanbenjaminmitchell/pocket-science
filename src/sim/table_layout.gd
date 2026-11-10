@@ -16,6 +16,10 @@ var segments: Array[Dictionary] = []
 var pockets: Array[Dictionary] = []
 ## Round bumpers: {pos: Vector2, r: float}
 var bumpers: Array[Dictionary] = []
+## Linked pairs {a, b}: a ball entering one end leaves the other at the same speed.
+var portals: Array[Dictionary] = []
+const PORTAL_R := 16.0
+const BUMPER_R := 18.0
 
 
 func build(scale: float = 1.0, closed: Array[int] = []) -> TableLayout:

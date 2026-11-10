@@ -36,6 +36,9 @@ var follow := 0.0
 var cue_contacted := false
 var cue_damp := 1.0          # fraction of speed the cue keeps at its first contact (Stun Master)
 var tilt := Vector2.ZERO     # constant acceleration on moving balls (Tilted Table)
+var spin_power := 1.0        # strength of draw and follow (Backspin Wax)
+var side_power := 1.0        # how much english bends off cushions (Massé Master)
+var portal_lock := PackedInt32Array()   # the portal end a ball just came out of
 
 
 func _init(l: TableLayout = null) -> void:
@@ -65,6 +68,9 @@ func clone() -> PoolSim:
 	s.cue_contacted = cue_contacted
 	s.cue_damp = cue_damp
 	s.tilt = tilt
+	s.spin_power = spin_power
+	s.side_power = side_power
+	s.portal_lock = portal_lock.duplicate()
 	return s
 
 
@@ -77,6 +83,7 @@ func add_ball(number: int, p: Vector2, m: float = 1.0) -> int:
 	spin.append(Vector2.ZERO)
 	side.append(0.0)
 	rails.append(0)
+	portal_lock.append(-1)
 	return pos.size() - 1
 
 
@@ -250,6 +257,7 @@ func step(dt: float) -> void:
 	time += dt
 	_forces(dt)
 	_pockets()
+	_portals()
 
 
 func _advance(t: float) -> void:
@@ -298,7 +306,7 @@ func _resolve_balls(i: int, j: int) -> void:
 	if (cue_i or cue_j) and not cue_contacted:
 		cue_contacted = true
 		var c := i if cue_i else j
-		spin[c] = pre_dir * follow * pre_speed * 0.62
+		spin[c] = pre_dir * follow * pre_speed * 0.62 * spin_power
 		if cue_damp < 1.0:
 			vel[c] *= cue_damp
 			spin[c] *= cue_damp
@@ -313,7 +321,7 @@ func _resolve_wall(i: int, nrm: Vector2, _seg: int) -> void:
 	vel[i] -= nrm * vn * (1.0 + rail_e)
 	vel[i] -= tangent * vel[i].dot(tangent) * 0.04
 	if side[i] != 0.0:
-		vel[i] += tangent * side[i] * -vn * 0.32
+		vel[i] += tangent * side[i] * -vn * 0.32 * side_power
 		side[i] *= 0.45
 	# Follow/draw that has not yet been transferred bends off the cushion too.
 	spin[i] *= 0.5
@@ -394,6 +402,39 @@ func _pockets() -> void:
 			_pot(i, best)
 
 
+## Portal end e: pair e / 2, end e % 2.
+func portal_end(e: int) -> Vector2:
+	var pt: Dictionary = layout.portals[e / 2]
+	return pt.a if e % 2 == 0 else pt.b
+
+
+## Where a ball that touched portal end e at point p comes out.
+func portal_exit(e: int, p: Vector2) -> Vector2:
+	return portal_end(e ^ 1) + (p - portal_end(e))
+
+
+func _portals() -> void:
+	if layout.portals.is_empty():
+		return
+	for i in pos.size():
+		if alive[i] == 0:
+			continue
+		if portal_lock[i] >= 0:
+			if pos[i].distance_to(portal_end(portal_lock[i])) > TableLayout.PORTAL_R + 1.0:
+				portal_lock[i] = -1
+			continue
+		if vel[i] == Vector2.ZERO:
+			continue
+		for e in layout.portals.size() * 2:
+			if pos[i].distance_to(portal_end(e)) < TableLayout.PORTAL_R:
+				var dest := portal_exit(e, pos[i])
+				if is_clear_spot(dest, i):
+					pos[i] = dest
+					portal_lock[i] = e ^ 1
+					events.append({"t": time, "type": "portal", "a": num[i]})
+				break
+
+
 func _pot(i: int, k: int) -> void:
 	alive[i] = 0
 	var speed := vel[i].length()
@@ -406,7 +447,7 @@ func _pot(i: int, k: int) -> void:
 ## Sweep a single ball (centre p, unit direction d) through the *static* table.
 ## Returns {t, kind: "ball"/"rail"/"bumper"/"pocket"/"none", hit (ball index),
 ## normal, point}. `ignore` is a ball index to skip (the moving ball itself).
-func cast(p: Vector2, d: Vector2, ignore: int, max_len: float = 3000.0, ignore2: int = -1) -> Dictionary:
+func cast(p: Vector2, d: Vector2, ignore: int, max_len: float = 3000.0, ignore2: int = -1, use_portals: bool = true) -> Dictionary:
 	var best_t := max_len
 	var res := {"kind": "none", "hit": -1, "normal": Vector2.ZERO}
 	for j in pos.size():
@@ -451,6 +492,12 @@ func cast(p: Vector2, d: Vector2, ignore: int, max_len: float = 3000.0, ignore2:
 		if t < best_t:
 			best_t = t
 			res = {"kind": "pocket", "hit": k, "normal": Vector2.ZERO}
+	if use_portals:
+		for k in layout.portals.size() * 2:
+			var t := _toi_circle(portal_end(k) - p, -d, TableLayout.PORTAL_R)
+			if t < best_t:
+				best_t = t
+				res = {"kind": "portal", "hit": k, "normal": Vector2.ZERO}
 	res["t"] = best_t
 	res["point"] = p + d * best_t
 	return res

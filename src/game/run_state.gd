@@ -40,6 +40,15 @@ var pockets_used: Array = []
 var shrink_steps := 0
 var insured_used := 0
 var carry := 0           # Overflow: score carried into the next table
+var items: Array[String] = []   # usable items held
+var ball_set: Array = []        # the balls this run racks; starts as 1-15
+var table_mods := {}            # this table only: placed bumpers and portals, wider pockets
+var next_boost := 1.0           # Double Down
+var next_all_hot := false       # Spotlight
+var next_magnet := false        # Magnet Charm
+const ITEM_SLOTS := 3
+## Items the rules can apply on their own, with no aiming or placing.
+const STATE_ITEMS := ["handchalk", "heatpack", "doubledown", "spotlight", "magnetcharm", "wideopen"]
 
 # Run stats
 var total_pots := 0
@@ -60,6 +69,8 @@ func start(s: int, cue_id: String = "maple", handicap_level: int = 0) -> void:
 	money = c.money
 	perks.clear()
 	perks.assign(c.perks)
+	items.assign(c.get("items", []))
+	ball_set = range(1, 16).filter(func(n): return not (c.get("remove", []) as Array).has(n))
 	imbues.clear()
 	catalyst = 0.0
 	total_pots = 0
@@ -109,12 +120,19 @@ func begin_table() -> void:
 	insured_used = 0
 	solid_run = 0
 	stripe_run = 0
+	table_mods = {"bumpers": [], "portals": [], "wide": false}
+	next_boost = 1.0
+	next_all_hot = false
+	next_magnet = false
 	roll_hot_pocket(-1)
 	var keys := Catalog.BOUNTIES.keys()
 	bounty = keys[rng.randi_range(0, keys.size() - 1)]
 	while hot_pocket < 0 and (bounty == "hot" or bounty == "hot2"):   # no hot pocket here to aim at
 		bounty = keys[rng.randi_range(0, keys.size() - 1)]
 	bounty_done = false
+	if perks.has("tinkerer") and items.size() < item_slots():
+		var ids := Catalog.ITEMS.keys()
+		items.append(ids[rng.randi_range(0, ids.size() - 1)])
 
 
 func max_chalk() -> int:
@@ -219,6 +237,8 @@ func pocket_scale() -> float:
 		s *= 1.12
 	if handicap >= 4:
 		s *= 0.95
+	if table_mods.get("wide", false):
+		s *= 1.2
 	if current().anomaly == "tight":
 		s *= 0.88
 	if current().anomaly == "shrink":
@@ -236,6 +256,52 @@ func closed_pockets() -> Array[int]:
 func table_name() -> String:
 	var t := current()
 	return Catalog.BOSSES[t.id].name
+
+
+func item_slots() -> int:
+	return ITEM_SLOTS + (2 if perks.has("packrat") else 0)
+
+
+func item_cost(id: String) -> int:
+	return maxi(1, int(Catalog.ITEMS[id].cost) - (1 if perks.has("quartermaster") else 0))
+
+
+func imbue_cost(id: String) -> int:
+	return maxi(1, int(Catalog.IMBUES[id].cost) - (2 if perks.has("enchanter") else 0))
+
+
+## Numbered balls (1-15) no longer in your set.
+func removed_count() -> int:
+	return range(1, 16).filter(func(n): return not ball_set.has(n)).size()
+
+
+## How hard a shot hits relative to its power setting.
+func power_mult(is_break: bool) -> float:
+	var m := 1.15 if perks.has("longarm") else 1.0
+	if is_break and perks.has("bigbreak"):
+		m *= 1.25
+	return m
+
+
+## Applies an item that needs no aiming or placing. Returns false for the others.
+func use_state_item(id: String) -> bool:
+	match id:
+		"handchalk":
+			chalk += 1
+		"heatpack":
+			heat += 2
+			best_heat = maxi(best_heat, heat)
+		"doubledown":
+			next_boost = 2.0
+		"spotlight":
+			next_all_hot = true
+		"magnetcharm":
+			next_magnet = true
+		"wideopen":
+			table_mods["wide"] = true
+		_:
+			return false
+	return true
 
 
 ## True if this build is happy to see the 8 go down early.
@@ -313,7 +379,11 @@ func _roll_shop_items() -> void:
 		var ball := rng.randi_range(1, 14)   # never offered on the 8, which you are avoiding
 		if ball >= 8:
 			ball += 1
-		shop.append({"type": "imbue", "id": iso, "ball": ball, "cost": Catalog.IMBUES[iso].cost, "sold": false})
+		shop.append({"type": "imbue", "id": iso, "ball": ball, "cost": imbue_cost(iso), "sold": false})
+	for i in 2:
+		var ids := Catalog.ITEMS.keys()
+		var it: String = ids[rng.randi_range(0, ids.size() - 1)]
+		shop.append({"type": "item", "id": it, "cost": item_cost(it), "sold": false})
 
 
 func _random_perk() -> String:
@@ -376,6 +446,10 @@ func buy(i: int) -> String:
 			perks.append(item.id)
 		"imbue":
 			imbues[item.ball] = item.id
+		"item":
+			if items.size() >= item_slots():
+				return "Item slots full - use one first"
+			items.append(item.id)
 	money -= item.cost
 	item.sold = true
 	return ""
@@ -400,6 +474,9 @@ func sell_value(id: String) -> int:
 ## {cleared, over, rack_cleared, ball_in_hand, chalk_lost}
 func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table: bool) -> Dictionary:
 	shots_taken += 1
+	next_boost = 1.0   # one-shot items are spent whatever happened
+	next_all_hot = false
+	next_magnet = false
 	var out := {"cleared": false, "over": false, "rack_cleared": false, "ball_in_hand": not cue_on_table, "chalk_lost": false}
 	if res.scored:
 		var hot_before := hot_pocket
@@ -464,6 +541,10 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 ## the bots and the tests.
 func build_layout() -> TableLayout:
 	var layout := TableLayout.new().build(pocket_scale(), closed_pockets())
+	for bp in table_mods.get("bumpers", []):
+		layout.add_bumper(Vector2(bp[0], bp[1]), TableLayout.BUMPER_R)
+	for pt in table_mods.get("portals", []):
+		layout.portals.append({"a": Vector2(pt[0], pt[1]), "b": Vector2(pt[2], pt[3])})
 	if current().lab == "cyclotron":
 		layout.add_bumper(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.27), 20.0)
 		layout.add_bumper(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.73), 20.0)
@@ -484,6 +565,8 @@ func apply_physics(s: PoolSim) -> void:
 	s.well_strength = 0.0
 	s.pocket_pull = 0.0
 	s.cue_damp = 1.0
+	s.spin_power = 1.5 if perks.has("backspin") else 1.0
+	s.side_power = 2.0 if perks.has("masse") else 1.0
 	match t.lab:
 		"cryo":
 			s.roll_decel = 90.0
@@ -510,6 +593,13 @@ func apply_physics(s: PoolSim) -> void:
 		s.pocket_pull = 1.0
 	if perks.has("stun"):
 		s.cue_damp = 0.4
+	if perks.has("slowcloth"):
+		s.roll_decel *= 1.3
+		s.drag *= 1.3
+	if perks.has("liverails"):
+		s.rail_e = minf(0.95, s.rail_e * 1.1)
+	if next_magnet:
+		s.pocket_pull = 1.0
 	match t.anomaly:
 		"blackice":
 			s.roll_decel = 45.0
@@ -522,6 +612,8 @@ func apply_physics(s: PoolSim) -> void:
 		if s.num[i] == 0:
 			if t.anomaly == "heavycue":
 				m = 2.0
+			if perks.has("heavyhit"):
+				m *= 1.3
 		else:
 			if t.anomaly == "lead":
 				m = 1.6
@@ -552,6 +644,7 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 		"lowest": lowest, "highest": highest, "element_mix": element_mix,
 		"target": target(), "on_table": on_table, "total_pots": total_pots,
 		"solid_run": solid_run, "stripe_run": stripe_run,
+		"boost": next_boost, "all_hot": next_all_hot, "removed": removed_count(),
 		"cue_start": s.pos[ci] if ci >= 0 else Vector2.ZERO,
 	}
 
@@ -582,7 +675,7 @@ func to_dict() -> Dictionary:
 		"catalyst": catalyst, "plan": plan, "endless": endless, "total_pots": total_pots,
 		"best_shot": best_shot, "tables_cleared": tables_cleared, "best_heat": best_heat,
 		"phase": phase, "carry": carry, "record_id": record_id, "daily_key": daily_key,
-		"handicap": handicap, "total_score": total_score,
+		"handicap": handicap, "total_score": total_score, "items": items, "ball_set": ball_set,
 	}
 	if phase == "table":
 		d["table"] = {
@@ -590,7 +683,8 @@ func to_dict() -> Dictionary:
 			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "element_mix": element_mix,
 			"forgiven": forgiven, "bounty": bounty, "bounty_done": bounty_done,
 			"pockets_used": pockets_used, "shrink_steps": shrink_steps, "insured_used": insured_used,
-				"solid_run": solid_run, "stripe_run": stripe_run,
+				"solid_run": solid_run, "stripe_run": stripe_run, "mods": table_mods,
+				"boost": next_boost, "all_hot": next_all_hot, "magnet": next_magnet,
 			"snapshot": table_snapshot,
 		}
 	else:
@@ -686,6 +780,8 @@ func _load_from(path: String) -> bool:
 	daily_key = str(d.get("daily_key", ""))
 	handicap = int(d.get("handicap", 0))
 	total_score = int(d.get("total_score", 0))
+	items.assign((d.get("items", []) as Array).filter(func(x): return Catalog.ITEMS.has(x)))
+	ball_set = (d.get("ball_set", range(1, 16)) as Array).map(func(x): return int(x))
 	# v1 saves only knew "start of table".
 	phase = str(d.get("phase", "table"))
 	table_snapshot = {}
@@ -711,6 +807,11 @@ func _load_from(path: String) -> bool:
 		insured_used = int(t.get("insured_used", 0))
 		solid_run = int(t.get("solid_run", 0))
 		stripe_run = int(t.get("stripe_run", 0))
+		if typeof(t.get("mods")) == TYPE_DICTIONARY:
+			table_mods = t.mods
+		next_boost = float(t.get("boost", 1.0))
+		next_all_hot = bool(t.get("all_hot", false))
+		next_magnet = bool(t.get("magnet", false))
 		if typeof(t.get("snapshot")) == TYPE_DICTIONARY:
 			table_snapshot = t.snapshot
 	elif phase == "shop" and d.has("shop") and typeof(d.shop) == TYPE_DICTIONARY:

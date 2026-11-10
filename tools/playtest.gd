@@ -90,6 +90,12 @@ func play_table(run: RunState, rec: Dictionary) -> bool:
 	var sim := new_rack(run, layout)
 	var is_break := true
 	var guard := 0
+	for id in run.items.duplicate():
+		if id != "handchalk" and run.use_state_item(id):
+			run.items.erase(id)
+	if run.table_mods.get("wide", false):
+		layout = run.build_layout()
+		sim.layout = layout
 	while guard < 250:
 		guard += 1
 		var ci := sim.index_of(0)
@@ -103,7 +109,7 @@ func play_table(run: RunState, rec: Dictionary) -> bool:
 		for i in sim.count():
 			if sim.alive[i] == 1:
 				start[sim.num[i]] = sim.pos[i]
-		sim.strike(dir, AutoPlayer.speed(pw), shot.get("follow", 0.0), 0.0)
+		sim.strike(dir, AutoPlayer.speed(pw) * run.power_mult(is_break), shot.get("follow", 0.0), 0.0)
 		sim.settle()
 		ctx["events"] = sim.events
 		ctx["start_pos"] = start
@@ -118,6 +124,9 @@ func play_table(run: RunState, rec: Dictionary) -> bool:
 		if out.has("bounty"):
 			rec.bounties += 1
 		is_break = false
+		if run.chalk == 1 and run.items.has("handchalk") and not out.over and not out.cleared:
+			run.use_state_item("handchalk")
+			run.items.erase("handchalk")
 		if out.cleared:
 			return true
 		if out.over:
@@ -137,7 +146,7 @@ func new_rack(run: RunState, layout: TableLayout) -> PoolSim:
 	s.add_ball(0, Rack.HEAD)
 	var r := RandomNumberGenerator.new()
 	r.seed = run.rack_seed()
-	Rack.build(s, r)
+	Rack.build(s, r, run.ball_set)
 	run.apply_physics(s)
 	return s
 
@@ -283,6 +292,8 @@ func shop(run: RunState, rec: Dictionary) -> void:
 
 func item_value(run: RunState, it: Dictionary) -> float:
 	match it.type:
+		"item":
+			return 1.6 if RunState.STATE_ITEMS.has(it.id) and run.items.size() < run.item_slots() else 0.0
 		"perk":
 			if run.perks.size() >= RunState.MAX_PERKS and P.shop in ["random", "cheap"]:
 				return 0.0

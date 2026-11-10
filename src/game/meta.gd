@@ -21,8 +21,11 @@ const MILESTONES := {
 	"combos10": {"name": "Chain Gang", "hint": "Sink 10 combinations in total", "perks": [], "cue": "breaker"},
 	"banks10": {"name": "Rail Bird", "hint": "Sink 10 bank shots in total", "perks": [], "cue": "angle"},
 	"hot15": {"name": "Heat Seeker", "hint": "Sink 15 balls into hot pockets in total", "perks": [], "cue": "thermal"},
-	"eightlast": {"name": "Saved for Last", "hint": "Sink the 8 as the last ball on the table", "perks": ["lastcall", "darkhorse", "trouble"], "cue": ""},
+	"eightlast": {"name": "Saved for Last", "hint": "Sink the 8 as the last ball on the table", "perks": ["lastcall", "darkhorse", "trouble"], "cue": "black"},
 	"suited": {"name": "Suited Up", "hint": "Sink 2 or more solids, or 2 or more stripes, in one shot", "perks": ["solidsonly", "stripesonly", "lastsolid", "laststripe"], "cue": ""},
+	"pots100": {"name": "Old Hand", "hint": "Sink 100 balls in total", "perks": [], "cue": "engineer"},
+	"items5": {"name": "Handy", "hint": "Use 5 items in total", "perks": [], "cue": "gearhead"},
+	"table4": {"name": "Halfway There", "hint": "Clear table 4", "perks": [], "cue": "lean"},
 	"rich": {"name": "Well Funded", "hint": "Hold $30 at once", "perks": [], "cue": "banker"},
 }
 
@@ -32,6 +35,7 @@ var lifetime_pots := 0
 var lifetime_combos := 0
 var lifetime_banks := 0
 var lifetime_hot := 0
+var lifetime_items := 0
 var unlock_all := false   # bots, tests and dev builds
 
 
@@ -45,6 +49,7 @@ func load_file() -> void:
 	lifetime_combos = int(c.get_value("meta", "combos", 0))
 	lifetime_banks = int(c.get_value("meta", "banks", 0))
 	lifetime_hot = int(c.get_value("meta", "hot", 0))
+	lifetime_items = int(c.get_value("meta", "items", 0))
 
 
 func save_file() -> void:
@@ -56,6 +61,7 @@ func save_file() -> void:
 	c.set_value("meta", "combos", lifetime_combos)
 	c.set_value("meta", "banks", lifetime_banks)
 	c.set_value("meta", "hot", lifetime_hot)
+	c.set_value("meta", "items", lifetime_items)
 	c.save(PATH)
 
 
@@ -110,6 +116,8 @@ func on_shot(res: Dictionary, run: RunState) -> Array:
 		got.append("streak5")
 	if lifetime_pots >= 40:
 		got.append("pots40")
+	if lifetime_pots >= 100:
+		got.append("pots100")
 	if res.total >= 1000:
 		got.append("big")
 	lifetime_combos += int(res.get("combos", 0))
@@ -136,11 +144,18 @@ func on_table_cleared(run: RunState) -> Array:
 	var t := run.current()
 	if t.get("anomaly", "") != "":
 		got.append("boss")
+	if run.table_index >= 3:
+		got.append("table4")
 	if run.table_index >= 5:
 		got.append("table6")
 	if t.lab != "standard":
 		got.append("lab")
 	return _earn(got)
+
+
+func on_item_used() -> Array:
+	lifetime_items += 1
+	return _earn(["items5"]) if lifetime_items >= 5 else []
 
 
 ## Winning at the highest unlocked Handicap opens the next one. Returns newly earned milestones.

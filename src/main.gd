@@ -2,7 +2,7 @@ extends Node2D
 ## Pocket Science — game controller.
 ## States: TITLE -> AIM <-> PLACE -> STRIKE -> ROLL -> TALLY -> (AIM | CLEAR -> SHOP | OVER)
 
-enum S { TITLE, AIM, PLACE, STRIKE, ROLL, TALLY, CLEAR, SHOP, OVER }
+enum S { TITLE, AIM, PLACE, STRIKE, ROLL, TALLY, CLEAR, SHOP, OVER, PICK }
 
 const TABLE_ORIGIN := Vector2(445, 99)
 const TABLE_SCALE := 1.05
@@ -66,6 +66,10 @@ var root: Control
 var lbl_round: Label
 var lbl_lab: Label
 var lbl_rule: RichTextLabel
+var item_bar: HBoxContainer
+var pick_item := ""
+var pick_slot := -1
+var pick_points: Array = []
 var term_tip: TermTip
 var lbl_boss: Label
 var lbl_target: Label
@@ -171,7 +175,7 @@ func _new_rack() -> void:
 	sim.add_ball(0, Rack.HEAD)
 	var r := RandomNumberGenerator.new()
 	r.seed = run.rack_seed()
-	Rack.build(sim, r)
+	Rack.build(sim, r, run.ball_set)
 	run.apply_physics(sim)
 	view.sync_balls(sim, vis_rng, run.imbues)
 	is_break = true
@@ -179,6 +183,177 @@ func _new_rack() -> void:
 	power = 0.85
 	guide_dirty = true
 	forecast_dirty = true
+
+
+## ================================================================ usable items
+func _refresh_items() -> void:
+	if item_bar == null:
+		return
+	for c in item_bar.get_children():
+		item_bar.remove_child(c)
+		c.queue_free()
+	for i in run.item_slots():
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(44, 44)
+		b.focus_mode = Control.FOCUS_NONE
+		b.add_theme_stylebox_override("normal", _style(Color(0.1, 0.12, 0.16), Color(0.45, 0.85, 1.0, 0.5), 1, 8))
+		b.add_theme_stylebox_override("hover", _style(Color(0.16, 0.2, 0.26), Color(0.45, 0.85, 1.0), 2, 8))
+		b.add_theme_stylebox_override("pressed", _style(Color(0.2, 0.26, 0.32), Color(0.6, 0.95, 1.0), 2, 8))
+		item_bar.add_child(b)
+		if i >= run.items.size():
+			b.disabled = true
+			b.add_theme_stylebox_override("disabled", _style(Color(0, 0, 0, 0.25), Color(1, 1, 1, 0.1), 1, 8))
+			continue
+		var id: String = run.items[i]
+		var ic := IconArt.new().setup(id, F_SEMI, 34)
+		ic.position = Vector2(5, 5)
+		ic.size = Vector2(34, 34)
+		b.add_child(ic)
+		var it: Dictionary = Catalog.ITEMS[id]
+		b.tooltip_text = "%s\n%s" % [it.name, it.desc]
+		var slot := i
+		b.pressed.connect(func(): _use_item(slot))
+
+
+func _use_item(slot: int) -> void:
+	if slot < 0 or slot >= run.items.size():
+		return
+	var id: String = run.items[slot]
+	var it: Dictionary = Catalog.ITEMS[id]
+	if it.use == "pause":
+		_flash_banner("USE THIS WHILE A SHOT IS PAUSED", Color(0.6, 0.85, 1.0), 1.2)
+		return
+	if state != S.AIM:
+		_flash_banner("USE ITEMS WHILE AIMING", Color(0.6, 0.85, 1.0), 1.0)
+		return
+	match id:
+		"ballinhand":
+			_spend_item(slot)
+			_begin_place(false)
+			return
+		"freshrack":
+			_spend_item(slot)
+			_fresh_rack()
+			return
+		"bumperkit", "portal":
+			_begin_pick(id, slot)
+			return
+	if run.use_state_item(id):
+		_spend_item(slot)
+		if id == "wideopen":
+			_rebuild_layout()
+		elif id == "magnetcharm":
+			run.apply_physics(sim)
+		_flash_banner(str(it.name).to_upper(), Color(0.6, 0.9, 1.0), 1.0)
+		_refresh_hud()
+
+
+func _spend_item(slot: int) -> void:
+	run.items.remove_at(slot)
+	_announce_unlocks(meta.on_item_used())
+	sfx.play("coin", 0.5, 1.3)
+	_refresh_hud()
+	_save_progress()
+
+
+## Re-racks the balls still on the table and gives a fresh break.
+func _fresh_rack() -> void:
+	var left: Array = []
+	for i in sim.count():
+		if sim.num[i] != 0 and sim.alive[i] == 1:
+			left.append(sim.num[i])
+	sim = _make_sim()
+	sim.add_ball(0, Rack.HEAD)
+	var r := RandomNumberGenerator.new()
+	r.seed = run.rack_seed() + 97 * run.shots_taken
+	Rack.build(sim, r, left)
+	run.apply_physics(sim)
+	view.sync_balls(sim, vis_rng, run.imbues)
+	is_break = true
+	aim_dir = (Rack.FOOT - Rack.HEAD).normalized()
+	_enter_aim()
+
+
+## Choosing a spot on the table for a bumper or portal.
+func _begin_pick(id: String, slot: int) -> void:
+	pick_item = id
+	pick_slot = slot
+	pick_points = []
+	state = S.PICK
+	view.show_guide = false
+	lbl_hint.text = "Click where the %s goes. Right-click or Esc to cancel." % ("bumper" if id == "bumperkit" else "first portal")
+	_refresh_hud()
+
+
+func _pick_radius() -> float:
+	return TableLayout.BUMPER_R if pick_item == "bumperkit" else TableLayout.PORTAL_R
+
+
+func _pick_ok(p: Vector2) -> bool:
+	var r := _pick_radius()
+	if p.x < r + 4 or p.y < r + 4 or p.x > TableLayout.W - r - 4 or p.y > TableLayout.H - r - 4:
+		return false
+	for pk in layout.pockets:
+		if (pk.pos as Vector2).distance_to(p) < pk.r + r + 12.0:
+			return false
+	for i in sim.count():
+		if sim.alive[i] == 1 and sim.pos[i].distance_to(p) < TableLayout.R + r + 3.0:
+			return false
+	for bp in layout.bumpers:
+		if (bp.pos as Vector2).distance_to(p) < bp.r + r + 6.0:
+			return false
+	for q in pick_points:
+		if (q as Vector2).distance_to(p) < r * 2.0 + 30.0:
+			return false
+	for pt in layout.portals:
+		if (pt.a as Vector2).distance_to(p) < r * 2.0 + 6.0 or (pt.b as Vector2).distance_to(p) < r * 2.0 + 6.0:
+			return false
+	return true
+
+
+func _update_pick() -> void:
+	_pad_cursor(get_process_delta_time())
+	var m := _mouse_table()
+	view.placing = true
+	view.head_only = false
+	view.place_radius = _pick_radius()
+	view.place_pos = m
+	view.place_ok = _pick_ok(m)
+	view.place_hints = []
+	view.show_guide = false
+
+
+func _pick_click() -> void:
+	var p: Vector2 = view.place_pos
+	if not _pick_ok(p):
+		sfx.play("bad", 0.4)
+		return
+	pick_points.append(p)
+	if pick_item == "portal" and pick_points.size() < 2:
+		lbl_hint.text = "Now click where the second portal goes."
+		sfx.play("click_soft", 0.6)
+		return
+	if pick_item == "bumperkit":
+		run.table_mods.bumpers.append([p.x, p.y])
+	else:
+		var a: Vector2 = pick_points[0]
+		run.table_mods.portals.append([a.x, a.y, p.x, p.y])
+	_spend_item(pick_slot)
+	_end_pick()
+	_rebuild_layout()
+
+
+func _cancel_pick() -> void:
+	_end_pick()
+
+
+func _end_pick() -> void:
+	pick_item = ""
+	pick_slot = -1
+	pick_points = []
+	view.place_radius = 0.0
+	view.placing = false
+	_enter_aim()
 
 
 func _cue_index() -> int:
@@ -203,6 +378,8 @@ func _process(delta: float) -> void:
 			_update_aim(delta)
 		S.PLACE:
 			_update_place()
+		S.PICK:
+			_update_pick()
 		S.STRIKE:
 			_update_strike(delta)
 		S.ROLL:
@@ -370,7 +547,10 @@ func _current_power() -> float:
 
 
 func _shot_ctx() -> Dictionary:
-	return run.shot_ctx(_current_power(), sim, is_break)
+	var c := run.shot_ctx(_current_power(), sim, is_break)
+	c["follow"] = _shot_follow()
+	c["side"] = _shot_side()
+	return c
 
 
 var pre_ctx := {}
@@ -433,7 +613,7 @@ func _forecast_wanted() -> bool:
 ## Starts an incremental forecast; _step_forecast advances it within a frame budget.
 func _compute_forecast() -> void:
 	fc_sim = sim.clone()
-	fc_sim.strike(aim_dir, _speed(_current_power()), _shot_follow(), _shot_side())
+	fc_sim.strike(aim_dir, _speed(_current_power()) * run.power_mult(is_break), _shot_follow(), _shot_side())
 	# Bent tables only need the opening curve; the full picture is the option or Perk.
 	fc_limit = 30.0 if settings.guide_lines == 1 or run.perks.has("oracle") else 2.5
 	fc_paths = {}
@@ -550,6 +730,8 @@ func _update_strike(delta: float) -> void:
 func _begin_roll() -> void:
 	sim_accum = 0.0
 	pre_ctx = run.shot_ctx(shot_power, sim, is_break)
+	pre_ctx["follow"] = _shot_follow()
+	pre_ctx["side"] = _shot_side()
 	start_pos.clear()
 	for i in sim.count():
 		if sim.alive[i] == 1:
@@ -557,7 +739,7 @@ func _begin_roll() -> void:
 	live_chain = Scorer.start_chain(pre_ctx)
 	live_contacted = false
 	_set_meters(live_chain, run.heat)
-	sim.strike(aim_dir, _speed(shot_power), _shot_follow(), _shot_side())
+	sim.strike(aim_dir, _speed(shot_power) * run.power_mult(is_break), _shot_follow(), _shot_side())
 	sfx.play("cue", 0.4 + shot_power * 0.8, 0.9 + randf() * 0.2)
 	if shot_power > 0.8:
 		view.add_shake(3.0 * shot_power)
@@ -821,6 +1003,7 @@ func _after_shot() -> void:
 	var was_break := is_break
 	is_break = false
 	var out := run.apply_shot(result, was_break, sim.object_balls_left(), sim.alive[_cue_index()] == 1)
+	run.apply_physics(sim)   # one-shot items such as Magnet Charm wear off
 	_log_shot(was_break, out)
 	_announce_unlocks(meta.on_shot(result, run))
 	if out.has("bounty"):
@@ -975,6 +1158,9 @@ func _unhandled_input(e: InputEvent) -> void:
 
 
 func _key(k: int) -> void:
+	if state == S.PICK and k == KEY_ESCAPE:
+		_cancel_pick()
+		return
 	if k == KEY_ESCAPE:
 		if state != S.TITLE:
 			_show_pause()
@@ -1111,6 +1297,18 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 					_place_cue()
 			elif e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
 				_place_cue()
+		S.PICK:
+			if e.button_index == MOUSE_BUTTON_RIGHT and e.pressed:
+				_cancel_pick()
+			elif e.button_index == MOUSE_BUTTON_LEFT and settings.touch_mode:
+				if e.pressed:
+					touch_armed = true
+				elif touch_armed:
+					touch_armed = false
+					_update_pick()
+					_pick_click()
+			elif e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
+				_pick_click()
 		S.ROLL, S.TALLY:
 			if e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
 				fast = true
@@ -1373,6 +1571,11 @@ func _build_ui() -> void:
 	stats.add_child(_label("MONEY", 13, Color(0.6, 0.7, 0.85)))
 	lbl_money = _label("$4", 22, Color(1.0, 0.85, 0.3), F_NUM)
 	stats.add_child(lbl_money)
+	var gear_title := _label("ITEMS", 13, Color(0.6, 0.7, 0.85))
+	stats.add_child(gear_title)
+	item_bar = HBoxContainer.new()
+	item_bar.add_theme_constant_override("separation", 6)
+	stats.add_child(item_bar)
 	flags_label = _label("", 13, Color(0.5, 0.8, 1.0))
 	flags_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	flags_label.custom_minimum_size = Vector2(290, 0)
@@ -1519,6 +1722,7 @@ func _refresh_hud() -> void:
 	if state != S.ROLL and state != S.TALLY:
 		_set_meters(1.0, run.heat)
 	lbl_money.text = "$%d" % run.money
+	_refresh_items()
 	var flags: Array[String] = []
 	if run.current().id == "elements" and not run.element_mix.is_empty():
 		flags.append("Mix: " + " + ".join(run.element_mix.map(func(el): return Catalog.ELEMENTS[el].name)))
@@ -1765,7 +1969,7 @@ func _show_cue_select() -> void:
 	v.add_child(row)
 	for id in Catalog.CUES:
 		var c: Dictionary = Catalog.CUES[id]
-		var sh := _card_shell(c.accent, 200, 232)
+		var sh := _card_shell(c.accent, 150, 200)
 		var p: PanelContainer = sh[0]
 		var cv: VBoxContainer = sh[1]
 		var stick := Control.new()
@@ -1781,11 +1985,13 @@ func _show_cue_select() -> void:
 			stick.draw_rect(Rect2(Vector2(mid - 2, y - 4), Vector2(4, 8)), c.accent)
 			stick.draw_rect(Rect2(Vector2(x0 - 3, y - 2), Vector2(4, 4)), Color(0.25, 0.5, 0.85)))
 		cv.add_child(stick)
-		var n := _label(c.name, 20, Color.WHITE)
+		var n := _label(c.name, 16, Color.WHITE)
+		n.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		n.custom_minimum_size = Vector2(126, 0)
 		cv.add_child(n)
-		var d := _label(c.desc, 14, Color(0.8, 0.82, 0.85), F_REG)
+		var d := _label(c.desc, 12, Color(0.8, 0.82, 0.85), F_REG)
 		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		d.custom_minimum_size = Vector2(176, 0)
+		d.custom_minimum_size = Vector2(126, 0)
 		d.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		cv.add_child(d)
 		var pick := _button("Choose", func():
@@ -1798,10 +2004,10 @@ func _show_cue_select() -> void:
 			p.modulate = Color(1, 1, 1, 0.55)
 			var lk := _label("Locked: " + meta.cue_hint(id), 13, Color(1.0, 0.8, 0.45), F_SEMI)
 			lk.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			lk.custom_minimum_size = Vector2(176, 0)
+			lk.custom_minimum_size = Vector2(126, 0)
 			cv.add_child(lk)
 		cv.add_child(pick)
-		if row.get_child_count() == 5:
+		if row.get_child_count() == 8:
 			row = HBoxContainer.new()
 			row.add_theme_constant_override("separation", 12)
 			v.add_child(row)
@@ -2000,7 +2206,7 @@ func _refresh_shop() -> void:
 	d.size = zone.size
 	d.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var v := _center_panel(1040, 600, Color(0.85, 0.65, 0.3), Vector2(450, 70) + fit.table_offset)
+	var v := _center_panel(1040, 600, Color(0.85, 0.65, 0.3), Vector2(450, 8) + fit.table_offset)
 	var head := HBoxContainer.new()
 	v.add_child(head)
 	head.add_child(_label("PRO SHOP", 30, Color(0.98, 0.8, 0.4), F_PIXB))
@@ -2021,8 +2227,10 @@ func _refresh_shop() -> void:
 		var next_l := _label(s, 15, Color(1.0, 0.7, 0.5), F_REG)
 		next_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		v.add_child(next_l)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
+	var row := GridContainer.new()
+	row.columns = 4
+	row.add_theme_constant_override("h_separation", 12)
+	row.add_theme_constant_override("v_separation", 10)
 	v.add_child(row)
 	for i in run.shop.size():
 		row.add_child(_offer_card(i))
@@ -2076,7 +2284,13 @@ func _offer_card(i: int) -> Control:
 			kind = "Imbue"
 			if run.imbues.has(item.ball):
 				desc += " (Replaces %s.)" % Catalog.IMBUES[run.imbues[item.ball]].name
-	var sh := _card_shell(accent, 188, 330)
+		"item":
+			var itd: Dictionary = Catalog.ITEMS[item.id]
+			accent = Color(0.45, 0.85, 1.0)
+			title = itd.name
+			desc = itd.desc
+			kind = {"aim": "Item · use while aiming", "pause": "Item · use while paused", "any": "Item · aiming or paused"}[itd.use]
+	var sh := _card_shell(accent, 236, 236)
 	var p: PanelContainer = sh[0]
 	var v: VBoxContainer = sh[1]
 	if item.type == "imbue":
@@ -2084,20 +2298,20 @@ func _offer_card(i: int) -> Control:
 	else:
 		var ic := CenterContainer.new()
 		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		ic.add_child(IconArt.new().setup(item.id, F_SEMI, 56))
+		ic.add_child(IconArt.new().setup(item.id, F_SEMI, 46))
 		v.add_child(ic)
 	var t := _label(title, 18, Color.WHITE)
 	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	t.custom_minimum_size = Vector2(164, 0)
+	t.custom_minimum_size = Vector2(212, 0)
 	v.add_child(t)
 	v.add_child(_label(kind, 12, accent))
 	if not syn.is_empty():
 		var sl := _label("+ Synergy: " + ", ".join(syn), 12, Color(0.5, 1.0, 0.6))
 		sl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		sl.custom_minimum_size = Vector2(164, 0)
+		sl.custom_minimum_size = Vector2(212, 0)
 		v.add_child(sl)
 		p.add_theme_stylebox_override("panel", _style(Color(0.1, 0.16, 0.11), Color(0.5, 1.0, 0.6), 3, 10))
-	var d := _term_text(Glossary.link(desc), 13, Color(0.8, 0.82, 0.85), 164.0)
+	var d := _term_text(Glossary.link(desc), 13, Color(0.8, 0.82, 0.85), 212.0)
 	d.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(d)
 	var b := _button("SOLD" if item.sold else "Buy $%d" % item.cost, func():

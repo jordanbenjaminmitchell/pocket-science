@@ -31,6 +31,8 @@ static func start_chain(ctx: Dictionary) -> float:
 		c += 0.5 * (ctx.get("pockets_used", []) as Array).size()
 	if perks.has("venture"):
 		c += minf(1.5, 0.25 * int(int(ctx.get("money", 0)) / 5))
+	if perks.has("missing"):
+		c += minf(3.0, 0.5 * int(ctx.get("removed", 0)))
 	return c
 
 
@@ -149,6 +151,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 	var hot: int = ctx.get("hot_pocket", -1)
 	var heat: int = ctx.get("heat", 0)
 	var hm := heat_mult(heat)
+	var all_hot: bool = ctx.get("all_hot", false)
 	var scoring := {}
 	for p in pots:
 		scoring[p] = true
@@ -187,7 +190,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 				continue
 		var facts := {
 			"any": true, "odd": n % 2 == 1, "even": n % 2 == 0, "stripe": n >= 9, "solid": n <= 7,
-			"corner": not (k == 1 or k == 4), "side": k == 1 or k == 4, "hot": k == hot, "eight": n == 8,
+			"corner": not (k == 1 or k == 4), "side": k == 1 or k == 4, "hot": k == hot or all_hot, "eight": n == 8,
 			"bank": rails > 0, "combo": by != 0, "clean": rails == 0 and by == 0 and not kick,
 			"first": idx == 0, "extra": idx >= 1, "kick": kick, "triple": pots.size() >= 3,
 			"repeat_pocket": seen_pocket.has(k), "soft": float(ctx.get("power", 0.5)) <= 0.35,
@@ -195,6 +198,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			"lowest": n == int(ctx.get("lowest", -1)), "highest": n == int(ctx.get("highest", -1)),
 			"heat3": heat >= 3, "last_chalk": int(ctx.get("chalk", 99)) == 1, "third": int(ctx.get("shots_taken", 0)) % 3 == 2,
 			"boomerang": boomerang, "long": _long_pot(ctx, n, e),
+			"follow_shot": float(ctx.get("follow", 0.0)) > 0.2, "draw_shot": float(ctx.get("follow", 0.0)) < -0.2,
 			"last_eight": n == 8 and left_after == 0, "no_eight_touch": not toucher.has(8),
 			"eight_count": (int(ctx.get("total_pots", 0)) + idx + 1) % 8 == 0,
 			"stripe_hard": n >= 9 and float(ctx.get("power", 0.5)) >= 0.6,
@@ -204,6 +208,8 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		if facts.last_eight:
 			out.last_eight = true
 		var value := float(Catalog.ball_points(n)) + float(ctx.get("catalyst", 0.0))
+		if perks.has("thinrack"):
+			value += 6.0 * int(ctx.get("removed", 0))
 		var pre_chain := 0.0
 		var x := 1.0
 		var tags: Array = []
@@ -225,7 +231,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			out.max_rails = maxi(out.max_rails, rails)
 		if by != 0:
 			out.combos += 1
-		if k == hot:
+		if k == hot or all_hot:
 			x *= 3.0 if perks.has("heat") else 2.0
 			tags.append("Hot pocket")
 			out.hot_pots += 1
@@ -308,6 +314,9 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 				if fused.label != "":
 					tags.append(fused.label)
 				out.heat_gain += fused.heat
+		x *= float(ctx.get("boost", 1.0))
+		if perks.has("secondcoat") and imbues.has(n):
+			x *= 1.5
 		chain += pre_chain
 		var pts := value * chain * hm * x
 		if idx == 0 and perks.has("echo"):

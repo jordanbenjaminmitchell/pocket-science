@@ -51,7 +51,7 @@ func _go() -> void:
 	print("counts")
 	check(Catalog.IMBUES.size() == 8, "8 imbues")
 	check(Catalog.BOUNTIES.size() == 25, "25 bounties")
-	check(Catalog.CUES.size() == 10, "10 cues")
+	check(Catalog.CUES.size() >= 14, "14 or more cues")
 	check(Catalog.BOSSES.size() >= 20, "at least 20 boss tables")
 	for id in Catalog.BOSSES:
 		check(Catalog.LABS.has(Catalog.BOSSES[id].lab), "%s uses a known lab" % id)
