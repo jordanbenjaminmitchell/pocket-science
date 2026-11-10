@@ -345,15 +345,15 @@ const HANDICAPS := [
 
 ## The nine-table tour. "boss" fixes a table; otherwise one is drawn from "tier".
 const TABLES := [
-	{"target": 50, "boss": "local"},
-	{"target": 120, "tier": 1},
-	{"target": 230, "tier": 1},
-	{"target": 340, "tier": 2},
-	{"target": 480, "boss": "elements"},
-	{"target": 680, "tier": 2},
-	{"target": 850, "tier": 3},
-	{"target": 1150, "tier": 3},
-	{"target": 1600, "boss": "final"},
+	{"target": 40, "boss": "local"},
+	{"target": 95, "tier": 1},
+	{"target": 180, "tier": 1},
+	{"target": 270, "tier": 2},
+	{"target": 380, "boss": "elements"},
+	{"target": 480, "tier": 2},
+	{"target": 590, "tier": 3},
+	{"target": 760, "tier": 3},
+	{"target": 960, "boss": "final"},
 ]
 
 

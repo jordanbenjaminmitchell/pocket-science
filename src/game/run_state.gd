@@ -4,7 +4,7 @@ extends RefCounted
 ## the table sequence and the shop.
 
 const MAX_PERKS := 6
-const BASE_CHALK := 5
+const BASE_CHALK := 6
 
 var seed_value := 0
 var cue := "maple"
