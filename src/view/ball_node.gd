@@ -38,6 +38,8 @@ var shown_settled := 1.0
 var rest_tween: Tween
 var emblem := ""          # special balls show this motif instead of a number
 var emblem_ink := Color.BLACK
+var aura: Node2D               # Imbued balls: ring and orbiting spark, drawn over the ball
+var aura_t := 0.0
 
 
 func setup(n: int, f: Font, rng: RandomNumberGenerator) -> void:
@@ -69,6 +71,9 @@ func setup(n: int, f: Font, rng: RandomNumberGenerator) -> void:
 	label_node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	label_node.draw.connect(_draw_number)
 	add_child(label_node)
+	aura = Node2D.new()
+	aura.draw.connect(_draw_aura)
+	add_child(aura)
 	basis = REST_FLIPPED if rng.randi() % 2 == 0 else REST_BASIS
 	_push()
 
@@ -76,6 +81,31 @@ func setup(n: int, f: Font, rng: RandomNumberGenerator) -> void:
 func set_glow(c: Color) -> void:
 	glow = c
 	mat.set_shader_parameter("glow_color", c)
+	set_process(c.a > 0.0)
+	if aura:
+		aura.queue_redraw()
+
+
+func _process(delta: float) -> void:
+	aura_t += delta
+	aura.queue_redraw()
+
+
+## An Imbue is unmissable: a bright ring in its colour, a soft pulse and a spark
+## that circles the ball, so imbued balls read at a glance even across the table.
+func _draw_aura() -> void:
+	if glow.a <= 0.0 or fade <= 0.05:
+		return
+	var pulse := 0.5 + 0.5 * sin(aura_t * 3.2)
+	var r := radius * 1.18
+	aura.draw_arc(Vector2.ZERO, r + 2.0 + pulse * 2.0, 0, TAU, 40, Color(glow, 0.25 * fade), 4.0, true)
+	aura.draw_arc(Vector2.ZERO, r, 0, TAU, 40, Color(glow, 0.95 * fade), 2.2, true)
+	var ang := aura_t * 2.4
+	var sp := Vector2(cos(ang), sin(ang)) * r
+	aura.draw_circle(sp, 3.2, Color(glow.lightened(0.4), fade))
+	aura.draw_circle(sp, 1.6, Color(1, 1, 1, fade))
+	var sp2 := Vector2(cos(ang + PI), sin(ang + PI)) * r
+	aura.draw_circle(sp2, 2.0, Color(glow, 0.7 * fade))
 
 
 ## Move to a new table position, rolling the sphere by the distance travelled.

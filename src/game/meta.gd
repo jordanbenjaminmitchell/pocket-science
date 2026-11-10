@@ -21,7 +21,7 @@ const MILESTONES := {
 	"combos10": {"name": "Chain Gang", "hint": "Sink 10 combinations in total", "perks": [], "cue": "breaker"},
 	"banks10": {"name": "Rail Bird", "hint": "Sink 10 bank shots in total", "perks": [], "cue": "angle"},
 	"hot15": {"name": "Heat Seeker", "hint": "Sink 15 balls into hot pockets in total", "perks": [], "cue": "thermal"},
-	"eightlast": {"name": "Saved for Last", "hint": "Sink the 8 as the last ball on the table", "perks": ["lastcall", "darkhorse", "trouble"], "cue": "black"},
+	"eightlast": {"name": "Saved for Last", "hint": "Sink the 8 when it is the only ball left on the table", "perks": ["lastcall", "darkhorse", "trouble"], "cue": "black"},
 	"suited": {"name": "Suited Up", "hint": "Sink 2 or more solids, or 2 or more stripes, in one shot", "perks": ["solidsonly", "stripesonly", "lastsolid", "laststripe"], "cue": ""},
 	"pots100": {"name": "Old Hand", "hint": "Sink 100 balls in total", "perks": [], "cue": "engineer"},
 	"items5": {"name": "Handy", "hint": "Use 5 items in total", "perks": [], "cue": "gearhead"},

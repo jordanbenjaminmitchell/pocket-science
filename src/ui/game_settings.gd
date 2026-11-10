@@ -26,6 +26,7 @@ var screen_layout := 0      # index into SCREEN_LAYOUTS
 var guide_lines := 1        # index into GUIDE_LINES; All balls by default
 var guide_rev := 2          # settings saved before All balls became the default get it once
 var pause_on_hit := false   # pause a shot by itself the moment the cue ball first hits a ball
+var smooth_arrows := false  # arrow keys sweep at once instead of 1-degree taps
 
 const SCREEN_LAYOUTS := ["Classic", "Wide"]
 ## "All balls" also simulates the shot and draws where every ball will end up.
@@ -45,7 +46,7 @@ const ACTIONS := {
 
 var keys := {}
 
-const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout", "guide_lines", "pause_on_hit", "guide_rev"]
+const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout", "guide_lines", "pause_on_hit", "guide_rev", "smooth_arrows"]
 
 
 func load_file() -> void:
@@ -134,6 +135,7 @@ func _clamp() -> void:
 	screen_layout = clampi(int(screen_layout), 0, SCREEN_LAYOUTS.size() - 1)
 	guide_lines = clampi(int(guide_lines), 0, GUIDE_LINES.size() - 1)
 	pause_on_hit = bool(pause_on_hit)
+	smooth_arrows = bool(smooth_arrows)
 
 
 func reset() -> void:
@@ -155,6 +157,7 @@ func reset() -> void:
 	screen_layout = 0
 	guide_lines = 1
 	pause_on_hit = false
+	smooth_arrows = false
 	_device_defaults()
 	frame_cap = 0
 	window_size = 1

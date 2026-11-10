@@ -1159,6 +1159,17 @@ func _mouse_table() -> Vector2:
 
 
 var last_aim_mouse := Vector2.INF
+var aim_hold_t := 0.0
+const AIM_HOLD := 0.25
+var fc_power := -1.0
+
+
+func _step_aim(dir: float) -> void:
+	if settings.smooth_arrows:
+		return
+	var deg := 0.1 if Input.is_key_pressed(KEY_SHIFT) else 1.0
+	aim_dir = aim_dir.rotated(deg_to_rad(deg * dir))
+	guide_dirty = true
 
 
 func _update_aim(delta: float) -> void:
@@ -1182,11 +1193,17 @@ func _update_aim(delta: float) -> void:
 				guide_dirty = true
 		var rot := 0.0
 		var spd := (0.06 if Input.is_key_pressed(KEY_SHIFT) else 0.6) * settings.aim_speed
-		if Input.is_key_pressed(settings.keys.aim_left):
-			rot -= spd
-		if Input.is_key_pressed(settings.keys.aim_right):
-			rot += spd
-		rot += touch_rot * 0.3
+		# A tap turns exactly 1 degree (0.1 with Shift); holding for a quarter of a
+		# second sweeps smoothly. The Smooth arrows setting sweeps straight away.
+		var held_l := Input.is_key_pressed(settings.keys.aim_left)
+		var held_r := Input.is_key_pressed(settings.keys.aim_right)
+		aim_hold_t = aim_hold_t + delta if (held_l or held_r or touch_rot != 0.0) else 0.0
+		if aim_hold_t > AIM_HOLD or settings.smooth_arrows:
+			if held_l:
+				rot -= spd
+			if held_r:
+				rot += spd
+			rot += touch_rot * 0.3
 		if settings.touch_mode and power_slider.value != power:
 			power_slider.set_value_no_signal(power)
 		var jx := _joy(JOY_AXIS_LEFT_X)
@@ -1204,6 +1221,12 @@ func _update_aim(delta: float) -> void:
 			guide_dirty = true
 		view.cue_pull = power * 18.0
 		power_w.set_power(power)
+	# Any change of power, from the wheel, keys, slider or a drag, re-runs the prediction.
+	var cp := _current_power()
+	if absf(cp - fc_power) > 0.004:
+		fc_power = cp
+		forecast_dirty = true
+		forecast_timer = minf(forecast_timer, 0.06)
 	view.cue_dir = aim_dir
 	_update_coach()
 	if guide_dirty:
@@ -1477,7 +1500,7 @@ func _begin_roll() -> void:
 	pauses = 0
 	view.plan_marker = view.plan_marker if pause_at >= 0.0 else Vector2.INF
 	state = S.ROLL
-	lbl_hint.text = "Click or press Space to fast-forward."
+	lbl_hint.text = "P (or the Pause button) pauses the shot. Click or Space to fast-forward."
 
 
 var sim_accum := 0.0
@@ -1942,6 +1965,10 @@ func _key(k: int) -> void:
 	match state:
 		S.AIM:
 			match action:
+				"aim_left":
+					_step_aim(-1.0)
+				"aim_right":
+					_step_aim(1.0)
 				"shoot":
 					_shoot(power)
 				"power_up":
@@ -2234,7 +2261,9 @@ func _build_touch_controls(parent: Control) -> void:
 		var nudge := _button("<" if dir < 0 else ">", func(): pass, Color(0.6, 0.75, 0.9))
 		nudge.custom_minimum_size = Vector2(66, 58)
 		nudge.focus_mode = Control.FOCUS_NONE
-		nudge.button_down.connect(func(): touch_rot = dir)
+		nudge.button_down.connect(func():
+			touch_rot = dir
+			_step_aim(dir))
 		nudge.button_up.connect(func(): touch_rot = 0.0)
 		row.add_child(nudge)
 		if dir < 0:
@@ -2919,7 +2948,10 @@ func _show_help() -> void:
 [color=#ff9040]Heat[/color] lasts all table. Every scoring shot adds 1, and each point of Heat adds ×0.5. A miss cuts your Heat in half.
 The [color=#ff8a30]hot pocket[/color] pays ×2. The black 8 also pays ×2.
 
-[b]The 8-ball:[/b] Avoid it. If the 8 sinks while other balls are still on the table, you lose 15% of the table's target, unless a Perk changes that. Once it is the last ball it is safe, and sinking it brings a fresh rack.
+[b]The 8-ball:[/b] Avoid it. If the 8 sinks while other balls are still on the table, you lose 15% of the table's target, unless a Perk changes that. Once it is the only ball left on the table it is safe, and sinking it brings a fresh rack.
+
+[b]Pausing a shot:[/b] While the balls roll, press [b]P[/b] (or tap [b]Pause[/b] on a phone) and everything freezes. The prediction then shows exactly where every ball goes from that moment. While paused you can use mid-shot items from your bar: [b]Second Strike[/b] (aim with the mouse, set power with the wheel or Up/Down, click to hit), [b]Pop-up Wall[/b] (click where it starts, then where it ends), [b]Blink[/b] (click where the cue ball reappears), and more. Right-click or Esc cancels an item. Press [b]P[/b] again, Space, Enter or click the table to play on.
+[b]Planning a pause:[/b] Press [b]L[/b] (or [b]Plan a pause[/b]) to lock the prediction, move along the cue ball's line and click where the shot should stop by itself. Settings can also pause every shot the moment the cue ball first hits a ball.
 
 [b]Chalk:[/b] As in real pool, you keep shooting while you sink. A miss, a scratch or no contact costs 1 chalk. A dry break is free. Run out of chalk before reaching the target and the run is over. Clearing the whole rack gives +1 chalk and a fresh rack.
 
@@ -3360,6 +3392,7 @@ func _show_settings(back: Callable) -> void:
 	_setting_toggle(grid, "Click to shoot (power from wheel / Up / Down)", "click_shoot")
 	_setting_choice(grid, "Prediction lines", "guide_lines", GameSettings.GUIDE_LINES)
 	_setting_toggle(grid, "Pause when the cue ball first hits", "pause_on_hit")
+	_setting_toggle(grid, "Arrow keys sweep (no 1° steps)", "smooth_arrows")
 	_setting_toggle(grid, "Colour-blind guideline palette", "colorblind")
 	_setting_toggle(grid, "Number tags on every ball", "number_tags")
 	_setting_toggle(grid, "Larger small text", "large_text")

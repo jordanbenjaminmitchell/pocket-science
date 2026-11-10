@@ -33,6 +33,19 @@ func _point_mouse(p: Vector2) -> void:
 	g.mouse_pos = g.view.base_position + p * g.TABLE_SCALE
 
 
+func _press(k: int) -> void:
+	var e := InputEventKey.new()
+	e.keycode = k
+	e.physical_keycode = k
+	e.pressed = true
+	root.push_input(e)
+	var up := InputEventKey.new()
+	up.keycode = k
+	up.physical_keycode = k
+	up.pressed = false
+	root.push_input(up)
+
+
 func _fresh_shot() -> void:
 	g._new_run()
 	await _until(func(): return g.state == g.S.AIM, 200)
@@ -138,5 +151,38 @@ func _go() -> void:
 	await _until(func(): return g.state != g.S.ROLL and g.state != g.S.STRIKE and g.state != g.S.TALLY, 1500)
 	check(g.state != g.S.HOLD, "and only once per shot")
 	g.settings.pause_on_hit = false
+	print("real keys")
+	await _fresh_shot()
+	var before: Vector2 = g.aim_dir
+	_press(KEY_LEFT)
+	await _frames(1)
+	check(absf(rad_to_deg(before.angle_to(g.aim_dir)) + 1.0) < 0.01, "a tap of Left turns the aim exactly 1 degree (%.3f)" % rad_to_deg(before.angle_to(g.aim_dir)))
+	before = g.aim_dir
+	_press(KEY_RIGHT)
+	await _frames(1)
+	check(absf(rad_to_deg(before.angle_to(g.aim_dir)) - 1.0) < 0.01, "and Right turns it back")
+	g.power = 0.3
+	g.guide_dirty = true
+	await _until(func(): return g.fc_sim == null and g.fc_complete, 400)
+	var low_end: Vector2 = g.fc_paths[0][g.fc_paths[0].size() - 1] if g.fc_paths.has(0) else Vector2.ZERO
+	for k in 6:
+		_press(KEY_UP)
+	await _frames(3)
+	await _until(func(): return g.fc_sim == null, 400)
+	var high_end: Vector2 = g.fc_paths[0][g.fc_paths[0].size() - 1] if g.fc_paths.has(0) else Vector2.ZERO
+	check(g.power > 0.55 and low_end.distance_to(high_end) > 20.0, "raising the power with Up changes the prediction (%.0f apart)" % low_end.distance_to(high_end))
+	g._shoot(0.9)
+	await _until(func(): return g.state == g.S.ROLL, 60)
+	await _frames(5)
+	_press(KEY_P)
+	await _frames(2)
+	check(g.state == g.S.HOLD, "pressing P pauses a rolling shot")
+	var frozen: Vector2 = g.sim.pos[0]
+	await _frames(20)
+	check(g.sim.pos[0] == frozen, "and the balls stay frozen")
+	_press(KEY_P)
+	await _frames(2)
+	check(g.state == g.S.ROLL, "pressing P again plays on")
+	await _until(func(): return g.state != g.S.ROLL and g.state != g.S.STRIKE and g.state != g.S.TALLY, 4000)
 	print("pause tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
