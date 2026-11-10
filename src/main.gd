@@ -2,7 +2,7 @@ extends Node2D
 ## Pocket Science — game controller.
 ## States: TITLE -> AIM <-> PLACE -> STRIKE -> ROLL -> TALLY -> (AIM | CLEAR -> SHOP | OVER)
 
-enum S { TITLE, AIM, PLACE, STRIKE, ROLL, TALLY, CLEAR, SHOP, OVER, PICK }
+enum S { TITLE, AIM, PLACE, STRIKE, ROLL, TALLY, CLEAR, SHOP, OVER, PICK, HOLD }
 
 const TABLE_ORIGIN := Vector2(445, 99)
 const TABLE_SCALE := 1.05
@@ -70,6 +70,16 @@ var item_bar: HBoxContainer
 var pick_item := ""
 var pick_slot := -1
 var pick_points: Array = []
+var pick_return := 0            # the state a bumper or portal placement returns to
+var hold_action := ""           # while paused: "strike", "wall" or "blink" waiting for a click
+var hold_slot := -1
+var wall_start := Vector2.INF
+var plan_lock := false          # prediction frozen so the cursor can pick a pause point
+var pause_at := -1.0            # sim time at which the running shot pauses itself
+var auto_paused := false
+var pauses := 0
+var fc_times := {}              # forecast sample times per ball, for pause planning
+var walls_up := false
 var term_tip: TermTip
 var lbl_boss: Label
 var lbl_target: Label
@@ -220,6 +230,20 @@ func _use_item(slot: int) -> void:
 		return
 	var id: String = run.items[slot]
 	var it: Dictionary = Catalog.ITEMS[id]
+	if state == S.HOLD:
+		if it.use == "aim":
+			_flash_banner("USE THIS WHILE AIMING", Color(0.6, 0.85, 1.0), 1.0)
+			return
+		match id:
+			"secondstrike":
+				_begin_hold_action("strike", slot)
+			"wall":
+				_begin_hold_action("wall", slot)
+			"blink":
+				_begin_hold_action("blink", slot)
+			"bumperkit", "portal":
+				_begin_pick(id, slot)
+		return
 	if it.use == "pause":
 		_flash_banner("USE THIS WHILE A SHOT IS PAUSED", Color(0.6, 0.85, 1.0), 1.2)
 		return
@@ -249,7 +273,12 @@ func _use_item(slot: int) -> void:
 
 
 func _spend_item(slot: int) -> void:
-	run.items.remove_at(slot)
+	var it: Dictionary = Catalog.ITEMS[run.items[slot]]
+	if it.use == "pause" and run.perks.has("quickhands") and not run.quick_used:
+		run.quick_used = true   # Quick Hands: this one stays
+		_flash_banner("QUICK HANDS - ITEM KEPT", Color(0.55, 0.95, 0.85), 1.0)
+	else:
+		run.items.remove_at(slot)
 	_announce_unlocks(meta.on_item_used())
 	sfx.play("coin", 0.5, 1.3)
 	_refresh_hud()
@@ -279,6 +308,7 @@ func _begin_pick(id: String, slot: int) -> void:
 	pick_item = id
 	pick_slot = slot
 	pick_points = []
+	pick_return = state
 	state = S.PICK
 	view.show_guide = false
 	lbl_hint.text = "Click where the %s goes. Right-click or Esc to cancel." % ("bumper" if id == "bumperkit" else "first portal")
@@ -353,7 +383,11 @@ func _end_pick() -> void:
 	pick_points = []
 	view.place_radius = 0.0
 	view.placing = false
-	_enter_aim()
+	if pick_return == S.HOLD:
+		_rebuild_layout()
+		_hold(false)
+	else:
+		_enter_aim()
 
 
 ## The Pro Shop's removal service: pick a ball to take out of your set.
@@ -425,6 +459,238 @@ func _set_ball_icon(n: int) -> Control:
 	return c
 
 
+## ================================================================ pausing a shot
+## A shot can be paused while it rolls: by hand (P or the Pause button), by
+## itself on the first hit (a setting), or at a point planned on the prediction.
+## While paused the prediction shows exactly what will happen from here, and
+## pause items can change it: hit the cue ball again, raise a wall, or blink it.
+func _should_hold() -> bool:
+	if pause_at >= 0.0 and sim.time >= pause_at:
+		return true
+	if settings.pause_on_hit and not auto_paused and sim.cue_contacted:
+		auto_paused = true
+		return true
+	return false
+
+
+func _hold(count: bool = true) -> void:
+	if count:
+		pauses += 1
+		pause_at = -1.0
+		view.plan_marker = Vector2.INF
+		if run.perks.has("stillness") and pauses <= 4:
+			sim.events.append({"t": sim.time, "type": "boost", "chain": 0.5})
+	state = S.HOLD
+	hold_action = ""
+	view.strike_line = []
+	view.show_guide = false
+	view.hold_text = "PAUSED - use an item, plan a pause (L), or press P to play on"
+	lbl_hint.text = "Paused. Items in your bar work now. Click the table or press P to play on."
+	_compute_forecast_from_here()
+	_refresh_hud()
+
+
+func _compute_forecast_from_here() -> void:
+	fc_sim = sim.clone()
+	fc_sim.events = []
+	fc_limit = 30.0
+	fc_paths = {}
+	fc_times = {}
+	view.forecast_text = ""
+	_step_forecast()
+
+
+func _update_hold() -> void:
+	if fc_sim != null:
+		_step_forecast()
+	_update_plan_hover()
+	var m := _mouse_table()
+	var ci := _cue_index()
+	match hold_action:
+		"strike":
+			if m.distance_to(sim.pos[ci]) > 4.0:
+				view.strike_line = [sim.pos[ci], sim.pos[ci] + (m - sim.pos[ci]).normalized() * (60.0 + 260.0 * power)]
+			power_w.set_power(power)
+		"blink":
+			view.placing = true
+			view.place_radius = 0.0
+			view.place_pos = m
+			view.place_ok = sim.is_clear_spot(m, ci)
+			view.place_hints = []
+		"wall":
+			if wall_start != Vector2.INF:
+				view.temp_walls = view.temp_walls.slice(0, view.temp_walls.size() - (1 if _wall_preview else 0))
+				view.temp_walls.append([wall_start, _wall_end(m)])
+				_wall_preview = true
+
+
+var _wall_preview := false
+
+
+func _wall_end(m: Vector2) -> Vector2:
+	var d := m - wall_start
+	return wall_start + d.limit_length(WALL_MAX)
+
+
+const WALL_MAX := 170.0
+
+
+func _begin_hold_action(kind: String, slot: int) -> void:
+	hold_action = kind
+	hold_slot = slot
+	wall_start = Vector2.INF
+	_wall_preview = false
+	match kind:
+		"strike":
+			view.hold_text = "SECOND STRIKE - aim with the mouse, set power with the wheel, click to hit"
+		"wall":
+			view.hold_text = "POP-UP WALL - click where it starts, then where it ends"
+		"blink":
+			view.hold_text = "BLINK - click where the cue ball reappears"
+
+
+func _cancel_hold_action() -> void:
+	if hold_action == "wall" and _wall_preview:
+		view.temp_walls.pop_back()
+	hold_action = ""
+	view.strike_line = []
+	view.placing = false
+	_hold(false)
+
+
+func _hold_click() -> void:
+	var m := _mouse_table()
+	var ci := _cue_index()
+	match hold_action:
+		"strike":
+			if m.distance_to(sim.pos[ci]) < 4.0 or sim.alive[ci] == 0:
+				return
+			sim.vel[ci] = (m - sim.pos[ci]).normalized() * _speed(power) * run.power_mult(false)
+			sim.spin[ci] = Vector2.ZERO
+			sim.side[ci] = 0.0
+			_after_hold_action(true)
+			sfx.play("cue", 0.4 + power * 0.6)
+		"blink":
+			if sim.alive[ci] == 0 or not sim.is_clear_spot(m, ci):
+				sfx.play("bad", 0.4)
+				return
+			sim.pos[ci] = m
+			view.ball_nodes[ci].roll_to(m)
+			view.placing = false
+			_after_hold_action(true)
+		"wall":
+			if wall_start == Vector2.INF:
+				wall_start = m
+				return
+			var b := _wall_end(m)
+			if wall_start.distance_to(b) < 30.0:
+				return
+			_add_wall(wall_start, b)
+			_after_hold_action(false)
+		_:
+			if view.plan_hover != Vector2.INF and plan_lock:
+				_set_pause_point()
+			_play_on()
+
+
+## Two faces and the end points, exactly like a cushion, for the rest of the shot.
+func _add_wall(a: Vector2, b: Vector2) -> void:
+	var n := (b - a).orthogonal().normalized()
+	sim.layout.segments.append({"a": a, "b": b, "n": n})
+	sim.layout.segments.append({"a": b, "b": a, "n": -n})
+	if not _wall_preview:
+		view.temp_walls.append([a, b])
+	_wall_preview = false
+	walls_up = true
+
+
+func _after_hold_action(cue_move: bool) -> void:
+	if cue_move and run.perks.has("afterimage"):
+		sim.events.append({"t": sim.time, "type": "boost", "chain": 1.0})
+	_spend_item(hold_slot)
+	hold_action = ""
+	view.strike_line = []
+	_hold(false)
+
+
+func _play_on() -> void:
+	if state != S.HOLD:
+		return
+	hold_action = ""
+	view.hold_text = ""
+	view.strike_line = []
+	view.placing = false
+	if not plan_lock:
+		view.forecast_paths = []
+	plan_lock = false
+	view.plan_hover = Vector2.INF
+	fc_sim = null
+	state = S.ROLL
+	lbl_hint.text = "Click or press Space to fast-forward. P pauses."
+
+
+## Lock the prediction, then the cursor slides along the cue ball's predicted
+## path; click to make the shot pause when it gets there.
+func _toggle_plan() -> void:
+	plan_lock = not plan_lock
+	view.plan_hover = Vector2.INF
+	fc_paths = {}   # never plan on a prediction left over from an earlier shot
+	fc_times = {}
+	if plan_lock:
+		forecast_dirty = true
+		forecast_timer = 0.0
+		lbl_hint.text = "Prediction locked. Move along the cue ball's line and click to set a pause point. L unlocks."
+	else:
+		lbl_hint.text = "Prediction unlocked."
+	guide_dirty = true
+
+
+func _plan_path() -> Array:
+	var ci := _cue_index()
+	if not fc_paths.has(ci) or not fc_times.has(ci):
+		return []
+	return [fc_paths[ci], fc_times[ci]]
+
+
+var plan_hover_t := -1.0
+
+
+func _update_plan_hover() -> void:
+	if not plan_lock:
+		view.plan_hover = Vector2.INF
+		return
+	var pp := _plan_path()
+	if pp.is_empty():
+		return
+	var pts: PackedVector2Array = pp[0]
+	var ts: PackedFloat32Array = pp[1]
+	var m := _mouse_table()
+	var best := -1
+	var bd := 45.0 * 45.0
+	for i in pts.size():
+		var d := pts[i].distance_squared_to(m)
+		if d < bd:
+			bd = d
+			best = i
+	if best < 0 or best >= ts.size():
+		view.plan_hover = Vector2.INF
+		plan_hover_t = -1.0
+		return
+	view.plan_hover = pts[best]
+	plan_hover_t = ts[best]
+
+
+func _set_pause_point() -> void:
+	if plan_hover_t < 0.0 or view.plan_hover == Vector2.INF:
+		sfx.play("bad", 0.3)
+		return
+	# Forecast times start at zero from the moment the prediction was made.
+	pause_at = (sim.time if state == S.HOLD else 0.0) + maxf(plan_hover_t, PoolSim.STEP)
+	view.plan_marker = view.plan_hover
+	sfx.play("click_soft", 0.7)
+	lbl_hint.text = "Pause point set. The shot will stop there. L unlocks the prediction."
+
+
 func _cue_index() -> int:
 	if sim == null:
 		return 0
@@ -449,6 +715,8 @@ func _process(delta: float) -> void:
 			_update_place()
 		S.PICK:
 			_update_pick()
+		S.HOLD:
+			_update_hold()
 		S.STRIKE:
 			_update_strike(delta)
 		S.ROLL:
@@ -532,7 +800,7 @@ func _update_aim(delta: float) -> void:
 		power_w.set_power(drag_power)
 	else:
 		var may_steer: bool = touch_aiming if settings.touch_mode else true
-		if not fine_aim and not pad_active and may_steer and _mouse_over_table() and m.distance_to(sim.pos[ci]) > 4.0:
+		if not fine_aim and not plan_lock and not pad_active and may_steer and _mouse_over_table() and m.distance_to(sim.pos[ci]) > 4.0:
 			var nd := (m - sim.pos[ci]).normalized()
 			if nd.angle_to(aim_dir) != 0.0:
 				aim_dir = nd
@@ -570,6 +838,7 @@ func _update_aim(delta: float) -> void:
 		view.guide = TableView.compute_guide(sim, aim_dir, _shot_follow(), _shot_side(), run.perks.has("lens"))
 		view.show_guide = true
 		_update_preview()
+	_update_plan_hover()
 	if not _forecast_wanted():
 		view.forecast_paths = []
 		view.forecast_text = ""
@@ -665,14 +934,14 @@ func _update_preview() -> void:
 
 var fc_sim: PoolSim
 var fc_paths := {}
-const FORECAST_DOT_GAP := 12.0
+const FORECAST_DOT_GAP := 7.0
 var fc_limit := 12.0
 
 
 ## Paths are drawn with the all-balls option and on tables that bend a ball's
 ## path, since a straight guideline alone would mislead there.
 func _show_paths() -> bool:
-	return settings.guide_lines == 1 or sim.tilt != Vector2.ZERO or sim.well_strength != 0.0
+	return state == S.HOLD or plan_lock or settings.guide_lines == 1 or sim.tilt != Vector2.ZERO or sim.well_strength != 0.0
 
 
 func _forecast_wanted() -> bool:
@@ -684,8 +953,9 @@ func _compute_forecast() -> void:
 	fc_sim = sim.clone()
 	fc_sim.strike(aim_dir, _speed(_current_power()) * run.power_mult(is_break), _shot_follow(), _shot_side())
 	# Bent tables only need the opening curve; the full picture is the option or Perk.
-	fc_limit = 30.0 if settings.guide_lines == 1 or run.perks.has("oracle") else 2.5
+	fc_limit = 30.0 if settings.guide_lines == 1 or plan_lock or run.perks.has("oracle") else 2.5
 	fc_paths = {}
+	fc_times = {}
 	view.forecast_text = ""
 	_step_forecast()
 
@@ -700,9 +970,11 @@ func _step_forecast() -> void:
 			if fc_sim.alive[i] == 1 and fc_sim.vel[i] != Vector2.ZERO:
 				if not fc_paths.has(i):
 					fc_paths[i] = PackedVector2Array([sim.pos[i]])
+					fc_times[i] = PackedFloat32Array([0.0])
 				var last: Vector2 = fc_paths[i][fc_paths[i].size() - 1]
 				if last.distance_squared_to(fc_sim.pos[i]) >= FORECAST_DOT_GAP * FORECAST_DOT_GAP:
 					fc_paths[i].append(fc_sim.pos[i])
+					fc_times[i].append(fc_sim.time)
 	var done := not fc_sim.moving() or fc_sim.time >= fc_limit
 	var out: Array = []
 	if _show_paths():
@@ -814,6 +1086,9 @@ func _begin_roll() -> void:
 		view.add_shake(3.0 * shot_power)
 	ev_index = 0
 	fast = false
+	auto_paused = false
+	pauses = 0
+	view.plan_marker = view.plan_marker if pause_at >= 0.0 else Vector2.INF
 	state = S.ROLL
 	lbl_hint.text = "Click or press Space to fast-forward."
 
@@ -833,11 +1108,21 @@ func _sim_steps(delta: float, speed: float = 1.0) -> int:
 
 func _update_roll(delta: float) -> void:
 	var steps := _sim_steps(delta, 4.0 if fast else 1.0)
+	var hold_now := false
 	for i in steps:
+		if _should_hold():
+			hold_now = true
+			break
 		sim.step(PoolSim.STEP)
 		_consume_events()
 		if not sim.moving():
 			break
+	if not hold_now:
+		hold_now = _should_hold()
+	if hold_now and sim.moving():
+		view.update_balls(sim)
+		_hold()
+		return
 	view.update_balls(sim)
 	if run.heat >= 3 and sim.alive[_cue_index()] == 1:
 		var cv := sim.vel[_cue_index()]
@@ -1069,6 +1354,13 @@ func _apply_tally_line(l: Dictionary, i: int) -> void:
 
 func _after_shot() -> void:
 	sfx.duck(false)
+	pause_at = -1.0
+	view.plan_marker = Vector2.INF
+	if walls_up:
+		walls_up = false
+		view.temp_walls = []
+		layout = run.build_layout()
+		sim.layout = layout
 	var was_break := is_break
 	is_break = false
 	var out := run.apply_shot(result, was_break, sim.object_balls_left(), sim.alive[_cue_index()] == 1)
@@ -1234,6 +1526,9 @@ func _key(k: int) -> void:
 	if state == S.PICK and k == KEY_ESCAPE:
 		_cancel_pick()
 		return
+	if state == S.HOLD and k == KEY_ESCAPE and hold_action != "":
+		_cancel_hold_action()
+		return
 	if k == KEY_ESCAPE:
 		if state != S.TITLE:
 			_show_pause()
@@ -1267,6 +1562,19 @@ func _key(k: int) -> void:
 		S.ROLL, S.TALLY:
 			if action == "shoot" or k == KEY_ENTER:
 				fast = true
+			elif action == "pause_shot" and state == S.ROLL:
+				_hold()
+		S.HOLD:
+			if action == "pause_shot" or action == "shoot" or k == KEY_ENTER:
+				_play_on()
+			elif action == "plan":
+				_toggle_plan()
+			elif action == "power_up":
+				power = clampf(power + 0.05, 0.02, 1.0)
+			elif action == "power_down":
+				power = clampf(power - 0.05, 0.02, 1.0)
+	if state == S.AIM and action == "plan":
+		_toggle_plan()
 
 
 ## ---------------------------------------------------------------- gamepad
@@ -1333,6 +1641,9 @@ func _focus_first(n: Node) -> bool:
 
 
 func _mouse_button(e: InputEventMouseButton) -> void:
+	if plan_lock and state == S.AIM and e.button_index == MOUSE_BUTTON_LEFT and e.pressed and _mouse_over_table():
+		_set_pause_point()
+		return
 	match state:
 		S.AIM:
 			if e.button_index == MOUSE_BUTTON_LEFT and settings.touch_mode:
@@ -1370,6 +1681,15 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 					_place_cue()
 			elif e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
 				_place_cue()
+		S.HOLD:
+			if e.button_index == MOUSE_BUTTON_LEFT and e.pressed and _mouse_over_table():
+				_hold_click()
+			elif e.button_index == MOUSE_BUTTON_RIGHT and e.pressed:
+				_cancel_hold_action()
+			elif e.button_index == MOUSE_BUTTON_WHEEL_UP and e.pressed:
+				power = clampf(power + 0.03, 0.02, 1.0)
+			elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN and e.pressed:
+				power = clampf(power - 0.03, 0.02, 1.0)
 		S.PICK:
 			if e.button_index == MOUSE_BUTTON_RIGHT and e.pressed:
 				_cancel_pick()
@@ -1515,7 +1835,11 @@ func _build_touch_controls(parent: Control) -> void:
 		if dir < 0:
 			var shoot := _button("SHOOT", func():
 				if state == S.AIM:
-					_shoot(power), Color(0.4, 0.9, 0.6))
+					_shoot(power)
+				elif state == S.ROLL:
+					_hold()
+				elif state == S.HOLD:
+					_play_on(), Color(0.4, 0.9, 0.6))
 			shoot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			shoot.custom_minimum_size = Vector2(0, 58)
 			shoot.focus_mode = Control.FOCUS_NONE
@@ -2617,6 +2941,7 @@ func _show_settings(back: Callable) -> void:
 	_setting_toggle(grid, "Invert pull-back (push forward for power)", "invert_drag")
 	_setting_toggle(grid, "Click to shoot (power from wheel / Up / Down)", "click_shoot")
 	_setting_choice(grid, "Prediction lines", "guide_lines", GameSettings.GUIDE_LINES)
+	_setting_toggle(grid, "Pause when the cue ball first hits", "pause_on_hit")
 	_setting_toggle(grid, "Colour-blind guideline palette", "colorblind")
 	_setting_toggle(grid, "Number tags on every ball", "number_tags")
 	_setting_toggle(grid, "Larger small text", "large_text")

@@ -48,6 +48,7 @@ var seed_growth := {}           # Seed balls: times sunk, keyed by number as a s
 var removals := 0               # balls removed in the Pro Shop this run
 var frost_shield := false       # this table: the next miss keeps Heat
 var heart_used := false         # this table: a Heart ball has already given Chalk
+var quick_used := false         # this table: Quick Hands has saved an item
 var next_boost := 1.0           # Double Down
 var next_all_hot := false       # Spotlight
 var next_magnet := false        # Magnet Charm
@@ -134,6 +135,9 @@ func begin_table() -> void:
 	table_mods = {"bumpers": [], "portals": [], "wide": false}
 	frost_shield = false
 	heart_used = false
+	quick_used = false
+	if perks.has("overclock") and items.size() < item_slots():
+		items.append("secondstrike")
 	next_boost = 1.0
 	next_all_hot = false
 	next_magnet = false

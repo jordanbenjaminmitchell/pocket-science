@@ -64,6 +64,8 @@ static func chain_step(e: Dictionary, ctx: Dictionary, contacted: bool) -> float
 					add += 0.5
 			elif contacted and perks.has("tracer"):
 				add += 0.25
+		"boost":
+			add += float(e.get("chain", 0.0))
 		"bumper":
 			if boss == "parlor" or boss == "posts":
 				add += 1.0

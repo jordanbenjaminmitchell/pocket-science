@@ -110,6 +110,10 @@ const MOTIFS := {
 	"goldrush": "C -10 6 18;t -10 6 22 $;l 16 -30 16 -10;l 6 -20 26 -20;l 22 -2 30 -10",
 	"menagerie": "C -18 -14 9;c 14 -16 10;C -14 16 9;c 18 14 9;l -6 0 6 0",
 	"alchemy": "o -10 -30 -10 -8 -26 24 26 24 10 -8 10 -30;l -16 -30 16 -30;C 0 12 6;l 18 -20 30 -32",
+	"stillness": "l -14 -26 -14 26;l 14 -26 14 26;c 0 0 34",
+	"quickhands": "o -26 20 -26 -8 -16 -20 -16 4;o -16 -8 -4 -24 -4 4;o -4 -8 8 -22 8 6;o 8 -2 20 -14 20 14 4 30 -20 30",
+	"afterimage": "C 16 0 13;c -2 0 13;c -18 0 13",
+	"overclock": "c 0 4 26;l 0 4 0 -14;l 0 4 14 12;l -8 -32 8 -32;l 22 -22 28 -28",
 	"handchalk": CUBE + ";l 18 -30 30 -30;l 24 -36 24 -24",
 	"heatpack": FLAME + ";l 20 -30 32 -30;l 26 -36 26 -24",
 	"doubledown": "t -8 2 34 2;l 12 -10 28 6;l 28 -10 12 6",
@@ -145,7 +149,7 @@ const FAMILY_COLORS := {
 	"money": Color(0.75, 0.9, 0.3), "risk": Color(1.0, 0.35, 0.65), "physics": Color(0.4, 0.9, 0.9),
 	"utility": Color(0.75, 0.78, 0.85), "reagent": Color(0.4, 0.65, 1.0),
 	"solid": Color(1.0, 0.68, 0.25), "stripe": Color(0.4, 0.95, 0.75), "eight": Color(0.82, 0.8, 0.98),
-	"clear": Color(1.0, 0.55, 0.55), "gear": Color(0.95, 0.75, 0.45), "imbue": Color(0.85, 0.6, 1.0), "item": Color(0.45, 0.85, 1.0),
+	"clear": Color(1.0, 0.55, 0.55), "gear": Color(0.95, 0.75, 0.45), "imbue": Color(0.85, 0.6, 1.0), "item": Color(0.45, 0.85, 1.0), "pause": Color(0.55, 0.95, 0.85),
 }
 
 var motif := ""

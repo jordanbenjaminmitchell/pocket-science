@@ -24,6 +24,7 @@ var frame_cap := 0          # index into FRAME_CAPS
 var window_size := 1        # index into WINDOW_SIZES
 var screen_layout := 0      # index into SCREEN_LAYOUTS
 var guide_lines := 0        # index into GUIDE_LINES
+var pause_on_hit := false   # pause a shot by itself the moment the cue ball first hits a ball
 
 const SCREEN_LAYOUTS := ["Classic", "Wide"]
 ## "All balls" also simulates the shot and draws where every ball will end up.
@@ -37,12 +38,13 @@ const ACTIONS := {
 	"aim_left": ["Aim left", KEY_LEFT], "aim_right": ["Aim right", KEY_RIGHT], "spin_up": ["Spin: follow", KEY_W],
 	"spin_down": ["Spin: draw", KEY_S], "spin_left": ["Spin: left", KEY_A], "spin_right": ["Spin: right", KEY_D],
 	"place": ["Move cue ball on break", KEY_H], "fine": ["Toggle fine aim", KEY_F],
+	"pause_shot": ["Pause or resume a shot", KEY_P], "plan": ["Lock prediction to plan a pause", KEY_L],
 	
 }
 
 var keys := {}
 
-const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout", "guide_lines"]
+const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout", "guide_lines", "pause_on_hit"]
 
 
 func load_file() -> void:
@@ -127,6 +129,7 @@ func _clamp() -> void:
 	window_size = clampi(int(window_size), 0, WINDOW_SIZES.size() - 1)
 	screen_layout = clampi(int(screen_layout), 0, SCREEN_LAYOUTS.size() - 1)
 	guide_lines = clampi(int(guide_lines), 0, GUIDE_LINES.size() - 1)
+	pause_on_hit = bool(pause_on_hit)
 
 
 func reset() -> void:
@@ -147,6 +150,7 @@ func reset() -> void:
 	touch_mode = false
 	screen_layout = 0
 	guide_lines = 0
+	pause_on_hit = false
 	_device_defaults()
 	frame_cap = 0
 	window_size = 1

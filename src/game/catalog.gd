@@ -115,6 +115,10 @@ const PERKS := {
 	"goldrush": {"name": "Gold Rush", "r": 1, "cost": 6, "fam": "special", "desc": "Special balls pay ×2."},
 	"menagerie": {"name": "Menagerie", "r": 1, "cost": 6, "fam": "special", "desc": "Shots start with +0.25 Chain for each special ball in your set."},
 	"alchemy": {"name": "Alchemy", "r": 2, "cost": 8, "fam": "special", "desc": "After each table, one plain ball in your set (never the 8) turns into a random special ball."},
+	"stillness": {"name": "Stillness", "r": 1, "cost": 6, "fam": "pause", "desc": "Every time you pause a shot, it gains +0.5 Chain (max +2 a shot)."},
+	"quickhands": {"name": "Quick Hands", "r": 0, "cost": 4, "fam": "pause", "desc": "The first pause item you use on each table is not used up."},
+	"afterimage": {"name": "Afterimage", "r": 1, "cost": 6, "fam": "pause", "desc": "Second Strike and Blink each add +1 Chain to the shot."},
+	"overclock": {"name": "Overclock", "r": 2, "cost": 8, "fam": "pause", "desc": "Start every table with a Second Strike, if you have a free item slot."},
 	"velvet": {"name": "Velvet Cloth", "r": 0, "cost": 5, "fam": "physics", "desc": "30% less cloth friction: balls roll further."},
 }
 
@@ -355,7 +359,7 @@ const TABLES := [
 
 const FAMILY_NAMES := {
 	"bank": "Banks & cushions", "cue": "Cue control", "combo": "Combos & clusters", "streak": "Streaks",
-	"pocket": "Pockets", "number": "Ball numbers", "solid": "Solids", "stripe": "Stripes", "eight": "The 8-ball", "clear": "Clearing your set", "gear": "Gear", "imbue": "Imbues", "special": "Special balls", "money": "Economy", "risk": "Risk & scaling",
+	"pocket": "Pockets", "number": "Ball numbers", "solid": "Solids", "stripe": "Stripes", "eight": "The 8-ball", "clear": "Clearing your set", "gear": "Gear", "imbue": "Imbues", "special": "Special balls", "pause": "Pausing", "money": "Economy", "risk": "Risk & scaling",
 	"physics": "Physics", "utility": "Utility",
 }
 

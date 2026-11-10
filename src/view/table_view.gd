@@ -29,6 +29,11 @@ var show_guide := false
 var guide := {}
 var forecast_paths: Array = []
 var forecast_text := ""        # Second Sight's preview of the whole shot
+var plan_marker := Vector2.INF   # where a planned pause will happen
+var plan_hover := Vector2.INF    # where the cursor would plan one
+var temp_walls: Array = []       # Pop-up Walls for this shot: [a, b]
+var strike_line: Array = []      # Second Strike aim: [from, to]
+var hold_text := ""
 var hot_pocket := -1
 var element_pockets: Array = []   # Element Table: one element id per pocket
 var second_pocket := -1   # Two Pockets boss: also scores, shown with a cooler ring
@@ -479,10 +484,16 @@ func _draw_overlay() -> void:
 		var pts: PackedVector2Array = path.points
 		var col: Color = path.color
 		var halo: Color = path.get("halo", Color(0, 0, 0))
-		for i in pts.size():
-			var a := 1.0 - float(i) / maxf(1.0, pts.size())
-			o.draw_circle(pts[i], 3.0, Color(halo, 0.4 * (0.4 + 0.6 * a)))
-			o.draw_circle(pts[i], 2.0, Color(col, 0.55 + 0.45 * a))
+		if pts.size() >= 2:
+			# One continuous antialiased stroke, fading towards where the ball ends.
+			var cols := PackedColorArray()
+			var halos := PackedColorArray()
+			for i in pts.size():
+				var a := 1.0 - 0.55 * float(i) / float(pts.size() - 1)
+				cols.append(Color(col, 0.9 * a))
+				halos.append(Color(halo, 0.35 * a))
+			o.draw_polyline_colors(pts, halos, 5.0, true)
+			o.draw_polyline_colors(pts, cols, 2.4, true)
 		if pts.size() > 0:
 			var endp := pts[pts.size() - 1]
 			if path.get("end", false):
@@ -498,6 +509,23 @@ func _draw_overlay() -> void:
 		for h in place_hints:
 			o.draw_line(h[0], h[1], Color(_pot_color(), 0.55), 2.0)
 			o.draw_arc(h[0], R + 3.0, 0, TAU, 24, Color(_pot_color(), 0.8), 2.0)
+	for w in temp_walls:
+		o.draw_line(w[0], w[1], Color(0.3, 0.9, 1.0, 0.35), 12.0, true)
+		o.draw_line(w[0], w[1], Color(0.75, 0.97, 1.0), 5.0, true)
+	if strike_line.size() == 2:
+		_dashed(o, strike_line[0], strike_line[1], Color(1.0, 0.85, 0.4), 3.0, 10.0)
+		_arrow(o, strike_line[0].lerp(strike_line[1], 0.9), strike_line[1], Color(1.0, 0.85, 0.4))
+	if plan_hover != Vector2.INF:
+		o.draw_arc(plan_hover, R + 5.0, 0, TAU, 32, Color(0.55, 0.95, 0.85, 0.7), 2.0, true)
+	if plan_marker != Vector2.INF:
+		o.draw_arc(plan_marker, R + 6.0 + sin(time * 5.0) * 1.5, 0, TAU, 32, Color(0.55, 0.95, 0.85), 3.0, true)
+		_txt(o, plan_marker + Vector2(0, -R - 18.0), "PAUSE", Color(0.55, 0.95, 0.85), 13)
+	if hold_text != "":
+		var hw := font_bold.get_string_size(hold_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
+		var hr := Rect2(Vector2(W * 0.5 - hw * 0.5 - 12, H - 44), Vector2(hw + 24, 32))
+		o.draw_rect(hr, Color(0.03, 0.08, 0.08, 0.85), true)
+		o.draw_rect(hr, Color(0.55, 0.95, 0.85), false, 2.0)
+		_txt(o, hr.get_center(), hold_text, Color(0.75, 1.0, 0.92), 18)
 	if not show_guide or guide.is_empty():
 		return
 	if forecast_text != "":
