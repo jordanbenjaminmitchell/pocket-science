@@ -40,6 +40,10 @@ const DIGITS := {
 }
 
 var out_dir := "res://assets"
+## PS_ICON_STYLE: "" (the game icon: shaded balls, flat rings), "flat" (everything
+## flat, solid colours with outlines) or "3d" (rings as shaded tubes that wrap
+## in front of the 8-ball as well as behind it).
+var style := ""
 ## [position, number, light colour, dark colour], numbered clockwise from the top.
 var ELECTRONS := []
 
@@ -56,6 +60,7 @@ func _initialize() -> void:
 		ELECTRONS.append([spots[i], i + 1, BALL_COLOURS[i + 1][0], BALL_COLOURS[i + 1][1]])
 	if OS.get_environment("PS_ICON_OUT") != "":
 		out_dir = OS.get_environment("PS_ICON_OUT")
+	style = OS.get_environment("PS_ICON_STYLE")
 	var failed := 0
 	failed += _save(_render(_felt(true) + _art(), "18 18 72 72", 512), out_dir + "/icon.png")
 	failed += _save(_render(_art(), "0 0 108 108", 432), out_dir + "/icon/foreground.png")
@@ -108,12 +113,64 @@ func _defs() -> String:
 	<radialGradient id="e%d" gradientUnits="userSpaceOnUse" cx="%.2f" cy="%.2f" r="%.2f">
 		<stop offset="0" stop-color="%s"/><stop offset="1" stop-color="%s"/>
 	</radialGradient>""" % [i, p.x - 1.6, p.y - 1.9, ELECTRON_R * 1.6, ELECTRONS[i][2], ELECTRONS[i][3]]
+	# 3D rings: gold lit from the top left, darker towards the bottom right.
+	defs += """
+	<linearGradient id="tube" gradientUnits="userSpaceOnUse" x1="22" y1="22" x2="86" y2="86">
+		<stop offset="0" stop-color="#ffe49a"/><stop offset="0.45" stop-color="#f2b232"/><stop offset="1" stop-color="#a5650c"/>
+	</linearGradient>"""
 	return defs + "</defs>"
 
 
 func _felt(rounded: bool) -> String:
-	return '<rect x="18" y="18" width="72" height="72" rx="15" fill="url(#felt)"/>' if rounded \
-		else '<rect width="108" height="108" fill="url(#felt)"/>'
+	var fill := "#13905f" if style == "flat" else "url(#felt)"
+	return ('<rect x="18" y="18" width="72" height="72" rx="15" fill="%s"/>' if rounded \
+		else '<rect width="108" height="108" fill="%s"/>') % fill
+
+
+## The near half of every orbit, drawn again after the 8-ball so the rings wrap round it.
+func _orbit_front(stroke: String, width: float, extra := "") -> String:
+	var out := ""
+	for a in ORBIT_ANGLES:
+		out += '<path d="M %.2f 0 A %.2f %.2f 0 0 1 %.2f 0" transform="translate(54 54) rotate(%.1f)" fill="none" stroke="%s" stroke-width="%.2f" stroke-linecap="round" %s/>' % [ORBIT_RX, ORBIT_RX, ORBIT_RY, -ORBIT_RX, a, stroke, width, extra]
+	return out
+
+
+## Shaded tube rings: a soft shadow on the felt, a dark edge, the lit gold body and a thin highlight.
+func _tubes(front: bool) -> String:
+	var f := func(st: String, w: float, extra := "") -> String: return _orbit_front(st, w, extra) if front else _orbit(st, w, extra)
+	var out := ""
+	if not front:
+		out += '<g transform="translate(0.9 1.6)">' + _orbit("#02241b", 5.0, 'stroke-opacity="0.45"') + '</g>'
+	out += f.call("#6b3f05", 4.6)
+	out += f.call("url(#tube)", 3.4)
+	out += '<g transform="translate(-0.35 -0.55)">' + f.call("#fff6d8", 0.8, 'stroke-opacity="0.85"') + '</g>'
+	return out
+
+
+## Everything flat: solid fills and one outline colour, no gradients, shine or shadows.
+func _art_flat() -> String:
+	var ink := "#0b2a20"
+	var out := _orbit(ink, 5.0)
+	out += _orbit("#f5b83a", 3.2)
+	out += '<circle cx="54" cy="54" r="%.2f" fill="#15151c" stroke="%s" stroke-width="1.6"/>' % [BALL_R, ink]
+	out += '<circle cx="54" cy="54" r="%.2f" fill="#fff8e8"/>' % (9.7 * _s())
+	out += _eight("#15151c")
+	for i in ELECTRONS.size():
+		var p := _electron_pos(i)
+		out += '<circle cx="%.2f" cy="%.2f" r="%.2f" fill="%s" stroke="%s" stroke-width="1.3"/>' % [p.x, p.y, ELECTRON_R, ELECTRONS[i][2], ink]
+		if ELECTRONS[i][1] != CUE:
+			out += '<circle cx="%.2f" cy="%.2f" r="%.2f" fill="#fff8e8"/>' % [p.x, p.y, ELECTRON_R * 0.56]
+			out += _digit(ELECTRONS[i][1], p, "#15151c")
+	return out
+
+
+## Everything 3D: the shaded balls of the game icon, with tube rings around the 8-ball.
+func _art_3d() -> String:
+	var out := _tubes(false)
+	out += _nucleus()
+	out += _tubes(true)
+	out += _electrons()
+	return out
 
 
 ## Where electron i sits (worked out in _initialize).
@@ -154,10 +211,20 @@ func _nucleus() -> String:
 
 
 func _art() -> String:
+	if style == "flat":
+		return _art_flat()
+	if style == "3d":
+		return _art_3d()
 	var out := _orbit("#02281e", 5.4, 'stroke-opacity="0.6"')
 	out += _orbit("#f7bf45", 3.3)
 	out += _orbit("#ffe9ad", 0.9)
 	out += _nucleus()
+	out += _electrons()
+	return out
+
+
+func _electrons() -> String:
+	var out := ""
 	for i in ELECTRONS.size():
 		var p := _electron_pos(i)
 		out += '<circle cx="%.2f" cy="%.2f" r="%.2f" fill="#02241b" fill-opacity="0.6"/>' % [p.x + 0.5, p.y + 0.9, ELECTRON_R + 0.8]
