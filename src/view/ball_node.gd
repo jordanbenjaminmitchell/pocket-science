@@ -103,6 +103,8 @@ func _draw_aura() -> void:
 	var r := radius * 1.18
 	aura.draw_arc(Vector2.ZERO, r + 2.0 + pulse * 2.0, 0, TAU, 40, Color(glow, 0.25 * fade), 4.0, true)
 	aura.draw_arc(Vector2.ZERO, r, 0, TAU, 40, Color(glow, 0.95 * fade), 2.2, true)
+	if Fx.minimal_particles:
+		return   # the ring alone marks the Imbue; no orbiting sparks
 	var ang := aura_t * 2.4
 	var sp := Vector2(cos(ang), sin(ang)) * r
 	aura.draw_circle(sp, 3.2, Color(glow.lightened(0.4), fade))

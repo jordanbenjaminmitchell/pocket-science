@@ -443,6 +443,23 @@ func _go() -> void:
 	check(g.run.take_bet(), "take the blind bet")
 	g._refresh_bet()
 	check(g.lbl_bounty.get_parsed_text().contains("Sink a solid ball"), "once taken, the bet shows what it is")
+	print("particles")
+	g.settings.particles_min = true
+	g._apply_settings()
+	check(Fx.minimal_particles, "Particles: minimum turns the switch on")
+	g.view.particles.clear()
+	g.view.burst(Vector2(400, 200), Color.WHITE, 18)
+	check(g.view.particles.size() <= 3, "a sink burst shrinks to a few specks (%d)" % g.view.particles.size())
+	g.view.particles.clear()
+	g.view.trail(Vector2(400, 200), Color.WHITE, 1.0)
+	g.view.confetti()
+	g.view.spark(Vector2(400, 200), 1.0)
+	check(g.view.particles.is_empty(), "trails, confetti and sparks are gone")
+	g.settings.particles_min = false
+	g._apply_settings()
+	g.view.burst(Vector2(400, 200), Color.WHITE, 18)
+	check(g.view.particles.size() >= 18, "and back to full afterwards")
+	g._save_settings()
 	print("input tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 

@@ -235,7 +235,7 @@ func _process(delta: float) -> void:
 		r.life -= delta
 	rings = rings.filter(func(r): return r.life > 0.0)
 	# Embers rising from the hot pocket.
-	if hot_pocket >= 0 and not reduced_motion and hot_pocket < layout.pockets.size() and randf() < delta * 22.0:
+	if hot_pocket >= 0 and not reduced_motion and not Fx.minimal_particles and hot_pocket < layout.pockets.size() and randf() < delta * 22.0:
 		var hp: Dictionary = layout.pockets[hot_pocket]
 		var a := randf() * TAU
 		particles.append({"pos": (hp.pos as Vector2) + Vector2(cos(a), sin(a)) * randf_range(10, hp.r), "vel": (hp.dir as Vector2) * randf_range(15, 45) + Vector2(randf_range(-10, 10), randf_range(-10, 10)),
@@ -275,6 +275,8 @@ var home_position := Vector2.ZERO
 
 
 func spark(p: Vector2, strength: float) -> void:
+	if Fx.minimal_particles:
+		return
 	var n := int(4 + strength * 10)
 	for i in n:
 		var a := randf() * TAU
@@ -291,6 +293,8 @@ func add_shake(a: float) -> void:
 
 
 func burst(p: Vector2, c: Color, n: int = 18, speed: float = 220.0) -> void:
+	if Fx.minimal_particles:
+		n = mini(n, 3)   # a few specks still mark where the ball went
 	for i in n:
 		var a := randf() * TAU
 		var s := randf_range(0.3, 1.0) * speed
@@ -298,6 +302,8 @@ func burst(p: Vector2, c: Color, n: int = 18, speed: float = 220.0) -> void:
 
 
 func trail(p: Vector2, c: Color, heat: float) -> void:
+	if Fx.minimal_particles:
+		return
 	for i in int(1 + heat * 2):
 		var a := randf() * TAU
 		particles.append({"pos": p + Vector2(cos(a), sin(a)) * randf_range(0, R * 0.6), "vel": Vector2(cos(a), sin(a)) * 20.0, "life": 0.35 + heat * 0.25, "max": 0.6, "color": c, "size": 2.5 + heat * 3.0})
@@ -305,7 +311,7 @@ func trail(p: Vector2, c: Color, heat: float) -> void:
 
 ## Celebration: coloured paper falling across the table.
 func confetti() -> void:
-	if reduced_motion:
+	if reduced_motion or Fx.minimal_particles:
 		return
 	var cols := [Color(1, 0.8, 0.3), Color(0.3, 0.8, 1), Color(1, 0.4, 0.5), Color(0.5, 1, 0.6), Color(0.8, 0.5, 1)]
 	for i in 160:

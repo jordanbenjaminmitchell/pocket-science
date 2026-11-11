@@ -74,8 +74,8 @@ static func paint(ci: CanvasItem, r: Rect2, lvl: int, time: float, px: float = 3
 				var col := _flame_color(heat, lvl)
 				col.a *= clampf(heat * 2.2, 0.0, 1.0) * alpha
 				ci.draw_rect(Rect2(r.position.x + c * px, r.end.y - (k + 1) * px, px - 0.5, px - 0.5), col)
-	# Embers drift up at every level.
-	for e in 2 + lvl * 2:
+	# Embers drift up at every level (none with Particles at Minimum).
+	for e in (0 if Fx.minimal_particles else 2 + lvl * 2):
 		var ph := fmod(time * (0.45 + 0.1 * lvl) + e * 0.37, 1.0)
 		var ex := r.position.x + fmod(e * 53.0 + sin(time * 1.3 + e) * 9.0 + r.size.x, r.size.x)
 		var ey := r.end.y - ph * r.size.y * 1.2

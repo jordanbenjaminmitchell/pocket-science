@@ -4,6 +4,12 @@ All 100 Perk tiles are done. These cards still need art. Match the style of the 
 
 Existing tile keys look like `"imbue:vein"`, `"ball:gold"` and `"item:trapdoor"`. Use the ID column below in the same way.
 
+## Particle effects (optional, per card)
+
+Many cards can have a small animated particle effect: embers for Heat cards, sparkles for Gold, frost for Frosted, bubbles for Simmer and so on. Keep each effect small and tied to what the card does.
+
+**Rule:** every particle effect must check `Fx.minimal_particles` (in `src/ui/fx.gd`) and draw nothing when it is true. That switch is on when the player sets **Particles: minimum** or **Reduced motion** in Settings. The still tile art (symbol, lettering, stat) must look complete without the particles.
+
 ## Imbues: 15
 
 | Name | ID | What it does |

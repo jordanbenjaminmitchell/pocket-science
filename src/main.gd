@@ -3889,6 +3889,7 @@ func _apply_settings() -> void:
 	sfx.set_music_volume(settings.master * settings.music)
 	view.shake_scale = settings.shake
 	view.reduced_motion = settings.reduced_motion
+	Fx.minimal_particles = settings.particles_min or settings.reduced_motion
 	_sync_touch_ui()
 	meta.dev_mode = settings.dev_mode
 	view.colorblind = settings.colorblind
@@ -3999,6 +4000,7 @@ func _show_settings(back: Callable) -> void:
 	_setting_toggle(grid, "Fullscreen", "fullscreen")
 	_setting_toggle(grid, "VSync", "vsync")
 	_setting_toggle(grid, "Reduced motion (no shake, zoom or confetti)", "reduced_motion")
+	_setting_toggle(grid, "Particles: minimum", "particles_min")
 	_setting_toggle(grid, "Invert pull-back (push forward for power)", "invert_drag")
 	_setting_toggle(grid, "Click to shoot (power from wheel / Up / Down)", "click_shoot")
 	_setting_choice(grid, "Prediction lines", "guide_lines", GameSettings.GUIDE_LINES)
