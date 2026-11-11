@@ -951,6 +951,53 @@ func _shop_intro_tip(v: VBoxContainer) -> void:
 
 
 ## Choosing which ball gets a loose Imbue. Balls already imbued, and the 8, can't.
+## A special ball for a full set: choose which ball it replaces (never the 8).
+func _show_replace_picker(i: int) -> void:
+	var item: Dictionary = run.shop[i]
+	var bt: Dictionary = Catalog.BALL_TYPES[item.id]
+	var col: Color = bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent
+	var p := PanelContainer.new()
+	p.add_theme_stylebox_override("panel", _style(Color(0.08, 0.075, 0.08, 0.99), col, 2, 14))
+	overlay.add_child(p)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	p.add_child(v)
+	v.add_child(_label("%s BALL - REPLACE WHICH?  ($%d + $%d)" % [str(bt.name).to_upper(), item.cost, run.removal_cost()], 24, col, F_PIXB))
+	var why := _label("Your set holds 15 balls, so making room costs the removal fee ($%d) on top of the ball ($%d). The %s ball (worth %d) takes the place of the one you pick, and any Imbue on that ball goes with it. Low balls are worth least; high balls are worth most." % [run.removal_cost(), item.cost, bt.name, int(bt.value)], 14, Color(0.8, 0.82, 0.85), F_REG)
+	why.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	why.custom_minimum_size = Vector2(520, 0)
+	v.add_child(why)
+	var grid := GridContainer.new()
+	grid.columns = 8
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	v.add_child(grid)
+	var ok: Array = run.replace_targets()
+	for n in run.ball_set:
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(58, 58)
+		var iso: String = run.imbues.get(n, "")
+		b.tooltip_text = "%s, worth %d%s" % [Catalog.ball_label(n), Catalog.ball_points(n), (" - loses its %s Imbue" % Catalog.IMBUES[iso].name) if iso != "" else ""] if ok.has(n) else "The 8 can't be replaced"
+		var icon := _set_ball_icon(n)
+		icon.position = Vector2(9, 9)
+		b.add_child(icon)
+		b.disabled = not ok.has(n)
+		var num: int = n
+		b.pressed.connect(func():
+			var err := run.buy_special(i, num)
+			if err == "":
+				sfx.play("coin", 0.9)
+				_refresh_shop()
+				_refresh_hud()
+			else:
+				sfx.play("bad", 0.4)
+				_flash_banner(err.to_upper(), Color(1, 0.5, 0.4), 1.0))
+		grid.add_child(b)
+	v.add_child(_button("Cancel", func(): p.queue_free(), Color(0.6, 0.65, 0.7)))
+	p.reset_size()
+	p.position = ((fit.view - p.get_combined_minimum_size()) * 0.5).round()
+
+
 func _show_imbue_picker(i: int) -> void:
 	var item: Dictionary = run.shop[i]
 	var iso: Dictionary = Catalog.IMBUES[item.id]
@@ -3639,8 +3686,12 @@ func _offer_card(i: int) -> Control:
 			var bt: Dictionary = Catalog.BALL_TYPES[item.id]
 			accent = bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent
 			title = "%s ball" % bt.name
-			desc = bt.desc + " Joins your set for the rest of the run."
-			kind = "New ball · set %d / %d" % [run.ball_set.size(), Rack.MAX_BALLS]
+			if run.set_full():
+				desc = bt.desc + " Your set is full (15): you also pay $%d to remove the ball it replaces." % run.removal_cost()
+				kind = "New ball · + $%d removal" % run.removal_cost()
+			else:
+				desc = bt.desc + " Joins your set for the rest of the run."
+				kind = "New ball · set %d / %d" % [run.ball_set.size(), RunState.MAX_SET]
 		"item":
 			var itd: Dictionary = Catalog.ITEMS[item.id]
 			accent = Color(0.45, 0.85, 1.0)
@@ -3684,9 +3735,13 @@ func _offer_card(i: int) -> Control:
 	var d := _term_text(Glossary.link(desc), 13, Color(0.8, 0.82, 0.85), 172.0)
 	d.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(d)
-	var b := _button("SOLD" if item.sold else "Buy $%d" % item.cost, func():
+	var price: int = run.special_cost(i) if item.type == "ball" else int(item.cost)
+	var b := _button("SOLD" if item.sold else "Buy $%d" % price, func():
 		if item.type == "imbue" and not item.has("ball"):
 			_show_imbue_picker(i)
+			return
+		if item.type == "ball" and run.set_full():
+			_show_replace_picker(i)
 			return
 		var err := run.buy(i)
 		if err == "":
@@ -3698,7 +3753,7 @@ func _offer_card(i: int) -> Control:
 		else:
 			sfx.play("bad", 0.4)
 			_flash_banner(err.to_upper(), Color(1, 0.5, 0.4), 1.0))
-	b.disabled = item.sold or run.money < item.cost
+	b.disabled = item.sold or run.money < price
 	v.add_child(b)
 	if item.sold:
 		p.modulate = Color(1, 1, 1, 0.45)

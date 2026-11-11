@@ -252,7 +252,7 @@ const CUES := {
 		"shaft": Color(0.9, 0.86, 0.78), "butt": Color(0.36, 0.3, 0.24), "accent": Color(0.95, 0.95, 0.9)},
 	"black": {"name": "Black Cue", "desc": "Starts with Behind the 8: the 8 costs nothing and pays $3. $3.", "money": 3, "perks": ["eight"], "chalk": 0,
 		"shaft": Color(0.3, 0.3, 0.32), "butt": Color(0.05, 0.05, 0.06), "accent": Color(0.82, 0.8, 0.98)},
-	"alchemist": {"name": "Alchemist's Cue", "desc": "Starts with a Gold ball in your set and Gold Rush: special balls pay ×2. $3.", "money": 3, "perks": ["goldrush"], "chalk": 0, "add": ["gold"],
+	"alchemist": {"name": "Alchemist's Cue", "desc": "Starts with a Gold ball in place of the 1, and Gold Rush: special balls pay ×2. $3.", "money": 3, "perks": ["goldrush"], "chalk": 0, "add": ["gold"],
 		"shaft": Color(0.95, 0.86, 0.6), "butt": Color(0.4, 0.2, 0.5), "accent": Color(1.0, 0.8, 0.3)},
 	"glass": {"name": "Glass Cue", "desc": "Starts with All In (every sink ×2, misses cost 2 Chalk). 1 less Chalk. $4.", "money": 4, "perks": ["glasscannon"], "chalk": -1,
 		"shaft": Color(0.85, 0.92, 1.0), "butt": Color(0.55, 0.7, 0.9), "accent": Color(1.0, 0.35, 0.65)},

@@ -64,6 +64,9 @@ var next_all_hot := false       # Spotlight
 var next_magnet := false        # Magnet Charm
 const ITEM_SLOTS := 3            # consumables
 const PAR_SHOTS := 10
+## A set never holds more than 15 balls: a new special ball takes the place of one
+## you choose, so every slot is a trade between a cheap ball and a better one.
+const MAX_SET := 15
 const QUICK_MAX := 5
 const OVERKILL_MAX := 10
 const TOOL_SLOTS := 2
@@ -98,6 +101,11 @@ func start(s: int, cue_id: String = "maple", handicap_level: int = 0) -> void:
 	Catalog.kinds = ball_kinds
 	for t in c.get("add", []):
 		add_special(t)
+	# A cue that starts with a special ball gives up the lowest plain ball for it.
+	while ball_set.size() > MAX_SET:
+		var low: Array = ball_set.filter(func(n): return n >= 1 and n <= 15 and n != 8)
+		low.sort()
+		remove_ball(low[0])
 	imbues.clear()
 	catalyst = 0.0
 	total_pots = 0
@@ -406,6 +414,41 @@ func buy_imbue(i: int, n: int) -> String:
 	return ""
 
 
+func set_full() -> bool:
+	return ball_set.size() >= MAX_SET
+
+
+## Balls a new special ball may replace: anything but the 8.
+func replace_targets() -> Array:
+	return ball_set.filter(func(n): return n != 8)
+
+
+## What a special ball costs right now: its price, plus the removal fee for the
+## ball it pushes out when the set is already full.
+func special_cost(i: int) -> int:
+	return int(shop[i].cost) + (removal_cost() if set_full() else 0)
+
+
+## Buys a special ball. With a full set you also pay to remove ball `replace`
+## (it leaves with any Imbue on it, and counts as a removal); with room it just joins.
+func buy_special(i: int, replace: int = -1) -> String:
+	var item: Dictionary = shop[i]
+	if item.sold:
+		return "Sold out"
+	if money < special_cost(i):
+		return "Not enough money"
+	if set_full():
+		if not replace_targets().has(replace):
+			return "Choose a ball for it to replace"
+		var err := buy_removal(replace)
+		if err != "":
+			return err
+	add_special(item.id)
+	money -= item.cost
+	item.sold = true
+	return ""
+
+
 func removal_cost() -> int:
 	return 0 if perks.has("cleanhouse") else 3 + removals
 
@@ -585,7 +628,7 @@ func _roll_shop_items() -> void:
 	if not high.is_empty():
 		var iso: String = keys[rng.randi_range(0, keys.size() - 1)]
 		shop.append({"type": "imbue", "id": iso, "ball": high[rng.randi_range(0, high.size() - 1)], "cost": imbue_cost(iso), "sold": false})
-	if ball_set.size() < Rack.MAX_BALLS and not (intro and table_index < 2):
+	if not (intro and table_index < 2):
 		var types := Catalog.BALL_TYPES.keys()
 		var bt: String = types[rng.randi_range(0, types.size() - 1)]
 		shop.append({"type": "ball", "id": bt, "cost": int(Catalog.BALL_TYPES[bt].cost), "sold": false})
@@ -664,8 +707,8 @@ func buy(i: int) -> String:
 				return "That ball already has an Imbue"
 			imbues[int(item.ball)] = item.id
 		"ball":
-			if ball_set.size() >= Rack.MAX_BALLS:
-				return "Your ball set is full"
+			if set_full():
+				return "Choose a ball for it to replace"
 			add_special(item.id)
 		"item":
 			if Catalog.ITEMS[item.id].kind == "tool":

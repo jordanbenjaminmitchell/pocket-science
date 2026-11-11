@@ -277,6 +277,15 @@ func shop(run: RunState, rec: Dictionary) -> void:
 					run.sell_perk(worst)
 				else:
 					best_i = -1
+		if best_i >= 0 and run.shop[best_i].type == "ball" and run.set_full():
+			# A full set: the bot trades its lowest plain, un-imbued ball for the special.
+			var swap: Array = run.replace_targets().filter(func(n): return n <= 15 and not run.imbues.has(n))
+			swap.sort()
+			var it4: Dictionary = run.shop[best_i]
+			if not swap.is_empty() and run.buy_special(best_i, swap[0]) == "":
+				rec.purchases.append({"t": run.table_index, "type": it4.type, "id": it4.id})
+				bought = true
+			best_i = -1
 		if best_i >= 0 and run.shop[best_i].type == "imbue" and not run.shop[best_i].has("ball"):
 			# A loose Imbue: the bot puts it on its highest free ball.
 			var targets := run.imbue_targets()

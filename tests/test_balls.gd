@@ -69,10 +69,20 @@ func _initialize() -> void:
 	check(saved.ball_kinds.has("16") and (saved.ball_set as Array).has(16), "special balls are saved with the run")
 	run.shop = [{"type": "ball", "id": "star", "cost": 5, "sold": false}]
 	run.money = 10
-	check(run.buy(0) == "" and run.ball_kinds.values().has("star"), "a special ball can be bought")
+	check(run.ball_set.size() == RunState.MAX_SET and run.set_full(), "the set is full at 15 balls")
+	check(run.buy(0) != "" and run.buy_special(0, 8) != "", "a full set needs a ball to replace, and never the 8")
+	var fee := run.removal_cost()
+	var before := run.money
+	check(run.buy_special(0, 1) == "" and run.ball_kinds.values().has("star") and not run.ball_set.has(1) and run.ball_set.size() == 15, "a special ball replaces the ball you choose")
+	check(run.money == before - 5 - fee, "and you pay the removal fee on top of the ball ($%d)" % (before - run.money))
+	run.money = 20
+	run.buy_removal(2)
+	run.shop = [{"type": "ball", "id": "moon", "cost": 5, "sold": false}]
+	check(not run.set_full() and run.buy(0) == "" and run.ball_set.size() == 15, "with room after a removal it simply joins")
 	var alch := RunState.new()
 	alch.start(6, "alchemist")
 	check(alch.ball_kinds.values() == ["gold"] and alch.perks.has("goldrush"), "the Alchemist's Cue starts with a Gold ball")
+	check(alch.ball_set.size() == 15 and not alch.ball_set.has(1), "in place of the 1, so the set stays at 15")
 
 	print("special balls score")
 	Catalog.kinds = {16: "gold", 17: "void", 18: "echo", 19: "star", 20: "moon", 21: "wild", 22: "eraser", 23: "dice", 24: "ember", 25: "clover", 26: "heart"}
