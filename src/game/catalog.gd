@@ -30,7 +30,7 @@ const PERKS := {
 	"lever": {"name": "Long Game", "r": 0, "cost": 5, "fam": "utility", "desc": "Long sinks (the ball travels 450+) pay ×1.5.", "fx": {"when": "long", "x": 1.5}},
 	"chalk": {"name": "Spare Chalk", "r": 0, "cost": 5, "fam": "utility", "desc": "+1 Chalk on every table."},
 	"jaws": {"name": "Wide Jaws", "r": 0, "cost": 6, "fam": "pocket", "desc": "Pockets are 12% wider."},
-	"lens": {"name": "Long Lens", "r": 0, "cost": 4, "fam": "utility", "desc": "The guideline continues past the first cushion and shows the cue ball's full path."},
+	"lens": {"name": "Long Lens", "r": 0, "cost": 4, "fam": "utility", "desc": "Every pocket a ball is predicted to sink into shows what that ball will pay."},
 	"bank": {"name": "Bank Manager", "r": 1, "cost": 6, "fam": "bank", "desc": "Bank sinks add +1 Chain per cushion."},
 	"kick": {"name": "Kick Drum", "r": 1, "cost": 6, "fam": "cue", "desc": "Kick shots (cue hits a cushion first) pay ×2 on every sink.", "fx": {"when": "kick", "x": 2.0}},
 	"chain": {"name": "Daisy Chain", "r": 1, "cost": 7, "fam": "combo", "desc": "Combination sinks pay ×2.", "fx": {"when": "combo", "x": 2.0}},
@@ -228,7 +228,7 @@ static func ball_label(n: int) -> String:
 const CUES := {
 	"maple": {"name": "Classic Maple", "desc": "The all-rounder. $6 to start.", "money": 6, "perks": [], "chalk": 0,
 		"shaft": Color(0.86, 0.72, 0.5), "butt": Color(0.32, 0.14, 0.07), "accent": Color(0.9, 0.85, 0.7)},
-	"optic": {"name": "Optic Cue", "desc": "Starts with Long Lens: see banks and the full cue-ball path. $2.", "money": 2, "perks": ["lens"], "chalk": 0,
+	"optic": {"name": "Optic Cue", "desc": "Starts with Long Lens: every predicted sink shows its points. $2.", "money": 2, "perks": ["lens"], "chalk": 0,
 		"shaft": Color(0.8, 0.86, 0.9), "butt": Color(0.1, 0.25, 0.4), "accent": Color(0.4, 0.85, 1.0)},
 	"hotrod": {"name": "Hot Rod", "desc": "Starts with Scorcher (hot pocket ×3), but every table has 1 less Chalk. $4.", "money": 4, "perks": ["heat"], "chalk": -1,
 		"shaft": Color(0.85, 0.7, 0.5), "butt": Color(0.6, 0.12, 0.05), "accent": Color(1.0, 0.55, 0.1)},

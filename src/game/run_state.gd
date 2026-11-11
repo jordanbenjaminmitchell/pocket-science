@@ -56,6 +56,7 @@ var quick_used := false         # this table: Quick Hands has saved an item
 var faces := {}                 # Dice and Wild balls: the number each shows
 var last_sunk := 0              # Wild copies this
 var echo_used := {}             # Echo balls that have already come back this table
+var intro := false              # a new player: items from the 2nd shop, special balls from the 3rd
 var next_boost := 1.0           # Double Down
 var next_all_hot := false       # Spotlight
 var next_magnet := false        # Magnet Charm
@@ -516,16 +517,16 @@ func _roll_shop_items() -> void:
 		if ball >= 8:
 			ball += 1
 		shop.append({"type": "imbue", "id": iso, "ball": ball, "cost": imbue_cost(iso), "sold": false})
-	if ball_set.size() < Rack.MAX_BALLS:
+	if ball_set.size() < Rack.MAX_BALLS and not (intro and table_index < 2):
 		var types := Catalog.BALL_TYPES.keys()
 		var bt: String = types[rng.randi_range(0, types.size() - 1)]
 		shop.append({"type": "ball", "id": bt, "cost": int(Catalog.BALL_TYPES[bt].cost), "sold": false})
 	var cons := consumable_ids()
-	for i in 2:
+	for i in (0 if intro and table_index < 1 else 2):
 		var it: String = cons[rng.randi_range(0, cons.size() - 1)]
 		shop.append({"type": "item", "id": it, "cost": item_cost(it), "sold": false})
 	var free_tools: Array = Catalog.ITEMS.keys().filter(func(k): return Catalog.ITEMS[k].kind == "tool" and not tools.has(k))
-	if tools.size() < tool_slots() and not free_tools.is_empty():
+	if tools.size() < tool_slots() and not free_tools.is_empty() and not (intro and table_index < 1):
 		var tl: String = free_tools[rng.randi_range(0, free_tools.size() - 1)]
 		shop.append({"type": "item", "id": tl, "cost": item_cost(tl), "sold": false})
 

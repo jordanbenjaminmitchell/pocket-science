@@ -38,6 +38,7 @@ var call_ball := -1           # Called Shot: the ball and pocket called
 var call_pocket := -1
 var ghost_ball := -1          # Ghost Chalk
 var pebbles: Array = []       # Gravity Pebbles this shot
+var sink_tags: Array = []     # Long Lens: [pocket, text] for every predicted sink
 var hot_pocket := -1
 var element_pockets: Array = []   # Element Table: one element id per pocket
 var second_pocket := -1   # Two Pockets boss: also scores, shown with a cooler ring
@@ -544,6 +545,20 @@ func _draw_overlay() -> void:
 		o.draw_rect(hr, Color(0.03, 0.08, 0.08, 0.85), true)
 		o.draw_rect(hr, Color(0.55, 0.95, 0.85), false, 2.0)
 		_txt(o, hr.get_center(), hold_text, Color(0.75, 1.0, 0.92), 18)
+	var stack := {}
+	for tag in sink_tags:
+		var k: int = tag[0]
+		if k < 0 or k >= layout.pockets.size():
+			continue
+		var n: int = stack.get(k, 0)
+		stack[k] = n + 1
+		var pk: Dictionary = layout.pockets[k]
+		var tp: Vector2 = (pk.pos as Vector2) - (pk.dir as Vector2) * (64.0 + 22.0 * n)
+		var tw := font_bold.get_string_size(tag[1], HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+		var tr := Rect2(tp + Vector2(-tw * 0.5 - 6, -11), Vector2(tw + 12, 20))
+		o.draw_rect(tr, Color(0.04, 0.06, 0.1, 0.85), true)
+		o.draw_rect(tr, Color(0.55, 0.85, 1.0, 0.8), false, 1.5)
+		o.draw_string(font_bold, tp + Vector2(-tw * 0.5, 5), tag[1], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.75, 0.92, 1.0))
 	if not show_guide or guide.is_empty():
 		return
 	if forecast_text != "":

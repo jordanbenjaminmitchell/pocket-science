@@ -52,7 +52,7 @@ Press **P** (or the Pause button on a phone) while the balls roll and the shot f
 
 - The prediction shows exactly where every ball will go from that moment.
 - Pause items such as **Second Strike**, **Pop-up Wall** and **Blink** change the shot, and bumpers and portals can be placed too.
-- Press **L** (Plan a pause) to lock the prediction, then slide along the cue ball's line and click to make the shot pause itself there. This works while aiming as well.
+- Press **L** (Plan a pause) to lock the prediction, then slide along any ball's predicted line and click to make the shot pause itself when that ball gets there. This works while aiming as well.
 
 Settings can also pause every shot automatically the moment the cue ball first hits a ball.
 

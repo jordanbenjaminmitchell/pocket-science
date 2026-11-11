@@ -37,6 +37,9 @@ var lifetime_combos := 0
 var lifetime_banks := 0
 var lifetime_hot := 0
 var lifetime_items := 0
+var lifetime_tables := 0        # tables cleared, all runs
+var seen_tips: Array = []       # one-time introductions already shown
+const INTRO_TABLES := 6         # until this many tables are cleared, systems arrive gradually
 var unlock_all := false   # bots, tests and dev builds
 
 
@@ -51,6 +54,8 @@ func load_file() -> void:
 	lifetime_banks = int(c.get_value("meta", "banks", 0))
 	lifetime_hot = int(c.get_value("meta", "hot", 0))
 	lifetime_items = int(c.get_value("meta", "items", 0))
+	lifetime_tables = int(c.get_value("meta", "tables", 0))
+	seen_tips = c.get_value("meta", "tips", [])
 
 
 func save_file() -> void:
@@ -63,6 +68,8 @@ func save_file() -> void:
 	c.set_value("meta", "banks", lifetime_banks)
 	c.set_value("meta", "hot", lifetime_hot)
 	c.set_value("meta", "items", lifetime_items)
+	c.set_value("meta", "tables", lifetime_tables)
+	c.set_value("meta", "tips", seen_tips)
 	c.save(PATH)
 
 
@@ -141,6 +148,7 @@ func on_shot(res: Dictionary, run: RunState) -> Array:
 
 
 func on_table_cleared(run: RunState) -> Array:
+	lifetime_tables += 1
 	var got: Array = ["first_clear"]
 	var t := run.current()
 	if t.get("anomaly", "") != "":
@@ -154,6 +162,20 @@ func on_table_cleared(run: RunState) -> Array:
 	if t.lab != "standard":
 		got.append("lab")
 	return _earn(got)
+
+
+## New players meet the game a piece at a time until they have cleared a few tables.
+func is_intro() -> bool:
+	return not unlock_all and lifetime_tables < INTRO_TABLES
+
+
+## True the first time a tip is asked for; it is then remembered as seen.
+func first_time(tip: String) -> bool:
+	if seen_tips.has(tip):
+		return false
+	seen_tips.append(tip)
+	save_file()
+	return true
 
 
 func on_item_used() -> Array:

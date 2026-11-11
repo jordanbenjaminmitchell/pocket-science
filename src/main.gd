@@ -784,6 +784,20 @@ func _show_remove_picker() -> void:
 	p.position = ((fit.view - p.get_combined_minimum_size()) * 0.5).round()
 
 
+## First time a new kind of thing appears in the shop, a line explains it.
+func _shop_intro_tip(v: VBoxContainer) -> void:
+	var tip := ""
+	if run.shop.any(func(it): return it.type == "item") and meta.first_time("items"):
+		tip = "NEW: Items. Tools keep a charge every table; Consumables are used once. Blue ones work while aiming, green ones while a shot is paused (press P), amber ones after a shot."
+	elif run.shop.any(func(it): return it.type == "ball") and meta.first_time("balls"):
+		tip = "NEW: Special balls join your set and rack with the rest. You can also pay to remove a ball from your set (never the 8)."
+	if tip != "":
+		var l := _label(tip, 15, Color(0.6, 0.95, 0.8), F_REG)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size = Vector2(980, 0)
+		v.add_child(l)
+
+
 ## A small flat drawing of any ball in the set, numbered or special.
 func _set_ball_icon(n: int) -> Control:
 	var c := Control.new()
@@ -859,6 +873,7 @@ func _compute_forecast_from_here() -> void:
 	fc_paths = {}
 	fc_times = {}
 	view.forecast_text = ""
+	view.sink_tags = []
 	_step_forecast()
 
 
@@ -1024,25 +1039,24 @@ func _update_plan_hover() -> void:
 	if not plan_lock:
 		view.plan_hover = Vector2.INF
 		return
-	var pp := _plan_path()
-	if pp.is_empty():
-		return
-	var pts: PackedVector2Array = pp[0]
-	var ts: PackedFloat32Array = pp[1]
+	# Every moving ball's predicted line can carry a pause point, not just the cue ball's.
 	var m := _mouse_table()
-	var best := -1
 	var bd := 45.0 * 45.0
-	for i in pts.size():
-		var d := pts[i].distance_squared_to(m)
-		if d < bd:
-			bd = d
-			best = i
-	if best < 0 or best >= ts.size():
-		view.plan_hover = Vector2.INF
-		plan_hover_t = -1.0
-		return
-	view.plan_hover = pts[best]
-	plan_hover_t = ts[best]
+	var best_p := Vector2.INF
+	var best_t := -1.0
+	for bi in fc_paths:
+		if not fc_times.has(bi):
+			continue
+		var pts: PackedVector2Array = fc_paths[bi]
+		var ts: PackedFloat32Array = fc_times[bi]
+		for i in mini(pts.size(), ts.size()):
+			var d := pts[i].distance_squared_to(m)
+			if d < bd:
+				bd = d
+				best_p = pts[i]
+				best_t = ts[i]
+	view.plan_hover = best_p
+	plan_hover_t = best_t
 
 
 func _set_pause_point() -> void:
@@ -1233,7 +1247,7 @@ func _update_aim(delta: float) -> void:
 		guide_dirty = false
 		forecast_dirty = true
 		forecast_timer = 0.09
-		view.guide = TableView.compute_guide(sim, aim_dir, _shot_follow(), _shot_side(), run.perks.has("lens"))
+		view.guide = TableView.compute_guide(sim, aim_dir, _shot_follow(), _shot_side(), true)   # the full line, for every cue
 		view.show_guide = true
 		_update_preview()
 	_update_plan_hover()
@@ -1241,6 +1255,7 @@ func _update_aim(delta: float) -> void:
 		view.forecast_paths = []
 		fc_complete = false
 		view.forecast_text = ""
+		view.sink_tags = []
 		fc_sim = null
 	elif forecast_dirty:
 		forecast_timer -= delta
@@ -1345,7 +1360,7 @@ func _show_paths() -> bool:
 
 
 func _forecast_wanted() -> bool:
-	return _show_paths() or run.perks.has("oracle")
+	return _show_paths() or run.perks.has("oracle") or run.perks.has("lens")
 
 
 ## Starts an incremental forecast; _step_forecast advances it within a frame budget.
@@ -1357,6 +1372,7 @@ func _compute_forecast() -> void:
 	fc_paths = {}
 	fc_times = {}
 	view.forecast_text = ""
+	view.sink_tags = []
 	_step_forecast()
 
 
@@ -1396,7 +1412,23 @@ func _step_forecast() -> void:
 	if done:
 		if run.perks.has("oracle"):
 			_show_shot_forecast()
+		if run.perks.has("lens"):
+			_show_sink_tags()
 		fc_sim = null
+
+
+## Long Lens: a tag on every pocket a ball is predicted to sink into, with its pay.
+func _show_sink_tags() -> void:
+	var ctx := _shot_ctx()
+	ctx["events"] = fc_sim.events
+	ctx["cue_end"] = fc_sim.pos[fc_sim.index_of(0)]
+	var r := Scorer.score(ctx)
+	var tags: Array = []
+	if r.scored:
+		for l in r.lines:
+			if l.get("kind", "") == "pot":
+				tags.append([int(l.pocket), "+%d" % int(l.points)])
+	view.sink_tags = tags
 
 
 ## Second Sight: score the simulated shot with the same rules the real one will use.
@@ -1463,6 +1495,7 @@ func _shoot(p: float) -> void:
 	view.forecast_paths = []
 	fc_complete = false
 	view.forecast_text = ""
+	view.sink_tags = []
 	fc_sim = null
 	view.preview_text = ""
 
@@ -1491,6 +1524,8 @@ func _begin_roll() -> void:
 	live_contacted = false
 	_set_meters(live_chain, run.heat)
 	sim.strike(aim_dir, _speed(shot_power) * run.power_mult(is_break), _shot_follow(), _shot_side())
+	if run.shots_taken >= 1 and meta.first_time("pause"):
+		_flash_banner("TIP: PRESS P (OR PAUSE) TO FREEZE A SHOT", Color(0.55, 0.95, 0.85), 2.6)
 	sfx.play("cue", 0.4 + shot_power * 0.8, 0.9 + randf() * 0.2)
 	if shot_power > 0.8:
 		view.add_shake(3.0 * shot_power)
@@ -2917,6 +2952,7 @@ func _new_run() -> void:
 	run.daily_key = pending_daily
 	# Dailies give everyone the full pool, so results are comparable.
 	run.locked = [] if pending_daily != "" else meta.locked_perks()
+	run.intro = pending_daily == "" and meta.is_intro()
 	pending_seed = -1
 	pending_daily = ""
 	view.cue_colors = Catalog.CUES.get(chosen_cue, Catalog.CUES.maple)
@@ -3093,7 +3129,9 @@ func _refresh_shop() -> void:
 	bar.add_child(rr)
 	var rm := _button("Remove a ball ($%d)" % run.removal_cost(), _show_remove_picker, Color(1.0, 0.55, 0.55))
 	rm.disabled = run.money < run.removal_cost() or run.ball_set.size() <= 2
+	rm.visible = not (run.intro and run.table_index < 2)
 	bar.add_child(rm)
+	_shop_intro_tip(v)
 	var spc2 := Control.new()
 	spc2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.add_child(spc2)
