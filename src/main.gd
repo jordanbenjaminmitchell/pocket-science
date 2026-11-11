@@ -109,6 +109,8 @@ var flags_label: Label
 var log_label: Label
 var left_panel: Control
 var lbl_bounty: RichTextLabel
+var heat_fire: FireFx
+var heat_title: Label
 var bet_row: HBoxContainer
 var tray: BallTray
 var bottom_bar: Control
@@ -1687,7 +1689,7 @@ func _update_roll(delta: float) -> void:
 		var cv := sim.vel[_cue_index()]
 		if cv.length() > 120.0:
 			var heat := clampf((run.heat - 2) / 5.0, 0.2, 1.0)
-			view.trail(sim.pos[_cue_index()], Color(1.0, 0.55 - heat * 0.3, 0.1).lerp(Color(0.4, 0.8, 1.0), 0.0), heat)
+			view.trail(sim.pos[_cue_index()], Color(1.0, 0.55 - heat * 0.3, 0.1).lerp(Color(0.78, 0.92, 1.0), 1.0 if run.heat >= 7 else 0.0), heat)
 	if not sim.moving() or sim.time > 30.0:
 		if sim.time > 30.0:
 			for i in sim.count():
@@ -1771,6 +1773,8 @@ func _consume_events() -> void:
 				var bi := sim.index_of(e.a)
 				view.burst(sim.pos[bi], Color(0.3, 1, 1), 10, 160)
 			"pocket":
+				if not demo and e.a != 0 and FireFx.level_for(run.heat) >= 3:
+					view.burst(e.at, Color(1.0, 0.55, 0.15) if run.heat < 7 else Color(0.75, 0.9, 1.0), 20, 240)
 				var idx := sim.index_of(e.a)
 				view.update_balls(sim)
 				var b: BallNode = view.ball_nodes[idx]
@@ -2649,11 +2653,22 @@ func _meter(parent: Control, title: String, accent: Color) -> Label:
 	parent.add_child(box)
 	var row := HBoxContainer.new()
 	box.add_child(row)
+	if title == "HEAT":
+		heat_fire = FireFx.new()   # flames behind the numbers, growing with Heat
+		box.add_child(heat_fire)
 	var t := _label(title, 14, accent.lightened(0.25))
 	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(t)
+	if title == "HEAT":
+		heat_title = t
+		heat_fire.modulate.a = 0.55   # the numbers stay readable over the flames
+		t.add_theme_constant_override("outline_size", 5)
+		t.add_theme_color_override("font_outline_color", Color(0.12, 0.04, 0.0))
 	_make_term(box, title.to_lower())
 	var v := _label("1", 24, Color.WHITE, F_NUM)
+	if title == "HEAT":
+		v.add_theme_constant_override("outline_size", 6)
+		v.add_theme_color_override("font_outline_color", Color(0.12, 0.04, 0.0))
 	row.add_child(v)
 	return v
 
@@ -2681,6 +2696,11 @@ func _fmt(v: float) -> String:
 func _set_meters(chain: float, heat: int) -> void:
 	lbl_chain.text = _fmt(chain)
 	lbl_heat.text = "%d  (×%s)" % [heat, _fmt(Scorer.heat_mult(heat))]
+	var lvl := FireFx.level_for(heat)
+	if heat_fire:
+		heat_fire.level = lvl
+		heat_title.text = "HEAT" if lvl == 0 else "HEAT · " + FireFx.NAMES[lvl].to_upper()
+	view.heat_level = lvl
 
 
 func _animate_score(from: float, to: float) -> void:

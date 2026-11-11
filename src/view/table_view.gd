@@ -39,6 +39,7 @@ var call_pocket := -1
 var ghost_ball := -1          # Ghost Chalk
 var pebbles: Array = []       # Gravity Pebbles this shot
 var sink_tags: Array = []     # Long Lens: [pocket, text] for every predicted sink
+var heat_level := 0           # FireFx tier: the table burns from On fire up
 var hot_pocket := -1
 var element_pockets: Array = []   # Element Table: one element id per pocket
 var second_pocket := -1   # Two Pockets boss: also scores, shown with a cooler ring
@@ -485,6 +486,15 @@ func _draw_cushions() -> void:
 ## ---------------------------------------------------------------- guideline
 func _draw_overlay() -> void:
 	var o := overlay
+	if heat_level >= 3:
+		# On fire: every pocket burns. Dead stroke: blue-white cores and the rim smoulders.
+		for pk in layout.pockets:
+			var pp: Vector2 = pk.pos
+			var fh := 56.0 if heat_level >= 4 else 44.0
+			FireFx.paint(o, Rect2(pp.x - 20.0, pp.y - fh + 4.0, 40.0, fh), heat_level, time + pp.x * 0.01, 3.0, 0.9)
+		if heat_level >= 4:
+			var glow := 0.25 + 0.12 * sin(time * 3.0)
+			o.draw_rect(Rect2(-RAIL * 0.5, -RAIL * 0.5, W + RAIL, H + RAIL), Color(1.0, 0.45, 0.12, glow), false, 6.0)
 	for path in forecast_paths:
 		var pts: PackedVector2Array = path.points
 		var col: Color = path.color
