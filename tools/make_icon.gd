@@ -40,10 +40,10 @@ const DIGITS := {
 }
 
 var out_dir := "res://assets"
-## PS_ICON_STYLE: "" (the game icon: shaded balls, flat rings), "flat" (everything
-## flat, solid colours with outlines) or "3d" (rings as shaded tubes that wrap
-## in front of the 8-ball as well as behind it).
-var style := ""
+## PS_ICON_STYLE: "3d" (the game icon, and the default: shaded balls with tube rings
+## that wrap in front of the 8-ball as well as behind it), "flat" (everything flat,
+## solid colours with outlines) or "classic" (shaded balls on flat rings).
+var style := "3d"
 ## [position, number, light colour, dark colour], numbered clockwise from the top.
 var ELECTRONS := []
 
@@ -60,7 +60,8 @@ func _initialize() -> void:
 		ELECTRONS.append([spots[i], i + 1, BALL_COLOURS[i + 1][0], BALL_COLOURS[i + 1][1]])
 	if OS.get_environment("PS_ICON_OUT") != "":
 		out_dir = OS.get_environment("PS_ICON_OUT")
-	style = OS.get_environment("PS_ICON_STYLE")
+	if OS.get_environment("PS_ICON_STYLE") != "":
+		style = OS.get_environment("PS_ICON_STYLE")
 	var failed := 0
 	failed += _save(_render(_felt(true) + _art(), "18 18 72 72", 512), out_dir + "/icon.png")
 	failed += _save(_render(_art(), "0 0 108 108", 432), out_dir + "/icon/foreground.png")
