@@ -233,7 +233,7 @@ func _go() -> void:
 	_tap_move(far + perp)
 	await _frames(2)
 	var turned: float = rad_to_deg(fine0.angle_to(g.aim_dir))
-	check(turned > 3.0 and turned < 7.0, "dragging 100 across the aim line turns it about 5 degrees (%.2f)" % turned)
+	check(turned > 1.8 and turned < 3.0, "dragging 100 across the aim line turns it about 2.4 degrees (%.2f)" % turned)
 	_tap(far + perp, false)
 	await _frames(2)
 	var after_lift: Vector2 = g.aim_dir
@@ -329,9 +329,26 @@ func _go() -> void:
 	g.run.imbues.erase(g.sim.num[kb])
 	g.power_slider.value = 0.6
 	await _frames(1)
-	g._shoot(g.power)
-	await _frames(2)
-	check(g.state == g.S.STRIKE or g.state == g.S.ROLL, "shoot fires")
+	# The FINE AIM strip turns the shot a twentieth of a degree per pixel.
+	var d0: Vector2 = g.aim_dir
+	g.aim_dial.drag(20.0)
+	check(absf(rad_to_deg(d0.angle_to(g.aim_dir)) - 1.0) < 0.01, "dragging the FINE AIM strip 20 px turns the shot 1 degree")
+	# SHOOT has to be held: a tap does nothing.
+	g.touch_shoot.button_down.emit()
+	g.touch_shoot.button_up.emit()
+	g.touch_shoot.pressed.emit()
+	await _frames(3)
+	check(g.state == g.S.AIM, "a quick tap on SHOOT does not fire")
+	g.touch_shoot.button_down.emit()
+	for k in 200:
+		await _frames(1)
+		if g.state != g.S.AIM:
+			break
+	check(g.state == g.S.STRIKE or g.state == g.S.ROLL, "holding SHOOT fires")
+	g.touch_shoot.button_up.emit()
+	g.touch_shoot.pressed.emit()
+	await _frames(1)
+	check(g.state != g.S.HOLD, "and letting go afterwards does not pause the shot")
 	await _settle()
 	s.large_text = true
 	g._apply_settings()

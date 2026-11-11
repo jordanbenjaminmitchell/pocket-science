@@ -1323,6 +1323,16 @@ func _process(delta: float) -> void:
 			label = "CANCEL"
 		elif state == S.HOLD:
 			label = "PLAY ON"
+		if state == S.AIM and shoot_hold >= 0.0:
+			shoot_hold += delta
+			var bars := int(clampf(shoot_hold / SHOOT_HOLD, 0.0, 1.0) * 5.0)
+			label = "HOLD " + "▮".repeat(bars) + "▯".repeat(5 - bars)
+			if shoot_hold >= SHOOT_HOLD:
+				shoot_hold = -1.0
+				shoot_fired = true
+				_shoot(power)
+		elif state == S.AIM:
+			label = "HOLD TO SHOOT"
 		if touch_shoot.text != label:
 			touch_shoot.text = label
 		touch_place.visible = state == S.AIM and is_break
@@ -1519,7 +1529,7 @@ func _update_coach() -> void:
 		return
 	var cue: Vector2 = sim.pos[_cue_index()]
 	if run.shots_taken == 0:
-		view.coach_text = "Drag on the table to aim, set power with the slider,\nthen press SHOOT. Break the rack!" if settings.touch_mode else "Press on the table, drag BACK and release to shoot.\nFurther = harder. Break the rack!"
+		view.coach_text = "Drag on the table to aim, fine-tune with the FINE AIM strip,\nset power, then HOLD SHOOT. Break the rack!" if settings.touch_mode else "Press on the table, drag BACK and release to shoot.\nFurther = harder. Break the rack!"
 	elif view.guide.get("obj_pot", false) or view.guide.get("obj2_pot", false):
 		coach_seen_pot = true
 		view.coach_text = "A gold ring = that ball is going in.\nThe tag on the pocket shows the points."
@@ -2146,6 +2156,8 @@ func _enter_aim() -> void:
 	var how := "Drag %s and release to shoot." % ("forward" if settings.invert_drag else "back")
 	if settings.click_shoot:
 		how = "Set power with the wheel or Up/Down, then click to shoot."
+	if settings.touch_mode:
+		how = "Aim, set power, then hold SHOOT."
 	if is_break:
 		_hint("Break! %s H: move the cue ball behind the line." % how)
 	else:
@@ -2544,9 +2556,13 @@ var touch_aiming := false
 var touch_rot := 0.0
 var touch_armed := false
 var touch_hint: Label
+var aim_dial: AimDial
+var shoot_hold := -1.0       # seconds SHOOT has been held while aiming; -1 when not held
+var shoot_fired := false     # the hold fired the shot, so the button's release does nothing
+const SHOOT_HOLD := 0.35
 var touch_aim_btn: Button
 var touch_last := Vector2.INF   # finger position last frame, for Fine aim
-const FINE_DRAG := 1.0 / 1200.0  # radians per table unit dragged across the aim line
+const FINE_DRAG := 1.0 / 2400.0  # radians per table unit dragged across the aim line
 var power_up_btn: Button
 var touch_place: Button
 # A finger held still on a ball shows what it does (a long press, since phones cannot hover).
@@ -2575,6 +2591,13 @@ func _build_touch_controls(parent: Control) -> void:
 	power_slider.value_changed.connect(func(v: float):
 		power = v
 		forecast_dirty = true)
+	aim_dial = AimDial.new()
+	aim_dial.font = F_SEMI
+	aim_dial.turned.connect(func(deg: float):
+		if state == S.AIM and not plan_lock:
+			aim_dir = aim_dir.rotated(deg_to_rad(deg))
+			guide_dirty = true)
+	touch_box.add_child(aim_dial)
 	touch_box.add_child(power_slider)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
@@ -2590,6 +2613,11 @@ func _build_touch_controls(parent: Control) -> void:
 		row.add_child(nudge)
 		if dir < 0:
 			var shoot := _button("SHOOT", func():
+				if shoot_fired:
+					shoot_fired = false   # this release ends the hold that already shot
+					return
+				if state == S.AIM:
+					return   # aiming: SHOOT must be held, so a stray tap cannot fire
 				if state == S.PICK:
 					_cancel_pick()
 				elif state == S.HOLD and hold_action != "":
@@ -2606,6 +2634,13 @@ func _build_touch_controls(parent: Control) -> void:
 			shoot.add_theme_font_size_override("font_size", 24)
 			row.add_child(shoot)
 			touch_shoot = shoot
+			shoot.button_down.connect(func():
+				if state == S.AIM:
+					shoot_hold = 0.0)
+			shoot.button_up.connect(func():
+				if state == S.AIM and shoot_hold >= 0.0 and not shoot_fired:
+					_hint("Hold SHOOT to fire.")
+				shoot_hold = -1.0)
 	var plan := _button("PLAN A PAUSE", func():
 		if state == S.AIM or state == S.HOLD:
 			_toggle_plan(), Color(0.55, 0.95, 0.85))
@@ -3053,14 +3088,62 @@ func _perk_card(id: String, slot: int) -> Control:
 		v.add_child(d)
 	else:
 		v.add_child(_label(Catalog.rarity_name(f.r), 11, accent))
-	if id == "catalyst":
-		v.add_child(_label("Now: +%s" % _fmt(run.catalyst), 12, accent))
+	var now := _perk_now(id)
+	if now != "":
+		v.add_child(_label("Now: " + now, 12, TermTip.NEON))
 	p.mouse_filter = Control.MOUSE_FILTER_STOP
 	if state == S.SHOP:
 		var b := _button(("Really sell? $%d" if sell_armed == id else "Sell $%d") % run.sell_value(id), func(): _sell_click(id), Color(1.0, 0.75, 0.3) if sell_armed == id else Color(0.9, 0.4, 0.3))
 		b.add_theme_font_size_override("font_size", 13)
 		v.add_child(b)
 	return p
+
+
+## What a Perk whose effect grows, or switches on and off, is doing right now ("" if fixed).
+func _perk_now(id: String) -> String:
+	var c: Dictionary = _shot_ctx() if sim != null else {"heat": run.heat, "chalk": run.chalk, "shots_taken": run.shots_taken, "money": run.money,
+		"pockets_used": run.pockets_used, "removed": run.removed_count(), "specials": run.ball_kinds.size(), "solid_run": run.solid_run, "stripe_run": run.stripe_run, "total_pots": run.total_pots}
+	var heat := int(c.get("heat", 0))
+	match id:
+		"catalyst":
+			return "+%s to every ball" % _fmt(run.catalyst)
+		"steadyrun":
+			return "+%d to solids" % (12 * mini(int(c.get("solid_run", 0)), 8))
+		"tiger":
+			return "+%s Chain on the next stripe" % _fmt(0.25 * mini(int(c.get("stripe_run", 0)), 8))
+		"thinrack":
+			return "+%d to every ball" % (12 * int(c.get("removed", 0)))
+		"missing":
+			return "+%s Chain a shot" % _fmt(minf(3.0, 0.5 * int(c.get("removed", 0))))
+		"menagerie":
+			return "+%s Chain a shot" % _fmt(0.25 * int(c.get("specials", 0)))
+		"venture":
+			return "+%s Chain a shot" % _fmt(minf(1.5, 0.25 * int(int(c.get("money", 0)) / 5)))
+		"collector":
+			return "+%s Chain a shot" % _fmt(0.5 * (c.get("pockets_used", []) as Array).size())
+		"eightcount":
+			var left := 8 - int(c.get("total_pots", 0)) % 8
+			return "the next sink is the 8th" if left == 1 else "×3 in %d sinks" % left
+		"rhythm":
+			var k := int(c.get("shots_taken", 0)) % 3
+			return "this shot pays ×2" if k == 2 else "×2 in %d shots" % (2 - k)
+		"hothand":
+			return "ON, +30 to every ball" if heat >= 3 else "off until Heat 3"
+		"minimalist":
+			return "ON, every sink ×2" if heat >= 5 else "off until Heat 5"
+		"migration":
+			return "ON, a miss costs 1 Heat" if heat >= 5 else "off until Heat 5"
+		"coupon":
+			return "ON, every sink ×2" if heat == 0 else "off until Heat drops to 0"
+		"entropy":
+			return "ON, +1 Chain" if heat < 3 else "off at Heat 3+"
+		"comeback":
+			return "ON, every sink ×2" if int(c.get("chalk", 9)) == 1 else "off until your last Chalk"
+		"insurance":
+			return "%d free miss%s left" % [maxi(0, 2 - run.insured_used), "" if 2 - run.insured_used == 1 else "es"]
+		"overflow":
+			return "+%d carried in" % run.carry if run.carry > 0 else ""
+	return ""
 
 
 var sell_armed := ""
