@@ -274,7 +274,8 @@ var hover_shown := false
 
 func _update_ball_hover() -> void:
 	var idx := -1
-	if sim != null and (state == S.AIM or state == S.PLACE or state == S.HOLD or state == S.PICK) and overlay.get_child_count() == 0 and not dragging:
+	var touch_ok: bool = not settings.touch_mode or (finger_down and finger_still >= LONG_PRESS)
+	if touch_ok and sim != null and (state == S.AIM or state == S.PLACE or state == S.HOLD or state == S.PICK) and overlay.get_child_count() == 0 and not dragging:
 		var m := _mouse_table()
 		var bd := (TableLayout.R * 1.15) * (TableLayout.R * 1.15)
 		for i in sim.count():
@@ -292,7 +293,8 @@ func _update_ball_hover() -> void:
 			term_tip.hide_tip()
 			hover_shown = false
 		return
-	term_tip.show_text(info[0], info[1], mouse_pos)
+	# Above the finger on a touch screen, so the thumb does not cover it.
+	term_tip.show_text(info[0], info[1], mouse_pos - (Vector2(0, 70) if settings.touch_mode else Vector2.ZERO))
 	hover_shown = true
 
 
@@ -598,9 +600,9 @@ func _begin_pick(id: String, mode: String) -> void:
 	state = S.PICK
 	view.show_guide = false
 	var what := {"ball": "Click a ball.", "pocket": "Click a pocket to cover.", "cushion": "Click a cushion where the Trapdoor opens.", "spot": "Click where it goes."}
-	lbl_hint.text = "%s %s Right-click or Esc to cancel." % [Catalog.ITEMS[id].name, what.get(mode, "")]
+	_hint("%s %s Right-click or Esc to cancel." % [Catalog.ITEMS[id].name, what.get(mode, "")])
 	if id == "calledshot":
-		lbl_hint.text = "Called Shot: click the ball you're calling. Right-click or Esc to cancel."
+		_hint("Called Shot: click the ball you're calling. Right-click or Esc to cancel.")
 	_refresh_hud()
 
 
@@ -766,7 +768,7 @@ func _pick_click() -> void:
 			var p: Vector2 = view.place_pos
 			pick_points.append(p)
 			if id == "portal" and pick_points.size() < 2:
-				lbl_hint.text = "Now click where the second portal goes."
+				_hint("Now click where the second portal goes.")
 				sfx.play("click_soft", 0.6)
 				return
 			match id:
@@ -797,7 +799,7 @@ func _picked_ball(id: String, b: int) -> void:
 			pick_item = "calledshot_pocket"
 			pick_ball = b
 			pick_mode = "pocket"
-			lbl_hint.text = "Now click the pocket you're calling for the %s." % Catalog.ball_label(sim.num[b])
+			_hint("Now click the pocket you're calling for the %s." % Catalog.ball_label(sim.num[b]))
 		"ghostchalk":
 			sim.ghost = b
 			_end_pick()
@@ -814,7 +816,7 @@ func _picked_ball(id: String, b: int) -> void:
 		"swap":
 			if pick_ball < 0:
 				pick_ball = b
-				lbl_hint.text = "Swap: now click the ball to trade places with."
+				_hint("Swap: now click the ball to trade places with.")
 				return
 			var p := sim.pos[pick_ball]
 			sim.pos[pick_ball] = sim.pos[b]
@@ -832,7 +834,7 @@ func _picked_ball(id: String, b: int) -> void:
 		"nudge":
 			pick_ball = b
 			pick_mode = "direction"
-			lbl_hint.text = "Nudge: click the direction to push it."
+			_hint("Nudge: click the direction to push it.")
 
 
 func _cancel_pick() -> void:
@@ -1021,8 +1023,8 @@ func _hold(count: bool = true) -> void:
 	hold_action = ""
 	view.strike_line = []
 	view.show_guide = false
-	view.hold_text = "PAUSED - use an item, plan a pause (L), or press P to play on"
-	lbl_hint.text = "Paused. Items in your bar work now. Click the table or press P to play on."
+	view.hold_text = _words("PAUSED - use an item, plan a pause (L), or press P to play on")
+	_hint("Paused. Items in your bar work now. Click the table or press P to play on.")
 	_compute_forecast_from_here()
 	_refresh_hud()
 
@@ -1080,11 +1082,11 @@ func _begin_hold_action(kind: String, slot: String) -> void:
 	_wall_preview = false
 	match kind:
 		"strike":
-			view.hold_text = "SECOND STRIKE - aim with the mouse, set power with the wheel, click to hit"
+			view.hold_text = _words("SECOND STRIKE - aim with the mouse, set power with the wheel, click to hit")
 		"wall":
-			view.hold_text = "POP-UP WALL - click where it starts, then where it ends"
+			view.hold_text = _words("POP-UP WALL - click where it starts, then where it ends")
 		"blink":
-			view.hold_text = "BLINK - click where the cue ball reappears"
+			view.hold_text = _words("BLINK - click where the cue ball reappears")
 
 
 func _cancel_hold_action() -> void:
@@ -1167,7 +1169,7 @@ func _play_on() -> void:
 	fc_sim = null
 	state = S.ROLL
 	sfx.play("resume", 0.6)
-	lbl_hint.text = "Click or press Space to fast-forward. P pauses."
+	_hint("Click or press Space to fast-forward. P pauses.")
 
 
 ## Lock the prediction, then the cursor slides along the cue ball's predicted
@@ -1180,9 +1182,9 @@ func _toggle_plan() -> void:
 	if plan_lock:
 		forecast_dirty = true
 		forecast_timer = 0.0
-		lbl_hint.text = "Prediction locked. Move along the cue ball's line and click to set a pause point. L unlocks."
+		_hint("Prediction locked. Move along the cue ball's line and click to set a pause point. L unlocks.")
 	else:
-		lbl_hint.text = "Prediction unlocked."
+		_hint("Prediction unlocked.")
 	guide_dirty = true
 
 
@@ -1228,7 +1230,7 @@ func _set_pause_point() -> void:
 	pause_at = (sim.time if state == S.HOLD else 0.0) + maxf(plan_hover_t, PoolSim.STEP)
 	view.plan_marker = view.plan_hover
 	sfx.play("click_soft", 0.7)
-	lbl_hint.text = "Pause point set. The shot will stop there. L unlocks the prediction."
+	_hint("Pause point set. The shot will stop there. L unlocks the prediction.")
 
 
 func _cue_index() -> int:
@@ -1279,9 +1281,18 @@ func _process(delta: float) -> void:
 	sfx.set_roll(_roll_level() if state == S.ROLL else 0.0)
 	_update_ball_hover()
 	if touch_shoot:
-		var label := "PAUSE" if state == S.ROLL else ("PLAY ON" if state == S.HOLD else "SHOOT")
+		var label := "SHOOT"
+		if state == S.ROLL:
+			label = "PAUSE"
+		elif state == S.PICK or (state == S.HOLD and hold_action != ""):
+			label = "CANCEL"
+		elif state == S.HOLD:
+			label = "PLAY ON"
 		if touch_shoot.text != label:
 			touch_shoot.text = label
+		touch_place.visible = state == S.AIM and is_break
+	if finger_down:
+		finger_still += delta
 	var cue_i := _cue_index()
 	view.cue_visible = (state == S.AIM or state == S.STRIKE) and sim != null and sim.alive[cue_i] == 1
 	if sim:
@@ -1305,6 +1316,13 @@ func _input(e: InputEvent) -> void:
 		if e is InputEventMouseMotion:
 			pad_active = false
 			nav_active = false
+			if finger_down and e.position.distance_to(finger_anchor) > 10.0:
+				finger_anchor = e.position
+				finger_still = 0.0
+		elif e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
+			finger_down = e.pressed
+			finger_anchor = e.position
+			finger_still = 0.0
 	if e is InputEventJoypadMotion:
 		joy_axes[e.axis] = e.axis_value
 	if e is InputEventJoypadButton and e.pressed:
@@ -1697,7 +1715,7 @@ func _begin_roll() -> void:
 	pauses = 0
 	view.plan_marker = view.plan_marker if pause_at >= 0.0 else Vector2.INF
 	state = S.ROLL
-	lbl_hint.text = "P (or the Pause button) pauses the shot. Click or Space to fast-forward."
+	_hint("P (or the Pause button) pauses the shot. Click or Space to fast-forward.")
 
 
 var sim_accum := 0.0
@@ -1877,7 +1895,7 @@ func _settled() -> void:
 	tally_phase = 0
 	state = S.TALLY
 	sfx.duck(true)
-	lbl_hint.text = "Click to skip the count."
+	_hint("Click to skip the count.")
 	if not result.scored:
 		var free_break: bool = is_break and result.foul == "Miss"
 		var insured: bool = run.perks.has("insurance") and run.insured_used < 2
@@ -2066,9 +2084,9 @@ func _enter_aim() -> void:
 	if settings.click_shoot:
 		how = "Set power with the wheel or Up/Down, then click to shoot."
 	if is_break:
-		lbl_hint.text = "Break! %s H: move the cue ball behind the line." % how
+		_hint("Break! %s H: move the cue ball behind the line." % how)
 	else:
-		lbl_hint.text = "Aim with the mouse. %s Space also shoots." % how
+		_hint("Aim with the mouse. %s Space also shoots." % how)
 	_refresh_hud()
 
 
@@ -2078,7 +2096,7 @@ func _begin_place(head_only: bool) -> void:
 	place_head_only = head_only
 	view.show_guide = false
 	last_place = Vector2(-1, -1)
-	lbl_hint.text = "Ball in hand%s: gold lines show the sinks on from here. Click to place." % (" behind the line" if head_only else "")
+	_hint("Ball in hand%s: gold lines show the sinks on from here. Click to place." % (" behind the line" if head_only else ""))
 	_refresh_hud()
 
 
@@ -2190,7 +2208,7 @@ func _key(k: int) -> void:
 						_begin_place(true)
 				"fine":
 					fine_aim = not fine_aim
-					lbl_hint.text = "Fine aim ON: use your aim keys (Shift = finer). Toggle again to release." if fine_aim else "Fine aim off."
+					_hint("Fine aim ON: use your aim keys (Shift = finer). Toggle again to release." if fine_aim else "Fine aim off.")
 			if k == KEY_ENTER:
 				_shoot(power)
 		S.ROLL, S.TALLY:
@@ -2275,6 +2293,14 @@ func _focus_first(n: Node) -> bool:
 
 
 func _mouse_button(e: InputEventMouseButton) -> void:
+	if plan_lock and state == S.AIM and e.button_index == MOUSE_BUTTON_LEFT and settings.touch_mode:
+		if e.pressed and _mouse_over_table():
+			touch_armed = true
+		elif not e.pressed and touch_armed:
+			touch_armed = false
+			_update_plan_hover()
+			_set_pause_point()
+		return
 	if plan_lock and state == S.AIM and e.button_index == MOUSE_BUTTON_LEFT and e.pressed and _mouse_over_table():
 		_set_pause_point()
 		return
@@ -2316,7 +2342,18 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 			elif e.button_index == MOUSE_BUTTON_LEFT and e.pressed:
 				_place_cue()
 		S.HOLD:
-			if e.button_index == MOUSE_BUTTON_LEFT and e.pressed and _mouse_over_table():
+			if e.button_index == MOUSE_BUTTON_LEFT and settings.touch_mode:
+				# Touch: the preview follows the finger and the action happens on lift.
+				# A wall starts where the finger lands and ends where it lifts.
+				if e.pressed and _mouse_over_table():
+					touch_armed = true
+					if hold_action == "wall" and wall_start == Vector2.INF:
+						_hold_click()
+				elif not e.pressed and touch_armed:
+					touch_armed = false
+					_update_plan_hover()
+					_hold_click()
+			elif e.button_index == MOUSE_BUTTON_LEFT and e.pressed and _mouse_over_table():
 				_hold_click()
 			elif e.button_index == MOUSE_BUTTON_RIGHT and e.pressed:
 				_cancel_hold_action()
@@ -2438,6 +2475,13 @@ var power_slider: HSlider
 var touch_aiming := false
 var touch_rot := 0.0
 var touch_armed := false
+var touch_hint: Label
+var touch_place: Button
+# A finger held still on a ball shows what it does (a long press, since phones cannot hover).
+var finger_down := false
+var finger_anchor := Vector2.ZERO
+var finger_still := 0.0
+const LONG_PRESS := 0.45
 
 
 ## On-screen shot controls for phones and tablets.
@@ -2446,6 +2490,10 @@ func _build_touch_controls(parent: Control) -> void:
 	touch_box.add_theme_constant_override("separation", 6)
 	touch_box.visible = false
 	parent.add_child(touch_box)
+	touch_hint = _label("", 14, Color(0.85, 0.9, 0.85), F_REG)
+	touch_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	touch_hint.visible = false
+	touch_box.add_child(touch_hint)
 	power_slider = HSlider.new()
 	power_slider.min_value = 0.02
 	power_slider.max_value = 1.0
@@ -2470,7 +2518,11 @@ func _build_touch_controls(parent: Control) -> void:
 		row.add_child(nudge)
 		if dir < 0:
 			var shoot := _button("SHOOT", func():
-				if state == S.AIM:
+				if state == S.PICK:
+					_cancel_pick()
+				elif state == S.HOLD and hold_action != "":
+					_cancel_hold_action()
+				elif state == S.AIM:
 					_shoot(power)
 				elif state == S.ROLL:
 					_hold()
@@ -2488,6 +2540,51 @@ func _build_touch_controls(parent: Control) -> void:
 	plan.custom_minimum_size = Vector2(0, 46)
 	plan.focus_mode = Control.FOCUS_NONE
 	touch_box.add_child(plan)
+	touch_place = _button("MOVE CUE BALL", func():
+		if state == S.AIM and is_break:
+			_begin_place(true), Color(0.9, 0.85, 0.5))
+	touch_place.custom_minimum_size = Vector2(0, 46)
+	touch_place.focus_mode = Control.FOCUS_NONE
+	touch_place.visible = false
+	touch_box.add_child(touch_place)
+
+
+## Shows a hint. On touch screens it also appears above the shot controls, worded for a finger.
+func _hint(t: String) -> void:
+	lbl_hint.text = t
+	if touch_hint:
+		touch_hint.text = _touch_words(t)
+		touch_hint.visible = settings.touch_mode and t != ""
+
+
+## The words for whichever input this player uses.
+func _words(t: String) -> String:
+	return _touch_words(t) if settings.touch_mode else t
+
+
+## Rewrites mouse and keyboard wording for touch screens.
+static func _touch_words(t: String) -> String:
+	var swaps := [
+		[" Right-click or Esc to cancel.", " Tap CANCEL to back out."],
+		["use an item, plan a pause (L), or press P to play on", "use an item, PLAN a pause, or tap PLAY ON"],
+		["Click or press Space to fast-forward. P pauses.", "Tap the table to fast-forward, or PAUSE to stop the shot."],
+		["P (or the Pause button) pauses the shot. Click or Space to fast-forward.", "PAUSE stops the shot. Tap the table to fast-forward."],
+		["Click the table or press P to play on.", "Tap PLAY ON to carry on."],
+		["Move along the cue ball's line and click to set a pause point. L unlocks.", "Slide along any ball's line and lift to set a pause point. PLAN unlocks."],
+		[" L unlocks the prediction.", " PLAN unlocks the prediction."],
+		[" H: move the cue ball behind the line.", " MOVE CUE BALL places it behind the line."],
+		["Aim with the mouse.", "Drag on the table to aim."],
+		[" Space also shoots.", ""],
+		["Click to place.", "Drag, then lift to place."],
+		["Click to skip the count.", "Tap to skip the count."],
+		["aim with the mouse, set power with the wheel, click to hit", "drag to aim, set power with the slider, lift to hit"],
+		["click where it starts, then where it ends", "drag from where it starts to where it ends"],
+		["click where the cue ball reappears", "drag to where the cue ball reappears, then lift"],
+		["Fine aim ON: use your aim keys (Shift = finer). Toggle again to release.", "Fine aim ON: use the < > buttons."],
+	]
+	for p in swaps:
+		t = t.replace(p[0], p[1])
+	return t.replace("Click", "Tap").replace("click", "tap")
 
 
 func _sync_touch_ui() -> void:

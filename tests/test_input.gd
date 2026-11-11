@@ -254,6 +254,41 @@ func _go() -> void:
 	g.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
 	await _frames(1)
 	check(not g.paused, "Android back closes it again")
+	# Hints are visible on phones, in touch words.
+	g._hint("Ball in hand: gold lines show the sinks on from here. Click to place.")
+	check(g.touch_hint.visible and g.touch_hint.text.ends_with("Drag, then lift to place."), "hints show on touch screens, worded for a finger")
+	check(not g._touch_words("Called Shot: click the ball you're calling. Right-click or Esc to cancel.").contains("lick"), "no mouse words left in a touch hint")
+	g.is_break = true
+	await _frames(1)
+	check(g.touch_place.visible, "a Move cue ball button on the break")
+	g.is_break = false
+	await _frames(1)
+	check(not g.touch_place.visible, "and only on the break")
+	# Item picks get a CANCEL button.
+	g._begin_pick("portal", "spot")
+	await _frames(1)
+	check(g.touch_shoot.text == "CANCEL", "picking with an item turns SHOOT into CANCEL")
+	g.touch_shoot.pressed.emit()
+	await _frames(1)
+	check(g.state == g.S.AIM, "and CANCEL backs out")
+	# A long press on a special ball explains it; a passing finger does not.
+	var kb: int = -1
+	for k in g.sim.count():
+		if g.sim.alive[k] == 1 and g.sim.num[k] != 0 and g.sim.num[k] != 8:
+			kb = k
+			break
+	g.run.imbues[g.sim.num[kb]] = "glass"
+	var kb_scr: Vector2 = g.view.base_position + g.sim.pos[kb] * g.TABLE_SCALE
+	_tap(kb_scr, true)
+	await _frames(2)
+	check(not g.hover_shown, "a finger passing over a ball shows nothing")
+	g.finger_still = 1.0
+	await _frames(2)
+	check(g.hover_shown, "holding a finger on an imbued ball explains it")
+	_tap(kb_scr, false)
+	await _frames(2)
+	check(not g.hover_shown, "and lifting hides it")
+	g.run.imbues.erase(g.sim.num[kb])
 	g.power_slider.value = 0.6
 	await _frames(1)
 	g._shoot(g.power)
