@@ -136,8 +136,12 @@ func _go() -> void:
 	check(m.cue_unlocked("angle"), "10 banks unlocks the Angle Cue")
 	for lab in Catalog.LABS:
 		check(Catalog.LAB_ART.has(lab), "%s has table art" % lab)
-	for mood in Catalog.LABS.keys() + ["title", "boss", "shop", "endless", "victory"]:
-		check(ResourceLoader.exists("res://assets/music/%s.mp3" % Sfx.TRACKS.get(mood, "missing")), "%s has its music" % mood)
+	var board_tracks := {}
+	for mood in Catalog.BOSSES.keys() + ["title", "shop", "endless", "victory"]:
+		check(ResourceLoader.exists("res://assets/music/%s" % Sfx.TRACKS.get(mood, "missing")), "%s has its music" % mood)
+		if Catalog.BOSSES.has(mood):
+			board_tracks[Sfx.TRACKS.get(mood, "")] = true
+	check(board_tracks.size() == Catalog.BOSSES.size(), "every table has its own soundtrack")
 	print("stakes")
 	var sk := []
 	for lvl in Catalog.HANDICAPS.size():

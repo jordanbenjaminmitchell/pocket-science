@@ -16,11 +16,18 @@ var current_track := ""
 var variants := {}        # id -> several renders, picked at random so repeats never sound identical
 var roll_player: AudioStreamPlayer
 var roll_level := 0.0
+## Mood or table id -> file under res://assets/music/. Every table has its own loop
+## (made by tools/compose_score.py); the screens between tables keep their tracks.
 const TRACKS := {
-	"title": "velvet-orbit", "standard": "prism-pocket-jazz", "cryo": "cryo-cool",
-	"cyclotron": "cyclotron-bounce", "spring": "bumper-ballet", "gravity": "event-horizon-jam",
-	"current": "crystal-drift", "dense": "split-circuit-funk", "magnetlab": "mirror-chrome", "pinball": "spectrum-shuffle", "repulsor": "ion-switch",
-	"boss": "last-pocket", "element": "last-pocket", "final": "last-pocket", "shop": "static-picnic", "endless": "mass-driver-groove", "victory": "solar-syncopation",
+	"title": "velvet-orbit.mp3", "shop": "static-picnic.mp3", "endless": "mass-driver-groove.mp3", "victory": "solar-syncopation.mp3",
+	"local": "boards/the-local.ogg", "frozen": "boards/frozen-lake.ogg", "spring_st": "boards/spring-street.ogg",
+	"drift": "boards/the-drift.ogg", "slate": "boards/old-slate.ogg", "cramped": "boards/the-back-room.ogg",
+	"parlor": "boards/pinball-parlor.ogg", "posts": "boards/twin-posts.ogg", "sinkhole": "boards/the-sinkhole.ogg",
+	"hump": "boards/the-hump.ogg", "nineball": "boards/rotation-night.ogg", "magnet": "boards/the-magnet-room.ogg",
+	"smoke": "boards/the-smoke-room.ogg", "blackice": "boards/black-ice.ogg", "tilted": "boards/the-tilted-table.ogg",
+	"two": "boards/two-pockets.ogg", "closing": "boards/closing-time.ogg", "iron": "boards/the-iron-rack.ogg",
+	"lights": "boards/lights-out.ogg", "hustler": "boards/the-hustler.ogg", "elements": "boards/the-element-table.ogg",
+	"final": "boards/the-grand-final.ogg",
 }
 
 
@@ -69,18 +76,20 @@ func _ready() -> void:
 	streams["bumper"] = _render(0.25, func(t): return sin(TAU * (300.0 + 500.0 * exp(-t * 20.0)) * t) * exp(-t * 12.0) * 0.5)
 
 
-## Crossfades to the named mood ("title", a lab id, "boss", "shop"...).
+## Crossfades to the named mood ("title", "shop"...) or table id ("local", "final"...).
 func play_music(mood: String) -> void:
-	var file: String = TRACKS.get(mood, "prism-pocket-jazz")
+	var file: String = TRACKS.get(mood, TRACKS["local"])
 	if file == current_track:
 		return
 	current_track = file
-	var path := "res://assets/music/%s.mp3" % file
+	var path := "res://assets/music/%s" % file
 	if not ResourceLoader.exists(path):
 		return
 	var stream: AudioStream = load(path)
 	if stream is AudioStreamMP3:
 		(stream as AudioStreamMP3).loop = true
+	elif stream is AudioStreamOggVorbis:
+		(stream as AudioStreamOggVorbis).loop = true
 	var incoming := music_b if music_a.playing else music_a
 	var outgoing := music_a if incoming == music_b else music_b
 	incoming.stream = stream
