@@ -29,6 +29,7 @@ var pause_on_hit := false   # pause a shot by itself the moment the cue ball fir
 var smooth_arrows := false  # arrow keys sweep at once instead of quarter-degree taps
 var fine_drag := false      # touch: dragging turns the aim a little instead of pointing it
 var dev_mode := false       # unlocks every Perk, cue and difficulty, and skips the introduction
+var invert_aim := false     # touch: Fine aim drags and the FINE AIM strip turn the other way
 
 const SCREEN_LAYOUTS := ["Classic", "Wide"]
 ## "All balls" also simulates the shot and draws where every ball will end up.
@@ -48,7 +49,7 @@ const ACTIONS := {
 
 var keys := {}
 
-const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout", "guide_lines", "pause_on_hit", "guide_rev", "smooth_arrows", "fine_drag", "dev_mode"]
+const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout", "guide_lines", "pause_on_hit", "guide_rev", "smooth_arrows", "fine_drag", "dev_mode", "invert_aim"]
 
 
 func load_file() -> void:
@@ -162,6 +163,7 @@ func reset() -> void:
 	smooth_arrows = false
 	fine_drag = false
 	dev_mode = false
+	invert_aim = false
 	_device_defaults()
 	frame_cap = 0
 	window_size = 1

@@ -240,6 +240,21 @@ func _go() -> void:
 	_tap_move(far)
 	await _frames(2)
 	check(g.aim_dir == after_lift, "and nothing turns once the finger is up")
+	# Invert fine aim: the same drag turns the other way.
+	s.invert_aim = true
+	var inv0: Vector2 = g.aim_dir
+	_tap(far, true)
+	await _frames(2)
+	_tap_move(far + perp)
+	await _frames(2)
+	var turned_inv: float = rad_to_deg(inv0.angle_to(g.aim_dir))
+	_tap(far + perp, false)
+	await _frames(2)
+	check(turned_inv < -1.8 and turned_inv > -3.0, "Invert fine aim turns the shot the other way (%.2f)" % turned_inv)
+	var dial0: Vector2 = g.aim_dir
+	g.aim_dial.drag(20.0)
+	check(absf(rad_to_deg(dial0.angle_to(g.aim_dir)) + 1.0) < 0.01, "and flips the FINE AIM strip too")
+	s.invert_aim = false
 	g.touch_aim_btn.pressed.emit()
 	check(not s.fine_drag and g.touch_aim_btn.text.begins_with("AIM: POINT"), "and back to Point aim")
 	g.power_slider.value = 0.42

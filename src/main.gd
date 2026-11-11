@@ -1495,7 +1495,7 @@ func _update_aim(delta: float) -> void:
 				if touch_last != Vector2.INF:
 					var across := (m - touch_last).dot(aim_dir.orthogonal())
 					if across != 0.0:
-						aim_dir = aim_dir.rotated(across * FINE_DRAG)
+						aim_dir = aim_dir.rotated(across * FINE_DRAG * _aim_sign())
 						guide_dirty = true
 				touch_last = m
 			else:
@@ -2642,7 +2642,7 @@ func _build_touch_controls(parent: Control) -> void:
 	aim_dial.font = F_SEMI
 	aim_dial.turned.connect(func(deg: float):
 		if state == S.AIM and not plan_lock:
-			aim_dir = aim_dir.rotated(deg_to_rad(deg))
+			aim_dir = aim_dir.rotated(deg_to_rad(deg) * _aim_sign())
 			guide_dirty = true)
 	touch_box.add_child(aim_dial)
 	touch_box.add_child(power_slider)
@@ -2749,6 +2749,11 @@ static func _touch_words(t: String) -> String:
 	for p in swaps:
 		t = t.replace(p[0], p[1])
 	return t.replace("Click", "Tap").replace("click", "tap")
+
+
+## -1 with Invert fine aim on: the far end of the aim line follows the finger.
+func _aim_sign() -> float:
+	return -1.0 if settings.invert_aim else 1.0
 
 
 func _sync_aim_btn() -> void:
@@ -3951,7 +3956,13 @@ func _show_settings(back: Callable) -> void:
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 14)
 	grid.add_theme_constant_override("v_separation", 5)
-	v.add_child(grid)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# The list scrolls, so new settings never push the panel off a small screen.
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(0, 560)
+	scroll.add_child(grid)
+	v.add_child(scroll)
 	_setting_slider(grid, "Master volume", "master", 0.0, 1.0, func(x): return "%d%%" % int(round(x * 100)))
 	_setting_slider(grid, "Music", "music", 0.0, 1.0, func(x): return "%d%%" % int(round(x * 100)))
 	_setting_slider(grid, "Sound effects", "sfx", 0.0, 1.0, func(x): return "%d%%" % int(round(x * 100)))
@@ -3971,6 +3982,7 @@ func _show_settings(back: Callable) -> void:
 	_setting_toggle(grid, "Larger small text", "large_text")
 	_setting_toggle(grid, "Touch controls", "touch_mode")
 	_setting_toggle(grid, "Touch: fine aim (drag turns the shot)", "fine_drag")
+	_setting_toggle(grid, "Touch: invert fine aim (drag up turns the shot up)", "invert_aim")
 	_setting_toggle(grid, "Developer mode (unlock everything)", "dev_mode")
 	_setting_choice(grid, "Frame cap", "frame_cap", GameSettings.FRAME_CAPS.map(func(f): return "Unlimited" if f == 0 else "%d FPS" % f))
 	_setting_choice(grid, "Window size", "window_size", GameSettings.WINDOW_SIZES.map(func(w): return "%d × %d" % [w.x, w.y]))
