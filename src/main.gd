@@ -172,12 +172,7 @@ func _setup_table() -> void:
 	if log_label:
 		log_label.text = ""
 	if state != S.TITLE:
-		if run.endless:
-			sfx.play_music("endless")
-		elif t.anomaly != "":
-			sfx.play_music("boss")
-		else:
-			sfx.play_music(lab)
+		sfx.play_music("endless" if run.endless else str(t.id))
 	view.hot_mult = 3 if run.perks.has("heat") else 2
 	_sync_hot()
 	_refresh_hud()
@@ -456,6 +451,7 @@ func _spend(id: String) -> void:
 func _arm(id: String, undo: Callable) -> void:
 	armed.append({"id": id, "undo": undo})
 	sfx.play("click_soft", 0.7, 1.2)
+	_hint("%s is ready for this shot. Right-click to take it back." % Catalog.ITEMS[id].name)
 	guide_dirty = true
 	_refresh_hud()
 
@@ -1355,13 +1351,28 @@ func _mouse_table() -> Vector2:
 var last_aim_mouse := Vector2.INF
 var aim_hold_t := 0.0
 const AIM_HOLD := 0.25
+const AIM_TAP := 0.25    # degrees per tap of an aim key or nudge button
+const AIM_FINE := 0.05   # with Shift
+const POWER_STEP := 0.05
 var fc_power := -1.0
+
+
+## Steps power to the next 5% mark up or down (42% goes to 45%, then 50%).
+func _bump_power(dir: int) -> void:
+	var steps := power / POWER_STEP
+	var k := floorf(steps + 0.001) + 1.0 if dir > 0 else ceilf(steps - 0.001) - 1.0
+	power = clampf(k * POWER_STEP, POWER_STEP, 1.0)
+	forecast_dirty = true
+	if power_w:
+		power_w.set_power(power)
+	if power_slider and power_slider.value != power:
+		power_slider.set_value_no_signal(power)
 
 
 func _step_aim(dir: float) -> void:
 	if settings.smooth_arrows:
 		return
-	var deg := 0.1 if Input.is_key_pressed(KEY_SHIFT) else 1.0
+	var deg := AIM_FINE if Input.is_key_pressed(KEY_SHIFT) else AIM_TAP
 	aim_dir = aim_dir.rotated(deg_to_rad(deg * dir))
 	guide_dirty = true
 
@@ -1380,6 +1391,19 @@ func _update_aim(delta: float) -> void:
 		var may_steer: bool = touch_aiming if settings.touch_mode else true
 		var mouse_moved := m.distance_to(last_aim_mouse) > 0.5
 		last_aim_mouse = m
+		if settings.touch_mode and settings.fine_drag:
+			# Fine aim: the finger can be anywhere. Moving it across the aim line turns
+			# the shot a little that way, so the target stays in view and wobble is small.
+			may_steer = false
+			if touch_aiming and not plan_lock:
+				if touch_last != Vector2.INF:
+					var across := (m - touch_last).dot(aim_dir.orthogonal())
+					if across != 0.0:
+						aim_dir = aim_dir.rotated(across * FINE_DRAG)
+						guide_dirty = true
+				touch_last = m
+			else:
+				touch_last = Vector2.INF
 		if (mouse_moved or settings.touch_mode) and not fine_aim and not plan_lock and not pad_active and may_steer and _mouse_over_table() and m.distance_to(sim.pos[ci]) > 4.0:
 			var nd := (m - sim.pos[ci]).normalized()
 			if nd.angle_to(aim_dir) != 0.0:
@@ -1387,7 +1411,7 @@ func _update_aim(delta: float) -> void:
 				guide_dirty = true
 		var rot := 0.0
 		var spd := (0.06 if Input.is_key_pressed(KEY_SHIFT) else 0.6) * settings.aim_speed
-		# A tap turns exactly 1 degree (0.1 with Shift); holding for a quarter of a
+		# A tap turns exactly a quarter of a degree (0.05 with Shift); holding for a quarter of a
 		# second sweeps smoothly. The Smooth arrows setting sweeps straight away.
 		var held_l := Input.is_key_pressed(settings.keys.aim_left)
 		var held_r := Input.is_key_pressed(settings.keys.aim_right)
@@ -2192,9 +2216,9 @@ func _key(k: int) -> void:
 				"shoot":
 					_shoot(power)
 				"power_up":
-					power = clampf(power + 0.05, 0.02, 1.0)
+					_bump_power(1)
 				"power_down":
-					power = clampf(power - 0.05, 0.02, 1.0)
+					_bump_power(-1)
 				"spin_up":
 					spin_w.set_spin(follow + 0.25, side)
 				"spin_down":
@@ -2222,9 +2246,9 @@ func _key(k: int) -> void:
 			elif action == "plan":
 				_toggle_plan()
 			elif action == "power_up":
-				power = clampf(power + 0.05, 0.02, 1.0)
+				_bump_power(1)
 			elif action == "power_down":
-				power = clampf(power - 0.05, 0.02, 1.0)
+				_bump_power(-1)
 	if state == S.AIM and action == "plan":
 		_toggle_plan()
 
@@ -2324,6 +2348,11 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 			elif e.button_index == MOUSE_BUTTON_RIGHT and e.pressed and dragging:
 				dragging = false
 				drag_power = 0.0
+			elif e.button_index == MOUSE_BUTTON_RIGHT and e.pressed and not armed.is_empty():
+				var last: Dictionary = armed[armed.size() - 1]
+				_disarm(last)
+				_hint("Took back %s." % Catalog.ITEMS[last.id].name)
+				sfx.play("click_soft", 0.6, 0.8)
 			elif e.button_index == MOUSE_BUTTON_WHEEL_UP and e.pressed:
 				power = clampf(power + 0.03, 0.02, 1.0)
 				forecast_dirty = true
@@ -2476,6 +2505,10 @@ var touch_aiming := false
 var touch_rot := 0.0
 var touch_armed := false
 var touch_hint: Label
+var touch_aim_btn: Button
+var touch_last := Vector2.INF   # finger position last frame, for Fine aim
+const FINE_DRAG := 1.0 / 1200.0  # radians per table unit dragged across the aim line
+var power_up_btn: Button
 var touch_place: Button
 # A finger held still on a ball shows what it does (a long press, since phones cannot hover).
 var finger_down := false
@@ -2540,6 +2573,16 @@ func _build_touch_controls(parent: Control) -> void:
 	plan.custom_minimum_size = Vector2(0, 46)
 	plan.focus_mode = Control.FOCUS_NONE
 	touch_box.add_child(plan)
+	touch_aim_btn = _button("", func():
+		settings.fine_drag = not settings.fine_drag
+		touch_last = Vector2.INF
+		_sync_aim_btn()
+		_save_settings()
+		_hint("Fine aim: drag anywhere on the table to turn the shot a little." if settings.fine_drag else "Point aim: drag on the table and the shot points at your finger."), Color(0.6, 0.75, 0.9))
+	touch_aim_btn.custom_minimum_size = Vector2(0, 46)
+	touch_aim_btn.focus_mode = Control.FOCUS_NONE
+	touch_box.add_child(touch_aim_btn)
+	_sync_aim_btn()
 	touch_place = _button("MOVE CUE BALL", func():
 		if state == S.AIM and is_break:
 			_begin_place(true), Color(0.9, 0.85, 0.5))
@@ -2587,6 +2630,11 @@ static func _touch_words(t: String) -> String:
 	return t.replace("Click", "Tap").replace("click", "tap")
 
 
+func _sync_aim_btn() -> void:
+	if touch_aim_btn:
+		touch_aim_btn.text = "AIM: FINE (drag to turn)" if settings.fine_drag else "AIM: POINT (tap for fine)"
+
+
 func _sync_touch_ui() -> void:
 	var t := settings.touch_mode
 	touch_box.visible = t
@@ -2595,6 +2643,7 @@ func _sync_touch_ui() -> void:
 	lbl_hint.visible = not t
 	menu_btn.visible = t
 	info_btn_ref.text = "Run info" if t else "Run info [Tab]"
+	_sync_aim_btn()
 
 
 func _notification(what: int) -> void:
@@ -2743,6 +2792,20 @@ func _build_ui() -> void:
 	power_w.font = F_SEMI
 	power_w.custom_minimum_size = Vector2(40, 96)
 	ctrl.add_child(power_w)
+	var pbox := VBoxContainer.new()
+	pbox.add_theme_constant_override("separation", 6)
+	pbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	ctrl.add_child(pbox)
+	for d in [1, -1]:
+		var pb := _button("▲" if d > 0 else "▼", func():
+			if state == S.AIM or state == S.HOLD:
+				_bump_power(d), Color(0.5, 0.85, 0.55))
+		pb.custom_minimum_size = Vector2(44, 44)
+		pb.focus_mode = Control.FOCUS_NONE
+		pb.tooltip_text = "Power %s 5%% (%s arrow)" % ["up" if d > 0 else "down", "Up" if d > 0 else "Down"]
+		pbox.add_child(pb)
+		if d > 0:
+			power_up_btn = pb
 
 	var filler := Control.new()
 	filler.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -3715,11 +3778,12 @@ func _show_settings(back: Callable) -> void:
 	_setting_toggle(grid, "Click to shoot (power from wheel / Up / Down)", "click_shoot")
 	_setting_choice(grid, "Prediction lines", "guide_lines", GameSettings.GUIDE_LINES)
 	_setting_toggle(grid, "Pause when the cue ball first hits", "pause_on_hit")
-	_setting_toggle(grid, "Arrow keys sweep (no 1° steps)", "smooth_arrows")
+	_setting_toggle(grid, "Arrow keys sweep (no ¼° steps)", "smooth_arrows")
 	_setting_toggle(grid, "Colour-blind guideline palette", "colorblind")
 	_setting_toggle(grid, "Number tags on every ball", "number_tags")
 	_setting_toggle(grid, "Larger small text", "large_text")
 	_setting_toggle(grid, "Touch controls", "touch_mode")
+	_setting_toggle(grid, "Touch: fine aim (drag turns the shot)", "fine_drag")
 	_setting_choice(grid, "Frame cap", "frame_cap", GameSettings.FRAME_CAPS.map(func(f): return "Unlimited" if f == 0 else "%d FPS" % f))
 	_setting_choice(grid, "Window size", "window_size", GameSettings.WINDOW_SIZES.map(func(w): return "%d × %d" % [w.x, w.y]))
 	_setting_choice(grid, "Screen layout", "screen_layout", GameSettings.SCREEN_LAYOUTS)

@@ -26,7 +26,8 @@ var screen_layout := 0      # index into SCREEN_LAYOUTS
 var guide_lines := 1        # index into GUIDE_LINES; All balls by default
 var guide_rev := 2          # settings saved before All balls became the default get it once
 var pause_on_hit := false   # pause a shot by itself the moment the cue ball first hits a ball
-var smooth_arrows := false  # arrow keys sweep at once instead of 1-degree taps
+var smooth_arrows := false  # arrow keys sweep at once instead of quarter-degree taps
+var fine_drag := false      # touch: dragging turns the aim a little instead of pointing it
 
 const SCREEN_LAYOUTS := ["Classic", "Wide"]
 ## "All balls" also simulates the shot and draws where every ball will end up.
@@ -46,7 +47,7 @@ const ACTIONS := {
 
 var keys := {}
 
-const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout", "guide_lines", "pause_on_hit", "guide_rev", "smooth_arrows"]
+const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout", "guide_lines", "pause_on_hit", "guide_rev", "smooth_arrows", "fine_drag"]
 
 
 func load_file() -> void:
@@ -158,6 +159,7 @@ func reset() -> void:
 	guide_lines = 1
 	pause_on_hit = false
 	smooth_arrows = false
+	fine_drag = false
 	_device_defaults()
 	frame_cap = 0
 	window_size = 1

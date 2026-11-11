@@ -221,12 +221,50 @@ func _go() -> void:
 	_tap_move(cue_scr + Vector2(200, 0))
 	await _frames(2)
 	check(g.aim_dir == locked, "aim stays put after lifting")
+	# Fine aim: the finger turns the shot a little instead of pointing it.
+	g.touch_aim_btn.pressed.emit()
+	check(s.fine_drag and g.touch_aim_btn.text.begins_with("AIM: FINE"), "the AIM button switches to Fine aim")
+	var fine0: Vector2 = g.aim_dir
+	var far: Vector2 = cue_scr + Vector2(300, 150)
+	_tap(far, true)
+	await _frames(2)
+	check(g.aim_dir == fine0, "in Fine aim, touching the table does not point the shot at the finger")
+	var perp: Vector2 = fine0.orthogonal() * 100.0 * g.TABLE_SCALE
+	_tap_move(far + perp)
+	await _frames(2)
+	var turned: float = rad_to_deg(fine0.angle_to(g.aim_dir))
+	check(turned > 3.0 and turned < 7.0, "dragging 100 across the aim line turns it about 5 degrees (%.2f)" % turned)
+	_tap(far + perp, false)
+	await _frames(2)
+	var after_lift: Vector2 = g.aim_dir
+	_tap_move(far)
+	await _frames(2)
+	check(g.aim_dir == after_lift, "and nothing turns once the finger is up")
+	g.touch_aim_btn.pressed.emit()
+	check(not s.fine_drag and g.touch_aim_btn.text.begins_with("AIM: POINT"), "and back to Point aim")
 	g.power_slider.value = 0.42
 	check(is_equal_approx(g.power, 0.42), "slider sets power")
+	g._bump_power(1)
+	check(is_equal_approx(g.power, 0.45), "power up steps to the next 5%% mark (%.2f)" % g.power)
+	g.power_up_btn.pressed.emit()
+	check(is_equal_approx(g.power, 0.5) and is_equal_approx(g.power_slider.value, 0.5), "the up button adds 5%% and the slider follows (%.2f)" % g.power)
+	g._bump_power(-1)
+	check(is_equal_approx(g.power, 0.45), "power down takes 5%%")
+	for k in 30:
+		g._bump_power(-1)
+	check(is_equal_approx(g.power, 0.05), "power never goes below 5%%")
+	g.power_slider.value = 0.42
+	var undone := [false]
+	g._arm("wall", func(): undone[0] = true)
+	var rc := InputEventMouseButton.new()
+	rc.button_index = MOUSE_BUTTON_RIGHT
+	rc.pressed = true
+	g._mouse_button(rc)
+	check(undone[0] and g.armed.is_empty(), "right-click takes back the last item you placed")
 	var a2: Vector2 = g.aim_dir
 	g._step_aim(1.0)   # what a tap of the touch arrow button does
 	var moved_deg: float = rad_to_deg(absf(g.aim_dir.angle_to(a2)))
-	check(absf(moved_deg - 1.0) < 0.01, "a tap of a nudge button turns exactly 1 degree (%.2f deg)" % moved_deg)
+	check(absf(moved_deg - 0.25) < 0.01, "a tap of a nudge button turns exactly a quarter degree (%.2f deg)" % moved_deg)
 	var ci2: int = g._cue_index()
 	g.sim.alive[ci2] = 0
 	g._begin_place(false)
@@ -307,6 +345,7 @@ func _go() -> void:
 	check(lpr.end.y <= 892.0 and lpr.end.x <= 352.0, "touch side panel fits with large text on a boss table (%s)" % lpr)
 	s.reset()
 	g._apply_settings()
+	g._save_settings()   # the Fine aim toggle saved touch settings; later suites start clean
 	print("accessibility")
 	s.colorblind = true
 	s.number_tags = true

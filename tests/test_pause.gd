@@ -156,11 +156,11 @@ func _go() -> void:
 	var before: Vector2 = g.aim_dir
 	_press(KEY_LEFT)
 	await _frames(1)
-	check(absf(rad_to_deg(before.angle_to(g.aim_dir)) + 1.0) < 0.01, "a tap of Left turns the aim exactly 1 degree (%.3f)" % rad_to_deg(before.angle_to(g.aim_dir)))
+	check(absf(rad_to_deg(before.angle_to(g.aim_dir)) + 0.25) < 0.01, "a tap of Left turns the aim exactly a quarter degree (%.3f)" % rad_to_deg(before.angle_to(g.aim_dir)))
 	before = g.aim_dir
 	_press(KEY_RIGHT)
 	await _frames(1)
-	check(absf(rad_to_deg(before.angle_to(g.aim_dir)) - 1.0) < 0.01, "and Right turns it back")
+	check(absf(rad_to_deg(before.angle_to(g.aim_dir)) - 0.25) < 0.01, "and Right turns it back")
 	g.power = 0.3
 	g.guide_dirty = true
 	await _until(func(): return g.fc_sim == null and g.fc_complete, 400)
