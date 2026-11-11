@@ -46,6 +46,10 @@ func _initialize() -> void:
 		check(not looks.has(look), "%s looks unique" % id)
 		looks[look] = true
 		check(bt.motif != "" and int(bt.pattern) >= 0 and int(bt.pattern) <= 9, "%s has an emblem and finish" % id)
+	for id in Catalog.IMBUES:
+		check(BallNode.IMBUE_FX.has(id), "%s Imbue has its own particle effect" % id) if not BallNode.IMBUE_FX.has(id) else null
+	check(BallNode.IMBUE_FX.size() == Catalog.IMBUES.size(), "every Imbue has a particle effect")
+	check(BallNode.IMBUE_FX.frosted == "frost" and BallNode.BALL_FX.void == "void", "Frosted looks frosty and Void pulls motes in")
 	var iso_cols := {}
 	for id in Catalog.IMBUES:
 		check(not iso_cols.has(Catalog.IMBUES[id].color), "%s Imbue has its own colour" % id)

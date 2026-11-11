@@ -159,7 +159,7 @@ func refresh_glows(sim: PoolSim, imbues: Dictionary) -> void:
 		if iso != "":
 			var c: Color = Catalog.IMBUES[iso].color
 			c.a = 0.95
-			ball_nodes[i].set_glow(c)
+			ball_nodes[i].set_glow(c, BallNode.IMBUE_FX.get(iso, ""))
 		else:
 			ball_nodes[i].set_glow(Color(0, 0, 0, 0))
 

@@ -43,6 +43,23 @@ var emblem_ink := Color.BLACK
 var aura: Node2D               # Imbued balls: ring and orbiting spark, drawn over the ball
 var aura_t := 0.0
 var spin_blur := 0.0
+## A themed particle effect around the ball ("" for none): set by its Imbue, or by
+## its special type. Drawn from aura_t alone, so it costs no particle arrays.
+var fx_style := ""
+var fx_color := Color.WHITE
+
+## Imbue -> particle style. Each Imbue also glows in its own colour.
+const IMBUE_FX := {
+	"spark": "spark", "gold": "glint", "heavy": "sink", "glass": "glint", "ember": "ember",
+	"vein": "rise", "lucky": "rise", "frosted": "frost", "magnetic": "field", "charged": "spark",
+	"prismatic": "rainbow", "hollow": "hollow", "leaded": "sink", "bounty": "glint", "starry": "stars", "twin": "echo",
+}
+## Special ball type -> particle style.
+const FX_SIZE := 1.6
+const BALL_FX := {
+	"void": "void", "frost": "frost", "ember": "ember", "star": "stars", "sun": "rays", "gold": "glint",
+	"magnet": "field", "glass": "glint", "bomb": "spark", "heart": "rise", "clover": "rise", "prism": "rainbow",
+}
 
 
 func setup(n: int, f: Font, rng: RandomNumberGenerator) -> void:
@@ -63,6 +80,9 @@ func setup(n: int, f: Font, rng: RandomNumberGenerator) -> void:
 		mat.set_shader_parameter("pattern", int(bt.pattern))
 		mat.set_shader_parameter("accent_color", bt.accent)
 		emblem = bt.motif
+		if BALL_FX.has(kind):
+			fx_style = BALL_FX[kind]
+			fx_color = bt.color if (bt.color as Color).get_luminance() > 0.25 else bt.accent
 		var c: Color = bt.color
 		emblem_ink = c.darkened(0.2) if c.get_luminance() < 0.7 else (bt.accent as Color).darkened(0.25)
 	mat.set_shader_parameter("is_cue", 1.0 if n == 0 else 0.0)
@@ -81,10 +101,16 @@ func setup(n: int, f: Font, rng: RandomNumberGenerator) -> void:
 	_push()
 
 
-func set_glow(c: Color) -> void:
+func set_glow(c: Color, style: String = "") -> void:
 	glow = c
 	mat.set_shader_parameter("glow_color", c)
-	set_process(c.a > 0.0)
+	if style != "":
+		fx_style = style
+		fx_color = Color(c, 1.0)
+	elif c.a <= 0.0 and not BALL_FX.has(Catalog.kind_of(number)):
+		fx_style = ""
+	set_process(c.a > 0.0 or fx_style != "")
+	queue_redraw()
 	if aura:
 		aura.queue_redraw()
 
@@ -92,12 +118,18 @@ func set_glow(c: Color) -> void:
 func _process(delta: float) -> void:
 	aura_t += delta
 	aura.queue_redraw()
+	if glow.a > 0.0:
+		queue_redraw()   # the soft halo pulses
 
 
 ## An Imbue is unmissable: a bright ring in its colour, a soft pulse and a spark
 ## that circles the ball, so imbued balls read at a glance even across the table.
 func _draw_aura() -> void:
-	if glow.a <= 0.0 or fade <= 0.05:
+	if fade <= 0.05:
+		return
+	if not Fx.minimal_particles and fx_style != "":
+		_draw_fx()
+	if glow.a <= 0.0:
 		return
 	var pulse := 0.5 + 0.5 * sin(aura_t * 3.2)
 	var r := radius * 1.18
@@ -187,6 +219,11 @@ func _draw() -> void:
 		for k in n:
 			var off2 := back * (k + 1) * 6.0 * clampf(sp / 1500.0, 0.5, 1.5)
 			draw_circle(off2, radius * (0.9 - k * 0.12), Color(col, 0.12 - k * 0.025))
+	# An Imbue's soft glow in its own colour, under the ball.
+	if glow.a > 0.0 and not sinking:
+		var pulse := 0.5 + 0.5 * sin(aura_t * 2.6)
+		for k in 4:
+			draw_circle(Vector2.ZERO, radius * (1.75 - k * 0.15 + pulse * 0.08), Color(glow, (0.05 + k * 0.025) * fade), true, -1.0, true)
 	# Contact shadow, offset away from the lamp.
 	var off := Vector2(3.0, 4.5)
 	for i in 5:
@@ -197,6 +234,98 @@ func _draw() -> void:
 
 ## Call when the speed changes. A moving ball shows only what is printed on it.
 ## Once stopped it finishes any small correction and shows its upright number.
+## The themed particles, all worked out from aura_t: frost drifting off, embers
+## rising, a void pulling motes in, sparks crackling, stars twinkling...
+func _draw_fx() -> void:
+	var t := aura_t
+	var r := radius
+	var c := fx_color
+	var a0 := fade
+	var u := FX_SIZE   # particles big and bold enough to read across the table
+	match fx_style:
+		"frost":
+			for i in 6:
+				var ph := fmod(t * 0.3 + i / 6.0, 1.0)
+				var ang := i * TAU / 6.0 + t * 0.15 + ph * 0.6
+				var p := Vector2(cos(ang), sin(ang)) * r * (1.05 + ph * 0.95)
+				var sz := 2.6 * u * (1.0 - ph * 0.4)
+				var col := Color(0.88, 0.97, 1.0, (1.0 - ph) * 0.95 * a0)
+				for k in 3:
+					var d := Vector2(cos(k * PI / 3.0 + t), sin(k * PI / 3.0 + t)) * sz
+					aura.draw_line(p - d, p + d, col, 1.1 * u, true)
+		"ember":
+			for i in 7:
+				var ph := fmod(t * 0.55 + i / 7.0, 1.0)
+				var p := Vector2(sin(i * 2.1 + t * 1.4) * r * 0.75, -r * (0.4 + ph * 1.7))
+				aura.draw_circle(p, 1.8 * u * (1.0 - ph * 0.6), Color(Color(1.0, 0.45, 0.1).lerp(Color(1.0, 0.9, 0.4), ph), (1.0 - ph) * a0), true, -1.0, true)
+		"void":
+			aura.draw_circle(Vector2.ZERO, r * 1.45, Color(0.12, 0.02, 0.2, 0.28 * a0), true, -1.0, true)
+			for i in 9:
+				var ph := fmod(t * 0.45 + i / 9.0, 1.0)
+				var ang := i * TAU / 9.0 - ph * 2.8 + t * 0.25
+				var p := Vector2(cos(ang), sin(ang)) * r * (2.2 - ph * 1.15)
+				aura.draw_circle(p, (0.8 + ph * 1.6) * u, Color(0.55, 0.25, 0.85, ph * 0.9 * a0), true, -1.0, true)
+		"spark":
+			for i in 3:
+				var tick := floorf(t * 9.0) + i * 17.0
+				var ang := fmod(sin(tick * 12.9898) * 43758.5453, TAU)
+				var dir := Vector2(cos(ang), sin(ang))
+				var p0 := dir * r * 1.05
+				var mid := p0 + dir * r * 0.3 + dir.orthogonal() * r * 0.18
+				aura.draw_polyline(PackedVector2Array([p0, mid, p0 + dir * r * 0.6]), Color(c.lightened(0.5), 0.95 * a0), 1.4 * u, true)
+		"stars":
+			for i in 5:
+				var ang := i * TAU / 5.0 + 0.4 + t * 0.1
+				var p := Vector2(cos(ang), sin(ang)) * r * (1.4 + 0.12 * sin(i * 2.0))
+				var s := 3.2 * u * (0.35 + 0.65 * maxf(0.0, sin(t * 2.6 + i * 1.9)))
+				_star(p, s, Color(1.0, 0.95, 0.75, a0))
+		"glint":
+			for i in 3:
+				var ang := i * TAU / 3.0 + 0.9
+				var p := Vector2(cos(ang), sin(ang)) * r * 1.25
+				var s := 3.0 * u * maxf(0.0, sin(t * 2.2 + i * 2.1))
+				_star(p, s, Color(c.lightened(0.4), a0))
+		"field":
+			var pulse := 0.5 + 0.5 * sin(t * 3.0)
+			for side in [-1.0, 1.0]:
+				for k in 2:
+					aura.draw_arc(Vector2(side * r * 0.2, 0), r * (1.35 + k * 0.3 + pulse * 0.1), -0.7 + (0.0 if side > 0 else PI), 0.7 + (0.0 if side > 0 else PI), 12, Color(c, (0.55 - k * 0.2) * a0), 1.3 * u, true)
+		"rise":
+			for i in 5:
+				var ph := fmod(t * 0.35 + i / 5.0, 1.0)
+				var p := Vector2(sin(i * 1.7 + t) * r * 0.6, -r * (0.6 + ph * 1.3))
+				aura.draw_circle(p, 1.5 * u * (1.0 - ph * 0.5), Color(c, (1.0 - ph) * 0.85 * a0), true, -1.0, true)
+		"sink":
+			for i in 4:
+				var ph := fmod(t * 0.3 + i / 4.0, 1.0)
+				var p := Vector2((i - 1.5) * r * 0.45, r * (0.7 + ph * 1.0))
+				aura.draw_circle(p, 1.6 * u, Color(c, (1.0 - ph) * 0.8 * a0), true, -1.0, true)
+		"rainbow":
+			for i in 6:
+				var ang := i * TAU / 6.0 + t * 0.9
+				aura.draw_circle(Vector2(cos(ang), sin(ang)) * r * 1.4, 1.7 * u, Color.from_hsv(fmod(i / 6.0 + t * 0.2, 1.0), 0.55, 1.0, 0.9 * a0), true, -1.0, true)
+		"hollow":
+			var ph := fmod(t * 0.5, 1.0)
+			aura.draw_arc(Vector2.ZERO, r * (1.9 - ph * 0.85), 0, TAU, 28, Color(c, ph * 0.7 * a0), 1.2, true)
+		"echo":
+			var off := Vector2(cos(t * 1.6), sin(t * 1.6)) * r * 0.35
+			aura.draw_arc(off, r * 1.12, 0, TAU, 28, Color(c, 0.5 * a0), 1.6, true)
+		"rays":
+			for i in 8:
+				var ang := i * TAU / 8.0 + t * 0.4
+				var dir := Vector2(cos(ang), sin(ang))
+				var l := r * (0.35 + 0.15 * sin(t * 3.0 + i))
+				aura.draw_line(dir * r * 1.2, dir * (r * 1.2 + l), Color(1.0, 0.85, 0.35, 0.85 * a0), 1.6 * u, true)
+
+
+## A small four-pointed sparkle.
+func _star(p: Vector2, s: float, col: Color) -> void:
+	if s <= 0.2:
+		return
+	aura.draw_colored_polygon(PackedVector2Array([p + Vector2(0, -s), p + Vector2(s * 0.28, -s * 0.28), p + Vector2(s, 0), p + Vector2(s * 0.28, s * 0.28),
+		p + Vector2(0, s), p + Vector2(-s * 0.28, s * 0.28), p + Vector2(-s, 0), p + Vector2(-s * 0.28, -s * 0.28)]), col)
+
+
 func refresh_label() -> void:
 	if number == 0:
 		return

@@ -32,6 +32,22 @@ func _go() -> void:
 			DirAccess.remove_absolute(ProjectSettings.globalize_path("user://settings.cfg"))
 			game._new_run()
 			await _frames(140)
+		"glows":
+			# Every kind of ball effect at once: Imbue glows with their particles, and a Void ball.
+			game._new_run()
+			game.run.remove_ball(15)
+			game.run.add_special("void")
+			game.run.imbues = {1: "frosted", 2: "ember", 3: "starry", 4: "charged", 5: "gold", 6: "magnetic", 7: "prismatic", 9: "twin", 10: "vein", 11: "heavy", 12: "hollow"}
+			game._setup_table()
+			game._enter_aim()
+			var k := 0
+			for i in game.sim.count():
+				if game.sim.num[i] != 0:
+					game.sim.pos[i] = Vector2(170 + (k % 6) * 150, 140 + int(k / 6) * 160)
+					game.view.ball_nodes[i].position = game.sim.pos[i]
+					k += 1
+			game.view.refresh_glows(game.sim, game.run.imbues)
+			await _frames(90)
 		"settings":
 			game._show_settings(game._show_title)
 			await _frames(4)
