@@ -9,6 +9,8 @@ const SHOW_TIME := 6.0
 var panel: PanelContainer
 var heading: Label
 var body: Label
+var bonus: Label
+const NEON := Color(0.3, 1.0, 0.72)
 var time_left := 0.0
 
 
@@ -34,6 +36,14 @@ func setup(style: StyleBox, head_font: Font, body_font: Font) -> void:
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.custom_minimum_size = Vector2(WIDTH, 0)
 	v.add_child(body)
+	bonus = Label.new()
+	bonus.add_theme_font_override("font", head_font)
+	bonus.add_theme_font_size_override("font_size", 16)
+	bonus.add_theme_color_override("font_color", NEON)
+	bonus.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	bonus.custom_minimum_size = Vector2(WIDTH, 0)
+	bonus.visible = false
+	v.add_child(bonus)
 
 
 func show_term(term: String, at: Vector2) -> void:
@@ -41,9 +51,11 @@ func show_term(term: String, at: Vector2) -> void:
 
 
 ## Any heading and text, for things that are not glossary terms (a special ball).
-func show_text(title: String, text: String, at: Vector2, seconds: float = SHOW_TIME) -> void:
+func show_text(title: String, text: String, at: Vector2, seconds: float = SHOW_TIME, extra: String = "") -> void:
 	heading.text = title
 	body.text = text
+	bonus.text = extra
+	bonus.visible = extra != ""
 	panel.visible = true
 	panel.reset_size()
 	var screen := panel.get_viewport_rect().size

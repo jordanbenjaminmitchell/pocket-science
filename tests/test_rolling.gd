@@ -59,7 +59,11 @@ func _go() -> void:
 	fast.vel = Vector2(2000.0, 0.0)
 	fast.refresh_label()
 	fast.roll_to(Vector2(r * 3.0, 0.0))
-	check(angle_between(fast.basis, before_fast) <= BallNode.MAX_TURN_PER_FRAME + 0.001, "very fast balls do not strobe")
+	check(absf(angle_between(fast.basis, before_fast) - 3.0) < 0.01, "a fast ball turns exactly as far as it rolls")
+	check(fast.spin_blur > 0.99, "and blurs its print instead of strobing")
+	var gentle := make_ball(5)
+	gentle.roll_to(Vector2(r * 0.2, 0.0))
+	check(gentle.spin_blur == 0.0, "a slow ball stays sharp")
 
 	var cue := make_ball(0)
 	var plain := cue.basis

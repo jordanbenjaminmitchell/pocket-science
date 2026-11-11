@@ -126,6 +126,6 @@ func _go() -> void:
 	var i5: int = g.sim.index_of(5)
 	g.mouse_pos = g.view.base_position + g.sim.pos[i5] * g.TABLE_SCALE
 	await _frames(2)
-	check(not g.term_tip.panel.visible, "a plain ball shows nothing")
+	check(g.term_tip.panel.visible and g.term_tip.body.text.contains("points"), "a plain ball shows what it would score")
 	print("intro tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

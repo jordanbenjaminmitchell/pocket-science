@@ -9,8 +9,10 @@ const PAD := 1.18
 ## digit upright and the stripe level. Each ball has a number on both sides.
 const REST_BASIS := Basis(Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 1, 0))
 const REST_FLIPPED := Basis(Vector3(0, 0, -1), Vector3(-1, 0, 0), Vector3(0, 1, 0))
-## Above this much turn per frame the eye reads a spinning ball as turning backwards.
-const MAX_TURN_PER_FRAME := 0.85
+## The ball always turns exactly as far as it rolls. Past these turns per frame the
+## print blurs out (fully by BLUR_FULL), before the eye could read it as turning backwards.
+const BLUR_START := 0.35
+const BLUR_FULL := 1.1
 ## Over its last stretch a ball eases into a rest pose: how much of each radian
 ## rolled may go to correction, and how many radians from the stop that starts.
 const STEER_GAIN := 0.75
@@ -40,6 +42,7 @@ var emblem := ""          # special balls show this motif instead of a number
 var emblem_ink := Color.BLACK
 var aura: Node2D               # Imbued balls: ring and orbiting spark, drawn over the ball
 var aura_t := 0.0
+var spin_blur := 0.0
 
 
 func setup(n: int, f: Font, rng: RandomNumberGenerator) -> void:
@@ -122,13 +125,20 @@ func roll_to(p: Vector2, stop_in: float = -1.0, extra: Vector2 = Vector2.ZERO, t
 	if turn > 0.0001:
 		# View space: X right, Y up (screen y flipped), Z toward the camera.
 		var axis := Vector3(rolled.y, rolled.x, 0.0).normalized()
-		basis = Basis(axis, minf(turn, MAX_TURN_PER_FRAME)) * basis
+		basis = Basis(axis, turn) * basis
 		if stop_in >= 0.0 and number != 0:
 			_steer_to_rest(axis, stop_in / radius, d.length() / radius)
 	if twist != 0.0:
 		basis = Basis(Vector3(0, 0, 1), twist) * basis
 	basis = basis.orthonormalized()
+	_set_blur(smoothstep(BLUR_START, BLUR_FULL, turn))
 	_push()
+
+
+func _set_blur(b: float) -> void:
+	if absf(b - spin_blur) > 0.01 or (b == 0.0 and spin_blur != 0.0):
+		spin_blur = b
+		mat.set_shader_parameter("blur", b)
 
 
 ## Bends the roll toward the pose that, rolled the remaining distance, lands on a
@@ -195,6 +205,8 @@ func refresh_label() -> void:
 		_set_settled(0.0)
 	elif shown_settled < 1.0 and rest_tween == null:
 		_ease_to_rest()
+	if vel == Vector2.ZERO:
+		_set_blur(0.0)
 
 
 func _set_settled(s: float) -> void:
@@ -262,7 +274,7 @@ func _draw_number() -> void:
 		var fs := int(_digit_size() * DIGIT_SUPERSAMPLE)
 		var txt := str(shown)
 		var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		var col := Color(0.08, 0.08, 0.08, fade * smoothstep(0.2, 0.45, a.z) * (1.0 - settled))
+		var col := Color(0.08, 0.08, 0.08, fade * smoothstep(0.2, 0.45, a.z) * (1.0 - settled) * (1.0 - spin_blur))
 		# Foreshorten along the direction the disc is tipping away.
 		var radial := Vector2(a.x, -a.y)
 		var squash := 1.0

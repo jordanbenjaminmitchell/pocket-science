@@ -23,6 +23,19 @@ func set_state(rack: Array, down: Dictionary, iso: Dictionary) -> void:
 	queue_redraw()
 
 
+## The middle slice of a circle, |y| <= h * r: a stripe's band.
+static func _band(c: Vector2, r: float, h: float) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	var a0 := asin(h)
+	for k in 13:
+		var t := lerpf(-a0, a0, k / 12.0)
+		pts.append(c + Vector2(cos(t), sin(t)) * r)
+	for k in 13:
+		var t := lerpf(PI - a0, PI + a0, k / 12.0)
+		pts.append(c + Vector2(cos(t), sin(t)) * r)
+	return pts
+
+
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color(0.04, 0.035, 0.03), true)
 	draw_rect(Rect2(Vector2.ZERO, size), Color(0.3, 0.2, 0.12), false, 1.5)
@@ -38,15 +51,19 @@ func _draw() -> void:
 		var base := Catalog.ball_color(n)
 		var iso: String = imbues.get(n, "")
 		if iso != "":
-			draw_arc(c, r + 3.0, 0, TAU, 24, Color(Catalog.IMBUES[iso].color, a), 2.0)
+			draw_arc(c, r + 3.0, 0, TAU, 32, Color(Catalog.IMBUES[iso].color, a), 2.0, true)
 		elif n == 8:
-			draw_arc(c, r + 1.5, 0, TAU, 24, Color(1.0, 0.38, 0.32, a), 1.6)   # the ball to avoid
-		if Catalog.is_stripe(n):
-			draw_circle(c, r, Color(0.95, 0.93, 0.88, a))
-			draw_rect(Rect2(c + Vector2(-r * 0.92, -r * 0.5), Vector2(r * 1.84, r)), Color(base, a))
+			draw_arc(c, r + 1.5, 0, TAU, 32, Color(1.0, 0.38, 0.32, a), 1.6, true)   # the ball to avoid
+		var stripe := Catalog.is_stripe(n)
+		if stripe:
+			# White ball with a coloured band across the middle: big white caps top and
+			# bottom, so a stripe never reads as a solid even at this size.
+			draw_circle(c, r, Color(0.96, 0.94, 0.89, a), true, -1.0, true)
+			draw_colored_polygon(_band(c, r, 0.5), Color(base, a))
 		else:
-			draw_circle(c, r, Color(base, a))
-		draw_circle(c, r * 0.48, Color(0.97, 0.95, 0.9, a))
+			draw_circle(c, r, Color(base, a), true, -1.0, true)
+		draw_arc(c, r, 0, TAU, 32, Color(0, 0, 0, 0.35 * a), 1.0, true)
+		draw_circle(c, r * (0.4 if stripe else 0.48), Color(0.97, 0.95, 0.9, a), true, -1.0, true)
 		if font:
 			var t := str(n)
 			var w := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
@@ -56,6 +73,6 @@ func _draw() -> void:
 					IconArt.paint(self, bt.motif, c, r * 0.4 / 34.0, Color((bt.color as Color).darkened(0.3), a), Color(0.97, 0.95, 0.9, a), font, 1.2)
 			else:
 				draw_string(font, c + Vector2(-w * 0.5, 3.5), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.05, 0.05, 0.05, a))
-		draw_circle(c + Vector2(-r * 0.35, -r * 0.4), r * 0.22, Color(1, 1, 1, 0.35 * a))
+		draw_circle(c + Vector2(-r * 0.35, -r * 0.4), r * 0.22, Color(1, 1, 1, 0.35 * a), true, -1.0, true)
 		if down:
 			draw_line(c + Vector2(-r * 0.6, -r * 0.6), c + Vector2(r * 0.6, r * 0.6), Color(1, 0.85, 0.3, 0.5), 1.5)

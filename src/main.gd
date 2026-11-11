@@ -289,7 +289,7 @@ func _update_ball_hover() -> void:
 			hover_shown = false
 		return
 	# Above the finger on a touch screen, so the thumb does not cover it.
-	term_tip.show_text(info[0], info[1], mouse_pos - (Vector2(0, 70) if settings.touch_mode else Vector2.ZERO))
+	term_tip.show_text(info[0], info[1], mouse_pos - (Vector2(0, 70) if settings.touch_mode else Vector2.ZERO), TermTip.SHOW_TIME, info[2] if info.size() > 2 else "")
 	hover_shown = true
 
 
@@ -306,9 +306,48 @@ func _ball_info(n: int) -> Array:
 		parts.append("Imbued with %s: %s" % [Catalog.IMBUES[iso].name, Catalog.IMBUES[iso].desc])
 	if n == 8:
 		parts.append(Glossary.sentence("eight"))
-	if parts.is_empty():
-		return []
-	return [Catalog.ball_label(n), " ".join(parts)]
+	var pay := _ball_pay(n)
+	parts.push_front(pay[0])
+	return [Catalog.ball_label(n), " ".join(parts), pay[1]]
+
+
+## What sinking this one ball on its own would pay right now: the plain points, and
+## (in neon) what your Perks, Imbues and the hot pocket add on top.
+func _ball_pay(n: int) -> Array:
+	if run == null or sim == null:
+		return ["", ""]
+	var ctx := _shot_ctx()
+	ctx["is_break"] = false
+	var hot := int(ctx.get("hot_pocket", -1))
+	var corner := 0
+	for k in [0, 2, 3, 5]:
+		if k != hot:
+			corner = k
+			break
+	var ev := func(pk: int) -> Array:
+		return [{"type": "ball", "a": 0, "b": n}, {"type": "pocket", "a": n, "pocket": pk, "rails": 0, "at": Vector2.ZERO}]
+	var plain_ctx := ctx.duplicate()
+	plain_ctx["perks"] = []
+	plain_ctx["imbues"] = {}
+	plain_ctx["events"] = ev.call(corner)
+	var plain := Scorer.score(plain_ctx)
+	ctx["events"] = ev.call(corner)
+	var full := Scorer.score(ctx)
+	if n == 8 and int(full.get("penalty", 0)) > 0:
+		return ["Sinking it now costs %d points." % int(full.penalty), ""]
+	var line := "Worth %d. Sunk on its own right now: %d points." % [Catalog.ball_points(n), int(plain.total)]
+	var extra: Array = []
+	var gain := int(full.total) - int(plain.total)
+	if gain > 0:
+		extra.append("+%d from your Perks and Imbues (%d in all)" % [gain, int(full.total)])
+	if hot >= 0:
+		ctx["events"] = ev.call(hot)
+		var h := Scorer.score(ctx)
+		if int(h.total) > int(full.total):
+			extra.append("%d in the hot pocket" % int(h.total))
+	if int(full.get("money", 0)) > 0:
+		extra.append("+$%d" % int(full.money))
+	return [line, " · ".join(extra)]
 
 
 ## ================================================================ the Hustler's Kit
@@ -3529,21 +3568,30 @@ func _offer_card(i: int) -> Control:
 	var sh := _card_shell(accent, 196, 214)
 	var p: PanelContainer = sh[0]
 	var v: VBoxContainer = sh[1]
-	if item.type == "imbue":
-		v.add_child(_ball_icon(int(item.get("ball", 0)), iso_color(item.id)))
+	if TileArt.has_tile(item.type, item.id):
+		# Card art: a periodic-table tile carries the symbol, name, headline effect and kind.
+		var tile := TileArt.new().setup(item.type, item.id, int(item.get("ball", 0)))
+		tile.tooltip_text = "%s\n%s" % [title, kind]
+		v.add_child(tile)
+		if item.type == "imbue" and not item.has("ball"):
+			var pick := _label("You choose the ball", 12, accent)
+			v.add_child(pick)
 	else:
-		var ic := CenterContainer.new()
-		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		ic.add_child(IconArt.new().setup(("ball_" + item.id) if item.type == "ball" else item.id, F_SEMI, 40))
-		v.add_child(ic)
-	var t := _label(title, 18, Color.WHITE)
-	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	t.custom_minimum_size = Vector2(172, 0)
-	v.add_child(t)
-	var kind_l := _label(kind, 12, accent)
-	kind_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	kind_l.custom_minimum_size = Vector2(172, 0)
-	v.add_child(kind_l)
+		if item.type == "imbue":
+			v.add_child(_ball_icon(int(item.get("ball", 0)), iso_color(item.id)))
+		else:
+			var ic := CenterContainer.new()
+			ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			ic.add_child(IconArt.new().setup(("ball_" + item.id) if item.type == "ball" else item.id, F_SEMI, 40))
+			v.add_child(ic)
+		var t := _label(title, 18, Color.WHITE)
+		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		t.custom_minimum_size = Vector2(172, 0)
+		v.add_child(t)
+		var kind_l := _label(kind, 12, accent)
+		kind_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		kind_l.custom_minimum_size = Vector2(172, 0)
+		v.add_child(kind_l)
 	if not syn.is_empty():
 		var sl := _label("+ Synergy: " + ", ".join(syn), 12, Color(0.5, 1.0, 0.6))
 		sl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

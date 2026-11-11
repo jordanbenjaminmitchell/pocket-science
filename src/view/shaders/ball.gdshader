@@ -12,6 +12,7 @@ uniform vec4 glow_color : source_color = vec4(0.0);
 uniform float fade = 1.0;       // used for pocketing
 uniform int pattern = 0;        // special balls: 1 metal, 2 swirl, 3 glass, 4 speckle, 5 glow, 6 rings, 7 halves, 8 checks, 9 band
 uniform vec4 accent_color : source_color = vec4(1.0);
+uniform float blur = 0.0;       // 0 still .. 1 spinning too fast to see the print
 
 void fragment() {
 	vec2 q = (UV * 2.0 - 1.0) / radius_uv;
@@ -29,7 +30,7 @@ void fragment() {
 		vec3 white = vec3(0.97, 0.95, 0.9);
 		vec3 col = base_color.rgb;
 		if (stripe > 0.5) {
-			float band = smoothstep(0.64, 0.60, abs(l.z));
+			float band = smoothstep(0.52, 0.48, abs(l.z));   // white caps big enough to read at a glance
 			col = mix(white, base_color.rgb, band);
 		}
 		if (pattern == 1) {
@@ -60,6 +61,16 @@ void fragment() {
 			// Number discs on +X and -X.
 			float disc = smoothstep(0.80, 0.83, abs(l.x));
 			col = mix(col, white, disc * disc_alpha);
+		}
+		// A fast spin smears the print into its average colour, as a camera would see it,
+		// so the ball never strobes or looks like it turns backwards.
+		if (blur > 0.0 && is_cue < 0.5) {
+			vec3 avg = stripe > 0.5 ? mix(white, base_color.rgb, 0.5) : base_color.rgb;
+			if (pattern > 0) {
+				avg = mix(base_color.rgb, accent_color.rgb, 0.3);
+			}
+			avg = mix(avg, white, 0.12 * disc_alpha);
+			col = mix(col, avg, blur);
 		}
 		vec3 L = normalize(vec3(-0.35, 0.45, 0.82));
 		float diff = max(dot(n, L), 0.0);
