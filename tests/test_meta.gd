@@ -78,6 +78,30 @@ func _go() -> void:
 	fw.store_string(keep)
 	fw.close()
 	RunState.clear_save()
+	print("developer mode")
+	var dm := Meta.new()
+	check(not dm.locked_perks().is_empty() and not dm.cue_unlocked("black") and dm.handicap_cap() == 0 and dm.is_intro(), "a new profile starts with things locked")
+	dm.dev_mode = true
+	check(dm.locked_perks().is_empty() and dm.cue_unlocked("black") and dm.handicap_cap() == Catalog.HANDICAPS.size() - 1 and not dm.is_intro(), "Developer mode opens every Perk, cue and difficulty and skips the introduction")
+	dm.dev_mode = false
+	check(not dm.locked_perks().is_empty(), "and turning it off locks them again (nothing was earned)")
+	print("logo")
+	var logo := LogoArt.new()
+	root.add_child(logo)
+	logo.t = 0.0
+	var all_still := true
+	for k in 6:
+		all_still = all_still and logo.phase_of(k) == 0.0
+	check(all_still, "the electrons start where the icon shows them")
+	logo.t = 10.0
+	var phases := {}
+	for k in 6:
+		phases[snappedf(logo.phase_of(k), 0.001)] = true
+	check(phases.size() == 6, "they set off one after another, so no two are in step")
+	var p0 := logo.phase_of(0)
+	logo.t = 11.0
+	check(is_equal_approx(logo.phase_of(0) - p0, LogoArt.SPEED), "and all move at the same speed")
+	logo.queue_free()
 	print("meta tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 

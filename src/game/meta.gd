@@ -41,6 +41,7 @@ var lifetime_tables := 0        # tables cleared, all runs
 var seen_tips: Array = []       # one-time introductions already shown
 const INTRO_TABLES := 6         # until this many tables are cleared, systems arrive gradually
 var unlock_all := false   # bots, tests and dev builds
+var dev_mode := false     # the Developer mode setting: everything open
 
 
 func load_file() -> void:
@@ -73,8 +74,18 @@ func save_file() -> void:
 	c.save(PATH)
 
 
+## Everything open: for bots and tests, or with Developer mode on.
+func all_open() -> bool:
+	return unlock_all or dev_mode
+
+
+## The highest difficulty you may pick.
+func handicap_cap() -> int:
+	return Catalog.HANDICAPS.size() - 1 if all_open() else max_handicap
+
+
 func locked_perks() -> Array:
-	if unlock_all:
+	if all_open():
 		return []
 	var out: Array = []
 	for m in MILESTONES:
@@ -84,7 +95,7 @@ func locked_perks() -> Array:
 
 
 func cue_unlocked(id: String) -> bool:
-	if unlock_all or id == "maple":
+	if all_open() or id == "maple":
 		return true
 	for m in MILESTONES:
 		if MILESTONES[m].cue == id:
@@ -166,7 +177,7 @@ func on_table_cleared(run: RunState) -> Array:
 
 ## New players meet the game a piece at a time until they have cleared a few tables.
 func is_intro() -> bool:
-	return not unlock_all and lifetime_tables < INTRO_TABLES
+	return not all_open() and lifetime_tables < INTRO_TABLES
 
 
 ## True the first time a tip is asked for; it is then remembered as seen.

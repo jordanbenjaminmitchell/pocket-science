@@ -3206,17 +3206,17 @@ func _show_cue_select() -> void:
 	seed_input.custom_minimum_size = Vector2(300, 34)
 	seed_input.name = "seed_input"
 	seed_row.add_child(seed_input)
-	if meta.max_handicap > 0:
-		chosen_handicap = mini(chosen_handicap, meta.max_handicap)
+	if meta.handicap_cap() > 0:
+		chosen_handicap = mini(chosen_handicap, meta.handicap_cap())
 		var st: Dictionary = Catalog.HANDICAPS[chosen_handicap]
 		var down := _button("<", func():
 			chosen_handicap = maxi(0, chosen_handicap - 1)
 			_show_cue_select())
 		var up := _button(">", func():
-			chosen_handicap = mini(meta.max_handicap, chosen_handicap + 1)
+			chosen_handicap = mini(meta.handicap_cap(), chosen_handicap + 1)
 			_show_cue_select())
 		down.disabled = chosen_handicap == 0
-		up.disabled = chosen_handicap >= meta.max_handicap
+		up.disabled = chosen_handicap >= meta.handicap_cap()
 		seed_row.add_child(down)
 		seed_row.add_child(_label("Handicap %d: %s - %s" % [chosen_handicap, st.name, st.desc], 15, Color(1.0, 0.7, 0.45), F_SEMI))
 		seed_row.add_child(up)
@@ -3328,7 +3328,7 @@ func _new_run() -> void:
 		pending_seed = Records.daily_seed(pending_daily)
 	elif not meta.cue_unlocked(chosen_cue):
 		chosen_cue = "maple"
-	var handicap_now := 0 if pending_daily != "" else mini(chosen_handicap, meta.max_handicap)
+	var handicap_now := 0 if pending_daily != "" else mini(chosen_handicap, meta.handicap_cap())
 	run.start(pending_seed if pending_seed >= 0 else randi(), chosen_cue, handicap_now)
 	run.daily_key = pending_daily
 	# Dailies give everyone the full pool, so results are comparable.
@@ -3720,6 +3720,7 @@ func _apply_settings() -> void:
 	view.shake_scale = settings.shake
 	view.reduced_motion = settings.reduced_motion
 	_sync_touch_ui()
+	meta.dev_mode = settings.dev_mode
 	view.colorblind = settings.colorblind
 	guide_dirty = true
 	view.number_tags = settings.number_tags
@@ -3832,6 +3833,7 @@ func _show_settings(back: Callable) -> void:
 	_setting_toggle(grid, "Larger small text", "large_text")
 	_setting_toggle(grid, "Touch controls", "touch_mode")
 	_setting_toggle(grid, "Touch: fine aim (drag turns the shot)", "fine_drag")
+	_setting_toggle(grid, "Developer mode (unlock everything)", "dev_mode")
 	_setting_choice(grid, "Frame cap", "frame_cap", GameSettings.FRAME_CAPS.map(func(f): return "Unlimited" if f == 0 else "%d FPS" % f))
 	_setting_choice(grid, "Window size", "window_size", GameSettings.WINDOW_SIZES.map(func(w): return "%d × %d" % [w.x, w.y]))
 	_setting_choice(grid, "Screen layout", "screen_layout", GameSettings.SCREEN_LAYOUTS)

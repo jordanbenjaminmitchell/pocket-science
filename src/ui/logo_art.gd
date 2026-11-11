@@ -3,8 +3,9 @@ extends Control
 ## The Pocket Science mark, matching the app icon (tools/make_icon.gd): a carbon
 ## atom on a little pool table. The 8-ball is the nucleus inside three long,
 ## thin orbits 60 degrees apart, and the 1- to 5-balls and the cue ball are its 6 electrons, two
-## per orbit. Every electron is at the same point along its own orbit and they
-## all move at one speed, so they stay evenly spaced and always on their track.
+## per orbit. They start at the same point along their orbits, as on the icon, then
+## set off one after another in ball order and settle at one shared speed, so they
+## stay out of step with each other but always on their track.
 ## Electrons on the far half of an orbit pass behind the 8-ball.
 ## With a font set it also draws the wordmark beside the table.
 
@@ -19,6 +20,11 @@ const ELECTRON_R := 5.0
 const CUE := 6
 ## Table width over height.
 const TABLE_ASPECT := 1.75
+## Orbit speed in radians a second, the gap between electrons setting off, and how
+## long each takes to get up to speed.
+const SPEED := 0.6
+const START_GAP := 0.45
+const RAMP := 0.6
 
 var font: Font
 var t := 0.0
@@ -42,6 +48,17 @@ func _process(delta: float) -> void:
 	if animate:
 		t += delta
 		queue_redraw()
+
+
+## How far electron k has travelled: the 1-ball sets off first, each next ball
+## START_GAP seconds later, easing up to SPEED over RAMP seconds.
+func phase_of(k: int) -> float:
+	var s := t - START_GAP * (int(_numbers[k]) - 1) if _numbers.size() == 6 else t
+	if s <= 0.0:
+		return 0.0
+	if s < RAMP:
+		return SPEED * s * s / (2.0 * RAMP)
+	return SPEED * (s - RAMP * 0.5)
 
 
 ## Electron k's offset from the nucleus in icon units, and its orbit parameter.
@@ -77,16 +94,15 @@ func _draw() -> void:
 		var pts := _orbit(c, u, deg_to_rad(rot))
 		draw_polyline(pts, Color(0.01, 0.16, 0.11, 0.6), maxf(2.5, 4.4 * u), true)
 		draw_polyline(pts, gold, maxf(1.5, 2.6 * u), true)
-	var phase := t * 0.6
 	var num_font: Font = ThemeDB.fallback_font   # the wordmark is pixel art, numbers stay smooth
 	# Far electrons first, then the 8-ball, then near ones.
 	for k in 6:
-		if sin(_param(k, phase)) < 0.0:
-			_electron(num_font, c + _local(k, phase) * u, u, _numbers[k])
+		if sin(_param(k, phase_of(k))) < 0.0:
+			_electron(num_font, c + _local(k, phase_of(k)) * u, u, _numbers[k])
 	_eight_ball(num_font, c, NUCLEUS_R * u)
 	for k in 6:
-		if sin(_param(k, phase)) >= 0.0:
-			_electron(num_font, c + _local(k, phase) * u, u, _numbers[k])
+		if sin(_param(k, phase_of(k))) >= 0.0:
+			_electron(num_font, c + _local(k, phase_of(k)) * u, u, _numbers[k])
 	if font == null:
 		return
 	# Wordmark, sized to fit beside the table.
