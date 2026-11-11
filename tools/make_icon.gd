@@ -16,8 +16,11 @@ const C := 54.0
 const ORBIT_RX := 32.0
 const ORBIT_RY := 12.0
 const ORBIT_ANGLES := [15.0, 75.0, 135.0]
-## Where the electrons sit along each orbit, in degrees from the orbit's tip.
-const ELECTRON_AT := 36.0
+## Where each electron sits along its orbit, in degrees from the orbit's tip, as
+## [one side, the other] per orbit. Staggered so no two pairs line up in parallel;
+## every electron stays 18+ units from the others and clear of the 8-ball.
+## LogoArt.START_AT must match.
+const ELECTRON_AT := [[20.0, 215.0], [325.0, 160.0], [50.0, 190.0]]
 const BALL_R := 11.5
 const ELECTRON_R := 5.0
 ## Ball colours by number: light and dark.
@@ -43,9 +46,10 @@ var ELECTRONS := []
 
 func _initialize() -> void:
 	var spots := []
-	for a in ORBIT_ANGLES:
-		for side in [0.0, 180.0]:
-			var t := deg_to_rad(ELECTRON_AT + side)
+	for o in ORBIT_ANGLES.size():
+		var a: float = ORBIT_ANGLES[o]
+		for side in 2:
+			var t := deg_to_rad(ELECTRON_AT[o][side])
 			spots.append(Vector2(C, C) + Vector2(ORBIT_RX * cos(t), ORBIT_RY * sin(t)).rotated(deg_to_rad(a)))
 	spots.sort_custom(func(p, q): return fposmod((p - Vector2(C, C)).angle() + PI * 0.5, TAU) < fposmod((q - Vector2(C, C)).angle() + PI * 0.5, TAU))
 	for i in spots.size():

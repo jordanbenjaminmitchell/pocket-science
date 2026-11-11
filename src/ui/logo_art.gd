@@ -3,7 +3,7 @@ extends Control
 ## The Pocket Science mark, matching the app icon (tools/make_icon.gd): a carbon
 ## atom on a little pool table. The 8-ball is the nucleus inside three long,
 ## thin orbits 60 degrees apart, and the 1- to 5-balls and the cue ball are its 6 electrons, two
-## per orbit. They start at the same point along their orbits, as on the icon, then
+## per orbit. They start at staggered points along their orbits, as on the icon, then
 ## set off one after another in ball order and settle at one shared speed, so they
 ## stay out of step with each other but always on their track.
 ## Electrons on the far half of an orbit pass behind the 8-ball.
@@ -13,7 +13,9 @@ extends Control
 const ORBIT_RX := 32.0
 const ORBIT_RY := 12.0
 const ORBITS := [15.0, 75.0, 135.0]
-const ELECTRON_AT := 36.0
+## Each electron's starting point along its orbit in degrees, [orbit][side]; the same
+## as the app icon (tools/make_icon.gd ELECTRON_AT), staggered so the pairs never line up.
+const START_AT := [[20.0, 215.0], [325.0, 160.0], [50.0, 190.0]]
 const NUCLEUS_R := 11.5
 const ELECTRON_R := 5.0
 ## The sixth electron is the cue ball rather than the 6-ball.
@@ -64,7 +66,7 @@ func phase_of(k: int) -> float:
 ## Electron k's offset from the nucleus in icon units, and its orbit parameter.
 ## k / 2 picks the orbit, k % 2 the side.
 func _param(k: int, phase: float) -> float:
-	return deg_to_rad(ELECTRON_AT) + (k % 2) * PI + phase
+	return deg_to_rad(START_AT[k / 2][k % 2]) + phase
 
 
 func _local(k: int, phase: float) -> Vector2:
