@@ -56,17 +56,17 @@ func _go() -> void:
 	for id in Catalog.BOSSES:
 		check(Catalog.LABS.has(Catalog.BOSSES[id].lab), "%s uses a known lab" % id)
 	print("imbues")
-	check(score(h5, {"imbues": {5: "heavy"}}).total == 55, "weighted +40")
+	check(score(h5, {"imbues": {5: "heavy"}}).total == 30, "Weighted: the number counts ×4")
 	check(score(h5, {"imbues": {5: "gold"}}).money == 2, "gilded pays")
-	check(score(h5, {"imbues": {5: "twin"}}).total == 30, "twin doubles the value")
-	check(score(h5, {"imbues": {5: "vein"}}).total == 70, "vein adds Chain and value")
-	check(score(h5, {"imbues": {5: "glass"}}).total == 45, "glass ×3")
+	check(score(h5, {"imbues": {5: "twin"}}).total == 40, "twin doubles the value")
+	check(score(h5, {"imbues": {5: "vein"}}).total == 100, "vein adds Chain and value")
+	check(score(h5, {"imbues": {5: "glass"}}).total == 60, "glass ×3")
 	check(score(h5, {"imbues": {5: "ember"}}).heat_gain == 1, "ember adds Heat")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
 	var lucky := 0
 	for i in 3000:
-		if score(h5, {"imbues": {5: "lucky"}, "rng": rng}).total == 60:
+		if score(h5, {"imbues": {5: "lucky"}, "rng": rng}).total == 80:
 			lucky += 1
 	check(lucky > 850 and lucky < 1150, "lucky fires about 1 in 3 (%d/3000)" % lucky)
 	print("bounties")

@@ -241,9 +241,12 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		}
 		if facts.last_eight:
 			out.last_eight = true
-		var value := float(Catalog.ball_points(n)) + float(ctx.get("catalyst", 0.0))
+		var weight := (3 if perks.has("moneyball") else Catalog.NUMBER_WEIGHT)
+		if imbues.get(n, "") == "heavy":
+			weight = 4
+		var value := float(Catalog.ball_points(n, weight)) + float(ctx.get("catalyst", 0.0))
 		if perks.has("thinrack"):
-			value += 6.0 * int(ctx.get("removed", 0))
+			value += 9.0 * int(ctx.get("removed", 0))
 		var pre_chain := 0.0
 		var x := 1.0
 		var tags: Array = []
@@ -271,7 +274,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			out.hot_pots += 1
 		if solid:
 			if perks.has("steadyrun"):
-				value += 8.0 * mini(solid_run, 8)
+				value += 12.0 * mini(solid_run, 8)
 			if perks.has("solidsonly"):
 				x *= 2.0
 			if perks.has("stripesonly"):
@@ -301,7 +304,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			"gold":
 				money += 2
 			"heavy":
-				value += 40.0
+				pass   # Weighted: its number already counted ×4 above
 			"glass":
 				x *= 3.0
 				if rng != null and rng.randf() < 0.25:
@@ -310,17 +313,17 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 				out.heat_gain += 1
 			"vein":
 				pre_chain += 1.0
-				value += 20.0
+				value += 30.0
 			"lucky":
 				if rng != null and rng.randf() < 1.0 / 3.0:
 					x *= 4.0
 					tags.append("Lucky")
 			"twin":
-				value += float(Catalog.ball_points(n))
+				value += float(Catalog.ball_points(n, weight))
 			"frosted":
 				out.frost = true
 			"leaded":
-				value += 30.0
+				value += 45.0
 			"bounty":
 				money += heat
 			"starry":
@@ -337,11 +340,11 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 				out.new_hot = k
 				tags.append("New hot pocket")
 			"clock":
-				value += 6.0 * int(ctx.get("shots_taken", 0))
+				value += 9.0 * int(ctx.get("shots_taken", 0))
 			"coin":
 				money += int(coin_hits.get(n, 0))
 			"seed":
-				value += 10.0 * int((ctx.get("seed_growth", {}) as Dictionary).get(str(n), 0))
+				value += 15.0 * int((ctx.get("seed_growth", {}) as Dictionary).get(str(n), 0))
 				out.grown.append(n)
 			"clover":
 				if rng != null and rng.randf() < 0.25:
@@ -375,11 +378,11 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			"blackice":
 				pre_chain += 0.5
 			"slate":
-				value += 15.0
+				value += 25.0
 			"iron":
-				value += 20.0
+				value += 30.0
 			"magnet":
-				value -= 5.0
+				value -= 10.0
 			"cramped", "smoke", "tilted", "lights":
 				x *= 1.5
 			"two":
@@ -433,7 +436,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 	if boss == "nineball" or boss == "closing":
 		out.heat_gain += 1
 	if perks.has("catalyst"):
-		out.catalyst_gain = 0.5 * pots.size()
+		out.catalyst_gain = 0.75 * pots.size()
 	out.chain = chain
 	out.money = money
 	out.total = int(total)

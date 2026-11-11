@@ -16,11 +16,11 @@ func _initialize() -> void:
 	var c := base.duplicate()
 	c.events = [{"type": "ball", "a": 0, "b": 5}, {"type": "pocket", "a": 5, "pocket": 0, "rails": 0, "at": Vector2.ZERO}]
 	var r := Scorer.score(c)
-	check(r.scored and r.total == 15, "simple pot 5-ball = 15")
+	check(r.scored and r.total == 20, "simple pot 5-ball = 20")
 	c.hot_pocket = 0
 	c.heat = 3
 	r = Scorer.score(c)
-	check(r.total == 75, "Heat 3 (×2.5) then hot ×2 = 75 (%d)" % r.total)
+	check(r.total == 100, "Heat 3 (×2.5) then hot ×2 = 100 (%d)" % r.total)
 	c = base.duplicate()
 	c.events = [{"type": "ball", "a": 0, "b": 2}, {"type": "ball", "a": 2, "b": 9}, {"type": "pocket", "a": 9, "pocket": 1, "rails": 2, "at": Vector2.ZERO}, {"type": "pocket", "a": 2, "pocket": 1, "rails": 0, "at": Vector2.ZERO}]
 	c.perks = ["fusion", "bank"]
@@ -36,7 +36,7 @@ func _initialize() -> void:
 	c.events = [{"type": "rail", "a": 0}, {"type": "ball", "a": 0, "b": 8}, {"type": "pocket", "a": 8, "pocket": 3, "rails": 0, "at": Vector2.ZERO}]
 	c["objects"] = 1
 	r = Scorer.score(c)
-	check(r.total == 18, "a kick earns nothing; a last 8 pays its plain value (%d)" % r.total)
+	check(r.total == 26, "a kick earns nothing; a last 8 pays its plain value (%d)" % r.total)
 	c.erase("objects")
 
 	print("run rules")

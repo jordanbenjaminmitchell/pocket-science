@@ -259,7 +259,7 @@ func _refresh_bet() -> void:
 func _explain_first_score(l: Dictionary) -> void:
 	if not meta.first_time("score_explained"):
 		return
-	var text := "%s: worth %s (10 + its number) × Chain %s (this shot: ×1, +0.5 per ball already sunk) × Heat %s (this table: +0.5× per scoring shot) = %d points." % [
+	var text := "%s: worth %s (10 + twice its number) × Chain %s (this shot: ×1, +0.5 per ball already sunk) × Heat %s (this table: +0.5× per scoring shot) = %d points." % [
 		l.label, _fmt(l.value), _fmt(l.chain), _fmt(l.heat), int(l.points)]
 	if float(l.x) != 1.0:
 		text += " Bonuses such as the hot pocket or Perks multiplied it by %s." % _fmt(l.x)
@@ -3115,7 +3115,7 @@ func _show_help() -> void:
 [b]Guideline:[/b] The white line shows the cue ball's path, and the ring is where it will touch the object ball. After contact the line takes the colour of the ball you hit. A bold line ending in a [color=#ffd060]gold ring[/color] means that ball is going in, and the tag on the pocket shows what the sink is worth. Settings has a Prediction lines option that shows where every ball will land. The blue dashes show where the cue ball goes after contact, including spin.
 [b]Spin:[/b] Click the big cue ball (W/S/A/D). Hitting it high gives follow and low gives draw; the sides add english off the cushions.
 
-[b]Score:[/b] Each ball pays as it sinks: its [color=#ffd060]value[/color] (10 + its number) × [color=#60d0a0]Chain[/color] × [color=#ff9040]Heat[/color]. Bouncing off cushions and other balls earns nothing by itself.
+[b]Score:[/b] Each ball pays as it sinks: its [color=#ffd060]value[/color] (10 + twice its number) × [color=#60d0a0]Chain[/color] × [color=#ff9040]Heat[/color]. Bouncing off cushions and other balls earns nothing by itself.
 [color=#60d0a0]Chain[/color] starts at 1 each shot and rises by 0.5 for every ball you sink in that shot, so the last ball of a big shot pays the most.
 [color=#ff9040]Heat[/color] lasts all table. Every scoring shot adds 1, and each point of Heat adds ×0.5. A miss cuts your Heat in half.
 The [color=#ff8a30]hot pocket[/color] pays ×2. The black 8 also pays ×2.

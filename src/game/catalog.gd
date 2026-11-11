@@ -21,10 +21,10 @@ const EIGHT_PENALTY := 0.15
 ## and pays "money". "r": rarity 0 common, 1 uncommon, 2 rare.
 const PERKS := {
 	"elastic": {"name": "Loud Table", "r": 0, "cost": 4, "fam": "combo", "desc": "Every ball-to-ball hit adds +0.25 extra Chain."},
-	"odd": {"name": "Odd Balls", "r": 0, "cost": 4, "fam": "number", "desc": "Odd-numbered balls are worth +15.", "fx": {"when": "odd", "value": 15}},
+	"odd": {"name": "Odd Balls", "r": 0, "cost": 4, "fam": "number", "desc": "Odd-numbered balls are worth +25.", "fx": {"when": "odd", "value": 25}},
 	"even": {"name": "Even Money", "r": 0, "cost": 4, "fam": "number", "desc": "Even-numbered balls add +0.5 Chain as they sink.", "fx": {"when": "even", "chain": 0.5}},
 	"stripes": {"name": "Stripes", "r": 0, "cost": 5, "fam": "stripe", "desc": "Striped balls pay ×1.5.", "fx": {"when": "stripe", "x": 1.5}},
-	"solids": {"name": "Solids", "r": 0, "cost": 5, "fam": "solid", "desc": "Solid balls are worth +25.", "fx": {"when": "solid", "value": 25}},
+	"solids": {"name": "Solids", "r": 0, "cost": 5, "fam": "solid", "desc": "Solid balls are worth +35.", "fx": {"when": "solid", "value": 35}},
 	"corner": {"name": "Corner Man", "r": 0, "cost": 4, "fam": "pocket", "desc": "Corner pockets add +0.5 Chain as the ball sinks.", "fx": {"when": "corner", "chain": 0.5}},
 	"side": {"name": "Side Door", "r": 0, "cost": 5, "fam": "pocket", "desc": "Side pockets pay ×2.", "fx": {"when": "side", "x": 2.0}},
 	"lever": {"name": "Long Game", "r": 0, "cost": 5, "fam": "utility", "desc": "Long sinks (the ball travels 450+) pay ×1.5.", "fx": {"when": "long", "x": 1.5}},
@@ -36,7 +36,7 @@ const PERKS := {
 	"chain": {"name": "Daisy Chain", "r": 1, "cost": 7, "fam": "combo", "desc": "Combination sinks pay ×2.", "fx": {"when": "combo", "x": 2.0}},
 	"multi": {"name": "Cluster", "r": 1, "cost": 6, "fam": "combo", "desc": "Every ball after the first in a shot adds +1 Chain as it sinks.", "fx": {"when": "extra", "chain": 1.0}},
 	"streak": {"name": "Stoker", "r": 1, "cost": 7, "fam": "streak", "desc": "Shots that sink 2+ balls add +1 extra Heat."},
-	"heat": {"name": "Scorcher", "r": 1, "cost": 6, "fam": "pocket", "desc": "The hot pocket pays ×3 instead of ×2, and balls there are worth +20.", "fx": {"when": "hot", "value": 20}},
+	"heat": {"name": "Scorcher", "r": 1, "cost": 6, "fam": "pocket", "desc": "The hot pocket pays ×3 instead of ×2, and balls there are worth +30.", "fx": {"when": "hot", "value": 30}},
 	"power": {"name": "Power Stroke", "r": 1, "cost": 5, "fam": "cue", "desc": "Shots at 85%+ power start with +1 Chain."},
 	"finesse": {"name": "Soft Touch", "r": 1, "cost": 6, "fam": "cue", "desc": "Shots at 35% power or less pay ×2.", "fx": {"when": "soft", "x": 2.0}},
 	"prime": {"name": "Prime Cut", "r": 1, "cost": 6, "fam": "number", "desc": "Balls 2, 3, 5, 7, 11 and 13 pay ×1.5.", "fx": {"when": "prime", "x": 1.5}},
@@ -50,7 +50,7 @@ const PERKS := {
 	"trouble": {"name": "Trouble Maker", "r": 2, "cost": 7, "fam": "eight", "desc": "When the 8 sinks early, gain +3 Heat. You still lose the points."},
 	"solidgold": {"name": "Solid Gold", "r": 1, "cost": 6, "fam": "solid", "desc": "Each solid you sink pays $1.", "fx": {"when": "solid", "money": 1}},
 	"bedrock": {"name": "Bedrock", "r": 1, "cost": 8, "fam": "solid", "desc": "Shots that sink only solids add +1 Heat."},
-	"steadyrun": {"name": "Steady Run", "r": 1, "cost": 6, "fam": "solid", "desc": "Each solid sunk in a row on this table makes solids worth +8 more (max +64). A stripe resets it."},
+	"steadyrun": {"name": "Steady Run", "r": 1, "cost": 6, "fam": "solid", "desc": "Each solid sunk in a row on this table makes solids worth +12 more (max +96). A stripe resets it."},
 	"solidsonly": {"name": "Solids Only", "r": 2, "cost": 9, "fam": "solid", "desc": "Solids pay ×2, but stripes pay ×0.5."},
 	"lastsolid": {"name": "Last Solid", "r": 2, "cost": 8, "fam": "solid", "desc": "When you sink the only solid left on the table, it pays ×7.", "fx": {"when": "last_solid", "x": 7.0}},
 	"racing": {"name": "Racing Stripe", "r": 1, "cost": 6, "fam": "stripe", "desc": "Stripes sunk at 60% power or more pay ×2.", "fx": {"when": "stripe_hard", "x": 2.0}},
@@ -60,7 +60,7 @@ const PERKS := {
 	"laststripe": {"name": "Last Stripe", "r": 2, "cost": 8, "fam": "stripe", "desc": "When you sink the only stripe left on the table, it pays ×7.", "fx": {"when": "last_stripe", "x": 7.0}},
 	"gold": {"name": "Gold Rail", "r": 1, "cost": 7, "fam": "money", "desc": "Each sink pays $1 (max $3 per shot)."},
 	"entropy": {"name": "Long Night", "r": 1, "cost": 6, "fam": "streak", "desc": "Shots start with +0.25 Chain for every shot already taken on this table (max +3)."},
-	"catalyst": {"name": "Snowball", "r": 2, "cost": 8, "fam": "risk", "desc": "Every ball you sink makes all balls worth +0.5 for the rest of the run."},
+	"catalyst": {"name": "Snowball", "r": 2, "cost": 8, "fam": "risk", "desc": "Every ball you sink makes all balls worth +0.75 for the rest of the run."},
 	"golden": {"name": "First Blood", "r": 2, "cost": 8, "fam": "risk", "desc": "The first sink of every shot pays ×1.6.", "fx": {"when": "first", "x": 1.6}},
 	"supernova": {"name": "Clean Sweep", "r": 2, "cost": 9, "fam": "combo", "desc": "Shots that sink 3 or more balls pay ×2 on every sink.", "fx": {"when": "triple", "x": 2.0}},
 	"fusion": {"name": "Same Pocket", "r": 2, "cost": 8, "fam": "combo", "desc": "A second ball into the same pocket in one shot pays ×3.", "fx": {"when": "repeat_pocket", "x": 3.0}},
@@ -68,24 +68,24 @@ const PERKS := {
 	"insurance": {"name": "Insurance", "r": 2, "cost": 7, "fam": "utility", "desc": "The first 2 misses or scratches on each table cost no Chalk."},
 	"oracle": {"name": "Second Sight", "r": 2, "cost": 10, "fam": "utility", "desc": "Before each shot, see exactly what it will score, counting every ball it knocks in."},
 	"ricochet": {"name": "Ricochet", "r": 1, "cost": 6, "fam": "bank", "desc": "Every cushion a ball touches adds +0.25 extra Chain."},
-	"cushion": {"name": "Soft Rails", "r": 0, "cost": 4, "fam": "bank", "desc": "Bank sinks are worth +20.", "fx": {"when": "bank", "value": 20}},
+	"cushion": {"name": "Soft Rails", "r": 0, "cost": 4, "fam": "bank", "desc": "Bank sinks are worth +30.", "fx": {"when": "bank", "value": 30}},
 	"geometry": {"name": "Geometry", "r": 2, "cost": 8, "fam": "bank", "desc": "Bank sinks pay ×1.5.", "fx": {"when": "bank", "x": 1.5}},
 	"tracer": {"name": "Tracer", "r": 0, "cost": 4, "fam": "bank", "desc": "Every cushion the cue ball touches after contact adds +0.25 Chain."},
 	"boomerang": {"name": "Boomerang", "r": 1, "cost": 6, "fam": "cue", "desc": "If the cue ball finishes within 120 of where it started, every sink pays ×2.", "fx": {"when": "boomerang", "x": 2.0}},
 	"precision": {"name": "Clean Stroke", "r": 1, "cost": 6, "fam": "cue", "desc": "Clean sinks (straight from the cue ball, no cushions) add +1 Chain.", "fx": {"when": "clean", "chain": 1.0}},
 	"stun": {"name": "Stun Master", "r": 1, "cost": 6, "fam": "cue", "desc": "The cue ball loses 60% of its speed when it first hits a ball. Far fewer scratches."},
 	"afterburner": {"name": "Break Artist", "r": 0, "cost": 5, "fam": "cue", "desc": "Break shots start with +3 Chain."},
-	"domino": {"name": "Domino", "r": 0, "cost": 5, "fam": "combo", "desc": "Combination sinks are worth +30.", "fx": {"when": "combo", "value": 30}},
+	"domino": {"name": "Domino", "r": 0, "cost": 5, "fam": "combo", "desc": "Combination sinks are worth +45.", "fx": {"when": "combo", "value": 45}},
 	"rhythm": {"name": "Rhythm", "r": 0, "cost": 5, "fam": "streak", "desc": "Every third shot on a table pays ×2.", "fx": {"when": "third", "x": 2.0}},
-	"hothand": {"name": "Hot Hand", "r": 1, "cost": 6, "fam": "streak", "desc": "At Heat 3 or more, every ball is worth +20.", "fx": {"when": "heat3", "value": 20}},
+	"hothand": {"name": "Hot Hand", "r": 1, "cost": 6, "fam": "streak", "desc": "At Heat 3 or more, every ball is worth +30.", "fx": {"when": "heat3", "value": 30}},
 	"comeback": {"name": "Last Chalk", "r": 1, "cost": 6, "fam": "streak", "desc": "On your last Chalk, every sink pays ×2.", "fx": {"when": "last_chalk", "x": 2.0}},
 	"collector": {"name": "Grand Tour", "r": 2, "cost": 8, "fam": "pocket", "desc": "Shots start with +0.5 Chain for every different pocket used on this table."},
 	"migration": {"name": "Stay Hot", "r": 1, "cost": 6, "fam": "pocket", "desc": "The hot pocket only moves after a shot that does not score."},
 	"lowball": {"name": "Low Ball", "r": 0, "cost": 4, "fam": "solid", "desc": "Solid balls add +0.5 Chain as they sink.", "fx": {"when": "solid", "chain": 0.5}},
-	"highball": {"name": "High Roller", "r": 0, "cost": 4, "fam": "stripe", "desc": "Striped balls are worth +20.", "fx": {"when": "stripe", "value": 20}},
+	"highball": {"name": "High Roller", "r": 0, "cost": 4, "fam": "stripe", "desc": "Striped balls are worth +30.", "fx": {"when": "stripe", "value": 30}},
 	"fibonacci": {"name": "Lucky Numbers", "r": 1, "cost": 6, "fam": "number", "desc": "Balls 1, 2, 3, 5, 8 and 13 add +0.5 Chain as they sink.", "fx": {"when": "fib", "chain": 0.5}},
 	"rotation": {"name": "Rotation", "r": 1, "cost": 6, "fam": "number", "desc": "Sinking the lowest-numbered ball on the table pays ×1.5.", "fx": {"when": "lowest", "x": 1.5}},
-	"moneyball": {"name": "Money Ball", "r": 1, "cost": 7, "fam": "number", "desc": "Sinking the highest-numbered ball on the table pays ×2 and $2.", "fx": {"when": "highest", "x": 2.0, "money": 2}},
+	"moneyball": {"name": "Big Numbers", "r": 1, "cost": 7, "fam": "number", "desc": "Every ball's number counts ×3 instead of ×2."},
 	"thrift": {"name": "Thrift", "r": 0, "cost": 4, "fam": "money", "desc": "Clear a table with 2+ Chalk left: +$5."},
 	"venture": {"name": "Deep Pockets", "r": 1, "cost": 6, "fam": "money", "desc": "Shots start with +0.25 Chain for every $5 you hold (max +1.5)."},
 	"hunter": {"name": "Side Hustle", "r": 0, "cost": 4, "fam": "money", "desc": "Side bets you win pay double."},
@@ -104,7 +104,7 @@ const PERKS := {
 	"masse": {"name": "Massé Master", "r": 1, "cost": 6, "fam": "cue", "desc": "English bends the cue ball twice as much off cushions."},
 	"followthru": {"name": "Follow Through", "r": 0, "cost": 5, "fam": "cue", "desc": "Shots hit with follow add +0.5 Chain to every sink.", "fx": {"when": "follow_shot", "chain": 0.5}},
 	"drawartist": {"name": "Draw Artist", "r": 1, "cost": 6, "fam": "cue", "desc": "Shots hit with draw pay ×1.5.", "fx": {"when": "draw_shot", "x": 1.5}},
-	"thinrack": {"name": "Thin Rack", "r": 1, "cost": 6, "fam": "clear", "desc": "Every ball removed from your set makes all balls worth +6."},
+	"thinrack": {"name": "Thin Rack", "r": 1, "cost": 6, "fam": "clear", "desc": "Every ball removed from your set makes all balls worth +9."},
 	"missing": {"name": "Missing Piece", "r": 1, "cost": 7, "fam": "clear", "desc": "Shots start with +0.5 Chain for each ball removed from your set (max +3)."},
 	"cleanhouse": {"name": "Clean House", "r": 0, "cost": 3, "fam": "clear", "desc": "Removing a ball in the Pro Shop is free."},
 	"packrat": {"name": "Pack Rat", "r": 0, "cost": 4, "fam": "gear", "desc": "+1 Tool slot and +1 Consumable slot."},
@@ -158,17 +158,17 @@ const WHEN_COLORS := {"setup": Color(0.45, 0.7, 1.0), "pause": Color(0.45, 0.95,
 const IMBUES := {
 	"spark": {"name": "Spark", "cost": 4, "color": Color(0.3, 1.0, 0.85), "desc": "+1 Chain every time this ball is struck."},
 	"gold": {"name": "Gilded", "cost": 4, "color": Color(1.0, 0.82, 0.3), "desc": "Pays $2 when sunk."},
-	"heavy": {"name": "Weighted", "cost": 3, "color": Color(0.75, 0.78, 0.85), "desc": "Worth +40 when sunk."},
+	"heavy": {"name": "Weighted", "cost": 3, "color": Color(0.75, 0.78, 0.85), "desc": "This ball's number counts ×4."},
 	"glass": {"name": "Hairline", "cost": 5, "color": Color(0.7, 0.85, 1.0), "desc": "Pays ×3 when sunk, but 1 in 4 times the coating cracks off."},
 	"ember": {"name": "Kindled", "cost": 5, "color": Color(1.0, 0.45, 0.2), "desc": "+1 Heat when sunk."},
-	"vein": {"name": "Vein", "cost": 5, "color": Color(1.0, 0.55, 0.95), "desc": "+1 Chain as this ball sinks, and it is worth +20."},
+	"vein": {"name": "Vein", "cost": 5, "color": Color(1.0, 0.55, 0.95), "desc": "+1 Chain as this ball sinks, and it is worth +30."},
 	"lucky": {"name": "Lucky", "cost": 4, "color": Color(0.35, 0.95, 0.5), "desc": "1 in 3 chance to pay ×4 when sunk."},
 	"frosted": {"name": "Frosted", "cost": 4, "color": Color(0.7, 0.92, 1.0), "desc": "When it sinks, your next miss on this table keeps your Heat."},
 	"magnetic": {"name": "Magnetic", "cost": 5, "color": Color(1.0, 0.35, 0.35), "desc": "Pockets pull this ball in."},
 	"charged": {"name": "Charged", "cost": 4, "color": Color(1.0, 1.0, 0.45), "desc": "+0.5 Chain every time this ball touches a cushion."},
 	"prismatic": {"name": "Resonant", "cost": 4, "color": Color(0.95, 0.6, 1.0), "desc": "Every ball it touches in a shot adds +0.25 Chain."},
 	"hollow": {"name": "Hollow", "cost": 3, "color": Color(0.85, 0.85, 0.75), "desc": "Half the weight: it flies further when struck."},
-	"leaded": {"name": "Leaded", "cost": 4, "color": Color(0.5, 0.55, 0.65), "desc": "Twice as heavy, and worth +30."},
+	"leaded": {"name": "Leaded", "cost": 4, "color": Color(0.5, 0.55, 0.65), "desc": "Twice as heavy, and worth +45."},
 	"bounty": {"name": "Bounty", "cost": 4, "color": Color(0.6, 1.0, 0.4), "desc": "Pays $1 for every point of Heat when it sinks."},
 	"starry": {"name": "Starry", "cost": 5, "color": Color(1.0, 0.85, 0.55), "desc": "Every ball after it in the same shot gets +0.5 Chain."},
 	"twin": {"name": "Twin", "cost": 4, "color": Color(0.5, 0.65, 1.0), "desc": "This ball's value counts twice."},
@@ -178,30 +178,30 @@ const IMBUES := {
 ## count as neither solids nor stripes unless they say so. Each has its own
 ## finish ("pattern" in the ball shader), colours and emblem.
 const BALL_TYPES := {
-	"gold": {"name": "Gold", "cost": 6, "value": 30, "color": Color(1.0, 0.78, 0.2), "accent": Color(1.0, 0.96, 0.62), "pattern": 1, "motif": "t 0 0 34 $", "desc": "Worth 30, and pays $1 for every cushion it touched before sinking."},
+	"gold": {"name": "Gold", "cost": 6, "value": 45, "color": Color(1.0, 0.78, 0.2), "accent": Color(1.0, 0.96, 0.62), "pattern": 1, "motif": "t 0 0 34 $", "desc": "Worth 45, and pays $1 for every cushion it touched before sinking."},
 	"void": {"name": "Void", "cost": 7, "value": 0, "color": Color(0.12, 0.03, 0.2), "accent": Color(0.62, 0.25, 1.0), "pattern": 2, "motif": "c 0 0 26;c 0 0 14;C 0 0 5", "desc": "Worth nothing itself, but every other ball in the same shot pays ×2."},
-	"glass": {"name": "Glass", "cost": 6, "value": 20, "color": Color(0.7, 0.9, 1.0), "accent": Color(1.0, 1.0, 1.0), "pattern": 3, "motif": "o 0 -30 22 -8 0 30 -22 -8 0 -30", "desc": "Pays ×3 if it sinks, but anything that hits it hard shatters it, and it leaves your set."},
-	"iron": {"name": "Iron", "cost": 5, "value": 45, "color": Color(0.45, 0.47, 0.52), "accent": Color(0.78, 0.8, 0.85), "pattern": 1, "motif": "P -26 -14 26 -14 18 0 10 0 14 18 -14 18 -10 0 -18 0", "desc": "Twice as heavy. Worth 45."},
-	"feather": {"name": "Feather", "cost": 4, "value": 25, "color": Color(0.95, 0.95, 0.98), "accent": Color(0.55, 0.7, 1.0), "pattern": 4, "motif": "l -24 26 22 -22;o -14 16 -12 -10 18 -24 8 6 -14 16", "desc": "A quarter the weight: it barely moves other balls, and adds +0.5 Chain as it sinks."},
-	"ember": {"name": "Kindled", "cost": 5, "value": 22, "color": Color(0.9, 0.3, 0.05), "accent": Color(1.0, 0.8, 0.2), "pattern": 5, "motif": "P 0 -32 14 -10 18 8 8 26 -8 26 -18 8 -12 -6 -6 4", "desc": "The pocket it sinks into becomes the hot pocket."},
-	"frost": {"name": "Frost", "cost": 5, "value": 22, "color": Color(0.55, 0.85, 1.0), "accent": Color(1.0, 1.0, 1.0), "pattern": 6, "motif": "l 0 -30 0 30;l -26 -15 26 15;l -26 15 26 -15", "desc": "Any ball that touches it stops dead."},
-	"magnet": {"name": "Magnet", "cost": 5, "value": 20, "color": Color(0.85, 0.15, 0.15), "accent": Color(0.2, 0.35, 0.95), "pattern": 7, "motif": "a 0 -4 20 0 180;l -20 -4 -20 -26;l 20 -4 20 -26", "desc": "Pulls nearby rolling balls towards itself."},
-	"prism": {"name": "Prism", "cost": 5, "value": 22, "color": Color(0.9, 0.5, 0.9), "accent": Color(0.4, 0.95, 0.9), "pattern": 8, "motif": "o 0 -28 26 18 -26 18 0 -28", "desc": "Counts as both a solid and a stripe."},
+	"glass": {"name": "Glass", "cost": 6, "value": 30, "color": Color(0.7, 0.9, 1.0), "accent": Color(1.0, 1.0, 1.0), "pattern": 3, "motif": "o 0 -30 22 -8 0 30 -22 -8 0 -30", "desc": "Pays ×3 if it sinks, but anything that hits it hard shatters it, and it leaves your set."},
+	"iron": {"name": "Iron", "cost": 5, "value": 70, "color": Color(0.45, 0.47, 0.52), "accent": Color(0.78, 0.8, 0.85), "pattern": 1, "motif": "P -26 -14 26 -14 18 0 10 0 14 18 -14 18 -10 0 -18 0", "desc": "Twice as heavy. Worth 70."},
+	"feather": {"name": "Feather", "cost": 4, "value": 40, "color": Color(0.95, 0.95, 0.98), "accent": Color(0.55, 0.7, 1.0), "pattern": 4, "motif": "l -24 26 22 -22;o -14 16 -12 -10 18 -24 8 6 -14 16", "desc": "A quarter the weight: it barely moves other balls, and adds +0.5 Chain as it sinks."},
+	"ember": {"name": "Ember", "cost": 5, "value": 35, "color": Color(0.9, 0.3, 0.05), "accent": Color(1.0, 0.8, 0.2), "pattern": 5, "motif": "P 0 -32 14 -10 18 8 8 26 -8 26 -18 8 -12 -6 -6 4", "desc": "The pocket it sinks into becomes the hot pocket."},
+	"frost": {"name": "Frost", "cost": 5, "value": 35, "color": Color(0.55, 0.85, 1.0), "accent": Color(1.0, 1.0, 1.0), "pattern": 6, "motif": "l 0 -30 0 30;l -26 -15 26 15;l -26 15 26 -15", "desc": "Any ball that touches it stops dead."},
+	"magnet": {"name": "Magnet", "cost": 5, "value": 30, "color": Color(0.85, 0.15, 0.15), "accent": Color(0.2, 0.35, 0.95), "pattern": 7, "motif": "a 0 -4 20 0 180;l -20 -4 -20 -26;l 20 -4 20 -26", "desc": "Pulls nearby rolling balls towards itself."},
+	"prism": {"name": "Prism", "cost": 5, "value": 35, "color": Color(0.9, 0.5, 0.9), "accent": Color(0.4, 0.95, 0.9), "pattern": 8, "motif": "o 0 -28 26 18 -26 18 0 -28", "desc": "Counts as both a solid and a stripe."},
 	"wild": {"name": "Wild", "cost": 5, "value": 0, "color": Color(0.45, 0.1, 0.6), "accent": Color(1.0, 0.85, 0.2), "pattern": 9, "motif": "P 0 -32 8 -8 32 -8 12 6 20 30 0 14 -20 30 -12 6 -32 -8 -8 -8 0 -32", "desc": "Copies the number of the last ball you sank, and counts as that number."},
-	"clock": {"name": "Clock", "cost": 5, "value": 10, "color": Color(0.1, 0.6, 0.6), "accent": Color(0.9, 1.0, 1.0), "pattern": 6, "motif": "c 0 0 26;l 0 0 0 -18;l 0 0 12 6", "desc": "Worth 10, plus 6 for every shot already taken on this table."},
-	"coin": {"name": "Coin", "cost": 4, "value": 18, "color": Color(0.95, 0.75, 0.2), "accent": Color(0.65, 0.45, 0.1), "pattern": 7, "motif": "c 0 0 26;c 0 0 17", "desc": "Pays $1 every time the cue ball hits it in a scoring shot."},
-	"bomb": {"name": "Bomb", "cost": 6, "value": 20, "color": Color(0.12, 0.12, 0.14), "accent": Color(1.0, 0.3, 0.2), "pattern": 4, "motif": "C 0 6 20;l 10 -12 20 -26;C 22 -28 4", "desc": "When it sinks, the nearest ball (never the 8) sinks with it."},
-	"seed": {"name": "Seed", "cost": 4, "value": 20, "color": Color(0.35, 0.7, 0.25), "accent": Color(0.85, 1.0, 0.5), "pattern": 0, "motif": "l 0 30 0 -6;o 0 -6 -18 -24 -2 -20 0 -6;o 0 -6 18 -24 2 -20 0 -6", "desc": "Worth 20, and 10 more every time you sink it this run."},
-	"clover": {"name": "Clover", "cost": 5, "value": 20, "color": Color(0.15, 0.62, 0.3), "accent": Color(0.7, 1.0, 0.7), "pattern": 4, "motif": "C -10 -10 10;C 10 -10 10;C -10 10 10;C 10 10 10;l 0 10 8 30", "desc": "No shot it is part of can cost Chalk."},
-	"star": {"name": "Star", "cost": 5, "value": 20, "color": Color(0.98, 0.95, 0.75), "accent": Color(1.0, 0.82, 0.1), "pattern": 5, "motif": "o 0 -32 8 -8 32 -8 12 6 20 30 0 14 -20 30 -12 6 -32 -8 -8 -8 0 -32", "desc": "Comes off cushions with no loss of speed, and adds +1 Chain as it sinks."},
-	"heart": {"name": "Heart", "cost": 6, "value": 20, "color": Color(1.0, 0.4, 0.6), "accent": Color(1.0, 0.82, 0.9), "pattern": 0, "motif": "P 0 28 -26 2 -26 -14 -14 -24 0 -12 14 -24 26 -14 26 2", "desc": "If it is the only ball left on the table when you sink it, +1 Chalk."},
+	"clock": {"name": "Clock", "cost": 5, "value": 15, "color": Color(0.1, 0.6, 0.6), "accent": Color(0.9, 1.0, 1.0), "pattern": 6, "motif": "c 0 0 26;l 0 0 0 -18;l 0 0 12 6", "desc": "Worth 15, plus 9 for every shot already taken on this table."},
+	"coin": {"name": "Coin", "cost": 4, "value": 30, "color": Color(0.95, 0.75, 0.2), "accent": Color(0.65, 0.45, 0.1), "pattern": 7, "motif": "c 0 0 26;c 0 0 17", "desc": "Pays $1 every time the cue ball hits it in a scoring shot."},
+	"bomb": {"name": "Bomb", "cost": 6, "value": 30, "color": Color(0.12, 0.12, 0.14), "accent": Color(1.0, 0.3, 0.2), "pattern": 4, "motif": "C 0 6 20;l 10 -12 20 -26;C 22 -28 4", "desc": "When it sinks, the nearest ball (never the 8) sinks with it."},
+	"seed": {"name": "Seed", "cost": 4, "value": 30, "color": Color(0.35, 0.7, 0.25), "accent": Color(0.85, 1.0, 0.5), "pattern": 0, "motif": "l 0 30 0 -6;o 0 -6 -18 -24 -2 -20 0 -6;o 0 -6 18 -24 2 -20 0 -6", "desc": "Worth 30, and 15 more every time you sink it this run."},
+	"clover": {"name": "Clover", "cost": 5, "value": 30, "color": Color(0.15, 0.62, 0.3), "accent": Color(0.7, 1.0, 0.7), "pattern": 4, "motif": "C -10 -10 10;C 10 -10 10;C -10 10 10;C 10 10 10;l 0 10 8 30", "desc": "No shot it is part of can cost Chalk."},
+	"star": {"name": "Star", "cost": 5, "value": 30, "color": Color(0.98, 0.95, 0.75), "accent": Color(1.0, 0.82, 0.1), "pattern": 5, "motif": "o 0 -32 8 -8 32 -8 12 6 20 30 0 14 -20 30 -12 6 -32 -8 -8 -8 0 -32", "desc": "Comes off cushions with no loss of speed, and adds +1 Chain as it sinks."},
+	"heart": {"name": "Heart", "cost": 6, "value": 30, "color": Color(1.0, 0.4, 0.6), "accent": Color(1.0, 0.82, 0.9), "pattern": 0, "motif": "P 0 28 -26 2 -26 -14 -14 -24 0 -12 14 -24 26 -14 26 2", "desc": "If it is the only ball left on the table when you sink it, +1 Chalk."},
 	"dice": {"name": "Dice", "cost": 4, "value": 0, "color": Color(0.96, 0.96, 0.96), "accent": Color(0.15, 0.15, 0.2), "pattern": 0, "motif": "C -14 -14 5;C 14 -14 5;C 0 0 5;C -14 14 5;C 14 14 5", "desc": "Shows a new number from 1 to 15 every shot, and counts as that number."},
-	"moon": {"name": "Moon", "cost": 5, "value": 24, "color": Color(0.75, 0.78, 0.86), "accent": Color(0.3, 0.32, 0.46), "pattern": 7, "motif": "a 0 0 24 60 300;a 12 0 20 100 260", "desc": "Corner pockets reject it. Pays ×2 in a side pocket."},
-	"sun": {"name": "Sun", "cost": 5, "value": 24, "color": Color(1.0, 0.6, 0.1), "accent": Color(1.0, 0.92, 0.35), "pattern": 5, "motif": "C 0 0 12;l 0 -30 0 -20;l 0 20 0 30;l -30 0 -20 0;l 20 0 30 0;l -21 -21 -14 -14;l 14 14 21 21;l -21 21 -14 14;l 14 -14 21 -21", "desc": "Side pockets reject it. Pays ×2 in a corner pocket."},
-	"anchor": {"name": "Anchor", "cost": 6, "value": 70, "color": Color(0.1, 0.18, 0.4), "accent": Color(0.6, 0.7, 0.9), "pattern": 1, "motif": "l 0 -24 0 26;c 0 -29 5;a 0 4 22 20 160;l -12 -14 12 -14", "desc": "Only the cue ball can move it: other balls bounce off it like a post. Worth 70."},
-	"eraser": {"name": "Eraser", "cost": 3, "value": 10, "color": Color(1.0, 0.55, 0.6), "accent": Color(0.4, 0.5, 1.0), "pattern": 9, "motif": "o -26 8 6 -24 26 -4 -6 28 -26 8;l -10 -8 10 12", "desc": "When it sinks it pays $4, and both it and the last ball it touched leave your set (never the 8)."},
-	"echo": {"name": "Echo", "cost": 6, "value": 20, "color": Color(0.55, 0.3, 0.85), "accent": Color(0.9, 0.8, 1.0), "pattern": 6, "motif": "C -14 0 7;a -14 0 20 -50 50;a -14 0 32 -40 40", "desc": "The first time it sinks on a table, it comes back to the foot spot."},
-	"comet": {"name": "Comet", "cost": 5, "value": 28, "color": Color(0.2, 0.5, 1.0), "accent": Color(0.9, 0.95, 1.0), "pattern": 9, "motif": "C 14 -14 10;l 4 -4 -30 30;l 8 4 -20 30;l -4 -8 -30 20", "desc": "Feels no cloth friction until it first hits a cushion."},
+	"moon": {"name": "Moon", "cost": 5, "value": 35, "color": Color(0.75, 0.78, 0.86), "accent": Color(0.3, 0.32, 0.46), "pattern": 7, "motif": "a 0 0 24 60 300;a 12 0 20 100 260", "desc": "Corner pockets reject it. Pays ×2 in a side pocket."},
+	"sun": {"name": "Sun", "cost": 5, "value": 35, "color": Color(1.0, 0.6, 0.1), "accent": Color(1.0, 0.92, 0.35), "pattern": 5, "motif": "C 0 0 12;l 0 -30 0 -20;l 0 20 0 30;l -30 0 -20 0;l 20 0 30 0;l -21 -21 -14 -14;l 14 14 21 21;l -21 21 -14 14;l 14 -14 21 -21", "desc": "Side pockets reject it. Pays ×2 in a corner pocket."},
+	"anchor": {"name": "Anchor", "cost": 6, "value": 105, "color": Color(0.1, 0.18, 0.4), "accent": Color(0.6, 0.7, 0.9), "pattern": 1, "motif": "l 0 -24 0 26;c 0 -29 5;a 0 4 22 20 160;l -12 -14 12 -14", "desc": "Only the cue ball can move it: other balls bounce off it like a post. Worth 105."},
+	"eraser": {"name": "Eraser", "cost": 3, "value": 15, "color": Color(1.0, 0.55, 0.6), "accent": Color(0.4, 0.5, 1.0), "pattern": 9, "motif": "o -26 8 6 -24 26 -4 -6 28 -26 8;l -10 -8 10 12", "desc": "When it sinks it pays $4, and both it and the last ball it touched leave your set (never the 8)."},
+	"echo": {"name": "Echo", "cost": 6, "value": 30, "color": Color(0.55, 0.3, 0.85), "accent": Color(0.9, 0.8, 1.0), "pattern": 6, "motif": "C -14 0 7;a -14 0 20 -50 50;a -14 0 32 -40 40", "desc": "The first time it sinks on a table, it comes back to the foot spot."},
+	"comet": {"name": "Comet", "cost": 5, "value": 40, "color": Color(0.2, 0.5, 1.0), "accent": Color(0.9, 0.95, 1.0), "pattern": 9, "motif": "C 14 -14 10;l 4 -4 -30 30;l 8 4 -20 30;l -4 -8 -30 20", "desc": "Feels no cloth friction until it first hits a cushion."},
 }
 
 ## Which special type each ball number above 15 is, for this run. RunState keeps
@@ -291,20 +291,20 @@ const BOSSES := {
 	"frozen": {"name": "Frozen Lake", "tier": 1, "lab": "cryo", "anomaly": "", "desc": "Slick cloth, long rolls. On this table, every cushion a ball touches adds +0.5 Chain."},
 	"spring_st": {"name": "Spring Street", "tier": 1, "lab": "spring", "anomaly": "sealed", "desc": "Lively rails, side pockets boarded up. On this table, bank sinks pay ×2."},
 	"drift": {"name": "The Drift", "tier": 1, "lab": "current", "anomaly": "", "desc": "Rolling balls drift right. Every sink adds +1 Chain."},
-	"slate": {"name": "Old Slate", "tier": 1, "lab": "dense", "anomaly": "", "desc": "Heavy cloth stops balls fast. Every ball is worth +15."},
+	"slate": {"name": "Old Slate", "tier": 1, "lab": "dense", "anomaly": "", "desc": "Heavy cloth stops balls fast. Every ball is worth +25."},
 	"cramped": {"name": "The Back Room", "tier": 1, "lab": "standard", "anomaly": "tight", "desc": "Pockets 12% narrower, but every sink pays ×1.5."},
 	"parlor": {"name": "Pinball Parlor", "tier": 2, "lab": "pinball", "anomaly": "", "desc": "Four bumpers. On this table, every bumper hit adds +1 Chain."},
 	"posts": {"name": "Twin Posts", "tier": 2, "lab": "cyclotron", "anomaly": "", "desc": "Two bumpers guard the middle. On this table, every bumper hit adds +1 Chain."},
 	"sinkhole": {"name": "The Sinkhole", "tier": 2, "lab": "gravity", "anomaly": "", "desc": "The centre pulls moving balls in. Chain starts at 2."},
 	"hump": {"name": "The Hump", "tier": 2, "lab": "repulsor", "anomaly": "", "desc": "A rise in the cloth pushes balls away. On this table, bank sinks pay ×2."},
 	"nineball": {"name": "Rotation Night", "tier": 2, "lab": "standard", "anomaly": "rotation", "desc": "Hit the lowest ball first or the shot scores nothing. Legal sinks add +1 Heat."},
-	"magnet": {"name": "The Magnet Room", "tier": 2, "lab": "magnetlab", "anomaly": "", "desc": "Pockets pull balls in, but every ball is worth 5 less."},
+	"magnet": {"name": "The Magnet Room", "tier": 2, "lab": "magnetlab", "anomaly": "", "desc": "Pockets pull balls in, but every ball is worth 10 less."},
 	"smoke": {"name": "The Smoke Room", "tier": 2, "lab": "dense", "anomaly": "nospin", "desc": "Stale air and a dead tip: the cue ball takes no spin here. Every sink pays ×1.5."},
 	"blackice": {"name": "Black Ice", "tier": 3, "lab": "cryo", "anomaly": "blackice", "desc": "Almost no friction and lively cushions. Every sink adds +0.5 Chain."},
 	"tilted": {"name": "The Tilted Table", "tier": 3, "lab": "standard", "anomaly": "tilt", "desc": "The table slopes, and a dotted line shows where balls will really roll. Every sink pays ×1.5."},
 	"two": {"name": "Two Pockets", "tier": 3, "lab": "spring", "anomaly": "onepocket", "desc": "Only the hot pocket and its diagonal opposite score, and sinks there pay ×2."},
 	"closing": {"name": "Closing Time", "tier": 3, "lab": "standard", "anomaly": "shrink", "desc": "Every pocket narrows after each shot. Heat builds twice as fast."},
-	"iron": {"name": "The Iron Rack", "tier": 3, "lab": "dense", "anomaly": "lead", "desc": "Object balls are 60% heavier. Every ball is worth +20."},
+	"iron": {"name": "The Iron Rack", "tier": 3, "lab": "dense", "anomaly": "lead", "desc": "Object balls are 60% heavier. Every ball is worth +30."},
 	"lights": {"name": "Lights Out", "tier": 3, "lab": "current", "anomaly": "blind", "desc": "With the lights out, no pocket runs hot. Every sink pays ×1.5."},
 	"hustler": {"name": "The Hustler", "tier": 3, "lab": "magnetlab", "anomaly": "heavycue", "desc": "A heavy cue ball, and the house skims 15% of every sink."},
 	"elements": {"name": "The Element Table", "tier": 9, "lab": "element", "anomaly": "elements", "desc": "Each corner pocket holds an element. Sink them in the right order to fuse multipliers. A miss clears the mix."},
@@ -365,15 +365,15 @@ const HANDICAPS := [
 
 ## The nine-table tour. "boss" fixes a table; otherwise one is drawn from "tier".
 const TABLES := [
-	{"target": 40, "boss": "local"},
-	{"target": 95, "tier": 1},
-	{"target": 180, "tier": 1},
-	{"target": 270, "tier": 2},
-	{"target": 380, "boss": "elements"},
-	{"target": 480, "tier": 2},
-	{"target": 590, "tier": 3},
-	{"target": 760, "tier": 3},
-	{"target": 960, "boss": "final"},
+	{"target": 60, "boss": "local"},
+	{"target": 135, "tier": 1},
+	{"target": 260, "tier": 1},
+	{"target": 390, "tier": 2},
+	{"target": 550, "boss": "elements"},
+	{"target": 690, "tier": 2},
+	{"target": 850, "tier": 3},
+	{"target": 1100, "tier": 3},
+	{"target": 1380, "boss": "final"},
 ]
 
 
@@ -396,11 +396,16 @@ static func synergies(id: String, owned: Array) -> Array:
 	return owned.filter(func(o): return o != id and PERKS[o].get("fam", "") == fam)
 
 
-static func ball_points(n: int) -> int:
+## A ball's value: 10 plus its number times the weight (2, raised by Big Numbers
+## and the Weighted Imbue). Special balls have their own value.
+const NUMBER_WEIGHT := 2
+
+
+static func ball_points(n: int, weight: int = NUMBER_WEIGHT) -> int:
 	var k := kind_of(n)
 	if k == "dice" or k == "wild":
-		return 10 + int(faces.get(n, 0))
-	return int(BALL_TYPES[k].value) if k != "" else 10 + n
+		return 10 + weight * int(faces.get(n, 0))
+	return int(BALL_TYPES[k].value) if k != "" else 10 + weight * n
 
 
 static func is_stripe(n: int) -> bool:

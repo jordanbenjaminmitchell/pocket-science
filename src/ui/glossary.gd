@@ -8,7 +8,7 @@ const LINK_COLOR := "#8fd8ff"
 const TERMS := {
 	"sink": {"title": "Sink", "text": "To knock a numbered ball into a pocket."},
 	"pay": {"title": "Pay", "text": "The points a ball earns as it sinks: value × Chain × Heat, times any other multipliers."},
-	"value": {"title": "Value", "text": "What a ball is worth before multipliers: 10 plus its number."},
+	"value": {"title": "Value", "text": "What a ball is worth before multipliers: 10 plus twice its number."},
 	"chain": {"title": "Chain", "text": "Multiplies balls within one shot: ×1 to start, and +0.5 for every ball sunk before it."},
 	"heat": {"title": "Heat", "text": "Multiplies every ball sunk this table; each scoring shot adds 1 Heat (+0.5×) and a miss halves it."},
 	"bank": {"title": "Bank", "text": "A sink where the ball touches a cushion before it sinks."},
