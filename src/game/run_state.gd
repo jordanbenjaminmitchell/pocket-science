@@ -63,6 +63,9 @@ var next_boost := 1.0           # Double Down
 var next_all_hot := false       # Spotlight
 var next_magnet := false        # Magnet Charm
 const ITEM_SLOTS := 3            # consumables
+const PAR_SHOTS := 10
+const QUICK_MAX := 5
+const OVERKILL_MAX := 10
 const TOOL_SLOTS := 2
 ## Items the rules can apply on their own, with no aiming or placing.
 const STATE_ITEMS := ["slip"]
@@ -383,6 +386,26 @@ func respot_echo(res: Dictionary, s: PoolSim) -> Array:
 	return back
 
 
+## Balls a loose Imbue can go on: in the set, not yet imbued, never the 8.
+func imbue_targets() -> Array:
+	return ball_set.filter(func(n): return n != 8 and not imbues.has(n))
+
+
+## Buys a loose Imbue for the ball you chose.
+func buy_imbue(i: int, n: int) -> String:
+	var item: Dictionary = shop[i]
+	if item.sold:
+		return "Sold out"
+	if money < item.cost:
+		return "Not enough money"
+	if not imbue_targets().has(n):
+		return "That ball can't take an Imbue"
+	imbues[n] = item.id
+	money -= item.cost
+	item.sold = true
+	return ""
+
+
 func removal_cost() -> int:
 	return 0 if perks.has("cleanhouse") else 3 + removals
 
@@ -479,8 +502,14 @@ func payout() -> Array:
 	var rows: Array = []
 	var base := 4
 	rows.append(["Table cleared", base])
-	if chalk > 0:
-		rows.append(["Unused chalk ×%d" % chalk, chalk])
+	# Scoring well over the target: $1 for every 10% of it, up to $10.
+	var over := int(floor((score - target()) / maxf(1.0, target() * 0.1)))
+	if over > 0:
+		rows.append(["Overkill: %d%% over target" % (over * 10), mini(over, OVERKILL_MAX)])
+	# Clearing quickly: $1 for every shot under PAR_SHOTS, up to $5.
+	var quick := PAR_SHOTS - shots_taken
+	if quick > 0:
+		rows.append(["Quick clear: %d shot%s" % [shots_taken, "" if shots_taken == 1 else "s"], mini(quick, QUICK_MAX)])
 	if perks.has("thrift") and chalk >= 2:
 		rows.append(["Thrift", 5])
 	if perks.has("overflow"):
@@ -547,13 +576,15 @@ func _roll_shop_items() -> void:
 		var f := _random_perk()
 		if f != "":
 			shop.append({"type": "perk", "id": f, "cost": Catalog.PERKS[f].cost, "sold": false})
-	for i in 2:
-		var keys := Catalog.IMBUES.keys()
+	var keys := Catalog.IMBUES.keys()
+	# A loose Imbue: you choose the ball when you buy it.
+	var loose: String = keys[rng.randi_range(0, keys.size() - 1)]
+	shop.append({"type": "imbue", "id": loose, "cost": imbue_cost(loose), "sold": false})
+	# A high ball, 11 to 15, that already carries a random Imbue.
+	var high: Array = range(11, 16).filter(func(n): return ball_set.has(n) and not imbues.has(n))
+	if not high.is_empty():
 		var iso: String = keys[rng.randi_range(0, keys.size() - 1)]
-		var ball := rng.randi_range(1, 14)   # never offered on the 8, which you are avoiding
-		if ball >= 8:
-			ball += 1
-		shop.append({"type": "imbue", "id": iso, "ball": ball, "cost": imbue_cost(iso), "sold": false})
+		shop.append({"type": "imbue", "id": iso, "ball": high[rng.randi_range(0, high.size() - 1)], "cost": imbue_cost(iso), "sold": false})
 	if ball_set.size() < Rack.MAX_BALLS and not (intro and table_index < 2):
 		var types := Catalog.BALL_TYPES.keys()
 		var bt: String = types[rng.randi_range(0, types.size() - 1)]
@@ -627,7 +658,11 @@ func buy(i: int) -> String:
 				return "Perk slots full - sell one first"
 			perks.append(item.id)
 		"imbue":
-			imbues[item.ball] = item.id
+			if not item.has("ball"):
+				return "Choose a ball for this Imbue"
+			if imbues.has(int(item.ball)):
+				return "That ball already has an Imbue"
+			imbues[int(item.ball)] = item.id
 		"ball":
 			if ball_set.size() >= Rack.MAX_BALLS:
 				return "Your ball set is full"

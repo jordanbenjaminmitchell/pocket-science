@@ -24,7 +24,9 @@ echo "$ci_out" | grep -q "CI PASSED" || { echo "### checks failed, nothing relea
 rm -f export/PocketScience-Windows.zip
 powershell -NoProfile -Command "Compress-Archive -Path 'export/windows/*' -DestinationPath 'export/PocketScience-Windows.zip' -Force"
 
-git add -A
+# Only the version bump: other work in the folder (another chat's files, say)
+# is committed by whoever made it.
+git add export_presets.cfg project.godot
 git commit -q -m "Release $name" -m "$NOTES" || true
 git push -q origin HEAD
 "$GH" release create "v$name" export/android/PocketScience.apk export/PocketScience-Windows.zip \

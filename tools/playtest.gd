@@ -277,6 +277,17 @@ func shop(run: RunState, rec: Dictionary) -> void:
 					run.sell_perk(worst)
 				else:
 					best_i = -1
+		if best_i >= 0 and run.shop[best_i].type == "imbue" and not run.shop[best_i].has("ball"):
+			# A loose Imbue: the bot puts it on its highest free ball.
+			var targets := run.imbue_targets()
+			targets.sort()
+			if targets.is_empty() or run.buy_imbue(best_i, targets[-1]) != "":
+				best_i = -1
+			else:
+				var it3: Dictionary = run.shop[best_i]
+				rec.purchases.append({"t": run.table_index, "type": it3.type, "id": it3.id})
+				bought = true
+				best_i = -1
 		if best_i >= 0 and run.buy(best_i) == "":
 			var it2: Dictionary = run.shop[best_i]
 			rec.purchases.append({"t": run.table_index, "type": it2.type, "id": it2.id})

@@ -174,7 +174,7 @@ func _go() -> void:
 				await _frames(8 if scenario == "roll" else 160)
 			if scenario == "shop":
 				game.run.payout()
-				game._show_shop([["Table cleared", 3], ["Unused chalk ×2", 2]])
+				game._show_shop([["Table cleared", 4], ["Overkill: 30% over target", 3]])
 				game.run.shop[0] = {"type": "perk", "id": "ricochet", "cost": 6, "sold": false}
 				game.run.shop[1] = {"type": "perk", "id": "geometry", "cost": 8, "sold": false}
 				game._refresh_shop()

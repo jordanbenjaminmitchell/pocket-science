@@ -103,6 +103,37 @@ func _initialize() -> void:
 	check(lb.bet_stake() == 16 and is_equal_approx(lb.bet_multiple(), 4.0), "a Hard bet on table 7 pays 4× a $16 stake")
 	lb.perks.assign(["hunter"])
 	check(lb.bounty_reward() == 16 + 128, "Side Hustle doubles the winnings")
+	print("payout and Imbues")
+	var pr := RunState.new()
+	pr.start(3)
+	pr.begin_table()
+	pr.score = int(pr.target() * 1.35)
+	pr.shots_taken = 6
+	var rows := pr.payout()
+	var by := {}
+	for row in rows:
+		by[str(row[0]).split(":")[0]] = int(row[1])
+	check(by.get("Table cleared", 0) == 4 and by.get("Overkill", 0) == 3 and by.get("Quick clear", 0) == 4, "clearing pays $4, $1 per 10%% over and $1 per shot under 10 (%s)" % str(by))
+	var slow := RunState.new()
+	slow.start(3)
+	slow.begin_table()
+	slow.score = slow.target()
+	slow.shots_taken = 14
+	check(slow.payout().size() == 1, "a slow, exact clear pays only the base")
+	var im := RunState.new()
+	im.start(3)
+	im.money = 50
+	im.shop = [{"type": "imbue", "id": "vein", "cost": 5, "sold": false}, {"type": "imbue", "id": "twin", "cost": 4, "sold": false}, {"type": "imbue", "id": "spark", "ball": 12, "cost": 4, "sold": false}]
+	check(im.buy(0) != "", "a loose Imbue needs a ball chosen")
+	check(im.buy_imbue(0, 14) == "" and im.imbues[14] == "vein", "you choose which ball gets it")
+	check(im.buy_imbue(1, 14) != "", "a ball holds only one Imbue")
+	check(im.buy_imbue(1, 8) != "", "never the 8")
+	check(im.buy(2) == "" and im.imbues[12] == "spark", "a pre-imbued high ball applies directly")
+	var sr := RunState.new()
+	sr.start(4)
+	sr.roll_shop()
+	var imb: Array = sr.shop.filter(func(it): return it.type == "imbue")
+	check(imb.any(func(it): return not it.has("ball")) and imb.any(func(it): return it.has("ball") and int(it.ball) >= 11), "the shop offers a loose Imbue and an imbued 11-15 ball")
 	print("persistence")
 	run.perks.assign(["golden", "bank"])
 	run.imbues[7] = "vein"

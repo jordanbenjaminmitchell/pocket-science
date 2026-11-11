@@ -913,6 +913,52 @@ func _shop_intro_tip(v: VBoxContainer) -> void:
 		v.add_child(l)
 
 
+## Choosing which ball gets a loose Imbue. Balls already imbued, and the 8, can't.
+func _show_imbue_picker(i: int) -> void:
+	var item: Dictionary = run.shop[i]
+	var iso: Dictionary = Catalog.IMBUES[item.id]
+	var p := PanelContainer.new()
+	p.add_theme_stylebox_override("panel", _style(Color(0.08, 0.075, 0.08, 0.99), iso.color, 2, 14))
+	overlay.add_child(p)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	p.add_child(v)
+	v.add_child(_label("%s - CHOOSE A BALL  ($%d)" % [str(iso.name).to_upper(), item.cost], 24, iso.color, F_PIXB))
+	var why := _label(iso.desc + " High balls are worth more; low balls sink sooner. Each ball holds one Imbue.", 14, Color(0.8, 0.82, 0.85), F_REG)
+	why.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	why.custom_minimum_size = Vector2(520, 0)
+	v.add_child(why)
+	var grid := GridContainer.new()
+	grid.columns = 8
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	v.add_child(grid)
+	var ok: Array = run.imbue_targets()
+	for n in run.ball_set:
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(58, 58)
+		b.tooltip_text = Catalog.ball_label(n) + ("" if ok.has(n) else (" - already imbued" if run.imbues.has(n) else " - not allowed"))
+		var icon := _set_ball_icon(n)
+		icon.position = Vector2(9, 9)
+		b.add_child(icon)
+		b.disabled = not ok.has(n)
+		var num: int = n
+		b.pressed.connect(func():
+			var err := run.buy_imbue(i, num)
+			if err == "":
+				sfx.play("coin", 0.9)
+				view.refresh_glows(sim, run.imbues)
+				_refresh_shop()
+				_refresh_hud()
+			else:
+				sfx.play("bad", 0.4)
+				_flash_banner(err.to_upper(), Color(1, 0.5, 0.4), 1.0))
+		grid.add_child(b)
+	v.add_child(_button("Cancel", func(): p.queue_free(), Color(0.6, 0.65, 0.7)))
+	p.reset_size()
+	p.position = ((fit.view - p.get_combined_minimum_size()) * 0.5).round()
+
+
 ## A small flat drawing of any ball in the set, numbered or special.
 func _set_ball_icon(n: int) -> Control:
 	var c := Control.new()
@@ -3127,7 +3173,7 @@ The [color=#ff8a30]hot pocket[/color] pays ×2. The black 8 also pays ×2.
 
 [b]Chalk:[/b] As in real pool, you keep shooting while you sink. A miss, a scratch or no contact costs 1 chalk. A dry break is free. Run out of chalk before reaching the target and the run is over. Clearing the whole rack gives +1 chalk and a fresh rack.
 
-[b]Between tables:[/b] Spend money in the Pro Shop on Perks (six slots, always active) and Imbues (permanently change one numbered ball). Leftover chalk pays $1 each.
+[b]Between tables:[/b] Spend money in the Pro Shop on Perks (six slots, always active) and Imbues (upgrade one ball for the rest of the run; you choose which, and each ball holds one). Clearing a table pays $4, plus $1 for every 10% you score over the target (up to $10) and $1 for every shot under 10 you needed (up to $5).
 
 Every table is its own boss with its own rule, and some reward bounces or bumpers. Clear all 9 tables to win, then keep going in endless mode."""
 	var rt := RichTextLabel.new()
@@ -3299,11 +3345,14 @@ func _offer_card(i: int) -> Control:
 		"imbue":
 			var iso: Dictionary = Catalog.IMBUES[item.id]
 			accent = iso.color
-			title = "%s %d-ball" % [iso.name, item.ball]
-			desc = iso.desc + " Lasts the whole run."
-			kind = "Imbue"
-			if run.imbues.has(item.ball):
-				desc += " (Replaces %s.)" % Catalog.IMBUES[run.imbues[item.ball]].name
+			if item.has("ball"):
+				title = "%s %d-ball" % [iso.name, item.ball]
+				desc = iso.desc + " Already on this ball, for the whole run."
+				kind = "Imbued ball"
+			else:
+				title = "%s Imbue" % iso.name
+				desc = iso.desc + " You choose the ball. Each ball holds one Imbue."
+				kind = "Imbue · choose a ball"
 		"ball":
 			var bt: Dictionary = Catalog.BALL_TYPES[item.id]
 			accent = bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent
@@ -3321,7 +3370,7 @@ func _offer_card(i: int) -> Control:
 	var p: PanelContainer = sh[0]
 	var v: VBoxContainer = sh[1]
 	if item.type == "imbue":
-		v.add_child(_ball_icon(item.ball, iso_color(item.id)))
+		v.add_child(_ball_icon(int(item.get("ball", 0)), iso_color(item.id)))
 	else:
 		var ic := CenterContainer.new()
 		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -3345,6 +3394,9 @@ func _offer_card(i: int) -> Control:
 	d.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(d)
 	var b := _button("SOLD" if item.sold else "Buy $%d" % item.cost, func():
+		if item.type == "imbue" and not item.has("ball"):
+			_show_imbue_picker(i)
+			return
 		var err := run.buy(i)
 		if err == "":
 			sfx.play("coin", 0.9)
@@ -3929,10 +3981,11 @@ func _show_run_info() -> void:
 		"Chain: starts at 1, +0.5 per ball sunk this shot",
 		"Heat: +1 per scoring shot, each point adds ×0.5, a miss halves it",
 		"Bounces score nothing unless a Perk, Imbue or table says so",
-		"Hot pocket ×%d, black 8 ×2, then Perks" % hot_x,
+		"Value: 10 + 2 × the ball's number (special balls have their own)",
+		"Hot pocket ×%d, then Perks; the 8 costs 15%% of the target if it sinks early" % hot_x,
 		"Miss / scratch / no contact: -1 chalk (dry break free)",
 		"Clear the rack: +1 chalk and a new rack",
-		"Leftover chalk pays $1 each",
+		"Clearing pays $4, +$1 per 10% over target, +$1 per shot under 10",
 	]
 	for r in rules:
 		var l := _label("•  " + r, 14, Color(0.82, 0.84, 0.87), F_REG)
