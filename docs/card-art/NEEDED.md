@@ -76,6 +76,37 @@ Existing tile keys look like `"imbue:vein"`, `"ball:gold"` and `"item:trapdoor"`
 | Post | `item:post` | Place a bumper anywhere on this table. |
 | Portal Pair | `item:portal` | Place two linked portals. A ball rolling into one comes out of the other at the same speed. |
 
+## Side bets: 23
+
+One card per side bet. The card is shown face down until you take or peek at the bet, so it also needs a shared **card back**. Tier colours suggested: Easy green, Medium amber, Hard red.
+
+| Bet | ID | Tier |
+|---|---|---|
+| Sink a solid ball | `bet:solid` | Easy |
+| Sink a striped ball | `bet:stripe` | Easy |
+| Sink a ball into a corner pocket | `bet:corner` | Easy |
+| Sink a ball into a side pocket | `bet:side` | Easy |
+| Sink a ball into the hot pocket | `bet:hot` | Easy |
+| Sink a ball on the break | `bet:breakpot` | Easy |
+| Sink a ball with a power shot (85%+) | `bet:hard` | Easy |
+| Sink a ball with a soft shot (35% or less) | `bet:soft` | Easy |
+| Reach Heat 3 | `bet:heat3` | Easy |
+| Sink 2 or more balls in one shot | `bet:double` | Medium |
+| Sink a bank shot | `bet:bank` | Medium |
+| Sink a combination | `bet:combo` | Medium |
+| Sink a ball off a kick shot | `bet:kick` | Medium |
+| Reach Heat 4 | `bet:heat4` | Medium |
+| Reach Chain 5 in one shot | `bet:chain5` | Medium |
+| Score a quarter of this table's target in one shot | `bet:quarter` | Medium |
+| Sink 3 or more balls in one shot | `bet:triple` | Hard |
+| Sink a ball off 2 cushions | `bet:bank2` | Hard |
+| Reach Heat 5 | `bet:heat5` | Hard |
+| Reach Chain 7 in one shot | `bet:chain7` | Hard |
+| Score half of this table's target in one shot | `bet:half` | Hard |
+| Sink 2 balls into the hot pocket in one shot | `bet:hot2` | Hard |
+| Sink the 8 when it is the only ball left | `bet:eight` | Hard |
+| (card back, shared by every face-down bet) | `bet:back` | - |
+
 ## Starting cues (optional: only if cues get cards on the cue-select screen): 15
 
 | Name | ID | What it does |
@@ -96,4 +127,4 @@ Existing tile keys look like `"imbue:vein"`, `"ball:gold"` and `"item:trapdoor"`
 | Alchemist's Cue | `cue:alchemist` | Starts with a Gold ball in your set and Gold Rush: special balls pay ×2. $3. |
 | Glass Cue | `cue:glass` | Starts with All In (every sink ×2, misses cost 2 Chalk). 1 less Chalk. $4. |
 
-**Total: 72 cards** (57 without the cues).
+**Total: 96 cards** (81 without the cues), including 23 side bets and their card back.
