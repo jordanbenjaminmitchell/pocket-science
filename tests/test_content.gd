@@ -50,7 +50,7 @@ func _go() -> void:
 	var h5 := [{"type": "ball", "a": 0, "b": 5}, pot(5, 0)]
 	print("counts")
 	check(Catalog.IMBUES.size() >= 16, "16 imbues")
-	check(Catalog.BOUNTIES.size() == 25, "25 bounties")
+	check(Catalog.BOUNTIES.size() == 23, "23 side bets")
 	check(Catalog.CUES.size() >= 14, "14 or more cues")
 	check(Catalog.BOSSES.size() >= 20, "at least 20 boss tables")
 	for id in Catalog.BOSSES:
@@ -71,9 +71,9 @@ func _go() -> void:
 	check(lucky > 850 and lucky < 1150, "lucky fires about 1 in 3 (%d/3000)" % lucky)
 	print("bounties")
 	var cases := {
-		"big300": hit([1], 300), "big600": hit([1], 600), "quad": hit([1, 2, 3, 4]), "stripe": hit([11]), "solid": hit([3]),
+		"quarter": hit([1], 30), "half": hit([1], 30), "triple": hit([1, 2, 3]), "stripe": hit([11]), "solid": hit([3]),
 		"soft": hit([1], 20, {"power": 0.3}), "hard": hit([1], 20, {"power": 0.9}), "breakpot": hit([1], 20, {"is_break": true}),
-		"chain5": hit([1], 20, {"chain": 6.0}), "chain8": hit([1], 20, {"chain": 9.0}),
+		"chain5": hit([1], 20, {"chain": 6.0}), "chain7": hit([1], 20, {"chain": 7.5}),
 		"bank2": hit([1], 20, {"banks": 1, "max_rails": 2}),
 		"corner": hit([1], 20, {"pocket_list": [2]}),
 		"hot2": hit([1, 2], 20, {"hot_pots": 2}),
@@ -84,10 +84,10 @@ func _go() -> void:
 		check(b.bounty_met(cases[id], -1), "bounty %s triggers" % id)
 		var nope := fresh()
 		nope.bounty = id
-		check(not nope.bounty_met(hit([8], 10, {"power": 0.5}), -1), "bounty %s stays off for a plain pot" % id)
+		check(not nope.bounty_met(hit([8], 5, {"power": 0.5}), -1), "bounty %s stays off for a plain pot" % id)
 	var st := fresh()
-	st.bounty = "heat6"
-	st.heat = 5
+	st.bounty = "heat5"
+	st.heat = 4
 	check(st.bounty_met(hit(), -1), "streak bounty counts this shot")
 	print("labs")
 	var pb := fresh("", "pinball")

@@ -90,6 +90,8 @@ func play_table(run: RunState, rec: Dictionary) -> bool:
 	var sim := new_rack(run, layout)
 	var is_break := true
 	var guard := 0
+	if run.money >= run.bet_stake() * 2:
+		run.take_bet()
 	for id in run.items.duplicate():
 		if id != "slip" and run.use_state_item(id):
 			run.items.erase(id)

@@ -41,7 +41,7 @@ func show_term(term: String, at: Vector2) -> void:
 
 
 ## Any heading and text, for things that are not glossary terms (a special ball).
-func show_text(title: String, text: String, at: Vector2) -> void:
+func show_text(title: String, text: String, at: Vector2, seconds: float = SHOW_TIME) -> void:
 	heading.text = title
 	body.text = text
 	panel.visible = true
@@ -52,7 +52,7 @@ func show_text(title: String, text: String, at: Vector2) -> void:
 	if p.y < 8.0:
 		p.y = at.y + 24.0
 	panel.position = Vector2(clampf(p.x, 8.0, screen.x - s.x - 8.0), clampf(p.y, 8.0, screen.y - s.y - 8.0))
-	time_left = SHOW_TIME
+	time_left = seconds
 
 
 func hide_tip() -> void:

@@ -34,6 +34,8 @@ var hot_pocket := 0
 var racks_cleared := 0
 var bounty := ""
 var bounty_done := false
+var bet_state := "offer"         # offer, taken, passed, won (the stake is lost if a taken bet is never won)
+var bet_peeked := false
 var element_mix: Array = []   # Element Table: the last elements potted
 var forgiven := false         # The Local: the free miss has been used
 var pockets_used: Array = []
@@ -162,6 +164,8 @@ func begin_table() -> void:
 	while hot_pocket < 0 and (bounty == "hot" or bounty == "hot2"):   # no hot pocket here to aim at
 		bounty = keys[rng.randi_range(0, keys.size() - 1)]
 	bounty_done = false
+	bet_state = "offer"
+	bet_peeked = false
 	if perks.has("tinkerer") and items.size() < item_slots():
 		var ids := consumable_ids()
 		items.append(ids[rng.randi_range(0, ids.size() - 1)])
@@ -179,8 +183,45 @@ func max_chalk() -> int:
 	return maxi(c, 1)
 
 
+func bet_stake() -> int:
+	return int(Catalog.BET_STAKES[mini(table_index, Catalog.BET_STAKES.size() - 1)])
+
+
+## Winnings as a multiple of the stake: 1x/2x/3x by tier, +0.5x every three tables.
+func bet_multiple() -> float:
+	var tier := int(Catalog.BOUNTIES[bounty].tier)
+	return 1.0 + tier + 0.5 * mini(int(table_index / 3), 2)
+
+
+## What a winning bet pays back: the stake plus its winnings (doubled by Side Hustle).
 func bounty_reward() -> int:
-	return int(Catalog.BOUNTIES[bounty].reward) * (2 if perks.has("hunter") else 1)
+	var win := int(round(bet_stake() * bet_multiple()))
+	return bet_stake() + win * (2 if perks.has("hunter") else 1)
+
+
+func bet_open() -> bool:
+	return bet_state == "offer" and shots_taken == 0
+
+
+func peek_bet() -> bool:
+	if not bet_open() or bet_peeked or money < bet_stake() / 2:
+		return false
+	money -= bet_stake() / 2
+	bet_peeked = true
+	return true
+
+
+func take_bet() -> bool:
+	if not bet_open() or money < bet_stake():
+		return false
+	money -= bet_stake()
+	bet_state = "taken"
+	return true
+
+
+func pass_bet() -> void:
+	if bet_state == "offer":
+		bet_state = "passed"
 
 
 func bounty_met(res: Dictionary, _hot: int) -> bool:
@@ -188,39 +229,31 @@ func bounty_met(res: Dictionary, _hot: int) -> bool:
 	var heat_after: int = heat + 1 + int(res.get("heat_gain", 0))
 	match bounty:
 		"bank":
-			return int(res.banks) > 0
+			return int(res.get("banks", 0)) > 0
 		"bank2":
-			return int(res.max_rails) >= 2
+			return int(res.get("max_rails", 0)) >= 2
 		"combo":
-			return int(res.combos) > 0
+			return int(res.get("combos", 0)) > 0
 		"kick":
-			return res.kick
+			return res.get("kick", false)
 		"hot":
-			return int(res.hot_pots) > 0
+			return int(res.get("hot_pots", 0)) > 0
 		"hot2":
-			return int(res.hot_pots) >= 2
-		"big":
-			return res.total >= 150
-		"big300":
-			return res.total >= 300
-		"big600":
-			return res.total >= 600
+			return int(res.get("hot_pots", 0)) >= 2
 		"double":
 			return pots.size() >= 2
 		"triple":
 			return pots.size() >= 3
-		"quad":
-			return pots.size() >= 4
 		"heat3":
 			return heat_after >= 3
 		"heat4":
 			return heat_after >= 4
-		"heat6":
-			return heat_after >= 6
+		"heat5":
+			return heat_after >= 5
 		"corner":
-			return (res.pocket_list as Array).any(func(k): return k in [0, 2, 3, 5])
+			return (res.get("pocket_list", []) as Array).any(func(k): return k in [0, 2, 3, 5])
 		"side":
-			return (res.pocket_list as Array).any(func(k): return k == 1 or k == 4)
+			return (res.get("pocket_list", []) as Array).any(func(k): return k == 1 or k == 4)
 		"eight":
 			return res.get("last_eight", false)
 		"stripe":
@@ -234,9 +267,13 @@ func bounty_met(res: Dictionary, _hot: int) -> bool:
 		"breakpot":
 			return res.get("is_break", false)
 		"chain5":
-			return float(res.chain) >= 5.0
-		"chain8":
-			return float(res.chain) >= 8.0
+			return float(res.get("chain", 1.0)) >= 5.0
+		"chain7":
+			return float(res.get("chain", 1.0)) >= 7.0
+		"quarter":
+			return res.get("total", 0) >= target() * 0.25
+		"half":
+			return res.get("total", 0) >= target() * 0.5
 	return false
 
 
@@ -630,6 +667,8 @@ func sell_value(id: String) -> int:
 ## the balance bot so both follow identical rules. Returns what happens next:
 ## {cleared, over, rack_cleared, ball_in_hand, chalk_lost}
 func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table: bool) -> Dictionary:
+	if bet_state == "offer":
+		bet_state = "passed"   # the first shot closes the betting
 	shots_taken += 1
 	called = {}
 	last_chalk_lost = false
@@ -646,8 +685,10 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		var hot_before := hot_pocket
 		if not bounty_done and bounty_met(res, hot_before):
 			bounty_done = true
-			money += bounty_reward()
-			out["bounty"] = bounty
+			if bet_state == "taken":
+				bet_state = "won"
+				money += bounty_reward()
+				out["bounty"] = bounty
 		score += res.total
 		total_score += res.total
 		heat += 1 + int(res.get("heat_gain", 0))
@@ -882,7 +923,7 @@ func to_dict() -> Dictionary:
 		d["table"] = {
 			"score": score, "chalk": chalk, "heat": heat, "shots_taken": shots_taken,
 			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "element_mix": element_mix,
-			"forgiven": forgiven, "bounty": bounty, "bounty_done": bounty_done,
+			"forgiven": forgiven, "bounty": bounty, "bounty_done": bounty_done, "bet_state": bet_state, "bet_peeked": bet_peeked,
 			"pockets_used": pockets_used, "shrink_steps": shrink_steps, "insured_used": insured_used,
 				"solid_run": solid_run, "stripe_run": stripe_run, "mods": table_mods,
 				"frost": frost_shield, "heart_used": heart_used, "tool_charges": tool_charges, "chalk_lost": last_chalk_lost,
@@ -1020,6 +1061,8 @@ func load_dict(d: Dictionary) -> bool:
 		if Catalog.BOUNTIES.has(b):
 			bounty = b
 		bounty_done = bool(t.get("bounty_done", false))
+		bet_state = str(t.get("bet_state", "passed"))
+		bet_peeked = bool(t.get("bet_peeked", false))
 		pockets_used = (t.get("pockets_used", []) as Array).map(func(x): return int(x))
 		shrink_steps = int(t.get("shrink_steps", 0))
 		insured_used = int(t.get("insured_used", 0))

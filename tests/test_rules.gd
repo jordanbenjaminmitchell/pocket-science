@@ -72,17 +72,37 @@ func _initialize() -> void:
 	var rc0 := rot.chalk
 	rot.apply_shot({"scored": false, "foul": "Wrong ball first", "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [], "shattered": [], "lines": []}, false, 5, true)
 	check(rot.chalk == rc0, "rotation: wrong ball first costs no chalk")
-	print("bounty")
+	print("side bets")
 	var b := RunState.new()
 	b.start(3)
 	b.begin_table()
 	b.bounty = "double"
+	b.money = 20
+	check(b.bet_stake() == 4 and b.bet_open(), "the first table offers a $4 bet")
+	check(b.peek_bet() and b.money == 18 and b.bet_peeked, "peeking costs half the stake")
+	check(not b.peek_bet(), "and only once")
+	check(b.take_bet() and b.money == 14 and b.bet_state == "taken", "betting pays the stake")
 	var m0 := b.money
 	var two := {"scored": true, "foul": "", "total": 40, "money": 0, "catalyst_gain": 0.0, "potted": [1, 2], "shattered": [], "lines": []}
 	var ob := b.apply_shot(two, false, 5, true)
-	check(ob.has("bounty") and b.money == m0 + 3 and b.bounty_done, "bounty pays once")
+	check(ob.has("bounty") and b.money == m0 + 4 + 8 and b.bet_state == "won", "a won Medium bet returns the stake plus 2× it ($12)")
 	ob = b.apply_shot(two, false, 3, true)
-	check(not ob.has("bounty") and b.money == m0 + 3, "bounty does not repeat")
+	check(not ob.has("bounty") and b.money == m0 + 12, "and pays only once")
+	var nb := RunState.new()
+	nb.start(3)
+	nb.begin_table()
+	nb.bounty = "double"
+	nb.money = 20
+	nb.apply_shot(two, false, 5, true)
+	check(nb.money == 20 and not nb.bet_open() and nb.bet_state == "passed", "a bet not taken before the first shot pays nothing and closes")
+	var lb := RunState.new()
+	lb.start(3)
+	lb.table_index = 6
+	lb.begin_table()
+	lb.bounty = "triple"
+	check(lb.bet_stake() == 16 and is_equal_approx(lb.bet_multiple(), 4.0), "a Hard bet on table 7 pays 4× a $16 stake")
+	lb.perks.assign(["hunter"])
+	check(lb.bounty_reward() == 16 + 128, "Side Hustle doubles the winnings")
 	print("persistence")
 	run.perks.assign(["golden", "bank"])
 	run.imbues[7] = "vein"

@@ -108,7 +108,8 @@ var banner_t := 0.0
 var flags_label: Label
 var log_label: Label
 var left_panel: Control
-var lbl_bounty: Label
+var lbl_bounty: RichTextLabel
+var bet_row: HBoxContainer
 var tray: BallTray
 var bottom_bar: Control
 var shot_log: Array[String] = []
@@ -197,6 +198,70 @@ func _new_rack() -> void:
 	power = 0.85
 	guide_dirty = true
 	forecast_dirty = true
+
+
+## ================================================================ side bets
+## Dealt face down each table. Bet the stake blind, peek for half the stake,
+## or pass; the first shot closes the betting.
+func _refresh_bet() -> void:
+	if lbl_bounty == null or run.bounty == "":
+		return
+	var bt: Dictionary = Catalog.BOUNTIES[run.bounty]
+	var known: bool = run.bet_peeked or run.bet_state == "won" or run.bet_state == "passed" and run.shots_taken > 0
+	var what: String = bt.name if known else "face down"
+	var line := ""
+	match run.bet_state:
+		"offer":
+			line = "Side bet (%s): stake $%d, a %s bet pays $%d" % [what, run.bet_stake(), Catalog.BET_TIERS[int(bt.tier)] if known else "hidden", run.bounty_reward()] if known else "Side bet, face down: stake $%d. Easy, Medium or Hard pays up to $%d." % [run.bet_stake(), run.bet_stake() + int(round(run.bet_stake() * (3.0 + 0.5 * mini(int(run.table_index / 3), 2))))]
+		"taken":
+			line = "Side bet (%s): $%d riding, pays $%d" % [what, run.bet_stake(), run.bounty_reward()]
+		"won":
+			line = "Side bet WON: %s" % bt.name
+		_:
+			line = "Side bet passed: it was \"%s\"" % bt.name if run.shots_taken > 0 else "Side bet passed"
+	var bb := Glossary.link(line)
+	if known:
+		for term in bt.terms:
+			bb += "\n[color=#9fb4c8]%s: %s[/color]" % [Glossary.title(term), Glossary.sentence(term)]
+	lbl_bounty.text = bb
+	lbl_bounty.add_theme_color_override("default_color", Color(0.5, 1.0, 0.6) if run.bet_state == "won" else Color(1.0, 0.85, 0.35))
+	for c in bet_row.get_children():
+		bet_row.remove_child(c)
+		c.queue_free()
+	bet_row.visible = run.bet_open() and state == S.AIM
+	if not bet_row.visible:
+		return
+	var bet := _button("Bet $%d" % run.bet_stake(), func():
+		if run.take_bet():
+			sfx.play("coin", 0.8)
+			_refresh_hud()
+			_save_progress(), Color(1.0, 0.85, 0.35))
+	bet.disabled = run.money < run.bet_stake()
+	var peek := _button("Peek $%d" % (run.bet_stake() / 2), func():
+		if run.peek_bet():
+			sfx.play("coin", 0.5, 1.4)
+			_refresh_hud()
+			_save_progress(), Color(0.6, 0.8, 1.0))
+	peek.disabled = run.bet_peeked or run.money < run.bet_stake() / 2
+	var nope := _button("Pass", func():
+		run.pass_bet()
+		_refresh_hud(), Color(0.6, 0.62, 0.66))
+	for b in [bet, peek, nope]:
+		b.add_theme_font_size_override("font_size", 14)
+		b.custom_minimum_size = Vector2(0, 40 if settings.touch_mode else 30)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bet_row.add_child(b)
+
+
+## The first ball a player ever sinks gets its score broken down, step by step.
+func _explain_first_score(l: Dictionary) -> void:
+	if not meta.first_time("score_explained"):
+		return
+	var text := "%s: worth %s (10 + its number) × Chain %s (this shot: ×1, +0.5 per ball already sunk) × Heat %s (this table: +0.5× per scoring shot) = %d points." % [
+		l.label, _fmt(l.value), _fmt(l.chain), _fmt(l.heat), int(l.points)]
+	if float(l.x) != 1.0:
+		text += " Bonuses such as the hot pocket or Perks multiplied it by %s." % _fmt(l.x)
+	term_tip.show_text("How that ball scored", text, view.base_position + Vector2(TableLayout.W * 0.5, 60.0) * TABLE_SCALE, 12.0)
 
 
 ## ================================================================ ball info on hover
@@ -1830,6 +1895,8 @@ func _update_tally(delta: float) -> void:
 
 
 func _apply_tally_line(l: Dictionary, i: int) -> void:
+	if i == 0:
+		_explain_first_score(l)
 	_set_meters(l.chain, run.heat)
 	var p: Vector2 = layout.pockets[l.pocket].pos + _inward(l.pocket) * 80.0
 	p += Vector2(randf_range(-20, 20), randf_range(-10, 10))
@@ -1878,6 +1945,7 @@ func _after_shot() -> void:
 	if out.has("bounty"):
 		sfx.play("coin", 1.0, 1.1)
 		_flash_banner("SIDE BET WON!  +$%d" % run.bounty_reward(), Color(1.0, 0.85, 0.35), 1.3)
+		_refresh_bet()
 		view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(1.0, 0.85, 0.35), 40, 300)
 	for e in sim.events:
 		if e.type == "shatter":
@@ -2438,10 +2506,11 @@ func _build_ui() -> void:
 	labv.add_child(lbl_lab)
 	lbl_rule = _term_text("", 13, Color(0.75, 0.78, 0.8), 290.0)
 	labv.add_child(lbl_rule)
-	lbl_bounty = _label("", 13, Color(1.0, 0.85, 0.35), F_REG)
-	lbl_bounty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl_bounty.custom_minimum_size = Vector2(290, 0)
+	lbl_bounty = _term_text("", 13, Color(1.0, 0.85, 0.35), 290.0)
 	labv.add_child(lbl_bounty)
+	bet_row = HBoxContainer.new()
+	bet_row.add_theme_constant_override("separation", 6)
+	labv.add_child(bet_row)
 	lbl_boss = _label("", 13, Color(1.0, 0.45, 0.4), F_REG)
 	lbl_boss.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl_boss.custom_minimum_size = Vector2(290, 0)
@@ -2639,9 +2708,7 @@ func _refresh_hud() -> void:
 	lbl_boss.visible = false
 	lbl_target.text = str(run.target())
 	if run.bounty != "":
-		var bt: Dictionary = Catalog.BOUNTIES[run.bounty]
-		lbl_bounty.text = ("DONE - " if run.bounty_done else "") + "Side bet: %s  +$%d" % [bt.name, run.bounty_reward()]
-		lbl_bounty.add_theme_color_override("font_color", Color(0.5, 1.0, 0.6) if run.bounty_done else Color(1.0, 0.85, 0.35))
+		_refresh_bet()
 	chalk_pips.set_count(run.chalk, run.max_chalk())
 	if state != S.ROLL and state != S.TALLY:
 		_set_meters(1.0, run.heat)

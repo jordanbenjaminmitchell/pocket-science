@@ -88,7 +88,7 @@ const PERKS := {
 	"moneyball": {"name": "Money Ball", "r": 1, "cost": 7, "fam": "number", "desc": "Sinking the highest-numbered ball on the table pays ×2 and $2.", "fx": {"when": "highest", "x": 2.0, "money": 2}},
 	"thrift": {"name": "Thrift", "r": 0, "cost": 4, "fam": "money", "desc": "Clear a table with 2+ Chalk left: +$5."},
 	"venture": {"name": "Deep Pockets", "r": 1, "cost": 6, "fam": "money", "desc": "Shots start with +0.25 Chain for every $5 you hold (max +1.5)."},
-	"hunter": {"name": "Side Hustle", "r": 0, "cost": 4, "fam": "money", "desc": "Side bets pay double."},
+	"hunter": {"name": "Side Hustle", "r": 0, "cost": 4, "fam": "money", "desc": "Side bets you win pay double."},
 	"coupon": {"name": "Regular Customer", "r": 0, "cost": 3, "fam": "money", "desc": "Rerolls in the Pro Shop start at $1."},
 	"overflow": {"name": "Overflow", "r": 1, "cost": 5, "fam": "money", "desc": "Points over a table's target carry into the next table (up to 25% of its target)."},
 	"glasscannon": {"name": "All In", "r": 2, "cost": 8, "fam": "risk", "desc": "Every sink pays ×2, but misses and scratches cost 2 Chalk.", "fx": {"when": "any", "x": 2.0}},
@@ -320,34 +320,38 @@ const ELEMENTS := {
 }
 const COMPOUNDS := {"fire+water": "Steam", "earth+fire": "Lava", "air+fire": "Blaze", "earth+water": "Clay", "air+water": "Storm", "air+earth": "Dust"}
 
-## Per-table side goals. Each table rolls one; completing it pays immediately.
+## Side bets: one is dealt face down each table. You can bet the table's stake
+## blind, pay half the stake to peek first, or pass. "tier" 0 easy, 1 medium,
+## 2 hard sets the payout; "terms" are explained on the bet card.
 const BOUNTIES := {
-	"bank": {"name": "Sink a bank shot", "reward": 3},
-	"combo": {"name": "Sink a combination", "reward": 3},
-	"double": {"name": "Sink 2+ balls in one shot", "reward": 3},
-	"triple": {"name": "Sink 3+ balls in one shot", "reward": 5},
-	"kick": {"name": "Sink off a kick shot", "reward": 5},
-	"hot": {"name": "Sink into the hot pocket", "reward": 2},
-	"heat4": {"name": "Reach Heat 4", "reward": 4},
-	"big": {"name": "Score 150+ in one shot", "reward": 4},
-	"side": {"name": "Sink into a side pocket", "reward": 2},
-	"eight": {"name": "Sink the 8 when it is the only ball left", "reward": 6},
-	"bank2": {"name": "Sink a 2-cushion bank", "reward": 6},
-	"big300": {"name": "Score 300+ in one shot", "reward": 5},
-	"big600": {"name": "Score 600+ in one shot", "reward": 7},
-	"heat3": {"name": "Reach Heat 3", "reward": 2},
-	"heat6": {"name": "Reach Heat 6", "reward": 7},
-	"corner": {"name": "Sink into a corner pocket", "reward": 1},
-	"hot2": {"name": "Sink 2 balls into the hot pocket", "reward": 7},
-	"quad": {"name": "Sink 4+ balls in one shot", "reward": 8},
-	"stripe": {"name": "Sink a striped ball", "reward": 2},
-	"solid": {"name": "Sink a solid ball", "reward": 1},
-	"soft": {"name": "Sink with a soft shot (35% or less)", "reward": 3},
-	"hard": {"name": "Sink with a power shot (85%+)", "reward": 3},
-	"breakpot": {"name": "Sink a ball on the break", "reward": 3},
-	"chain5": {"name": "Reach Chain 5 on a shot", "reward": 4},
-	"chain8": {"name": "Reach Chain 8 on a shot", "reward": 6},
+	"solid": {"name": "Sink a solid ball", "tier": 0, "terms": ["solid"]},
+	"stripe": {"name": "Sink a striped ball", "tier": 0, "terms": ["stripe"]},
+	"corner": {"name": "Sink a ball into a corner pocket", "tier": 0, "terms": []},
+	"side": {"name": "Sink a ball into a side pocket", "tier": 0, "terms": []},
+	"hot": {"name": "Sink a ball into the hot pocket", "tier": 0, "terms": ["hot"]},
+	"breakpot": {"name": "Sink a ball on the break", "tier": 0, "terms": ["break"]},
+	"hard": {"name": "Sink a ball with a power shot (85%+)", "tier": 0, "terms": []},
+	"soft": {"name": "Sink a ball with a soft shot (35% or less)", "tier": 0, "terms": []},
+	"heat3": {"name": "Reach Heat 3", "tier": 0, "terms": ["heat"]},
+	"double": {"name": "Sink 2 or more balls in one shot", "tier": 1, "terms": []},
+	"bank": {"name": "Sink a bank shot", "tier": 1, "terms": ["bank"]},
+	"combo": {"name": "Sink a combination", "tier": 1, "terms": ["combination"]},
+	"kick": {"name": "Sink a ball off a kick shot", "tier": 1, "terms": ["kick"]},
+	"heat4": {"name": "Reach Heat 4", "tier": 1, "terms": ["heat"]},
+	"chain5": {"name": "Reach Chain 5 in one shot", "tier": 1, "terms": ["chain"]},
+	"quarter": {"name": "Score a quarter of this table's target in one shot", "tier": 1, "terms": ["target"]},
+	"triple": {"name": "Sink 3 or more balls in one shot", "tier": 2, "terms": []},
+	"bank2": {"name": "Sink a ball off 2 cushions", "tier": 2, "terms": ["bank"]},
+	"heat5": {"name": "Reach Heat 5", "tier": 2, "terms": ["heat"]},
+	"chain7": {"name": "Reach Chain 7 in one shot", "tier": 2, "terms": ["chain"]},
+	"half": {"name": "Score half of this table's target in one shot", "tier": 2, "terms": ["target"]},
+	"hot2": {"name": "Sink 2 balls into the hot pocket in one shot", "tier": 2, "terms": ["hot"]},
+	"eight": {"name": "Sink the 8 when it is the only ball left", "tier": 2, "terms": ["eight"]},
 }
+const BET_TIERS := ["Easy", "Medium", "Hard"]
+## The stake for each table (endless keeps the last).
+const BET_STAKES := [4, 4, 8, 8, 12, 12, 16, 16, 20]
+
 
 ## Handicaps: optional difficulty, each level including every rule before it.
 const HANDICAPS := [
