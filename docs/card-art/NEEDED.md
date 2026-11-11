@@ -1,0 +1,99 @@
+# Card art still needed
+
+All 100 Perk tiles are done. These cards still need art. Match the style of the existing tiles in `src/ui/tile_art.gd`: each card needs a **symbol** (1–2 letters, a real element symbol where one fits the name, never the same as another card), a short **stat** (the headline effect, about 16 characters at most), and a **lettering effect** for the symbol that hints at what the card does.
+
+Existing tile keys look like `"imbue:vein"`, `"ball:gold"` and `"item:trapdoor"`. Use the ID column below in the same way.
+
+## Imbues: 15
+
+| Name | ID | What it does |
+|---|---|---|
+| Spark | `imbue:spark` | +1 Chain every time this ball is struck. |
+| Gilded | `imbue:gold` | Pays $2 when sunk. |
+| Weighted | `imbue:heavy` | This ball's number counts ×4. |
+| Hairline | `imbue:glass` | Pays ×3 when sunk, but 1 in 4 times the coating cracks off. |
+| Kindled | `imbue:ember` | +1 Heat when sunk. |
+| Lucky | `imbue:lucky` | 1 in 3 chance to pay ×4 when sunk. |
+| Frosted | `imbue:frosted` | When it sinks, your next miss on this table keeps your Heat. |
+| Magnetic | `imbue:magnetic` | Pockets pull this ball in. |
+| Charged | `imbue:charged` | +0.5 Chain every time this ball touches a cushion. |
+| Resonant | `imbue:prismatic` | Every ball it touches in a shot adds +0.25 Chain. |
+| Hollow | `imbue:hollow` | Half the weight: it flies further when struck. |
+| Leaded | `imbue:leaded` | Twice as heavy, and worth +45. |
+| Bounty | `imbue:bounty` | Pays $1 for every point of Heat when it sinks. |
+| Starry | `imbue:starry` | Every ball after it in the same shot gets +0.5 Chain. |
+| Twin | `imbue:twin` | This ball's value counts twice. |
+
+## Special balls: 23
+
+| Name | ID | What it does |
+|---|---|---|
+| Void | `ball:void` | Worth nothing itself, but every other ball in the same shot pays ×2. |
+| Glass | `ball:glass` | Pays ×3 if it sinks, but anything that hits it hard shatters it, and it leaves your set. |
+| Iron | `ball:iron` | Twice as heavy. Worth 70. |
+| Feather | `ball:feather` | A quarter the weight: it barely moves other balls, and adds +0.5 Chain as it sinks. |
+| Ember | `ball:ember` | The pocket it sinks into becomes the hot pocket. |
+| Frost | `ball:frost` | Any ball that touches it stops dead. |
+| Magnet | `ball:magnet` | Pulls nearby rolling balls towards itself. |
+| Prism | `ball:prism` | Counts as both a solid and a stripe. |
+| Wild | `ball:wild` | Copies the number of the last ball you sank, and counts as that number. |
+| Clock | `ball:clock` | Worth 15, plus 9 for every shot already taken on this table. |
+| Coin | `ball:coin` | Pays $1 every time the cue ball hits it in a scoring shot. |
+| Bomb | `ball:bomb` | When it sinks, the nearest ball (never the 8) sinks with it. |
+| Seed | `ball:seed` | Worth 30, and 15 more every time you sink it this run. |
+| Clover | `ball:clover` | No shot it is part of can cost Chalk. |
+| Star | `ball:star` | Comes off cushions with no loss of speed, and adds +1 Chain as it sinks. |
+| Heart | `ball:heart` | If it is the only ball left on the table when you sink it, +1 Chalk. |
+| Dice | `ball:dice` | Shows a new number from 1 to 15 every shot, and counts as that number. |
+| Moon | `ball:moon` | Corner pockets reject it. Pays ×2 in a side pocket. |
+| Sun | `ball:sun` | Side pockets reject it. Pays ×2 in a corner pocket. |
+| Anchor | `ball:anchor` | Only the cue ball can move it: other balls bounce off it like a post. Worth 105. |
+| Eraser | `ball:eraser` | When it sinks it pays $4, and both it and the last ball it touched leave your set (never the 8). |
+| Echo | `ball:echo` | The first time it sinks on a table, it comes back to the foot spot. |
+| Comet | `ball:comet` | Feels no cloth friction until it first hits a cushion. |
+
+## Items (the Hustler's Kit): 19
+
+| Name | ID | What it does |
+|---|---|---|
+| Called Shot | `item:calledshot` | Pick a ball and a pocket. If that ball sinks there on your next shot, it pays ×3. |
+| Ghost Chalk | `item:ghostchalk` | Pick a ball. Your next shot passes straight through it. |
+| Swap | `item:swap` | Swap the places of two balls (not the cue ball). |
+| Polish | `item:polish` | Pick a ball. On your next shot it glides with no cloth friction until it first hits something. |
+| Lead Weight | `item:leadweight` | Pick a ball. On your next shot it is four times as heavy. |
+| Spotter | `item:spotter` | Bring a ball you sank on this table back to the foot spot. Never the 8. |
+| Pocket Cover | `item:pocketcover` | Cover a pocket for the rest of this table. The pocket opposite opens 30% wider. |
+| Pop-up Wall | `item:wall` | While a shot is paused, raise a short wall for the rest of the shot. |
+| Blink | `item:blink` | While a shot is paused, move the cue ball anywhere. It keeps its speed and direction. |
+| Freeze Frame | `item:freezeframe` | While a shot is paused, stop one ball dead. It holds still like a post for the rest of the shot. |
+| Nudge | `item:nudge` | While a shot is paused, push one ball a short way in any direction. |
+| English Dial | `item:englishdial` | While a shot is paused, put the spin you have set onto the rolling cue ball. |
+| Gravity Pebble | `item:gravitypebble` | While a shot is paused, place a small well that bends rolling balls for the rest of the shot. |
+| Rewind | `item:rewind` | Undo your last shot entirely: balls, score, Heat and Chalk. |
+| Insurance Slip | `item:slip` | If your last shot cost Chalk, get it back. |
+| Triangle | `item:triangle` | Re-rack every ball still on the table and break again. |
+| Ball in Hand | `item:ballinhand` | Pick up the cue ball and place it anywhere. |
+| Post | `item:post` | Place a bumper anywhere on this table. |
+| Portal Pair | `item:portal` | Place two linked portals. A ball rolling into one comes out of the other at the same speed. |
+
+## Starting cues (optional: only if cues get cards on the cue-select screen): 15
+
+| Name | ID | What it does |
+|---|---|---|
+| Classic Maple | `cue:maple` | The all-rounder. $6 to start. |
+| Optic Cue | `cue:optic` | Starts with Long Lens: every predicted sink shows its points, and long sinks add Chain. $2. |
+| Hot Rod | `cue:hotrod` | Starts with Scorcher (hot pocket ×3), but every table has 1 less Chalk. $4. |
+| Momentum Cue | `cue:momentum` | Starts with Stoker: multi-sink shots build extra Heat. $4. |
+| Gilded Cue | `cue:gilded` | Starts rich: $12 and Deep Pockets. |
+| Break Cue | `cue:breaker` | Starts with Break Artist (break shots +3 Chain). $3. |
+| Banker's Cue | `cue:banker` | Starts with Thrift and $8. |
+| Thermal Cue | `cue:thermal` | Starts with Stay Hot: while On fire, a miss only costs 1 Heat. $3. |
+| Angle Cue | `cue:angle` | Starts with Bank Manager (banks +1 Chain per cushion). $2. |
+| Engineer's Cue | `cue:engineer` | Starts with Backspin Wax: draw and follow 50% stronger. $3. |
+| Gear Cue | `cue:gearhead` | Starts with Pack Rat, a Second Strike and a Post. $2. |
+| Lean Cue | `cue:lean` | Starts with Thin Rack, and the 1 and 2 are already out of your set. $3. |
+| Black Cue | `cue:black` | Starts with Behind the 8: the 8 costs nothing and pays $3. $3. |
+| Alchemist's Cue | `cue:alchemist` | Starts with a Gold ball in your set and Gold Rush: special balls pay ×2. $3. |
+| Glass Cue | `cue:glass` | Starts with All In (every sink ×2, misses cost 2 Chalk). 1 less Chalk. $4. |
+
+**Total: 72 cards** (57 without the cues).
