@@ -45,12 +45,20 @@ func _initialize() -> void:
 	check(run_case([hit(0, 5), pot(5, 0, 2)], {"perks": ["bank"]}).total == 60, "Bank Manager: +1 Chain per cushion")
 	check(run_case([hit(0, 5), pot(5, 0)], {"imbues": {5: "spark"}}).total == 40, "Spark: struck ball adds Chain")
 	print("perks")
-	check(run_case(h5, {"perks": ["odd"]}).total == 45, "Odd Balls +25")
-	check(run_case(h5, {"perks": ["golden"]}).total == 32, "First Blood ×1.6")
+	check(run_case(h5, {"perks": ["odd"]}).total == 40, "Odd Balls +20")
+	check(run_case(h5, {"perks": ["golden"]}).total == 40, "First Blood ×2")
 	check(run_case(h5, {"perks": ["glasscannon"]}).total == 40, "All In ×2")
 	check(run_case(h5, {"perks": ["echo"]}).total == 40, "Double Take pays twice")
 	check(run_case(h5, {"perks": ["afterburner"], "is_break": true}).total == 80, "Break Artist starts at Chain 4")
-	check(run_case(h5, {"perks": ["minimalist"], "empty_slots": 2}).total == 31, "Travel Light ×1.25 per empty slot")
+	# Heat Perks: some only work on fire, some only when you are not.
+	check(run_case(h5, {"perks": ["minimalist"], "heat": 5}).total == run_case(h5, {"heat": 5}).total * 2, "Inferno doubles sinks On fire")
+	check(run_case(h5, {"perks": ["minimalist"], "heat": 4}).total == run_case(h5, {"heat": 4}).total, "but not below Heat 5")
+	check(run_case(h5, {"perks": ["coupon"]}).total == 40 and run_case(h5, {"perks": ["coupon"], "heat": 1}).total == run_case(h5, {"heat": 1}).total, "Cold Start doubles sinks only at Heat 0")
+	check(run_case(h5, {"perks": ["entropy"]}).total == 40 and run_case(h5, {"perks": ["entropy"], "heat": 3}).total == run_case(h5, {"heat": 3}).total, "Simmer adds Chain only below Heat 3")
+	var rot := [{"type": "ball", "a": 0, "b": 2}, {"type": "pocket", "a": 2, "pocket": 0, "rails": 0, "at": Vector2.ZERO}]
+	check(run_case(rot, {"perks": ["rotation"], "lowest": 2, "highest": 15}).total == 40, "Rotation: the lowest ball pays like the highest")
+	var bk := [{"type": "ball", "a": 0, "b": 5}, {"type": "pocket", "a": 5, "pocket": 0, "rails": 2, "at": Vector2.ZERO}]
+	check(run_case(bk, {"perks": ["geometry"]}).total == 45, "Geometry ×1.5 per cushion")
 	for id in Catalog.PERKS:
 		var fx: Dictionary = Catalog.PERKS[id].get("fx", {})
 		if not fx.is_empty():

@@ -39,7 +39,7 @@ func _initialize() -> void:
 	check(Catalog.CUES.size() >= 14, "14 starting cues (%d)" % Catalog.CUES.size())
 
 	print("perks")
-	check(score(h5, {"perks": ["thinrack"], "removed": 2}).total == 38, "Thin Rack: +9 per removed ball")
+	check(score(h5, {"perks": ["thinrack"], "removed": 2}).total == 44, "Thin Rack: +12 per removed ball")
 	check(score(h5, {"perks": ["missing"], "removed": 2}).total == 40, "Missing Piece: Chain per removed ball")
 	check(score(h5, {"perks": ["followthru"], "follow": 0.6}).total == 30, "Follow Through pays with follow")
 	check(score(h5, {"perks": ["drawartist"], "follow": -0.6}).total == 30, "Draw Artist pays with draw")
@@ -96,6 +96,21 @@ func _initialize() -> void:
 	var c5 := [{"type": "ball", "a": 0, "b": 5}, pot(5, 2)]
 	check(score(c5, {"called": {"ball": 5, "pocket": 2}}).total == 60, "a Called Shot that comes off pays ×3")
 	check(score(c5, {"called": {"ball": 5, "pocket": 3}}).total == 20, "a wrong call pays nothing extra")
+
+	print("heat")
+	var hot := RunState.new()
+	hot.start(5)
+	hot.begin_table()
+	hot.heat = 6
+	hot.apply_shot(miss, false, 9, true)
+	check(hot.heat == 3, "a miss halves Heat")
+	hot.perks.assign(["migration"])
+	hot.heat = 6
+	hot.apply_shot(miss, false, 9, true)
+	check(hot.heat == 5, "Stay Hot: On fire, a miss only costs 1 Heat")
+	hot.heat = 4
+	hot.apply_shot(miss, false, 9, true)
+	check(hot.heat == 2, "but below Heat 5 it still halves")
 
 	print("ball set")
 	var lean := RunState.new()

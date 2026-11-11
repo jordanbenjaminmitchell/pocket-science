@@ -11,6 +11,7 @@ const TERMS := {
 	"value": {"title": "Value", "text": "What a ball is worth before multipliers: 10 plus twice its number."},
 	"chain": {"title": "Chain", "text": "Multiplies balls within one shot: ×1 to start, and +0.5 for every ball sunk before it."},
 	"heat": {"title": "Heat", "text": "Multiplies every ball sunk this table; each scoring shot adds 1 Heat (+0.5×) and a miss halves it."},
+	"on_fire": {"title": "On fire", "text": "Heat 5 or more, after Warm (1-2) and In stroke (3-4), with Dead stroke at 7+."},
 	"bank": {"title": "Bank", "text": "A sink where the ball touches a cushion before it sinks."},
 	"cushion": {"title": "Cushion", "text": "The padded rail around the edge of the table."},
 	"combination": {"title": "Combination", "text": "The cue ball hits one ball, and that ball knocks another one into a pocket."},
@@ -36,7 +37,7 @@ const TERMS := {
 const WORDS := {
 	"sink": "sink", "sinks": "sink", "sunk": "sink", "sinking": "sink",
 	"pay": "pay", "pays": "pay", "worth": "value", "value": "value",
-	"chain": "chain", "heat": "heat",
+	"chain": "chain", "heat": "heat", "on fire": "on_fire",
 	"bank": "bank", "banks": "bank", "cushion": "cushion", "cushions": "cushion",
 	"combination": "combination", "combinations": "combination",
 	"kick": "kick", "kick shots": "kick", "clean": "clean", "hot pocket": "hot",

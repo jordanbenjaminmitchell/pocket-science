@@ -85,7 +85,7 @@ func _initialize() -> void:
 	check(score([hit(0, 18), pot(18)]).total == 30, "Echo pays once; it comes back instead")
 	check(score([hit(0, 19), pot(19)]).total == 60, "Star adds Chain")
 	check(score([hit(0, 20), pot(20, 1)]).total == 70, "Moon pays ×2 in a side pocket")
-	check(score([hit(0, 21), pot(21)], {"perks": ["odd"]}).total == 49, "Wild counts as the number it copied (7, odd)")
+	check(score([hit(0, 21), pot(21)], {"perks": ["odd"]}).total == 44, "Wild counts as the number it copied (7, odd)")
 	check(score([hit(0, 23), pot(23)]).total == 34, "Dice is worth 10 plus twice the number it shows")
 	r = score([hit(0, 5), hit(5, 22), pot(22)])
 	check(r.money == 4 and (r.lost_balls as Array).has(22) and (r.lost_balls as Array).has(5), "Eraser takes itself and the last ball it touched out of the set")

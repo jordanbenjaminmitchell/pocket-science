@@ -25,8 +25,8 @@ static func start_chain(ctx: Dictionary) -> float:
 		c += 1.0
 	if perks.has("afterburner") and ctx.get("is_break", false):
 		c += 3.0
-	if perks.has("entropy"):
-		c += minf(3.0, 0.25 * int(ctx.get("shots_taken", 0)))
+	if perks.has("entropy") and int(ctx.get("heat", 0)) < 3:
+		c += 1.0   # Simmer: a cool table still builds
 	if perks.has("collector"):
 		c += 0.5 * (ctx.get("pockets_used", []) as Array).size()
 	if perks.has("venture"):
@@ -230,7 +230,8 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			"repeat_pocket": seen_pocket.has(k), "soft": float(ctx.get("power", 0.5)) <= 0.35,
 			"prime": Catalog.PRIMES.has(n) or Catalog.PRIMES.has(face), "fib": [1, 2, 3, 5, 8, 13].has(n) or [1, 2, 3, 5, 8, 13].has(face),
 			"lowest": n == int(ctx.get("lowest", -1)), "highest": n == int(ctx.get("highest", -1)),
-			"heat3": heat >= 3, "last_chalk": int(ctx.get("chalk", 99)) == 1, "third": int(ctx.get("shots_taken", 0)) % 3 == 2,
+			"heat3": heat >= 3, "on_fire": heat >= 5, "cold": heat == 0,
+			"low3": (n >= 1 and n <= 3) or (face >= 1 and face <= 3), "high3": (n >= 13 and n <= 15) or (face >= 13 and face <= 15), "last_chalk": int(ctx.get("chalk", 99)) == 1, "third": int(ctx.get("shots_taken", 0)) % 3 == 2,
 			"boomerang": boomerang, "long": _long_pot(ctx, n, e),
 			"follow_shot": float(ctx.get("follow", 0.0)) > 0.2, "draw_shot": float(ctx.get("follow", 0.0)) < -0.2,
 			"last_eight": n == 8 and left_after == 0, "no_eight_touch": not toucher.has(8),
@@ -241,15 +242,19 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		}
 		if facts.last_eight:
 			out.last_eight = true
+		var tags: Array = []
 		var weight := (3 if perks.has("moneyball") else Catalog.NUMBER_WEIGHT)
 		if imbues.get(n, "") == "heavy":
 			weight = 4
 		var value := float(Catalog.ball_points(n, weight)) + float(ctx.get("catalyst", 0.0))
+		# Rotation: the lowest ball on the table pays like the highest one.
+		if perks.has("rotation") and facts.lowest and int(ctx.get("highest", -1)) > n:
+			value += float(Catalog.ball_points(int(ctx.highest), weight) - Catalog.ball_points(n, weight))
+			tags.append("Rotation")
 		if perks.has("thinrack"):
-			value += 9.0 * int(ctx.get("removed", 0))
+			value += 12.0 * int(ctx.get("removed", 0))
 		var pre_chain := 0.0
 		var x := 1.0
-		var tags: Array = []
 		for id in perks:
 			var fx: Dictionary = Catalog.PERKS[id].get("fx", {})
 			if fx.is_empty() or not facts.get(fx.when, false):
@@ -264,6 +269,9 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			if perks.has("bank"):
 				pre_chain += float(rails)
 				tags.append("Bank")
+			if perks.has("geometry"):
+				x *= pow(1.5, rails)
+				tags.append("Geometry")
 			out.banks += 1
 			out.max_rails = maxi(out.max_rails, rails)
 		if by != 0:
@@ -276,7 +284,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			if perks.has("steadyrun"):
 				value += 12.0 * mini(solid_run, 8)
 			if perks.has("solidsonly"):
-				x *= 2.0
+				x *= 3.0
 			if perks.has("stripesonly"):
 				x *= 0.5
 			solid_run += 1
@@ -294,8 +302,6 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 				tags.append("Lucky Stripe")
 			stripe_run += 1
 			solid_run = 0
-		if perks.has("minimalist"):
-			x *= pow(1.25, int(ctx.get("empty_slots", 0)))
 		if perks.has("gold") and gold_paid < 3:
 			gold_paid += 1
 			money += 1

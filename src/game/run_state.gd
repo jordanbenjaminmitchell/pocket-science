@@ -570,7 +570,7 @@ func _apply_handicap_prices() -> void:
 
 
 func _roll_shop_items() -> void:
-	reroll_cost = 1 if perks.has("coupon") else 2
+	reroll_cost = 2
 	shop.clear()
 	for i in 3:
 		var f := _random_perk()
@@ -768,7 +768,10 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		if frost_shield:
 			frost_shield = false   # Frost: this miss keeps the Heat
 		else:
-			heat = int(heat / 2.0)   # a miss cools the table but never wipes it out
+			if perks.has("migration") and heat >= 5:
+				heat -= 1   # Stay Hot: on fire, a miss only costs 1
+			else:
+				heat = int(heat / 2.0)   # a miss cools the table but never wipes it out
 		element_mix = []
 	score = maxi(0, score - int(res.get("penalty", 0)))
 	money = maxi(0, money - int(res.get("eight_fine", 0)))
@@ -781,8 +784,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 	if chalk <= 0:
 		out.over = true
 		return out
-	if not (res.scored and perks.has("migration")):
-		roll_hot_pocket(hot_pocket)
+	roll_hot_pocket(hot_pocket)
 	if int(res.get("new_hot", -1)) >= 0 and hot_pocket >= 0:
 		hot_pocket = int(res.new_hot)   # Ember chose it
 	if balls_left == 0:
