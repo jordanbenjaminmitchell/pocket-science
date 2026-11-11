@@ -204,14 +204,15 @@ func _refresh_bet() -> void:
 	if lbl_bounty == null or run.bounty == "":
 		return
 	var bt: Dictionary = Catalog.BOUNTIES[run.bounty]
-	var known: bool = run.bet_peeked or run.bet_state == "won" or run.bet_state == "passed" and run.shots_taken > 0
+	# A bet you have taken is always shown: you need to know what you are playing for.
+	var known: bool = run.bet_peeked or run.bet_state == "taken" or run.bet_state == "won" or run.bet_state == "passed" and run.shots_taken > 0
 	var what: String = bt.name if known else "face down"
 	var line := ""
 	match run.bet_state:
 		"offer":
 			line = "Side bet (%s): stake $%d, a %s bet pays $%d" % [what, run.bet_stake(), Catalog.BET_TIERS[int(bt.tier)] if known else "hidden", run.bounty_reward()] if known else "Side bet, face down: stake $%d. Easy, Medium or Hard pays up to $%d." % [run.bet_stake(), run.bet_stake() + int(round(run.bet_stake() * (3.0 + 0.5 * mini(int(run.table_index / 3), 2))))]
 		"taken":
-			line = "Side bet (%s): $%d riding, pays $%d" % [what, run.bet_stake(), run.bounty_reward()]
+			line = "Side bet: %s. $%d riding (%s), pays $%d" % [bt.name, run.bet_stake(), Catalog.BET_TIERS[int(bt.tier)], run.bounty_reward()]
 		"won":
 			line = "Side bet WON: %s" % bt.name
 		_:
@@ -231,6 +232,7 @@ func _refresh_bet() -> void:
 	var bet := _button("Bet $%d" % run.bet_stake(), func():
 		if run.take_bet():
 			sfx.play("coin", 0.8)
+			_flash_banner("BET: " + str(Catalog.BOUNTIES[run.bounty].name).to_upper(), Color(1.0, 0.85, 0.35), 2.0)
 			_refresh_hud()
 			_save_progress(), Color(1.0, 0.85, 0.35))
 	bet.disabled = run.money < run.bet_stake()
@@ -2767,7 +2769,7 @@ func _sync_touch_ui() -> void:
 	log_title.visible = not t
 	log_label.visible = not t
 	lbl_hint.visible = not t
-	menu_btn.visible = t
+	menu_btn.visible = true   # every player can reach the menu (and quit the run) with a click or tap
 	info_btn_ref.text = "Run info" if t else "Run info [Tab]"
 	_sync_aim_btn()
 
@@ -3403,7 +3405,25 @@ func _show_cue_select() -> void:
 			row.add_theme_constant_override("separation", 12)
 			v.add_child(row)
 		row.add_child(p)
-	v.add_child(_button("Back", _show_title))
+	var foot := HBoxContainer.new()
+	foot.add_theme_constant_override("separation", 14)
+	v.add_child(foot)
+	var back := _button("Back", _show_title)
+	back.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	foot.add_child(back)
+	var dev := CheckButton.new()
+	dev.text = "Developer mode (unlock everything)"
+	dev.name = "dev_toggle"
+	dev.button_pressed = settings.dev_mode
+	dev.add_theme_font_override("font", F_SEMI)
+	dev.add_theme_font_size_override("font_size", 15)
+	dev.toggled.connect(func(on: bool):
+		settings.dev_mode = on
+		_apply_settings()
+		_save_settings()
+		sfx.play("ui", 0.8)
+		_show_cue_select.call_deferred())
+	foot.add_child(dev)
 
 
 var meta := Meta.new()
@@ -3551,13 +3571,20 @@ func _show_pause() -> void:
 	v.add_child(_button("Resume", _resume))
 	v.add_child(_button("How to Play", _show_help))
 	v.add_child(_button("Settings", func(): _show_settings(_show_pause_again)))
-	v.add_child(_button("Save & quit to title", func():
+	v.add_child(_button("Back to menu (run saved)", func():
 		paused = false
 		_show_title(), Color(0.6, 0.75, 0.9)))
-	v.add_child(_button("Abandon run", func():
+	# Quitting throws the run away, so it takes a second tap.
+	var quit_run := _button("Quit run", func(): pass, Color(0.9, 0.4, 0.3))
+	quit_run.pressed.connect(func():
+		if quit_run.text == "Quit run":
+			quit_run.text = "Really quit? The run is lost"
+			return
 		paused = false
 		RunState.clear_save()
-		_show_title(), Color(0.9, 0.4, 0.3)))
+		_show_title())
+	quit_run.name = "quit_run"
+	v.add_child(quit_run)
 	v.add_child(_button("Quit game", func(): get_tree().quit(), Color(0.9, 0.4, 0.3)))
 
 

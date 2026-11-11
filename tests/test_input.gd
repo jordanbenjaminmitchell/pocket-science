@@ -407,6 +407,42 @@ func _go() -> void:
 				check(r.position.y >= 0 and r.end.y <= 900.5, "%s fits with larger text (%s)" % [name, r])
 	s.reset()
 	g._apply_settings()
+	print("menus")
+	g._show_cue_select()
+	await _frames(1)
+	var dev: CheckButton = g.overlay.find_child("dev_toggle", true, false)
+	check(dev != null, "Developer mode is on the cue-select screen")
+	dev.button_pressed = true
+	await _frames(2)
+	check(g.settings.dev_mode and g.meta.dev_mode and g.meta.cue_unlocked("black"), "and switching it on unlocks everything")
+	var dev2: CheckButton = g.overlay.find_child("dev_toggle", true, false)
+	dev2.button_pressed = false
+	await _frames(2)
+	check(not g.meta.dev_mode, "and off again")
+	g._new_run()
+	await _frames(2)
+	check(g.menu_btn.visible, "the Menu button is always there")
+	g._show_pause()
+	await _frames(1)
+	var qr: Button = g.overlay.find_child("quit_run", true, false)
+	qr.pressed.emit()
+	await _frames(1)
+	check(g.paused and g.state != g.S.TITLE, "Quit run asks to confirm first")
+	qr.pressed.emit()
+	await _frames(2)
+	check(not g.paused and g.state == g.S.TITLE, "and a second tap quits to the menu")
+	print("side bets")
+	g._new_run()
+	await _frames(2)
+	g.run.money = 50
+	g.run.bounty = "solid"
+	g.run.bet_state = "offer"
+	g.run.bet_peeked = false
+	g._refresh_bet()
+	check(not g.lbl_bounty.get_parsed_text().contains("Sink a solid"), "a blind bet stays hidden before you take it")
+	check(g.run.take_bet(), "take the blind bet")
+	g._refresh_bet()
+	check(g.lbl_bounty.get_parsed_text().contains("Sink a solid ball"), "once taken, the bet shows what it is")
 	print("input tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
