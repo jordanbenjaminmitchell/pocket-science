@@ -109,5 +109,23 @@ func _go() -> void:
 	g.guide_dirty = true
 	await _until(func(): return g.fc_sim == null and not g.view.sink_tags.is_empty(), 400)
 	check(g.view.sink_tags.any(func(t): return t[0] == 2), "Long Lens tags the pocket a ball is predicted to sink into")
+	print("ball info on hover")
+	g._new_run()
+	await _until(func(): return g.state == g.S.AIM, 200)
+	g.coaching = false
+	g.fine_aim = true
+	g.run.imbues = {3: "vein"}
+	var i3: int = g.sim.index_of(3)
+	g.mouse_pos = g.view.base_position + g.sim.pos[i3] * g.TABLE_SCALE
+	await _frames(2)
+	check(g.term_tip.panel.visible and g.term_tip.heading.text == "3-ball" and g.term_tip.body.text.contains("Vein"), "hovering an imbued ball explains its Imbue")
+	var i8: int = g.sim.index_of(8)
+	g.mouse_pos = g.view.base_position + g.sim.pos[i8] * g.TABLE_SCALE
+	await _frames(2)
+	check(g.term_tip.panel.visible and g.term_tip.heading.text == "8-ball", "hovering the 8 explains it")
+	var i5: int = g.sim.index_of(5)
+	g.mouse_pos = g.view.base_position + g.sim.pos[i5] * g.TABLE_SCALE
+	await _frames(2)
+	check(not g.term_tip.panel.visible, "a plain ball shows nothing")
 	print("intro tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

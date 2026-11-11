@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # One command to verify everything before a commit or release:
-# all test suites, a short run of every simulated player, and a Windows build.
+# all test suites, a short run by one simulated player (all six with FULL=1),
+# and the Windows and Android builds.
 set -u
 GODOT="${GODOT:-/c/Users/JordanMitchell/Documents/Codex/2026-09-08/can/work/godot/Godot_v4.7.2-stable_win64_console.exe}"
 cd "$(dirname "$0")/.."
@@ -10,7 +11,11 @@ fail=0
 REAL_APPDATA="$APPDATA"
 export APPDATA="$(cygpath -w "$(mktemp -d)")"
 OUT="$(mktemp -d)"
-for p in novice casual builder saver gambler expert; do
+# One simulated player is enough to prove a build plays through; FULL=1 runs all
+# six for a balance pass.
+PERSONAS="expert"
+[ "${FULL:-0}" = "1" ] && PERSONAS="novice casual builder saver gambler expert"
+for p in $PERSONAS; do
   if ! timeout 200 "$GODOT" --headless --path . --script res://tools/playtest.gd -- "$p" 2 7000 "$(cygpath -w "$OUT")\$p.jsonl" 2>&1 | grep -q "PLAYTEST DONE"; then
     echo "### persona $p failed"; fail=1
   fi

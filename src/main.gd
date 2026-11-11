@@ -199,6 +199,54 @@ func _new_rack() -> void:
 	forecast_dirty = true
 
 
+## ================================================================ ball info on hover
+## Resting the pointer (or a thumb) on a special, imbued or 8-ball says what it does.
+var hover_ball := -1
+var hover_shown := false
+
+
+func _update_ball_hover() -> void:
+	var idx := -1
+	if sim != null and (state == S.AIM or state == S.PLACE or state == S.HOLD or state == S.PICK) and overlay.get_child_count() == 0 and not dragging:
+		var m := _mouse_table()
+		var bd := (TableLayout.R * 1.15) * (TableLayout.R * 1.15)
+		for i in sim.count():
+			if sim.alive[i] == 1 and sim.num[i] != 0:
+				var d := sim.pos[i].distance_squared_to(m)
+				if d < bd:
+					bd = d
+					idx = i
+	if idx == hover_ball:
+		return
+	hover_ball = idx
+	var info := _ball_info(sim.num[idx]) if idx >= 0 else []
+	if info.is_empty():
+		if hover_shown:
+			term_tip.hide_tip()
+			hover_shown = false
+		return
+	term_tip.show_text(info[0], info[1], mouse_pos)
+	hover_shown = true
+
+
+## [title, text] for a ball worth explaining, or [] for a plain one.
+func _ball_info(n: int) -> Array:
+	var parts: Array = []
+	var k := Catalog.kind_of(n)
+	if k != "":
+		parts.append(Catalog.BALL_TYPES[k].desc)
+		if k == "dice" or k == "wild":
+			parts.append("Right now it counts as the %d." % int(Catalog.faces.get(n, 0)))
+	var iso: String = run.imbues.get(n, "") if run != null else ""
+	if iso != "":
+		parts.append("Imbued with %s: %s" % [Catalog.IMBUES[iso].name, Catalog.IMBUES[iso].desc])
+	if n == 8:
+		parts.append(Glossary.sentence("eight"))
+	if parts.is_empty():
+		return []
+	return [Catalog.ball_label(n), " ".join(parts)]
+
+
 ## ================================================================ the Hustler's Kit
 ## Tools (one charge per table) and consumables share one bar. Set-up items are
 ## "armed": their effect shows on the prediction at once, tapping them again
@@ -1116,6 +1164,7 @@ func _process(delta: float) -> void:
 		if banner_t <= 0.0:
 			banner.visible = false
 	sfx.set_roll(_roll_level() if state == S.ROLL else 0.0)
+	_update_ball_hover()
 	if touch_shoot:
 		var label := "PAUSE" if state == S.ROLL else ("PLAY ON" if state == S.HOLD else "SHOOT")
 		if touch_shoot.text != label:

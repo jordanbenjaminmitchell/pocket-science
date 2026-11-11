@@ -37,8 +37,13 @@ func setup(style: StyleBox, head_font: Font, body_font: Font) -> void:
 
 
 func show_term(term: String, at: Vector2) -> void:
-	heading.text = Glossary.title(term)
-	body.text = Glossary.sentence(term)
+	show_text(Glossary.title(term), Glossary.sentence(term), at)
+
+
+## Any heading and text, for things that are not glossary terms (a special ball).
+func show_text(title: String, text: String, at: Vector2) -> void:
+	heading.text = title
+	body.text = text
 	panel.visible = true
 	panel.reset_size()
 	var screen := panel.get_viewport_rect().size
