@@ -11,6 +11,104 @@ Existing tile keys look like `"imbue:vein"`, `"ball:gold"` and `"item:trapdoor"`
 3. **For a one-word name with no fitting element, use its first letter, or its first two letters if that letter is taken** (Blink is **B**, then **Bl** if B is taken).
 4. **No two cards may share a symbol.** If two names give the same initials, the newer card uses the first letter of the first word plus the next consonant of the second (for example **Sd** instead of a second **SS**).
 
+## Existing tiles to re-letter: 91
+
+These tiles were made before the symbol rules. Each needs its symbol changed in `TILES` in `src/ui/tile_art.gd` (and its lettering effect checked so it still fits two capitals). Suggested symbols follow the rules above and are all unique; where two names share initials, the later one is adjusted and the clash is noted.
+
+| Card | ID | Now | Should be | Note |
+|---|---|---|---|---|
+| Velvet Cloth | `perk:velvet` | V | **VC** | |
+| Heavy Hitter | `perk:heavyhit` | Hs | **HH** | |
+| Live Rails | `perk:liverails` | Lv | **LR** | |
+| Slow Cloth | `perk:slowcloth` | Cl | **SC** | |
+| Backspin Wax | `perk:backspin` | Ba | **BW** | |
+| Big Break | `perk:bigbreak` | Br | **BB** | |
+| Long Arm | `perk:longarm` | Lr | **LA** | |
+| Kick Drum | `perk:kick` | K | **KD** | |
+| Power Stroke | `perk:power` | P | **PS** | |
+| Soft Touch | `perk:finesse` | Ts | **ST** | |
+| Clean Stroke | `perk:precision` | Cs | **CS** | |
+| Stun Master | `perk:stun` | Mt | **SM** | |
+| Break Artist | `perk:afterburner` | Ar | **BA** | |
+| Massé Master | `perk:masse` | Ms | **MM** | |
+| Follow Through | `perk:followthru` | Fr | **FT** | |
+| Draw Artist | `perk:drawartist` | Ds | **DA** | |
+| Loud Table | `perk:elastic` | Ta | **LT** | |
+| Daisy Chain | `perk:chain` | Dy | **DC** | |
+| Cluster | `perk:multi` | Cu | **C** | |
+| Clean Sweep | `perk:supernova` | Cn | **Cw** | clashes with Clean Stroke (CS) |
+| Same Pocket | `perk:fusion` | Po | **SP** | |
+| Domino | `perk:domino` | Dm | **D** | |
+| Stoker | `perk:streak` | Sk | **S** | |
+| Last Chalk | `perk:comeback` | La | **LC** | |
+| Simmer | `perk:entropy` | Sm | **Si** | clashes with Stoker (S) |
+| Hot Hand | `perk:hothand` | Ho | **Hn** | clashes with Heavy Hitter (HH) |
+| Stay Hot | `perk:migration` | At | **SH** | |
+| Cold Start | `perk:coupon` | Cd | **Ct** | clashes with Clean Stroke (CS) |
+| Inferno | `perk:minimalist` | Ir | **I** | |
+| Corner Man | `perk:corner` | Cr | **CM** | |
+| Side Door | `perk:side` | Sd | **SD** | |
+| Wide Jaws | `perk:jaws` | W | **WJ** | |
+| Magnetic Pockets | `perk:magnet` | Mg | **MP** | |
+| Grand Tour | `perk:collector` | Gt | **GT** | |
+| Odd Balls | `perk:odd` | Os | **OB** | |
+| Even Money | `perk:even` | Ev | **EM** | |
+| Prime Cut | `perk:prime` | Pr | **PC** | |
+| Lucky Numbers | `perk:fibonacci` | Lu | **LN** | |
+| Rotation | `perk:rotation` | Rn | **R** | |
+| Big Numbers | `perk:moneyball` | Bi | **BN** | |
+| Solids | `perk:solids` | S | **So** | clashes with Stoker (S) |
+| Solid Gold | `perk:solidgold` | Sg | **SG** | |
+| Steady Run | `perk:steadyrun` | Sr | **SR** | |
+| Solids Only | `perk:solidsonly` | So | **SO** | |
+| Last Solid | `perk:lastsolid` | Ld | **LS** | |
+| Low Ball | `perk:lowball` | Lb | **LB** | |
+| Racing Stripe | `perk:racing` | Rg | **RS** | |
+| Lucky Stripe | `perk:luckystripe` | Li | **Lt** | clashes with Last Solid (LS) |
+| Tiger Stripes | `perk:tiger` | Ti | **TS** | |
+| Stripes Only | `perk:stripesonly` | Sy | **Sn** | clashes with Solids Only (SO) |
+| Last Stripe | `perk:laststripe` | Ls | **La** | clashes with Last Solid (LS) |
+| High Roller | `perk:highball` | Hr | **HR** | |
+| Behind the 8 | `perk:eight` | Bh | **B8** | |
+| Dark Horse | `perk:darkhorse` | Dh | **DH** | |
+| Hush Money | `perk:hushmoney` | Hm | **HM** | |
+| Kiss the Black | `perk:kissblack` | Kb | **KB** | |
+| Steer Clear | `perk:steerclear` | Ce | **Sl** | clashes with Slow Cloth (SC) |
+| Last Call | `perk:lastcall` | Lc | **Ll** | clashes with Last Chalk (LC) |
+| Eight Count | `perk:eightcount` | Ec | **EC** | |
+| Trouble Maker | `perk:trouble` | Tb | **TM** | |
+| Bank Manager | `perk:bank` | Bk | **BM** | |
+| Ricochet | `perk:ricochet` | Re | **Ri** | clashes with Rotation (R) |
+| Soft Rails | `perk:cushion` | Ra | **Sa** | clashes with Steady Run (SR) |
+| Tracer | `perk:tracer` | Tc | **T** | |
+| Long Game | `perk:lever` | Ga | **LG** | |
+| Spare Chalk | `perk:chalk` | Ca | **Sh** | clashes with Slow Cloth (SC) |
+| Long Lens | `perk:lens` | Ln | **LL** | |
+| Second Sight | `perk:oracle` | Si | **SS** | |
+| Gold Rail | `perk:gold` | Gd | **GR** | |
+| Deep Pockets | `perk:venture` | Pd | **DP** | |
+| Side Hustle | `perk:hunter` | Sh | **Ss** | clashes with Stay Hot (SH) |
+| Snowball | `perk:catalyst` | Sb | **Sw** | S is taken by Stoker, Sn by Stripes Only |
+| First Blood | `perk:golden` | Fl | **FB** | |
+| Double Take | `perk:echo` | Db | **DT** | |
+| Thin Rack | `perk:thinrack` | Tn | **TR** | |
+| Missing Piece | `perk:missing` | Mn | **Mc** | clashes with Magnetic Pockets (MP) |
+| Clean House | `perk:cleanhouse` | Ch | **CH** | |
+| Pack Rat | `perk:packrat` | Pa | **PR** | |
+| Quartermaster | `perk:quartermaster` | Qm | **Q** | |
+| Tinkerer | `perk:tinkerer` | Te | **Ti** | clashes with Tracer (T) |
+| Enchanter | `perk:enchanter` | Er | **E** | |
+| Second Coat | `perk:secondcoat` | Co | **Se** | clashes with Slow Cloth (SC) |
+| Gold Rush | `perk:goldrush` | Ru | **Gs** | clashes with Gold Rail (GR) |
+| Alchemy | `perk:alchemy` | Am | **A** | |
+| Stillness | `perk:stillness` | Sl | **St** | every other pair from its letters is taken; St is fine beside Soft Touch's ST because the capitals differ |
+| Quick Hands | `perk:quickhands` | Qh | **QH** | |
+| Afterimage | `perk:afterimage` | Ag | **Af** | clashes with Alchemy (A) |
+| Overclock | `perk:overclock` | Oc | **Ov** | clashes with Overflow (O) |
+| Vein | `imbue:vein` | Vn | **V** | |
+| Second Strike | `item:secondstrike` | Ss | **S2** | SS is taken by Second Sight; the 2 reads as "second" |
+| Trapdoor | `item:trapdoor` | Td | **Tr** | clashes with Tracer (T) |
+
 ## Particle effects (optional, per card)
 
 Many cards can have a small animated particle effect: embers for Heat cards, sparkles for Gold, frost for Frosted, bubbles for Simmer and so on. Keep each effect small and tied to what the card does.
