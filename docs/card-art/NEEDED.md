@@ -1,8 +1,15 @@
 # Card art still needed
 
-All 100 Perk tiles are done. These cards still need art. Match the style of the existing tiles in `src/ui/tile_art.gd`: each card needs a **symbol** (1–2 letters, a real element symbol where one fits the name, never the same as another card), a short **stat** (the headline effect, about 16 characters at most), and a **lettering effect** for the symbol that hints at what the card does.
+All 100 Perk tiles are done. These cards still need art. Match the style of the existing tiles in `src/ui/tile_art.gd`: each card needs a **symbol** (1–2 letters, never the same as another card; see the symbol rules below), a short **stat** (the headline effect, about 16 characters at most), and a **lettering effect** for the symbol that hints at what the card does.
 
 Existing tile keys look like `"imbue:vein"`, `"ball:gold"` and `"item:trapdoor"`. Use the ID column below in the same way.
+
+## Symbol rules
+
+1. **Use a real element symbol only when it genuinely fits the name.** Gold is **Au**, Iron is **Fe**, Silver would be **Ag**. The symbol should still make sense to someone who knows the element.
+2. **Otherwise, for a name of two or more words, use the first letter of the first two words, both capitals.** Follow Through is **FT**, Called Shot is **CS**, Pop-up Wall is **PW**, Ball in Hand is **BH** (skip small words like "in", "of", "the").
+3. **For a one-word name with no fitting element, use its first letter, or its first two letters if that letter is taken** (Blink is **B**, then **Bl** if B is taken).
+4. **No two cards may share a symbol.** If two names give the same initials, the newer card uses the first letter of the first word plus the next consonant of the second (for example **Sd** instead of a second **SS**).
 
 ## Particle effects (optional, per card)
 
