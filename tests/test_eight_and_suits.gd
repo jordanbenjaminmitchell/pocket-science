@@ -85,9 +85,10 @@ func _initialize() -> void:
 	check(score(s12, {"perks": ["stripesonly"]}).total == 68 and score(s5, {"perks": ["stripesonly"]}).total == 10, "Stripes Only ×2 and solids ×0.5")
 	check(score(s5, {"perks": ["lastsolid"], "on_table": [5, 8, 9, 12]}).total == 160, "Last Solid ×8")
 	check(score(s5, {"perks": ["lastsolid"], "on_table": [5, 3, 9]}).total == 20, "only on the last one")
-	check(score(s12, {"perks": ["laststripe"], "on_table": [1, 8, 12]}).total == 170, "Last Stripe ×5")
-	check(score(s12, {"perks": ["racing"], "power": 0.7}).total == 68, "Racing Stripe needs power")
-	check(score(s12, {"perks": ["racing"], "power": 0.4}).total == 34, "and pays nothing extra without it")
+	check(score(s12, {"perks": ["racing"], "power": 0.7}).total == 34, "Rubidium Rush changes physics, not points")
+	var fz := score([hit(0, 3), pot(3), pot(5, 2), pot(0, 1)], {"perks": ["followthru"]})
+	check(fz.scored and fz.foul == "" and fz.get("scratch_saved", false), "Francium Fizz: a scratch with 2 sinks still scores")
+	check(score([hit(0, 3), pot(3), pot(0, 1)], {"perks": ["followthru"]}).foul == "Scratch", "but not with only 1")
 	check(score(s12, {"perks": ["tiger"], "stripe_run": 2}).total == 51, "Tiger Stripes builds Chain")
 	var fam := {"solid": 0, "stripe": 0, "eight": 0}
 	for id in Catalog.PERKS:

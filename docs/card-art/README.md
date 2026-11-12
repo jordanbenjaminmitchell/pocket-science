@@ -12,8 +12,9 @@ Elements that name ball numbers (Prime Cut, Lucky Numbers, Odd Balls, Even Money
 | --- | --- |
 | `perk-tiles-1.png` … `perk-tiles-5.png` | Every Element tile at 2× size, 20 per sheet |
 | `imbue-tiles-1.png` | Every Isotope tile, on balls 0–15 in turn (0: before you choose the ball) |
-| `ball-tiles-1.png`, `ball-tiles-2.png` | Every special ball tile |
-| `item-tiles-1.png`, `item-tiles-2.png` | Every Hustler's Kit item tile |
+| `ball-tiles-1.png`, `ball-tiles-2.png` | Every special ball, drawn as the ball |
+| `item-tiles-1.png`, `item-tiles-2.png` | Every Catalyst tile |
+| `cue-tiles-1.png` | Every starting cue |
 | `bet-cards-1.png`, `bet-cards-2.png` | Every side bet as a playing card (example numbers: stake $8, target 215), then the card back and the taken, won and passed states |
 | `code/tile_art.gd` | Copy of `src/ui/tile_art.gd`: tile data (`TILES`), layout, every lettering effect, the pattern shader and the particle layer |
 | `code/bet_card.gd` | Copy of `src/ui/bet_card.gd`: the side bet playing card (`BetCard`), which works out each table's real numbers |

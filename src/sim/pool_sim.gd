@@ -41,6 +41,8 @@ var side_power := 1.0        # how much english bends off cushions (Massé Maste
 var portal_lock := PackedInt32Array()   # the portal end a ball just came out of
 var pull := PackedFloat64Array()        # per-ball pocket pull (Magnetic Imbue)
 var bounce := PackedFloat64Array()      # per-ball cushion liveliness; 0 = the table's own (Star balls)
+var anchor8 := false                    # Lead Anchor: the 8 rattles out of pockets while other balls remain
+var grip := PackedFloat64Array()        # per-ball cloth friction, 1 = the table's own (Rubidium Rush, Gallium Glide)
 const GLASS_BREAK := 700.0              # impact speed that shatters a Glass ball
 # One-shot effects from items, cleared by clear_shot_flags() after each shot.
 var ghost := -1                         # Ghost Chalk: nothing collides with this ball
@@ -84,6 +86,8 @@ func clone() -> PoolSim:
 	s.portal_lock = portal_lock.duplicate()
 	s.pull = pull.duplicate()
 	s.bounce = bounce.duplicate()
+	s.grip = grip.duplicate()
+	s.anchor8 = anchor8
 	s.ghost = ghost
 	s.glide = glide.duplicate()
 	s.pinned = pinned.duplicate()
@@ -105,6 +109,7 @@ func add_ball(number: int, p: Vector2, m: float = 1.0) -> int:
 	portal_lock.append(-1)
 	pull.append(0.0)
 	bounce.append(0.0)
+	grip.append(1.0)
 	glide.append(0)
 	pinned.append(0)
 	return pos.size() - 1
@@ -155,9 +160,12 @@ func stop_distance(i: int) -> float:
 	if frictionless or roll_decel <= 0.0 or spin[i] != Vector2.ZERO or (_kind(i) == "comet" and rails[i] == 0) or glide[i] == 1 or not extra_wells.is_empty():
 		return -1.0
 	var v := vel[i].length()
-	if drag < 0.001:
-		return v * v / (2.0 * roll_decel)
-	return v / drag - roll_decel / (drag * drag) * log(1.0 + drag * v / roll_decel)
+	var g: float = grip[i] if i < grip.size() else 1.0
+	var rd := roll_decel * g
+	var dg := drag * g
+	if dg < 0.001:
+		return v * v / (2.0 * rd)
+	return v / dg - rd / (dg * dg) * log(1.0 + dg * v / rd)
 
 
 ## Roll per second the ball shows beyond its travel: pending draw or follow after
@@ -447,7 +455,7 @@ func _forces(dt: float) -> void:
 				v += wd / wl * (float(w[1]) * 9000.0 / wl) * dt
 		if not frictionless and glide[i] == 0 and not (_kind(i) == "comet" and rails[i] == 0):
 			var sp := v.length()
-			var ns := sp - (roll_decel + drag * sp) * dt
+			var ns := sp - (roll_decel + drag * sp) * dt * (grip[i] if i < grip.size() else 1.0)
 			if ns <= STOP_SPEED and spin[i] == Vector2.ZERO:
 				v = Vector2.ZERO
 			elif ns <= 0.0:
@@ -503,6 +511,8 @@ func rail_e_of(i: int) -> float:
 func _rejects(i: int, k: int) -> bool:
 	var kind := _kind(i)
 	var side_pocket := k == 1 or k == 4
+	if anchor8 and num[i] == 8 and object_balls_left() > 1:
+		return true
 	return (kind == "moon" and not side_pocket) or (kind == "sun" and side_pocket)
 
 

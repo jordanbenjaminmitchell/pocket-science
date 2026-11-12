@@ -115,11 +115,13 @@ var flash_col := Color(0, 0, 0, 0)
 var flash_t := 0.0
 
 
-func set_lab(id: String) -> void:
+## The table's cloth art: the lab's rail colours, and the board's own decal
+## (BoardArt.DECALS) when it has one, else the lab's.
+func set_lab(id: String, board := "") -> void:
 	var art: Dictionary = Catalog.LAB_ART.get(id, Catalog.LAB_ART.standard)
 	rail_color = art.rail
 	trim_color = art.trim
-	decal = art.decal
+	decal = BoardArt.DECALS.get(board, art.decal) if board != "" and BoardArt.DECALS.get(board, "") != "" else art.decal
 	queue_redraw()
 	cushions.queue_redraw()
 

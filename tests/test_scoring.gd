@@ -49,7 +49,7 @@ func _initialize() -> void:
 	check(run_case(h5, {"perks": ["golden"]}).total == 40, "First Blood ×2")
 	check(run_case(h5, {"perks": ["glasscannon"]}).total == 40, "All In ×2")
 	check(run_case(h5, {"perks": ["echo"]}).total == 40, "Double Take pays twice")
-	check(run_case(h5, {"perks": ["afterburner"], "is_break": true}).total == 80, "Break Artist starts at Chain 4")
+	check(run_case(h5, {"perks": ["afterburner"], "is_break": true}).total == run_case(h5, {"is_break": true}).total, "Berkelium Break moves the cue ball, it adds no Chain")
 	# Heat Perks: some only work on fire, some only when you are not.
 	check(run_case(h5, {"perks": ["minimalist"], "heat": 5}).total == run_case(h5, {"heat": 5}).total * 2, "Inferno doubles sinks On fire")
 	check(run_case(h5, {"perks": ["minimalist"], "heat": 4}).total == run_case(h5, {"heat": 4}).total, "but not below Heat 5")

@@ -87,7 +87,7 @@ func _card(kind: String, id: String, ball: int) -> Control:
 ## on balls 1-15 in turn, the first before its ball is chosen.
 func _perk_sheets(out: String) -> void:
 	var set_name := OS.get_environment("PS_TILE_SET")
-	var prefix := {"perks": "perk:", "imbues": "imbue:", "balls": "ball:", "items": "item:", "bets": "bet:", "all": ""}.get(set_name, "perk:") as String
+	var prefix := {"perks": "perk:", "imbues": "imbue:", "balls": "ball:", "items": "item:", "bets": "bet:", "cues": "cue:", "all": ""}.get(set_name, "perk:") as String
 	var ids: Array = TileArt.TILES.keys().filter(func(k: String) -> bool: return k.begins_with(prefix))
 	if OS.get_environment("PS_TILE_ONLY") != "":
 		ids = Array(OS.get_environment("PS_TILE_ONLY").split(",")).map(func(k: String) -> String: return k if ":" in k else "perk:" + k)

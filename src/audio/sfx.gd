@@ -20,14 +20,23 @@ var roll_level := 0.0
 ## (made by tools/compose_score.py); the screens between tables keep their tracks.
 const TRACKS := {
 	"title": "velvet-orbit.mp3", "shop": "static-picnic.mp3", "endless": "mass-driver-groove.mp3", "victory": "solar-syncopation.mp3",
-	"local": "boards/the-local.ogg", "frozen": "boards/frozen-lake.ogg", "spring_st": "boards/spring-street.ogg",
-	"drift": "boards/the-drift.ogg", "slate": "boards/old-slate.ogg", "cramped": "boards/the-back-room.ogg",
-	"parlor": "boards/pinball-parlor.ogg", "posts": "boards/twin-posts.ogg", "sinkhole": "boards/the-sinkhole.ogg",
-	"hump": "boards/the-hump.ogg", "nineball": "boards/rotation-night.ogg", "magnet": "boards/the-magnet-room.ogg",
-	"smoke": "boards/the-smoke-room.ogg", "blackice": "boards/black-ice.ogg", "tilted": "boards/the-tilted-table.ogg",
-	"two": "boards/two-pockets.ogg", "closing": "boards/closing-time.ogg", "iron": "boards/the-iron-rack.ogg",
-	"lights": "boards/lights-out.ogg", "hustler": "boards/the-hustler.ogg", "elements": "boards/the-element-table.ogg", "hypotenuse": "boards/the-hypotenuse.ogg", "benzene": "boards/benzene-ring.ogg", "pentagon": "boards/golden-pentagon.ogg", "lshell": "boards/the-l-shell.ogg",
-	"final": "boards/the-grand-final.ogg",
+	# Every board, current and planned (docs/TABLES_SCIENCE.md), by its table id.
+	"local": "boards/the-local.ogg", "frozen": "boards/frozen-lake.ogg", "spring_st": "boards/capacitor.ogg",
+	"drift": "boards/coriolis.ogg", "slate": "boards/old-slate.ogg", "cramped": "boards/faraday-cage.ogg",
+	"parlor": "boards/pinball-parlor.ogg", "posts": "boards/harmonic-oscillator.ogg", "sinkhole": "boards/event-horizon.ogg",
+	"hump": "boards/the-hump.ogg", "nineball": "boards/rotation-night.ogg", "magnet": "boards/kepler-orbit.ogg",
+	"smoke": "boards/lotka-volterra.ogg", "blackice": "boards/superfluid.ogg", "tilted": "boards/snells-law.ogg",
+	"two": "boards/quantum-pockets.ogg", "closing": "boards/radioactive-decay.ogg", "iron": "boards/the-iron-rack.ogg",
+	"lights": "boards/lights-out.ogg", "hustler": "boards/the-hustler.ogg", "elements": "boards/the-clockwork-table.ogg",
+	"hypotenuse": "boards/the-hypotenuse.ogg", "benzene": "boards/benzene-ring.ogg", "pentagon": "boards/golden-pentagon.ogg",
+	"lshell": "boards/the-l-shell.ogg", "final": "boards/apex-predator.ogg", "venturi": "boards/venturi.ogg",
+	"erbridge": "boards/einstein-rosen-bridge.ogg", "parabolic": "boards/parabolic-mirror.ogg", "whisper": "boards/whispering-gallery.ogg",
+	"membrane": "boards/semipermeable-membrane.ogg", "sierpinski": "boards/sierpinski-triangle.ogg", "mobius": "boards/mobius-strip.ogg",
+	"maxwell": "boards/maxwells-demon.ogg", "chain": "boards/chain-reaction.ogg", "lorentz": "boards/lorentz-field.ogg",
+	"foucault": "boards/foucaults-pendulum.ogg", "galton": "boards/galton-board.ogg", "spiral": "boards/golden-spiral.ogg",
+	"tesla": "boards/tesla-coil.ogg", "gulf": "boards/gulf-stream.ogg", "meissner": "boards/meissner-effect.ogg",
+	"tectonic": "boards/tectonic-plates.ogg", "lattice": "boards/crystal-lattice.ogg", "stellated": "boards/stellated-star.ogg",
+	"lever": "boards/the-lever.ogg", "escape": "boards/escape-velocity.ogg",
 }
 
 

@@ -42,6 +42,7 @@ var clock_streak := 0         # Clockwork Table: ticks in a row
 var forgiven := false         # The Local: the free miss has been used
 var pockets_used: Array = []
 var shrink_steps := 0
+var flash_used := false   # Xenon Flash: used on this table
 var insured_used := 0
 var carry := 0           # Overflow: score carried into the next table
 var items: Array[String] = []   # consumables held
@@ -172,6 +173,7 @@ func begin_table() -> void:
 	pockets_used = []
 	shrink_steps = 0
 	insured_used = 0
+	flash_used = false
 	solid_run = 0
 	stripe_run = 0
 	table_mods = {"bumpers": [], "portals": [], "covered": []}
@@ -1047,6 +1049,13 @@ func apply_physics(s: PoolSim) -> void:
 		s.drag *= 1.3
 	if perks.has("liverails"):
 		s.rail_e = minf(0.95, s.rail_e * 1.1)
+	if perks.has("hothand") and heat >= 3:
+		s.pocket_pull = maxf(s.pocket_pull, 0.7)   # Holmium Magnet
+	s.anchor8 = perks.has("laststripe")   # Lead Anchor
+	if perks.has("domino"):
+		s.ball_e = 1.0   # Dysprosium Domino: hits lose no speed
+	else:
+		s.ball_e = 0.97
 	if next_magnet:
 		s.pocket_pull = 1.0
 	match t.anomaly:
@@ -1067,7 +1076,13 @@ func apply_physics(s: PoolSim) -> void:
 			if t.anomaly == "lead":
 				m = 1.6
 			if perks.has("featherweight"):
-				m *= 0.75
+				m *= 0.7   # Hydrogen Balloon
+			if perks.has("laststripe") and s.num[i] == 8:
+				m *= 3.0   # Lead Anchor
+			if perks.has("lever") and Catalog.is_stripe(s.num[i]):
+				m *= 1.4   # Tungsten Core
+			if perks.has("racing") and Catalog.is_stripe(s.num[i]):
+				m *= 0.7   # Rubidium Rush
 			match Catalog.kind_of(s.num[i]):
 				"iron":
 					m *= 2.0
@@ -1082,8 +1097,15 @@ func apply_physics(s: PoolSim) -> void:
 					m *= 2.0
 		if i < s.pull.size():
 			s.pull[i] = 1.0 if imbues.get(s.num[i], "") == "magnetic" else 0.0
-			s.bounce[i] = 1.0 if Catalog.kind_of(s.num[i]) == "star" else 0.0
+			s.bounce[i] = 1.0 if Catalog.kind_of(s.num[i]) == "star" or (perks.has("lever") and Catalog.is_stripe(s.num[i])) else 0.0
 		s.mass[i] = m
+		if i < s.grip.size():
+			var g := 1.0
+			if s.num[i] == 0 and perks.has("collector"):
+				g = 0.7   # Gallium Glide
+			elif s.num[i] != 0 and perks.has("racing") and Catalog.is_stripe(s.num[i]):
+				g = 0.8   # Rubidium Rush: rolls 25% further
+			s.grip[i] = g
 
 
 ## Everything the scorer needs to know about the shot about to be taken.

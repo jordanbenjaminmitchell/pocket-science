@@ -42,7 +42,7 @@ func _initialize() -> void:
 	print("perks")
 	check(score(h5, {"perks": ["thinrack"], "removed": 2}).total == 44, "Thin Rack: +12 per removed ball")
 	check(score(h5, {"perks": ["missing"], "removed": 2}).total == 40, "Missing Piece: Chain per removed ball")
-	check(score(h5, {"perks": ["followthru"], "follow": 0.6}).total == 30, "Follow Through pays with follow")
+	check(score(h5, {"perks": ["followthru"], "follow": 0.6}).total == 20, "Francium Fizz no longer pays for follow")
 	check(score(h5, {"perks": ["drawartist"], "follow": -0.6}).total == 30, "Draw Artist pays with draw")
 	check(score(h5, {"perks": ["drawartist"], "follow": 0.0}).total == 20, "and only with draw")
 	check(score(h5, {"perks": ["secondcoat"], "imbues": {5: "heavy"}}).total == 37, "Second Coat ×1.5 on Isotope balls")

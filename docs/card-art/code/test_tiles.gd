@@ -23,7 +23,7 @@ func _is_upper(c: String) -> bool:
 
 func _go() -> void:
 	print("tiles")
-	var every := {"perk": Catalog.PERKS, "imbue": Catalog.IMBUES, "ball": Catalog.BALL_TYPES, "item": Catalog.ITEMS, "bet": Catalog.BOUNTIES}
+	var every := {"perk": Catalog.PERKS, "imbue": Catalog.IMBUES, "ball": Catalog.BALL_TYPES, "item": Catalog.ITEMS, "bet": Catalog.BOUNTIES, "cue": Catalog.CUES}
 	for kind in every:
 		for id in every[kind]:
 			check(TileArt.has_tile(kind, id), "%s:%s has a tile" % [kind, id])
@@ -36,26 +36,36 @@ func _go() -> void:
 		var id := key.get_slice(":", 1)
 		check(every.has(kind) and ((every[kind] as Dictionary).has(id) or key == "bet:back"), "%s is a real card" % key)
 		var sym: String = t.sym
-		if kind == "bet":
+		if kind == "bet" or kind == "ball" or kind == "cue":
 			check(sym == "", "%s shows a picture, not letters" % key)
 		else:
 			# A capital, then nothing, a lower-case letter, a second capital or a digit (S2, B8).
 			var shaped := sym.length() >= 1 and sym.length() <= 2 and _is_upper(sym[0])
 			check(shaped, "%s symbol %s is one or two letters, starting with a capital" % [key, sym])
 			check(not syms.has(sym), "%s symbol %s is not also %s's" % [key, sym, syms.get(sym, "")])
+			if kind != "perk":
+				for pk in Catalog.PERKS:
+					check(TileArt.TILES["perk:" + pk].sym != sym, "%s symbol %s is not an Element's" % [key, sym])
 			syms[sym] = key
 		var r: String = t.get("letter", "")
+		if kind == "cue":
+			check(r == "", "%s is a picture of the cue" % key)
+			continue
 		check(r != "" and not letters.has(r), "%s has its own lettering effect (%s)" % [key, r])
 		letters[r] = key
 		var l := TileArt.Lettering.new(sym, r, Color.WHITE, 46, 74.0, TileArt.PAPER)
 		check(BUILT_IN.has(r) or l.has_method("_r_" + r), "%s effect %s is drawn" % [key, r])
 		l.free()
 		var stat: String = t.stat
-		check(stat.length() <= 17, "%s stat \"%s\" is short" % [key, stat])
+		check(stat.length() <= (25 if kind == "perk" else 17), "%s stat \"%s\" is short" % [key, stat])
+		if kind == "perk":
+			check(stat.count(" ") >= 1, "Element %s says what it does in a few words (\"%s\")" % [id, stat])
 		for b in ([0, 7, 12] if kind == "imbue" else [0]):
 			var tile := TileArt.new().setup(kind, id, b)
 			var on := tile._acts_on()
 			var on_w := TileArt.F_REG.get_string_size(on.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+			if kind == "perk":
+				on_w = -8.0   # Elements: the description has the whole row
 			var fs := TileArt.stat_size(stat, on_w)
 			var stat_w := TileArt.F_SEMI.get_string_size(stat, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			check(stat_w + on_w <= TileArt.SIZE.x - 26, "%s stat \"%s\" fits beside %s" % [key, stat, on])
@@ -64,7 +74,7 @@ func _go() -> void:
 			check(name_w <= TileArt.SIZE.x - 12, "%s name \"%s\" fits the tile" % [key, tile._name()])
 			tile.free()
 	var probe := TileArt.new().setup("imbue", "spark", 0)
-	check(probe._name() == "Spark Imbue" and probe._acts_on() == "Any ball", "an Imbue before its ball is chosen says so")
+	check(probe._name() == "Spark Isotope" and probe._acts_on() == "Any ball", "an Isotope before its ball is chosen says so")
 	probe.free()
 	# Side bets as playing cards: real numbers in the wording, and everything fits.
 	check(BetCard.bet_text("quarter", 215) == "Score 54 points in one shot", "a quarter of 215 is worked out as 54 points")
@@ -93,7 +103,7 @@ func _go() -> void:
 	# The balls a Perk singles out match the scoring rules.
 	check(TileArt.balls_for("perk", "prime") == Catalog.PRIMES, "Prime Cut's balls are the primes")
 	check(TileArt.balls_for("perk", "fibonacci") == [1, 2, 3, 5, 8, 13], "Lucky Numbers' balls are the Fibonacci numbers")
-	check(TileArt.balls_for("perk", "side").is_empty(), "a Perk for any ball singles none out")
+	check(TileArt.balls_for("perk", "side").is_empty(), "an Element for any ball singles none out")
 	for id in TileArt.FLOAT_NUMBERS:
 		var nums := TileArt.balls_for("perk", id)
 		check(nums.size() >= 1 and nums.size() <= 8, "%s floats 1-8 numbers on its tile" % id)

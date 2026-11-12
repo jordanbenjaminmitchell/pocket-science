@@ -8,19 +8,26 @@ lo-fi keys and pads up top, and a trap engine underneath (half-time kit, hat rol
 Every melody is read from a real mathematical sequence (digits of pi, Fibonacci,
 Recaman, Thue-Morse...), so each table also has its own maths behind it.
 
-Song form, in bars:
+Song form, in bars (the default short loop, 32 bars, about 1:40):
+    1-4 intro | 5-12 groove | 13-16 build | 17-24 DROP | 25-32 outro (fades into bar 1)
+With PS_BARS=64 in the environment it renders the long form instead:
     1-8 intro | 9-16 groove | 17-20 build | 21-28 DROP | 29-36 break
-    37-44 groove 2 | 45-48 build 2 | 49-56 DROP 2 | 57-64 outro (fades into bar 1)
+    37-44 groove 2 | 45-48 build 2 | 49-56 DROP 2 | 57-64 outro
 
-The render runs a few seconds past bar 64 and folds that tail onto the start, so
+The render runs a few seconds past the last bar and folds that tail onto the start, so
 reverb and released notes carry over the loop point and the seam is inaudible.
 
 Usage (needs Python with NumPy + SciPy, and ffmpeg with libvorbis on PATH):
     py -3.12 tools/compose_score.py                  # every board into assets/music/boards
     py -3.12 tools/compose_score.py local final      # just these boards
     py -3.12 tools/compose_score.py --inspect DIR    # also write WAVs, spectrograms and a level report
+
+Files are Vorbis at quality 0 (about 64 kbps) by default: on a phone speaker it
+sounds the same as 2.5 and is about 40% smaller. Pass --quality 2.5 for more.
 """
 import argparse
+import re
+import unicodedata
 import json
 import math
 import os
@@ -36,7 +43,7 @@ from scipy import signal
 SR = 44100
 TAIL = 6 * SR
 TAU = 2 * np.pi
-BARS = 64
+BARS = int(os.environ.get("PS_BARS", "32"))
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -196,6 +203,25 @@ def seq_pascal_mod7(n):
     return out[:n]
 
 
+def seq_pascal_mod2(n):
+    # Pascal's triangle mod 2 draws Sierpinski's triangle; the odd entries carry the row's count of odd numbers.
+    out, row = [], [1]
+    while len(out) < n:
+        ones = sum(v % 2 for v in row)
+        out += [(v % 2) * (1 + ones % 7) for v in row]
+        row = [1] + [row[i] + row[i + 1] for i in range(len(row) - 1)] + [1]
+    return out[:n]
+
+
+def seq_binomial(n):
+    # Galton board: the middle of each row of Pascal's triangle, digit by digit.
+    out, row = [], [1]
+    while len(out) < n:
+        out += _digits(row[len(row) // 2], 4)
+        row = [1] + [row[i] + row[i + 1] for i in range(len(row) - 1)] + [1]
+    return out[:n]
+
+
 def seq_cyclic7(n):
     return [int(c) for c in ("142857" * (n // 6 + 1))[:n]]
 
@@ -212,7 +238,7 @@ SEQUENCES = {
     "twin_primes": seq_twin_primes, "catalan": seq_catalan, "thue_morse": seq_thue_morse,
     "recaman": seq_recaman, "triangular": seq_triangular, "squares": seq_squares, "cubes": seq_cubes,
     "look_and_say": seq_look_and_say, "totient": seq_totient, "pascal7": seq_pascal_mod7,
-    "cyclic7": seq_cyclic7, "one_81": seq_one_81,
+    "cyclic7": seq_cyclic7, "one_81": seq_one_81, "pascal2": seq_pascal_mod2, "binomial": seq_binomial,
 }
 
 
@@ -257,8 +283,11 @@ WOBBLES = {
 }
 FILL = [(0, 4, "wub2", 0, 0), (4, 4, "wub4", 0, 0), (8, 4, "wub8", 0, 0), (12, 4, "accel", 0, -5)]
 
-SECTIONS = [("intro", 0, 8), ("groove", 8, 16), ("build", 16, 20), ("drop", 20, 28), ("break", 28, 36),
-            ("groove2", 36, 44), ("build2", 44, 48), ("drop2", 48, 56), ("outro", 56, 64)]
+LONG_FORM = [("intro", 0, 8), ("groove", 8, 16), ("build", 16, 20), ("drop", 20, 28), ("break", 28, 36),
+             ("groove2", 36, 44), ("build2", 44, 48), ("drop2", 48, 56), ("outro", 56, 64)]
+# The short loop keeps one groove, build and drop, and a full eight-bar outro.
+SHORT_FORM = [("intro", 0, 4), ("groove", 4, 12), ("build", 12, 16), ("drop", 16, 24), ("outro", 24, 32)]
+SECTIONS = LONG_FORM if BARS >= 64 else SHORT_FORM
 
 
 def section(bar):
@@ -281,11 +310,11 @@ BOARDS = {
                    prog=[(0, "maj9"), (2, "add9"), (11, "m9"), (7, "maj7s11")], cb=2, lead="glass", rhythm=(3, 0),
                    arp=5, swing=0.1, wob=dict(wave="square", fmin=120, fmax=1600, q=3.5, drive=1.5),
                    drops=("womp", "lazy"), fx=["ice", "sonar"]),
-    "spring_st": dict(title="Spring Street", seq="fib", key=5, mode="mixolydian", bpm=78, tension=0.5,
+    "spring_st": dict(title="Capacitor", seq="fib", key=5, mode="mixolydian", bpm=78, tension=0.5,
                       prog=[(0, "9"), (10, "maj9"), (5, "maj7"), (7, "m7")], cb=2, lead="pluck", rhythm=(4, 1),
                       arp=7, swing=0.3, wob=dict(wave="saw", fmin=130, fmax=2200, q=4.5, drive=1.8),
                       drops=("womp", "halt"), fx=["boing"]),
-    "drift": dict(title="The Drift", seq="collatz", key=9, mode="dorian", bpm=74, tension=0.5,
+    "drift": dict(title="Coriolis", seq="collatz", key=9, mode="dorian", bpm=74, tension=0.5,
                   prog=[(0, "m9"), (5, "9"), (3, "maj7"), (10, "add9")], cb=2, lead="glide", rhythm=(3, 5),
                   arp=6, swing=0.2, wob=dict(wave="saw", fmin=100, fmax=1800, q=3.5, drive=1.7),
                   drops=("lazy", "wub"), fx=["water"]),
@@ -293,7 +322,7 @@ BOARDS = {
                   prog=[(0, "m9"), (8, "maj7"), (5, "m9"), (7, "7sus4")], cb=2, lead="ep", rhythm=(3, 0),
                   arp=5, swing=0.15, wob=dict(wave="saw", fmin=90, fmax=1500, q=3.0, drive=2.2),
                   drops=("lazy", "halt"), fx=["vinyl", "rumble"]),
-    "cramped": dict(title="The Back Room", seq="look_and_say", key=8, mode="minor", bpm=76, tension=1.5,
+    "cramped": dict(title="Faraday Cage", seq="look_and_say", key=8, mode="minor", bpm=76, tension=1.5,
                     prog=[(0, "m7"), (1, "maj7"), (0, "m7"), (11, "dim7")], cb=2, lead="chip", rhythm=(1, 4),
                     arp=7, swing=0.22, wob=dict(wave="square", fmin=110, fmax=2000, q=5.0, drive=2.0),
                     drops=("halt", "stutter"), fx=["hum", "tick"]),
@@ -301,11 +330,11 @@ BOARDS = {
                    prog=[(0, "maj9"), (9, "m7"), (2, "m7"), (7, "9")], cb=1, lead="chip", rhythm=(4, 2),
                    arp=5, swing=0.12, wob=dict(wave="square", fmin=140, fmax=2600, q=5.0, drive=1.8),
                    drops=("womp_hi", "stutter"), fx=["ding", "bleeps"]),
-    "posts": dict(title="Twin Posts", seq="thue_morse", key=4, mode="dorian", bpm=76, tension=1,
+    "posts": dict(title="Harmonic Oscillator", seq="thue_morse", key=4, mode="dorian", bpm=76, tension=1,
                   prog=[(0, "m9"), (5, "9"), (0, "m9"), (7, "m7")], cb=2, lead="bell", rhythm=(1, 2),
                   arp=8, swing=0.2, canon=True, wob=dict(wave="saw", fmin=120, fmax=2000, q=4.0, drive=1.8),
                   drops=("womp", "womp_hi"), fx=["bleeps"]),
-    "sinkhole": dict(title="The Sinkhole", seq="recaman", key=1, mode="phrygian", bpm=70, tension=2,
+    "sinkhole": dict(title="Event Horizon", seq="recaman", key=1, mode="phrygian", bpm=70, tension=2,
                      prog=[(0, "m9"), (1, "maj7"), (10, "m7"), (1, "maj7")], cb=2, lead="glide", rhythm=(3, 5),
                      arp=7, swing=0.12, wob=dict(wave="saw", fmin=80, fmax=2400, q=5.0, drive=2.4),
                      drops=("womp", "trip"), fx=["shepard", "drone"], sink808=True),
@@ -317,27 +346,27 @@ BOARDS = {
                      prog=[(0, "m9"), (10, "maj7"), (8, "maj7"), (7, "7")], cb=2, lead="pluck", rhythm=(4, 0),
                      arp=9, swing=0.15, wob=dict(wave="square", fmin=100, fmax=2400, q=4.5, drive=2.2),
                      drops=("wub", "womp"), fx=["rotor", "bleeps"]),
-    "magnet": dict(title="The Magnet Room", seq="phi", key=5, mode="harmonic", bpm=72, tension=2,
+    "magnet": dict(title="Kepler Orbit", seq="phi", key=5, mode="harmonic", bpm=72, tension=2,
                    prog=[(0, "mM7"), (8, "maj7"), (1, "maj7"), (7, "7b9")], cb=2, lead="glide", rhythm=(0, 3),
                    arp=8, swing=0.12, wob=dict(wave="saw", fmin=90, fmax=2600, q=5.5, drive=2.3),
                    drops=("womp", "wub"), fx=["pull", "drone"]),
-    "smoke": dict(title="The Smoke Room", seq="squares", key=10, mode="dorian", bpm=70, tension=1.5,
+    "smoke": dict(title="Lotka–Volterra", seq="squares", key=10, mode="dorian", bpm=70, tension=1.5,
                   prog=[(0, "m9"), (5, "m9"), (8, "9"), (7, "7b9")], cb=2, lead="flute", rhythm=(1, 3),
                   arp=6, swing=0.34, vibrato=0.0, wob=dict(wave="saw", fmin=100, fmax=1700, q=3.5, drive=2.0),
                   drops=("lazy", "womp"), fx=["vinyl", "smoke"]),
-    "blackice": dict(title="Black Ice", seq="sqrt3", key=6, mode="harmonic", bpm=68, tension=3,
+    "blackice": dict(title="Superfluid", seq="sqrt3", key=6, mode="harmonic", bpm=68, tension=3,
                      prog=[(0, "m"), (1, "maj7"), (6, "m7b5"), (7, "7b9")], cb=2, lead="glass", rhythm=(3, 5),
                      arp=7, swing=0.08, wob=dict(wave="square", fmin=90, fmax=3000, q=6.0, drive=2.6),
                      drops=("trip", "womp"), fx=["ice", "drone", "geiger"]),
-    "tilted": dict(title="The Tilted Table", seq="ln2", key=7, mode="lydian", bpm=74, tension=2.5,
+    "tilted": dict(title="Snell's Law", seq="ln2", key=7, mode="lydian", bpm=74, tension=2.5,
                    prog=[(0, "maj9"), (2, "9"), (4, "m7"), (1, "maj7")], cb=2, lead="glide", rhythm=(2, 4),
                    arp=7, swing=0.14, tilt=True, wob=dict(wave="saw", fmin=100, fmax=2600, q=5.0, drive=2.3),
                    drops=("halt", "trip"), fx=["warble", "drone"]),
-    "two": dict(title="Two Pockets", seq="twin_primes", key=0, mode="minor", bpm=76, tension=3,
+    "two": dict(title="Quantum Pockets", seq="twin_primes", key=0, mode="minor", bpm=76, tension=3,
                 prog=[(0, "m9"), (6, "dim7"), (0, "m9"), (6, "7")], cb=2, lead="bell", rhythm=(1, 4),
                 arp=6, swing=0.1, canon=True, wob=dict(wave="square", fmin=90, fmax=3000, q=6.0, drive=2.6),
                 drops=("stutter", "womp_hi"), fx=["bleeps", "geiger"]),
-    "closing": dict(title="Closing Time", seq="cyclic7", key=9, mode="minor", bpm=80, tension=3,
+    "closing": dict(title="Radioactive Decay", seq="cyclic7", key=9, mode="minor", bpm=80, tension=3,
                     prog=[(0, "m9"), (11, "aug"), (10, "maj7"), (9, "m7b5")], cb=2, lead="ep", rhythm=(2, 0),
                     arp=7, swing=0.1, wob=dict(wave="saw", fmin=90, fmax=2800, q=5.5, drive=2.5),
                     drops=("womp", "stutter"), fx=["tick", "drone"]),
@@ -353,7 +382,7 @@ BOARDS = {
                     prog=[(0, "m7"), (5, "9"), (8, "7"), (7, "7b9")], cb=2, lead="chip", rhythm=(4, 1),
                     arp=6, swing=0.36, wob=dict(wave="saw", fmin=100, fmax=2400, q=4.5, drive=2.3),
                     drops=("womp", "halt"), fx=["coin", "vinyl"]),
-    "elements": dict(title="The Element Table", seq="pascal7", key=2, mode="harmonic", bpm=78, tension=3.5,
+    "elements": dict(title="The Clockwork Table", seq="pascal7", key=2, mode="harmonic", bpm=78, tension=3.5,
                      prog=[(0, "m9"), (10, "maj7"), (7, "7b9"), (0, "mM7")], cb=2, lead="bell", rhythm=(0, 4),
                      arp=7, swing=0.1, wob=dict(wave="saw", fmin=90, fmax=3200, q=6.0, drive=2.8),
                      drops=("womp_hi", "trip"), fx=["elements", "drone"]),
@@ -373,15 +402,103 @@ BOARDS = {
                   prog=[(0, "m9"), (5, "9"), (0, "m9"), (7, "m7")], cb=2, lead="bell", rhythm=(1, 2),
                   arp=8, swing=0.2, canon=True, wob=dict(wave="saw", fmin=120, fmax=2000, q=4.0, drive=1.8),
                   drops=("womp", "womp_hi"), fx=["bleeps"]),
-    "final": dict(title="The Grand Final", seq="one_81", key=4, mode="phrygdom", bpm=80, tension=4,
+    "final": dict(title="Apex Predator", seq="one_81", key=4, mode="phrygdom", bpm=80, tension=4,
                   prog=[(0, "m9"), (1, "maj7"), (8, "maj7"), (7, "7b9")], cb=2, lead="bell", rhythm=(1, 4),
                   arp=8, swing=0.08, wob=dict(wave="saw", fmin=80, fmax=3600, q=6.5, drive=3.0),
                   drops=("womp", "stutter"), fx=["geiger", "drone", "sonar"]),
+
+    # --- The new science boards (docs/TABLES_SCIENCE.md) ---
+    "venturi": dict(title="Venturi", seq="sqrt3", key=7, mode="mixolydian", bpm=80, tension=0.5,
+                    prog=[(0, "9"), (5, "maj9"), (10, "maj7"), (7, "7sus4")], cb=2, lead="glide", rhythm=(2, 4),
+                    arp=6, swing=0.16, wob=dict(wave="saw", fmin=120, fmax=2400, q=4.5, drive=1.9),
+                    drops=("womp", "stutter"), fx=["water", "rise"]),
+    "erbridge": dict(title="Einstein–Rosen Bridge", seq="e", key=1, mode="lydian", bpm=74, tension=1,
+                     prog=[(0, "maj9"), (6, "maj7s11"), (4, "m9"), (11, "7sus4")], cb=2, lead="glass", rhythm=(5, 2),
+                     arp=7, swing=0.1, canon=True, wob=dict(wave="square", fmin=100, fmax=2600, q=5.0, drive=2.0),
+                     drops=("trip", "womp"), fx=["shepard", "sonar"]),
+    "parabolic": dict(title="Parabolic Mirror", seq="squares", key=11, mode="lydian", bpm=76, tension=1.5,
+                      prog=[(0, "maj7s11"), (2, "9"), (7, "maj9"), (4, "m7")], cb=2, lead="bell", rhythm=(0, 2),
+                      arp=8, swing=0.12, wob=dict(wave="saw", fmin=110, fmax=2400, q=4.5, drive=2.0),
+                      drops=("womp_hi", "lazy"), fx=["ding", "sonar"]),
+    "whisper": dict(title="Whispering Gallery", seq="look_and_say", key=6, mode="dorian", bpm=68, tension=1.5,
+                    prog=[(0, "m11"), (5, "9"), (3, "maj9"), (10, "add9")], cb=2, lead="flute", rhythm=(3, 1),
+                    arp=5, swing=0.24, canon=True, wob=dict(wave="saw", fmin=90, fmax=1800, q=3.5, drive=1.8),
+                    drops=("lazy", "halt"), fx=["drone", "smoke"]),
+    "membrane": dict(title="Semipermeable Membrane", seq="thue_morse", key=8, mode="dorian", bpm=74, tension=2,
+                     prog=[(0, "m9"), (2, "m7"), (5, "9"), (7, "7b9")], cb=2, lead="pluck", rhythm=(1, 5),
+                     arp=7, swing=0.18, wob=dict(wave="square", fmin=100, fmax=2400, q=5.0, drive=2.1),
+                     drops=("halt", "wub"), fx=["water", "bleeps"]),
+    "sierpinski": dict(title="Sierpinski Triangle", seq="pascal2", key=3, mode="phrygian", bpm=78, tension=2.5,
+                       prog=[(0, "m"), (1, "maj7"), (3, "maj7"), (1, "maj7")], cb=1, lead="chip", rhythm=(4, 1),
+                       arp=9, swing=0.08, wob=dict(wave="square", fmin=90, fmax=3000, q=6.0, drive=2.5),
+                       drops=("stutter", "trip"), fx=["bleeps", "tick"]),
+    "mobius": dict(title="Möbius Strip", seq="recaman", key=10, mode="lydian", bpm=72, tension=2.5,
+                   prog=[(0, "maj9"), (4, "m7"), (6, "maj7s11"), (2, "9")], cb=2, lead="glide", rhythm=(3, 3),
+                   arp=7, swing=0.14, tilt=True, wob=dict(wave="saw", fmin=100, fmax=2600, q=5.0, drive=2.2),
+                   drops=("trip", "wub"), fx=["warble", "shepard"]),
+    "maxwell": dict(title="Maxwell's Demon", seq="prime_gaps", key=0, mode="harmonic", bpm=76, tension=3,
+                    prog=[(0, "mM7"), (5, "m9"), (8, "maj7"), (7, "7b9")], cb=2, lead="metal", rhythm=(1, 4),
+                    arp=7, swing=0.2, wob=dict(wave="saw", fmin=90, fmax=2800, q=5.5, drive=2.6),
+                    drops=("halt", "stutter"), fx=["tick", "geiger"]),
+    "chain": dict(title="Chain Reaction", seq="fib", key=2, mode="phrygdom", bpm=82, tension=3,
+                  prog=[(0, "m9"), (1, "maj7"), (10, "m7"), (8, "maj7")], cb=2, lead="chip", rhythm=(4, 4),
+                  arp=8, swing=0.1, wob=dict(wave="square", fmin=90, fmax=3200, q=6.0, drive=2.8),
+                  drops=("stutter", "womp_hi"), fx=["geiger", "rumble"]),
+    "lorentz": dict(title="Lorentz Field", seq="pi", key=9, mode="harmonic", bpm=74, tension=3,
+                    prog=[(0, "m9"), (8, "maj7"), (5, "m9"), (7, "7b9")], cb=2, lead="glide", rhythm=(5, 0),
+                    arp=8, swing=0.12, wob=dict(wave="saw", fmin=90, fmax=3000, q=6.0, drive=2.6),
+                    drops=("wub", "trip"), fx=["pull", "drone"]),
+    "foucault": dict(title="Foucault's Pendulum", seq="ln2", key=5, mode="minor", bpm=66, tension=3,
+                     prog=[(0, "m9"), (10, "add9"), (8, "maj7"), (7, "7sus4")], cb=2, lead="bell", rhythm=(3, 0),
+                     arp=6, swing=0.1, wob=dict(wave="saw", fmin=80, fmax=2600, q=5.0, drive=2.5),
+                     drops=("lazy", "trip"), fx=["tick", "drone", "rumble"]),
+    "galton": dict(title="Galton Board", seq="binomial", key=7, mode="major", bpm=84, tension=0.5,
+                   prog=[(0, "maj9"), (9, "m7"), (5, "maj7"), (7, "9")], cb=1, lead="pluck", rhythm=(4, 2),
+                   arp=9, swing=0.14, wob=dict(wave="square", fmin=140, fmax=2400, q=4.5, drive=1.7),
+                   drops=("stutter", "womp_hi"), fx=["ding", "tick"]),
+    "spiral": dict(title="Golden Spiral", seq="phi", key=8, mode="lydian", bpm=72, tension=1.5,
+                   prog=[(0, "maj9"), (2, "add9"), (9, "m9"), (4, "maj7")], cb=2, lead="glass", rhythm=(2, 3),
+                   arp=8, swing=0.12, wob=dict(wave="saw", fmin=110, fmax=2200, q=4.5, drive=1.9),
+                   drops=("womp", "trip"), fx=["shepard", "sonar"]),
+    "tesla": dict(title="Tesla Coil", seq="twin_primes", key=4, mode="phrygian", bpm=80, tension=2.5,
+                  prog=[(0, "m"), (1, "maj7"), (10, "m7"), (0, "mM7")], cb=2, lead="metal", rhythm=(1, 4),
+                  arp=8, swing=0.06, wob=dict(wave="square", fmin=80, fmax=3400, q=6.5, drive=2.9),
+                  drops=("stutter", "womp_hi"), fx=["geiger", "anvil"]),
+    "gulf": dict(title="Gulf Stream", seq="collatz", key=2, mode="mixolydian", bpm=74, tension=1.5,
+                 prog=[(0, "9"), (10, "maj9"), (7, "m7"), (5, "add9")], cb=2, lead="flute", rhythm=(3, 5),
+                 arp=6, swing=0.26, wob=dict(wave="saw", fmin=100, fmax=2000, q=4.0, drive=1.9),
+                 drops=("lazy", "wub"), fx=["water", "vinyl"]),
+    "meissner": dict(title="Meissner Effect", seq="sqrt5", key=11, mode="lydian", bpm=70, tension=2,
+                     prog=[(0, "maj7s11"), (7, "maj9"), (2, "9"), (9, "m9")], cb=2, lead="glass", rhythm=(5, 3),
+                     arp=7, swing=0.1, wob=dict(wave="square", fmin=100, fmax=2400, q=5.0, drive=2.0),
+                     drops=("trip", "lazy"), fx=["ice", "pull"]),
+    "tectonic": dict(title="Tectonic Plates", seq="cubes", key=1, mode="phrygian", bpm=64, tension=3,
+                     prog=[(0, "m"), (1, "maj7"), (10, "m7"), (8, "maj7")], cb=2, lead="ep", rhythm=(3, 1),
+                     arp=5, swing=0.08, wob=dict(wave="saw", fmin=70, fmax=2400, q=6.0, drive=3.0),
+                     drops=("halt", "trip"), fx=["rumble", "anvil", "drone"]),
+    "lattice": dict(title="Crystal Lattice", seq="cyclic7", key=6, mode="major", bpm=78, tension=2.5,
+                    prog=[(0, "maj9"), (5, "maj7s11"), (9, "m9"), (4, "m7")], cb=2, lead="glass", rhythm=(0, 4),
+                    arp=9, swing=0.1, canon=True, wob=dict(wave="square", fmin=110, fmax=2800, q=5.5, drive=2.2),
+                    drops=("womp_hi", "stutter"), fx=["ice", "ding"]),
+    "stellated": dict(title="Stellated Star", seq="triangular", key=10, mode="lydian", bpm=80, tension=3,
+                      prog=[(0, "maj9"), (2, "9"), (11, "m7"), (6, "maj7s11")], cb=2, lead="bell", rhythm=(4, 5),
+                      arp=8, swing=0.12, wob=dict(wave="saw", fmin=90, fmax=3000, q=6.0, drive=2.5),
+                      drops=("womp_hi", "trip"), fx=["bleeps", "sonar"]),
+    "lever": dict(title="The Lever", seq="totient", key=3, mode="dorian", bpm=76, tension=2.5,
+                  prog=[(0, "m9"), (5, "9"), (10, "maj7"), (7, "m7")], cb=2, lead="pluck", rhythm=(2, 1),
+                  arp=6, swing=0.22, wob=dict(wave="saw", fmin=100, fmax=2400, q=4.5, drive=2.2),
+                  drops=("halt", "womp"), fx=["boing", "tick"]),
+    "escape": dict(title="Escape Velocity", seq="catalan", key=5, mode="harmonic", bpm=82, tension=3.5,
+                   prog=[(0, "m9"), (8, "maj7"), (1, "maj7"), (7, "7b9")], cb=2, lead="glide", rhythm=(5, 4),
+                   arp=8, swing=0.08, wob=dict(wave="saw", fmin=80, fmax=3400, q=6.5, drive=2.8),
+                   drops=("trip", "womp_hi"), fx=["rise", "shepard", "drone"]),
 }
 
 
 def slug(bid):
-    return BOARDS[bid]["title"].lower().replace("'", "").replace(" ", "-")
+    # Plain ASCII file names: Mobius Strip -> mobius-strip, Einstein-Rosen Bridge -> einstein-rosen-bridge.
+    t = unicodedata.normalize("NFKD", BOARDS[bid]["title"].replace("–", "-")).encode("ascii", "ignore").decode().lower().replace("'", "")
+    return re.sub(r"[^a-z0-9]+", "-", t).strip("-")
 
 
 # ----------------------------------------------------------------------------
@@ -749,7 +866,7 @@ LEVELS = {
     "arp":    (0.0, 0.3, 0.7, 0.55, 0.0, 0.65, 0.8, 0.6, 0.0),
     "crackle": (1.0, 0.55, 0.4, 0.3, 1.0, 0.55, 0.4, 0.3, 1.0),
 }
-SECTION_NAMES = [s[0] for s in SECTIONS]
+SECTION_NAMES = [s[0] for s in LONG_FORM]   # by_section() tables follow this order
 
 
 class Board:
@@ -1340,7 +1457,7 @@ def main():
     ap.add_argument("boards", nargs="*", help="board ids (default: all)")
     ap.add_argument("--out", default=os.path.join(ROOT, "assets", "music", "boards"))
     ap.add_argument("--inspect", help="keep WAVs here and write spectrograms and a level report")
-    ap.add_argument("--quality", type=float, default=2.5, help="Vorbis quality (-q:a)")
+    ap.add_argument("--quality", type=float, default=0, help="Vorbis quality (-q:a)")
     ap.add_argument("--jobs", type=int, default=4)
     a = ap.parse_args()
     ids = a.boards or list(BOARDS)

@@ -23,12 +23,8 @@ static func start_chain(ctx: Dictionary) -> float:
 		c = 2.0
 	if perks.has("power") and float(ctx.get("power", 0.5)) >= 0.85:
 		c += 1.0
-	if perks.has("afterburner") and ctx.get("is_break", false):
-		c += 3.0
 	if perks.has("entropy") and int(ctx.get("heat", 0)) < 3:
 		c += 1.0   # Simmer: a cool table still builds
-	if perks.has("collector"):
-		c += 0.5 * (ctx.get("pockets_used", []) as Array).size()
 	if perks.has("venture"):
 		c += minf(1.5, 0.25 * int(int(ctx.get("money", 0)) / 5))
 	if perks.has("menagerie"):
@@ -153,9 +149,11 @@ static func score(ctx: Dictionary) -> Dictionary:
 	var eight_early: bool = pots.any(func(p): return p.a == 8) and left_after > 0 and not ctx.get("is_break", false) and anomaly != "cursed8"
 	if eight_early:
 		_charge_eight(ctx, out)
-	if scratch:
+	if scratch and not (perks_of(ctx).has("followthru") and pots.size() >= 2):
 		out.foul = "Scratch"
 		return out
+	if scratch:
+		out["scratch_saved"] = true   # Francium Fizz: two or more went in with the cue ball
 	if first_contact < 0 and pots.is_empty():
 		out.foul = "No contact"
 		return out
@@ -573,3 +571,8 @@ static func preview(ctx: Dictionary, ball: int, pocket: int, rails: int, combo_b
 	c["rng"] = null
 	c.erase("start_pos")
 	return score(c)
+
+
+## The Elements in play for a shot context.
+static func perks_of(ctx: Dictionary) -> Array:
+	return ctx.get("perks", [])

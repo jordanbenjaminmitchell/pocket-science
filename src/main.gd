@@ -167,7 +167,7 @@ func _setup_table() -> void:
 	var lab: String = t.lab
 	view.setup(layout, F_SEMI, F_NUM)
 	view.set_felt(Catalog.LABS[lab].felt)
-	view.set_lab(lab)
+	view.set_lab(lab, String(t.get("id", "")))
 	_new_rack()
 	shot_log.clear()
 	if log_label:
@@ -575,7 +575,7 @@ func _apply_temp_pockets() -> void:
 	sim.layout = layout
 	view.setup(layout, F_SEMI, F_NUM)
 	view.set_felt(Catalog.LABS[run.current().lab].felt)
-	view.set_lab(run.current().lab)
+	view.set_lab(run.current().lab, run.current().id)
 	guide_dirty = true
 
 
@@ -660,7 +660,7 @@ func _rewind() -> void:
 	layout = run.build_layout()
 	view.setup(layout, F_SEMI, F_NUM)
 	view.set_felt(Catalog.LABS[run.current().lab].felt)
-	view.set_lab(run.current().lab)
+	view.set_lab(run.current().lab, run.current().id)
 	_restore_snapshot(run.table_snapshot)
 	run.spend("rewind")
 	shown_score = run.score
@@ -1227,8 +1227,12 @@ func _hold(count: bool = true) -> void:
 		sfx.play("pause", 0.6)
 		pause_at = -1.0
 		view.plan_marker = Vector2.INF
-		if run.perks.has("stillness") and pauses <= 4:
-			sim.events.append({"t": sim.time, "type": "boost", "chain": 0.5})
+		if run.perks.has("stillness") and not run.flash_used:
+			run.flash_used = true   # Xenon Flash: once a table, every rolling ball speeds up
+			for i in sim.count():
+				if sim.alive[i] == 1:
+					sim.vel[i] *= 1.3
+			_flash_banner("XENON FLASH", Color(0.6, 0.75, 1.0), 0.8)
 	state = S.HOLD
 	hold_action = ""
 	view.strike_line = []
@@ -2349,7 +2353,7 @@ func _after_shot() -> void:
 		_new_rack()
 		_enter_aim()
 	elif out.ball_in_hand:
-		_begin_place(was_break)   # scratch on the break: behind the head string
+		_begin_place(was_break and not run.perks.has("afterburner"))   # scratch on the break: behind the head string (Berkelium: anywhere)
 	else:
 		_enter_aim()
 	_refresh_hud()
@@ -2364,7 +2368,7 @@ func _rebuild_layout() -> void:
 	guide_dirty = true
 	view.setup(layout, F_SEMI, F_NUM)
 	view.set_felt(Catalog.LABS[run.current().lab].felt)
-	view.set_lab(run.current().lab)
+	view.set_lab(run.current().lab, run.current().id)
 	view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(1, 0.5, 0.4), 12, 120)
 
 
@@ -2513,7 +2517,7 @@ func _key(k: int) -> void:
 					spin_w.set_spin(follow, side + 0.25)
 				"place":
 					if is_break:
-						_begin_place(true)
+						_begin_place(not run.perks.has("afterburner"))
 				"fine":
 					fine_aim = not fine_aim
 					_hint("Fine aim ON: use your aim keys (Shift = finer). Toggle again to release." if fine_aim else "Fine aim off.")
@@ -2572,7 +2576,7 @@ func _joy_button(b: int) -> void:
 					spin_w.set_spin(0.0, 0.0)
 				JOY_BUTTON_BACK:
 					if is_break:
-						_begin_place(true)
+						_begin_place(not run.perks.has("afterburner"))
 		S.PLACE:
 			if b == JOY_BUTTON_A:
 				_place_cue()
@@ -2892,7 +2896,7 @@ func _build_touch_controls(parent: Control) -> void:
 	_sync_aim_btn()
 	touch_place = _button("MOVE CUE BALL", func():
 		if state == S.AIM and is_break:
-			_begin_place(true), Color(0.9, 0.85, 0.5))
+			_begin_place(not run.perks.has("afterburner")), Color(0.9, 0.85, 0.5))
 	touch_place.custom_minimum_size = Vector2(0, 46)
 	touch_place.focus_mode = Control.FOCUS_NONE
 	touch_place.visible = false
@@ -3373,8 +3377,6 @@ func _perk_now(id: String) -> String:
 			return "+%s Chain a shot" % _fmt(0.25 * int(c.get("specials", 0)))
 		"venture":
 			return "+%s Chain a shot" % _fmt(minf(1.5, 0.25 * int(int(c.get("money", 0)) / 5)))
-		"collector":
-			return "+%s Chain a shot" % _fmt(0.5 * (c.get("pockets_used", []) as Array).size())
 		"eightcount":
 			var left := 8 - int(c.get("total_pots", 0)) % 8
 			return "the next sink is the 8th" if left == 1 else "×3 in %d sinks" % left
@@ -3382,7 +3384,7 @@ func _perk_now(id: String) -> String:
 			var k := int(c.get("shots_taken", 0)) % 3
 			return "this shot scores ×2" if k == 2 else "×2 in %d shots" % (2 - k)
 		"hothand":
-			return "ON, +30 to every ball" if heat >= 3 else "off until Heat 3"
+			return "ON, pockets pull" if heat >= 3 else "off until Heat 3"
 		"minimalist":
 			return "ON, every sink ×2" if heat >= 5 else "off until Heat 5"
 		"migration":
