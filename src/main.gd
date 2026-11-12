@@ -460,7 +460,7 @@ func _item_button(id: String, tool: bool) -> Control:
 		b.add_child(pip)
 		if charges <= 0:
 			b.modulate = Color(1, 1, 1, 0.45)
-	b.tooltip_text = "%s (%s)\n%s\n%s" % [it.name, "Tool, one charge per table" if tool else "Consumable", Catalog.WHEN_NAMES[it.when], it.desc]
+	b.tooltip_text = "%s (Catalyst, recharges every table)\n%s\n%s" % [it.name, Catalog.WHEN_NAMES[it.when], it.desc]
 	b.pressed.connect(func(): _use(id))
 	return b
 
@@ -502,11 +502,14 @@ func _use(id: String) -> void:
 		_flash_banner(why, Color(0.6, 0.85, 1.0), 1.1)
 		return
 	match id:
-		"calledshot", "ghostchalk", "polish", "leadweight", "swap", "freezeframe", "nudge":
+		"ghostchalk", "polish", "leadweight", "swap", "freezeframe", "nudge", "newton", "reflection", "goldenratio":
 			_begin_pick(id, "ball")
+		"centremass", "pythagoras":
+			_begin_pick(id, "ball")
+			_hint("Centre of Mass: pick two to four balls; click a picked ball again to go." if id == "centremass" else "Pythagorean Triple: pick three balls.")
 		"pocketcover":
 			_begin_pick(id, "pocket")
-		"trapdoor":
+		"trapdoor", "hookes":
 			_begin_pick(id, "cushion")
 		"post", "portal", "gravitypebble":
 			_begin_pick(id, "spot")
@@ -526,16 +529,6 @@ func _use(id: String) -> void:
 			_show_spotter()
 		"rewind":
 			_rewind()
-		"slip":
-			if run.use_state_item("slip"):
-				_spend(id)
-				_flash_banner("CHALK BACK", Color(0.5, 1.0, 0.7), 1.0)
-		"triangle":
-			_spend(id)
-			_fresh_rack()
-		"ballinhand":
-			_spend(id)
-			_begin_place(false)
 
 
 func _spend(id: String) -> void:
@@ -548,6 +541,10 @@ func _spend(id: String) -> void:
 
 ## Arms a set-up item: its effect is live now and it is spent when you shoot.
 func _arm(id: String, undo: Callable) -> void:
+	if state == S.HOLD:
+		_spend(id)   # used mid-shot: it acts on this shot straight away
+		guide_dirty = true
+		return
 	armed.append({"id": id, "undo": undo})
 	sfx.play("click_soft", 0.7, 1.2)
 	_hint("%s is ready for this shot. Right-click to take it back." % Catalog.ITEMS[id].name)
@@ -837,10 +834,16 @@ func _pick_click() -> void:
 					view.call_ball = -1
 					view.call_pocket = -1)
 				return
-			run.table_mods.covered.append(k)
-			_spend(id)
+			# Event Horizon: a twice-as-wide mouth over that pocket for this shot.
+			var wide: Dictionary = (layout.pockets[k] as Dictionary).duplicate(true)
+			wide.r = float(wide.r) * 2.0
+			wide["temp"] = true
+			temp_pockets.append(wide)
 			_end_pick()
 			_apply_temp_pockets()
+			_arm(id, func():
+				temp_pockets.erase(wide)
+				_apply_temp_pockets())
 		"cushion":
 			var c := _cushion_point(m)
 			var n := Vector2.ZERO
@@ -852,6 +855,16 @@ func _pick_click() -> void:
 				n = Vector2(1, 0)
 			else:
 				n = Vector2(-1, 0)
+			if id == "hookes":
+				# Hooke's Law: every segment of that cushion keeps all the speed off it this shot.
+				for si in sim.layout.segments.size():
+					var sg: Dictionary = sim.layout.segments[si]
+					if (sg.n as Vector2).dot(n) > 0.99:
+						sim.seg_e[si] = 1.0
+				_end_pick()
+				_spend(id)
+				guide_dirty = true
+				return
 			var tp := {"pos": c - n * 6.0, "r": 26.0, "side": true, "dir": -n, "closed": false, "temp": true}
 			temp_pockets.append(tp)
 			_end_pick()
@@ -890,6 +903,56 @@ func _pick_click() -> void:
 
 func _picked_ball(id: String, b: int) -> void:
 	match id:
+		"newton":
+			var ci := _cue_index()
+			sim.vel[b] = sim.vel[ci]
+			sim.vel[ci] = Vector2.ZERO
+			sim.spin[ci] = Vector2.ZERO
+			_spend(id)
+			_end_pick()
+		"reflection":
+			sim.vel[b] = -sim.vel[b]
+			sim.spin[b] = -sim.spin[b]
+			_spend(id)
+			_end_pick()
+		"goldenratio":
+			sim.vel[b] *= 1.618
+			_spend(id)
+			_end_pick()
+		"centremass":
+			if not pick_points.has(b) and pick_points.size() < 4:
+				pick_points.append(b)
+				if pick_points.size() < 4:
+					_hint("Centre of Mass: %d picked. Pick more, or click a picked ball again to go." % pick_points.size())
+					return
+			if pick_points.size() < 2:
+				return
+			var mid := Vector2.ZERO
+			for bi in pick_points:
+				mid += sim.pos[bi]
+			mid /= float(pick_points.size())
+			for bi in pick_points:
+				var to: Vector2 = mid - sim.pos[bi]
+				if to.length() > 1.0:
+					sim.vel[bi] = to.normalized() * maxf(sim.vel[bi].length(), 220.0)
+			_spend(id)
+			_end_pick()
+		"pythagoras":
+			if not pick_points.has(b):
+				pick_points.append(b)
+			if pick_points.size() < 3:
+				_hint("Pythagorean Triple: pick %d more." % (3 - pick_points.size()))
+				return
+			var corners: Array = pick_points.map(func(bi): return sim.pos[bi])
+			for k in 3:
+				var a: Vector2 = corners[k]
+				var z: Vector2 = corners[(k + 1) % 3]
+				var d := (z - a).normalized()
+				# Each wall stops just short of the balls, so none of them is trapped inside one.
+				if a.distance_to(z) > TableLayout.R * 3.0:
+					_add_wall(a + d * TableLayout.R * 1.4, z - d * TableLayout.R * 1.4)
+			_spend(id)
+			_end_pick()
 		"calledshot":
 			pick_item = "calledshot_pocket"
 			pick_ball = b
@@ -3007,7 +3070,7 @@ func _build_ui() -> void:
 	stats.add_child(_label("MONEY", 13, Color(0.6, 0.7, 0.85)))
 	lbl_money = _label("$4", 22, Color(1.0, 0.85, 0.3), F_NUM)
 	stats.add_child(lbl_money)
-	var gear_title := _label("ITEMS", 13, Color(0.6, 0.7, 0.85))
+	var gear_title := _label("HUSTLER'S KIT", 13, Color(0.6, 0.7, 0.85))
 	stats.add_child(gear_title)
 	item_bar = HFlowContainer.new()   # wraps onto a second row when the kit is full
 	item_bar.add_theme_constant_override("h_separation", 5)
@@ -3862,7 +3925,7 @@ func _offer_card(i: int) -> Control:
 			accent = Color(0.45, 0.85, 1.0)
 			title = itd.name
 			desc = itd.desc
-			kind = "%s · %s" % ["Tool, one charge per table" if itd.kind == "tool" else "Consumable", Catalog.WHEN_NAMES[itd.when]]
+			kind = "Catalyst · %s" % Catalog.WHEN_NAMES[itd.when]
 			accent = Catalog.WHEN_COLORS[itd.when]
 	var sh := _card_shell(accent, 196, 214)
 	var p: PanelContainer = sh[0]

@@ -85,9 +85,9 @@ func _go() -> void:
 	check(worst < 0.5, "and every ball ends where it really will (%.3f off)" % worst)
 
 	print("pause items")
-	g.run.items.assign(["blink", "wall"])
-	g.run.tools.assign(["secondstrike"])
-	g.run.tool_charges = {"secondstrike": 1}
+	g.run.tools.assign(["secondstrike", "blink", "wall"])
+	g.run.tool_charges = {"secondstrike": 1, "blink": 1, "wall": 1}
+	g.run.quick_used = false
 	g.run.perks.assign(["stillness", "afterimage", "quickhands"])
 	var ci: int = g._cue_index()
 	var target: Vector2 = g.sim.pos[ci] + Vector2(0, -200)
@@ -98,14 +98,14 @@ func _go() -> void:
 	g._hold_click()
 	var v: Vector2 = g.sim.vel[ci]
 	check(v.length() > 100.0 and v.normalized().dot((target - g.sim.pos[ci]).normalized()) > 0.99, "Second Strike sends the cue ball where you aimed")
-	check(int(g.run.tool_charges.secondstrike) == 0, "Second Strike spends its Tool charge")
+	check(int(g.run.tool_charges.secondstrike) == 1, "Quick Hands makes the first Catalyst this table free")
 	var blink_to := Vector2(150, 120)
 	var speed_before: float = g.sim.vel[ci].length()
 	g._use("blink")
 	_point_mouse(blink_to)
 	g._hold_click()
 	check(g.sim.pos[ci].distance_to(blink_to) < 0.01 and absf(g.sim.vel[ci].length() - speed_before) < 0.01, "Blink moves the cue ball and keeps its speed")
-	check(g.run.items.has("blink"), "Quick Hands keeps the first mid-shot Consumable")
+	check(int(g.run.tool_charges.blink) == 0 and g.run.tools.has("blink"), "after that a Catalyst spends its use and stays in the Kit")
 	var segs: int = g.sim.layout.segments.size()
 	g._use("wall")
 	_point_mouse(Vector2(600, 100))
@@ -113,7 +113,7 @@ func _go() -> void:
 	_point_mouse(Vector2(600, 260))
 	g._hold_click()
 	check(g.sim.layout.segments.size() == segs + 2 and g.view.temp_walls.size() == 1, "Pop-up Wall adds a real wall")
-	check(not g.run.items.has("wall"), "and a second Consumable is used up")
+	check(int(g.run.tool_charges.wall) == 0, "Force Field spends its use too")
 	var boosts: Array = g.sim.events.filter(func(e): return e.type == "boost")
 	check(boosts.size() >= 2, "Afterimage adds Chain for Second Strike and Blink (%d)" % boosts.size())
 	g._play_on()

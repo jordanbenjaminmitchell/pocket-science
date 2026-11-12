@@ -145,8 +145,8 @@ const TILES := {
 	# Imbues, special balls and items made with the first five samples
 	"imbue:vein": {"sym": "V", "stat": "+20, spreads", "letter": "veins"},
 	"ball:gold": {"sym": "Au", "stat": "45 pts", "on": "Cushions", "letter": "gold"},
-	"item:secondstrike": {"sym": "S2", "stat": "Hit again", "on": "Cue ball", "letter": "echo"},
-	"item:trapdoor": {"sym": "Tr", "stat": "+1 pocket", "on": "Cushion", "letter": "drop"},
+	"item:secondstrike": {"sym": "Im", "stat": "Hit again", "on": "Cue ball", "letter": "echo"},
+	"item:trapdoor": {"sym": "BH", "stat": "+1 pocket", "on": "Cushion", "letter": "drop"},
 	# Imbues
 	"imbue:spark": {"sym": "Sk", "stat": "+1 Chain a hit", "letter": "spark"},
 	"imbue:gold": {"sym": "G", "stat": "$1, +$1 a table", "letter": "gilt"},
@@ -192,25 +192,27 @@ const TILES := {
 	"ball:echo": {"sym": "Eh", "stat": "Comes back once", "on": "Foot spot", "letter": "return"},
 	"ball:comet": {"sym": "Co", "stat": "No friction", "on": "Till a cushion", "letter": "comet"},
 	# The Hustler's Kit
-	"item:calledshot": {"sym": "Cd", "stat": "×3 if called", "on": "Ball + pocket", "letter": "called"},
-	"item:ghostchalk": {"sym": "GC", "stat": "Pass through", "on": "One ball", "letter": "ghost"},
-	"item:swap": {"sym": "Sw", "stat": "Swap two balls", "on": "Two balls", "letter": "swap"},
-	"item:polish": {"sym": "Pl", "stat": "Glides free", "on": "One ball", "letter": "chrome"},
-	"item:leadweight": {"sym": "LW", "stat": "×4 weight", "on": "One ball", "letter": "kettle"},
-	"item:spotter": {"sym": "Sp", "stat": "Respot a ball", "on": "Foot spot", "letter": "spot"},
-	"item:pocketcover": {"sym": "Pv", "stat": "Opposite +30%", "on": "Pockets", "letter": "lid"},
-	"item:wall": {"sym": "PW", "stat": "Raise a wall", "on": "This shot", "letter": "bricks"},
-	"item:blink": {"sym": "Bl", "stat": "Move the cue", "on": "Cue ball", "letter": "blink"},
-	"item:freezeframe": {"sym": "FF", "stat": "Stop one dead", "on": "One ball", "letter": "film"},
-	"item:nudge": {"sym": "N", "stat": "Push one ball", "on": "One ball", "letter": "nudge"},
-	"item:englishdial": {"sym": "ED", "stat": "Add your spin", "on": "Cue ball", "letter": "dial"},
-	"item:gravitypebble": {"sym": "GP", "stat": "Bends balls", "on": "This shot", "letter": "warp"},
-	"item:rewind": {"sym": "Re", "stat": "Undo a shot", "on": "Last shot", "letter": "rewind"},
-	"item:slip": {"sym": "IS", "stat": "Chalk back", "on": "Last shot", "letter": "slip"},
-	"item:triangle": {"sym": "Tn", "stat": "Re-rack", "on": "All balls", "letter": "rack"},
-	"item:ballinhand": {"sym": "BH", "stat": "Place the cue", "on": "Cue ball", "letter": "place"},
-	"item:post": {"sym": "Po", "stat": "Place a bumper", "on": "This table", "letter": "post"},
-	"item:portal": {"sym": "PP", "stat": "Linked portals", "on": "Rolling balls", "letter": "portal"},
+	"item:centremass": {"sym": "Cm", "stat": "Pull together", "on": "2 to 4 balls", "letter": "called"},
+	"item:ghostchalk": {"sym": "QT", "stat": "Pass through", "on": "One ball", "letter": "ghost"},
+	"item:swap": {"sym": "En", "stat": "Swap two balls", "on": "Two balls", "letter": "swap"},
+	"item:polish": {"sym": "ZF", "stat": "Glides free", "on": "One ball", "letter": "chrome"},
+	"item:leadweight": {"sym": "MS", "stat": "×4 weight", "on": "One ball", "letter": "kettle"},
+	"item:spotter": {"sym": "Cy", "stat": "Respot a ball", "on": "Foot spot", "letter": "spot"},
+	"item:pocketcover": {"sym": "EH", "stat": "×2 wide", "on": "One pocket", "letter": "lid"},
+	"item:wall": {"sym": "FF", "stat": "Raise a wall", "on": "This shot", "letter": "bricks"},
+	"item:blink": {"sym": "Sp", "stat": "Move the cue", "on": "Cue ball", "letter": "blink"},
+	"item:freezeframe": {"sym": "Ia", "stat": "Stop one dead", "on": "One ball", "letter": "film"},
+	"item:nudge": {"sym": "Vc", "stat": "Push one ball", "on": "One ball", "letter": "nudge"},
+	"item:englishdial": {"sym": "Tx", "stat": "Add your spin", "on": "Cue ball", "letter": "dial"},
+	"item:gravitypebble": {"sym": "GW", "stat": "Bends balls", "on": "This shot", "letter": "warp"},
+	"item:rewind": {"sym": "Tv", "stat": "Retake shot", "on": "This shot", "letter": "rewind"},
+	"item:reflection": {"sym": "Rf", "stat": "Turn back", "on": "One ball", "letter": "slip"},
+	"item:pythagoras": {"sym": "PT", "stat": "Triangle walls", "on": "Three balls", "letter": "rack"},
+	"item:newton": {"sym": "NC", "stat": "Take momentum", "on": "One ball", "letter": "place"},
+	"item:post": {"sym": "FP", "stat": "Place a post", "on": "This table", "letter": "post"},
+	"item:portal": {"sym": "Wh", "stat": "Linked portals", "on": "Rolling balls", "letter": "portal"},
+	"item:goldenratio": {"sym": "Ph", "stat": "Speed ×1.618", "on": "One ball", "letter": "phi"},
+	"item:hookes": {"sym": "HL", "stat": "No speed lost", "on": "One cushion", "letter": "coil"},
 	# Side bets: a picture of the bet instead of letters, and a shared card back
 	"bet:solid": {"sym": "", "title": "Any solid", "stat": "Wins 1× stake", "on": "Balls", "letter": "b_solid"},
 	"bet:stripe": {"sym": "", "title": "Any stripe", "stat": "Wins 1× stake", "on": "Balls", "letter": "b_stripe"},
@@ -1248,6 +1250,25 @@ void fragment() {
 	# --- Perks: Heat ------------------------------------------------------------------
 
 	## Simmer: warming from below, bubbles rising.
+	## Hooke's Law: a coiled spring beside the letters.
+	func _r_coil() -> void:
+		_text_at(_ink())
+		var x := x1 + 6 * u
+		var pts := PackedVector2Array()
+		for i in 13:
+			pts.append(Vector2(x + (i % 2) * 5 * u, baseline - i * 1.6 * u))
+		draw_polyline(pts, Color(tint, 0.9), 1.2 * u, true)
+
+	## Golden Ratio: a golden spiral beside the letters.
+	func _r_phi() -> void:
+		_text_at(_ink())
+		var c := Vector2(x1 + 10 * u, baseline - 7 * u)
+		var pts := PackedVector2Array()
+		for i in 48:
+			var t := i / 47.0 * 4.0 * PI
+			pts.append(c + Vector2(cos(t), sin(t)) * 0.55 * u * exp(0.3 * t))
+		draw_polyline(pts, Color(1.0, 0.8, 0.3, 0.95), 1.1 * u, true)
+
 	func _r_simmer() -> void:
 		_text_at(_ink())
 		for b in [[0.12, 3, 2.2], [0.32, 8, 1.4], [0.58, 4, 2.8], [0.8, 9, 1.6], [0.95, 3, 1.2]]:

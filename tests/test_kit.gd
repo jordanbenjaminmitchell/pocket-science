@@ -77,58 +77,65 @@ func _go() -> void:
 	g.coaching = false
 	g.fine_aim = true
 
-	print("set-up items arm, preview, and are spent only on the shot")
-	g.run.items.assign(["ghostchalk", "trapdoor", "calledshot"])
+	print("Catalysts used while aiming arm, preview, and spend a use on the shot")
+	g.run.tools.assign(["ghostchalk", "trapdoor", "pythagoras", "newton", "rewind"])
+	g.run.tool_charges = {"ghostchalk": 1, "trapdoor": 1, "pythagoras": 1, "newton": 1, "rewind": 1}
 	var target: int = g.sim.index_of(5)
 	g._use("ghostchalk")
-	check(g.state == g.S.PICK, "Ghost Chalk asks for a ball")
+	check(g.state == g.S.PICK, "Quantum Tunnel asks for a ball")
 	_point(g.sim.pos[target])
 	g._update_pick()
 	g._pick_click()
-	check(g.sim.ghost == target and g.state == g.S.AIM and g.run.items.has("ghostchalk"), "it is armed, not spent")
+	check(g.sim.ghost == target and g.state == g.S.AIM and int(g.run.tool_charges.ghostchalk) == 1, "it is armed, not spent")
 	g._use("ghostchalk")
-	check(g.sim.ghost == -1 and g.armed.is_empty() and g.run.items.has("ghostchalk"), "tapping it again takes it back for free")
+	check(g.sim.ghost == -1 and g.armed.is_empty() and int(g.run.tool_charges.ghostchalk) == 1, "tapping it again takes it back for free")
 	g._use("trapdoor")
 	_point(Vector2(300, 3))
 	g._update_pick()
 	g._pick_click()
-	check(g.layout.pockets.size() == 7 and g.sim.layout.pockets.size() == 7, "Trapdoor opens a seventh pocket for the shot")
-	g._use("calledshot")
-	_point(g.sim.pos[target])
-	g._update_pick()
-	g._pick_click()
-	_point(g.layout.pockets[2].pos)
-	g._update_pick()
-	g._pick_click()
-	check(g.run.called.get("ball", -1) == 5 and g.run.called.get("pocket", -1) == 2 and g.view.call_ball == target, "Called Shot remembers the ball and pocket")
-	var before_score: int = g.run.score
+	check(g.layout.pockets.size() == 7 and g.sim.layout.pockets.size() == 7, "Black Hole opens a seventh pocket for the shot")
+	# Pythagorean Triple: three balls joined by force-field walls.
+	var segs_before: int = g.sim.layout.segments.size()
+	g._use("pythagoras")
+	for nb in [1, 9, 10]:
+		_point(g.sim.pos[g.sim.index_of(nb)])
+		g._update_pick()
+		g._pick_click()
+	check(g.sim.layout.segments.size() >= segs_before + 4 and int(g.run.tool_charges.pythagoras) == 0, "Pythagorean Triple raises walls between three balls (%d new faces)" % (g.sim.layout.segments.size() - segs_before))
+	# Newton's Cradle: the cue ball stops and the ball takes its momentum.
+	var ci: int = g._cue_index()
+	g.sim.vel[ci] = Vector2(300, 0)
+	g.pick_return = g.S.AIM
+	g._picked_ball("newton", target)
+	check(g.sim.vel[ci] == Vector2.ZERO and g.sim.vel[target] == Vector2(300, 0), "Newton's Cradle passes the cue ball's momentum on")
+	g.sim.vel[target] = Vector2.ZERO
 	g.aim_dir = (Rack.FOOT - g.sim.pos[0]).normalized()
 	g._shoot(0.9)
 	await _until(func(): return g.state == g.S.ROLL, 60)
-	check(not g.run.items.has("trapdoor") and not g.run.items.has("calledshot") and g.armed.is_empty(), "armed items are spent when the shot is struck")
+	check(int(g.run.tool_charges.trapdoor) == 0 and g.run.tools.has("trapdoor") and g.armed.is_empty(), "armed Catalysts spend a use on the shot and stay in the kit")
 	await _until(func(): return g.state == g.S.AIM or g.state == g.S.PLACE or g.state == g.S.SHOP or g.state == g.S.OVER, 4000)
-	check(g.layout.pockets.size() == 6 and g.run.called.is_empty() and g.view.call_ball == -1, "the Trapdoor and the call are gone after the shot")
+	check(g.layout.pockets.size() == 6, "the Black Hole is gone after the shot")
 
-	print("Rewind")
+	print("Time Reversal, while paused")
 	if g.state == g.S.PLACE:
 		g._update_place()
 		g._place_cue()
 	await _until(func(): return g.state == g.S.AIM, 100)
-	g.run.tools.assign(["rewind"])
-	g.run.tool_charges = {"rewind": 1}
-	var pos_before: Vector2 = g.sim.pos[0]
-	var score_before: int = g.run.score
-	var shots_before: int = g.run.shots_taken
-	g.aim_dir = Vector2.RIGHT.rotated(0.4)
-	g._shoot(0.7)
-	await _until(func(): return g.state == g.S.AIM or g.state == g.S.PLACE or g.state == g.S.SHOP or g.state == g.S.OVER, 4000)
-	if g.state == g.S.AIM or g.state == g.S.PLACE:
-		g.state = g.S.AIM
+	if g.state == g.S.AIM:
+		g.run.tool_charges["rewind"] = 1
+		var pos_before: Vector2 = g.sim.pos[0]
+		var shots_before: int = g.run.shots_taken
+		g.aim_dir = Vector2.RIGHT.rotated(0.4)
+		g._shoot(0.7)
+		await _until(func(): return g.state == g.S.ROLL, 120)
+		g._hold()
+		await _frames(2)
+		check(g.state == g.S.HOLD, "the shot is paused")
 		g._use("rewind")
-		check(g.run.shots_taken == shots_before and g.run.score == score_before, "Rewind puts the score and shot count back")
-		check(g.sim.pos[0].distance_to(pos_before) < 0.01, "and the cue ball back where it was")
-		check(int(g.run.tool_charges.rewind) == 0 and g.run.tools.has("rewind"), "it spends its charge but stays in the kit")
+		await _frames(2)
+		check(g.state == g.S.AIM and g.run.shots_taken == shots_before and g.sim.pos[0].distance_to(pos_before) < 0.01, "Time Reversal undoes the shot mid-roll")
+		check(int(g.run.tool_charges.rewind) == 0 and g.run.tools.has("rewind"), "it spends its use but stays in the kit")
 	else:
-		check(true, "the table ended on that shot, so Rewind was not needed")
+		check(true, "the table ended, so Time Reversal was not needed")
 	print("kit tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

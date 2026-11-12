@@ -68,7 +68,7 @@ var intro := false              # a new player: items from the 2nd shop, special
 var next_boost := 1.0           # Double Down
 var next_all_hot := false       # Spotlight
 var next_magnet := false        # Magnet Charm
-const ITEM_SLOTS := 3            # consumables
+const ITEM_SLOTS := 0            # consumables
 const PAR_SHOTS := 10
 ## A set never holds more than 15 balls: a new special ball takes the place of one
 ## you choose, so every slot is a trade between a cheap ball and a better one.
@@ -77,7 +77,7 @@ const START_BALLS := 10
 const CUE_KIT_USES := 4
 const QUICK_MAX := 5
 const OVERKILL_MAX := 10
-const TOOL_SLOTS := 2
+const TOOL_SLOTS := 5
 ## Items the rules can apply on their own, with no aiming or placing.
 const STATE_ITEMS := ["slip"]
 
@@ -198,9 +198,9 @@ func begin_table() -> void:
 	bounty_done = false
 	bet_state = "offer"
 	bet_peeked = false
-	if perks.has("tinkerer") and items.size() < item_slots():
-		var ids := consumable_ids()
-		items.append(ids[rng.randi_range(0, ids.size() - 1)])
+	if perks.has("tinkerer") and not tools.is_empty():
+		var lucky: String = tools[rng.randi_range(0, tools.size() - 1)]
+		tool_charges[lucky] = int(tool_charges.get(lucky, 0)) + 1   # one extra use this table
 
 
 func max_chalk() -> int:
@@ -593,6 +593,9 @@ func consumable_ids() -> Array:
 ## Tools spend a charge, consumables leave the bag (Quick Hands may save one).
 ## Returns false if there was nothing to spend.
 func spend(id: String) -> bool:
+	if perks.has("quickhands") and not quick_used and (tools.has(id) or id == cue_kit()) and int(tool_charges.get(id, 0)) > 0:
+		quick_used = true   # Quick Hands: the first Catalyst each table is free
+		return true
 	if id == cue_kit() and int(tool_charges.get(id, 0)) > 0:
 		tool_charges[id] = int(tool_charges[id]) - 1
 		return true
@@ -746,13 +749,13 @@ func _roll_shop_items() -> void:
 		var types := Catalog.BALL_TYPES.keys()
 		var bt: String = types[rng.randi_range(0, types.size() - 1)]
 		shop.append({"type": "ball", "id": bt, "cost": int(Catalog.BALL_TYPES[bt].cost), "sold": false})
-	var cons := consumable_ids()
+	# Two Catalysts you don't have yet.
+	var free_tools: Array = Catalog.ITEMS.keys().filter(func(k): return not tools.has(k) and k != cue_kit())
 	for i in (0 if intro and table_index < 1 else 2):
-		var it: String = cons[rng.randi_range(0, cons.size() - 1)]
-		shop.append({"type": "item", "id": it, "cost": item_cost(it), "sold": false})
-	var free_tools: Array = Catalog.ITEMS.keys().filter(func(k): return Catalog.ITEMS[k].kind == "tool" and not tools.has(k))
-	if tools.size() < tool_slots() and not free_tools.is_empty() and not (intro and table_index < 1):
+		if free_tools.is_empty():
+			break
 		var tl: String = free_tools[rng.randi_range(0, free_tools.size() - 1)]
+		free_tools.erase(tl)
 		shop.append({"type": "item", "id": tl, "cost": item_cost(tl), "sold": false})
 
 
@@ -1243,7 +1246,11 @@ func load_dict(d: Dictionary) -> bool:
 	daily_key = str(d.get("daily_key", ""))
 	handicap = int(d.get("handicap", 0))
 	total_score = int(d.get("total_score", 0))
-	items.assign((d.get("items", []) as Array).filter(func(x): return Catalog.ITEMS.has(x) and Catalog.ITEMS[x].kind == "consumable"))
+	items.clear()
+	# Old saves held one-use items: they become Catalysts if there is room.
+	for x in d.get("items", []):
+		if Catalog.ITEMS.has(x) and not tools.has(x) and tools.size() < tool_slots():
+			tools.append(x)
 	tools.assign((d.get("tools", []) as Array).filter(func(x): return Catalog.ITEMS.has(x) and Catalog.ITEMS[x].kind == "tool"))
 	var held_items := items.duplicate()
 	ball_set = (d.get("ball_set", range(1, 16)) as Array).map(func(x): return int(x))

@@ -47,6 +47,7 @@ var ghost := -1                         # Ghost Chalk: nothing collides with thi
 var glide := PackedByteArray()          # Polish: no cloth friction until the first hit
 var pinned := PackedByteArray()         # Freeze Frame: held still like a post
 var extra_wells: Array = []             # Gravity Pebbles: [position, strength]
+var seg_e := {}                         # Hooke's Law: cushion segment -> bounce for this shot
 var volatile := {}                      # Volatile Imbue: ball number -> true; explodes when first touched
 const MAGNET_REACH := 150.0
 
@@ -88,6 +89,7 @@ func clone() -> PoolSim:
 	s.pinned = pinned.duplicate()
 	s.extra_wells = extra_wells.duplicate(true)
 	s.volatile = volatile.duplicate()
+	s.seg_e = seg_e.duplicate()
 	return s
 
 
@@ -378,7 +380,7 @@ func _resolve_wall(i: int, nrm: Vector2, _seg: int) -> void:
 		return
 	var tangent := Vector2(-nrm.y, nrm.x)
 	glide[i] = 0
-	vel[i] -= nrm * vn * (1.0 + rail_e_of(i))
+	vel[i] -= nrm * vn * (1.0 + float(seg_e.get(_seg, rail_e_of(i))))
 	vel[i] -= tangent * vel[i].dot(tangent) * 0.04
 	if side[i] != 0.0:
 		vel[i] += tangent * side[i] * -vn * 0.32 * side_power
@@ -483,6 +485,7 @@ func _pockets() -> void:
 
 func clear_shot_flags() -> void:
 	ghost = -1
+	seg_e = {}
 	glide.fill(0)
 	pinned.fill(0)
 	extra_wells.clear()

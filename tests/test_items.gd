@@ -25,7 +25,8 @@ func score(events: Array, extra: Dictionary = {}) -> Dictionary:
 func _initialize() -> void:
 	var h5 := [{"type": "ball", "a": 0, "b": 5}, pot(5)]
 	print("content")
-	check(Catalog.ITEMS.size() == 21, "21 items in the Kit (%d)" % Catalog.ITEMS.size())
+	check(Catalog.ITEMS.size() == 23, "23 Catalysts in the Hustler's Kit (%d)" % Catalog.ITEMS.size())
+	check(Catalog.ITEMS.values().all(func(it): return it.kind == "tool"), "nothing is used up: every Catalyst recharges")
 	for id in Catalog.ITEMS:
 		check(IconArt.MOTIFS.has(id), "%s has an icon" % id) if not IconArt.MOTIFS.has(id) else null
 		check(["setup", "pause", "after", "any"].has(Catalog.ITEMS[id].when) and ["tool", "consumable"].has(Catalog.ITEMS[id].kind), "%s says when it is used and what kind it is" % id)
@@ -64,30 +65,35 @@ func _initialize() -> void:
 	print("items")
 	run.perks.clear()
 	run.begin_table()
-	check(not run.use_state_item("slip"), "an Insurance Slip needs a shot that cost Chalk")
 	var miss := {"scored": false, "foul": "Miss", "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [], "shattered": [], "lines": []}
-	run.apply_shot(miss, false, 9, true)
-	run.apply_shot(miss, false, 9, true)
-	var chalk_now := run.chalk
-	check(run.last_chalk_lost and run.use_state_item("slip") and run.chalk == chalk_now + 1, "the Slip gives the Chalk back")
-	check(not run.use_state_item("slip"), "only once")
 	run.money = 50
 	run.shop = [{"type": "item", "id": "rewind", "cost": 9, "sold": false}]
-	check(run.buy(0) == "" and run.tools.has("rewind") and int(run.tool_charges.rewind) == 1, "Tools go in Tool slots with one charge")
+	check(run.buy(0) == "" and run.tools.has("rewind") and int(run.tool_charges.rewind) == 1, "a Catalyst goes in the Kit with one use a table")
 	check(run.spend("rewind") and not run.spend("rewind"), "one charge per table")
 	run.begin_table()
 	check(int(run.tool_charges.rewind) == 1, "and it comes back on the next table")
 	run.perks.assign(["overclock"])
 	run.begin_table()
-	check(int(run.tool_charges.rewind) == 2, "Overclock gives Tools two charges")
+	check(int(run.tool_charges.rewind) == 2, "Overclock gives Catalysts two uses")
 	run.perks.clear()
-	run.items.assign(["wall", "blink", "portal"])
-	run.shop = [{"type": "item", "id": "slip", "cost": 3, "sold": false}]
-	check(run.buy(0) != "", "Consumable slots are limited")
+	run.tools.assign(["wall", "blink", "portal", "post", "rewind"])
+	run.shop = [{"type": "item", "id": "goldenratio", "cost": 5, "sold": false}]
+	check(run.tool_slots() == 5 and run.buy(0) != "", "the Kit holds 5 Catalysts")
 	run.perks.assign(["packrat"])
-	check(run.buy(0) == "" and run.items.size() == 4 and run.tool_slots() == 3, "Pack Rat adds a slot of each kind")
+	check(run.tool_slots() == 6 and run.buy(0) == "" and run.tools.size() == 6, "Pack Rat adds a sixth slot")
 	run.perks.assign(["quartermaster", "enchanter"])
-	check(run.item_cost("portal") == 4 and run.imbue_cost("glass") == 3, "Quartermaster and Enchanter cut prices")
+	check(run.item_cost("portal") == 6 and run.imbue_cost("glass") == 3, "Quartermaster and Enchanter cut prices")
+	run.perks.assign(["quickhands"])
+	run.begin_table()
+	check(run.spend("portal") and int(run.tool_charges.portal) == 1, "Quick Hands: the first Catalyst each table is free")
+	check(run.spend("portal") and int(run.tool_charges.portal) == 0, "after that, uses count")
+	run.perks.assign(["tinkerer"])
+	run.begin_table()
+	var extra := 0
+	for t in run.tools:
+		extra += int(run.tool_charges.get(t, 0)) - 1
+	check(extra == 1, "Tinkerer gives one Catalyst an extra use each table")
+	run.tools.clear()
 	run.perks.clear()
 	run.table_mods.covered.append(0)
 	var covered := run.build_layout()
