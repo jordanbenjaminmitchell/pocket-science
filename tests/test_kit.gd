@@ -96,6 +96,12 @@ func _go() -> void:
 	check(g.layout.pockets.size() == 7 and g.sim.layout.pockets.size() == 7, "Black Hole opens a seventh pocket for the shot")
 	# Pythagorean Triple: three balls joined by force-field walls.
 	var segs_before: int = g.sim.layout.segments.size()
+	# Three balls well apart, so every side of the triangle gets a wall.
+	var spots := [Vector2(500, 120), Vector2(700, 380), Vector2(300, 380)]
+	for k in 3:
+		var bi: int = g.sim.index_of([1, 9, 10][k])
+		g.sim.pos[bi] = spots[k]
+		g.view.ball_nodes[bi].position = spots[k]
 	g._use("pythagoras")
 	for nb in [1, 9, 10]:
 		_point(g.sim.pos[g.sim.index_of(nb)])

@@ -59,7 +59,7 @@ func _go() -> void:
 	var m2 := Meta.new()
 	m2.load_file()
 	check(m2.earned.size() == m.earned.size() and m2.lifetime_pots == m.lifetime_pots, "progress persists")
-	check(Meta.reward_text("boss").contains("Hot Rod") and Meta.reward_text("boss").contains("Ricochet"), "reward text names the unlocks")
+	check(Meta.reward_text("boss").contains("Hot Rod") and Meta.reward_text("boss").contains("Rhenium"), "reward text names the unlocks")
 	# Game wiring: a fresh profile shows Optic locked in cue select.
 	c.load(Meta.PATH)
 	c.erase_section("meta")
