@@ -62,6 +62,8 @@ var place_pos := Vector2.ZERO
 var place_ok := true
 var head_only := false
 var time := 0.0
+## Ball numbers to ring with light: the balls a hovered Perk works on.
+var spotlight: Array = []
 var hover_pocket := -1
 var pocket_pick := false
 
@@ -492,6 +494,15 @@ func _draw_cushions() -> void:
 ## ---------------------------------------------------------------- guideline
 func _draw_overlay() -> void:
 	var o := overlay
+	if not spotlight.is_empty():
+		var beat := 0.5 + 0.5 * sin(time * 5.0)
+		for i in ball_nodes:
+			var bn: BallNode = ball_nodes[i]
+			if is_instance_valid(bn) and bn.visible and not bn.sinking and spotlight.has(bn.number):
+				var r := bn.radius
+				for k in 3:
+					o.draw_arc(bn.position, r + 3.0 + k * 2.5 + beat * 2.0, 0, TAU, 40, Color(1.0, 0.9, 0.45, 0.5 - k * 0.14), 2.4, true)
+				o.draw_arc(bn.position, r + 1.5, 0, TAU, 40, Color(1.0, 0.97, 0.8, 0.95), 1.6, true)
 	if heat_level >= 3:
 		# On fire: every pocket burns. Dead stroke: blue-white cores and the rim smoulders.
 		for pk in layout.pockets:

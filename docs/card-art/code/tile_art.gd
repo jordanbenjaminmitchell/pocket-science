@@ -20,133 +20,226 @@ const SIZE := Vector2(172, 118)
 ## Per card: symbol, headline effect, (non-perks) what it acts on, and the
 ## lettering effect (see Lettering below). Every card has its own effect, drawn
 ## on whichever text effects_on picks (the big symbol, by default).
-## Perks show their family instead of "on". Symbols are real element symbols
-## where one fits the name (Ca, the chalk mineral, for Spare Chalk), invented
-## otherwise. Every perk is here; imbues, balls and items have samples so far.
+## Perks show their family instead of "on". Symbols follow the rules in
+## docs/card-art/NEEDED.md: a real element only where it genuinely fits (Au, Fe,
+## Pb), otherwise initials (FT for Follow Through), or a one-word name's first
+## letter, then its first two. Side bets show a picture instead of letters.
 const TILES := {
 	# Physics
-	"perk:velvet": {"sym": "V", "stat": "−30% friction", "letter": "velvet"},
+	"perk:velvet": {"sym": "VC", "stat": "−30% friction", "letter": "velvet"},
 	"perk:featherweight": {"sym": "F", "stat": "−25% weight", "letter": "feather"},
-	"perk:heavyhit": {"sym": "Hs", "stat": "+30% cue weight", "letter": "heavy"},
-	"perk:liverails": {"sym": "Lv", "stat": "+10% bounce", "letter": "spring"},
-	"perk:slowcloth": {"sym": "Cl", "stat": "Stops 25% sooner", "letter": "brake"},
-	"perk:backspin": {"sym": "Ba", "stat": "+50% spin", "letter": "spin"},
-	"perk:bigbreak": {"sym": "Br", "stat": "+25% break", "letter": "shatter"},
-	"perk:longarm": {"sym": "Lr", "stat": "+15% full power", "letter": "reach"},
+	"perk:heavyhit": {"sym": "HH", "stat": "+30% cue weight", "letter": "heavy"},
+	"perk:liverails": {"sym": "LR", "stat": "+10% bounce", "letter": "spring"},
+	"perk:slowcloth": {"sym": "SC", "stat": "Stops 25% sooner", "letter": "brake"},
+	"perk:backspin": {"sym": "BW", "stat": "+50% spin", "letter": "spin"},
+	"perk:bigbreak": {"sym": "BB", "stat": "+25% break", "letter": "shatter"},
+	"perk:longarm": {"sym": "LA", "stat": "+15% full power", "letter": "reach"},
 	# Cue control
-	"perk:kick": {"sym": "K", "stat": "Kicks ×2", "letter": "kick"},
-	"perk:power": {"sym": "P", "stat": "85%+: +1 Chain", "letter": "power"},
-	"perk:finesse": {"sym": "Ts", "stat": "Soft shots ×2", "letter": "soft"},
+	"perk:kick": {"sym": "KD", "stat": "Kicks ×2", "letter": "kick"},
+	"perk:power": {"sym": "PS", "stat": "85%+: +1 Chain", "letter": "power"},
+	"perk:finesse": {"sym": "ST", "stat": "Soft shots ×2", "letter": "soft"},
 	"perk:boomerang": {"sym": "B", "stat": "Return: ×2", "letter": "boomerang"},
-	"perk:precision": {"sym": "Cs", "stat": "+1 Chain", "letter": "crosshair"},
-	"perk:stun": {"sym": "Mt", "stat": "Stun 60%", "letter": "stun"},
-	"perk:afterburner": {"sym": "Ar", "stat": "Break +3 Chain", "letter": "breakup"},
-	"perk:masse": {"sym": "Ms", "stat": "×2 swerve", "letter": "swerve"},
-	"perk:followthru": {"sym": "Fr", "stat": "+0.5 Chain", "letter": "follow"},
-	"perk:drawartist": {"sym": "Ds", "stat": "Draw ×1.5", "letter": "sketch"},
+	"perk:precision": {"sym": "CS", "stat": "+1 Chain", "letter": "crosshair"},
+	"perk:stun": {"sym": "SM", "stat": "Stun 60%", "letter": "stun"},
+	"perk:afterburner": {"sym": "BA", "stat": "Break +3 Chain", "letter": "breakup"},
+	"perk:masse": {"sym": "MM", "stat": "×2 swerve", "letter": "swerve"},
+	"perk:followthru": {"sym": "FT", "stat": "+0.5 Chain", "letter": "follow"},
+	"perk:drawartist": {"sym": "DA", "stat": "Draw ×1.5", "letter": "sketch"},
 	# Combos & clusters
-	"perk:elastic": {"sym": "Ta", "stat": "+0.25/hit", "letter": "loud"},
-	"perk:chain": {"sym": "Dy", "stat": "×2", "letter": "links"},
-	"perk:multi": {"sym": "Cu", "stat": "+1 Chain", "letter": "cluster"},
-	"perk:supernova": {"sym": "Cn", "stat": "3+: ×2", "letter": "sweep"},
-	"perk:fusion": {"sym": "Po", "stat": "×3", "letter": "merge"},
-	"perk:domino": {"sym": "Dm", "stat": "+30", "letter": "topple"},
+	"perk:elastic": {"sym": "LT", "stat": "+0.25/hit", "letter": "loud"},
+	"perk:chain": {"sym": "DC", "stat": "×2", "letter": "links"},
+	"perk:multi": {"sym": "C", "stat": "+1 Chain", "letter": "cluster"},
+	"perk:supernova": {"sym": "Cw", "stat": "3+: ×2", "letter": "sweep"},
+	"perk:fusion": {"sym": "SP", "stat": "×3", "letter": "merge"},
+	"perk:domino": {"sym": "D", "stat": "+30", "letter": "topple"},
 	# Streaks
-	"perk:streak": {"sym": "Sk", "stat": "+1 Heat", "letter": "stoke"},
+	"perk:streak": {"sym": "S", "stat": "+1 Heat", "letter": "stoke"},
 	"perk:rhythm": {"sym": "Rh", "stat": "Every 3rd ×2", "letter": "beat"},
-	"perk:comeback": {"sym": "La", "stat": "Last Chalk ×2", "letter": "stub"},
+	"perk:comeback": {"sym": "LC", "stat": "Last Chalk ×2", "letter": "stub"},
 	# Heat
-	"perk:entropy": {"sym": "Sm", "stat": "Heat <3: +1 Chain", "letter": "simmer"},
-	"perk:hothand": {"sym": "Ho", "stat": "Heat 3+: +30", "letter": "shimmer"},
-	"perk:migration": {"sym": "At", "stat": "Miss: −1 Heat", "letter": "glow"},
-	"perk:coupon": {"sym": "Cd", "stat": "Heat 0: ×2", "letter": "frost"},
-	"perk:minimalist": {"sym": "Ir", "stat": "On fire: ×2", "letter": "inferno"},
+	"perk:entropy": {"sym": "Si", "stat": "Heat <3: +1 Chain", "letter": "simmer"},
+	"perk:hothand": {"sym": "Hn", "stat": "Heat 3+: +30", "letter": "shimmer"},
+	"perk:migration": {"sym": "SH", "stat": "Miss: −1 Heat", "letter": "glow"},
+	"perk:coupon": {"sym": "Ct", "stat": "Heat 0: ×2", "letter": "frost"},
+	"perk:minimalist": {"sym": "I", "stat": "On fire: ×2", "letter": "inferno"},
 	# Pockets
-	"perk:corner": {"sym": "Cr", "stat": "+0.5 Chain", "letter": "corner"},
-	"perk:side": {"sym": "Sd", "stat": "×2", "letter": "door"},
-	"perk:jaws": {"sym": "W", "stat": "+12% wider", "letter": "jaws"},
+	"perk:corner": {"sym": "CM", "stat": "+0.5 Chain", "letter": "corner"},
+	"perk:side": {"sym": "SD", "stat": "×2", "letter": "door"},
+	"perk:jaws": {"sym": "WJ", "stat": "+12% wider", "letter": "jaws"},
 	"perk:heat": {"sym": "Sc", "stat": "Hot ×3, +30", "letter": "scorch"},
-	"perk:magnet": {"sym": "Mg", "stat": "Pulls balls in", "letter": "magnet"},
-	"perk:collector": {"sym": "Gt", "stat": "+0.5 per pocket", "letter": "tour"},
+	"perk:magnet": {"sym": "MP", "stat": "Pulls balls in", "letter": "magnet"},
+	"perk:collector": {"sym": "GT", "stat": "+0.5 per pocket", "letter": "tour"},
 	# Ball numbers
-	"perk:odd": {"sym": "Os", "stat": "Odd +20", "letter": "odd"},
-	"perk:even": {"sym": "Ev", "stat": "+0.75 Chain", "letter": "even"},
-	"perk:prime": {"sym": "Pr", "stat": "Primes ×2", "letter": "cut"},
-	"perk:fibonacci": {"sym": "Lu", "stat": "+35", "letter": "spiral"},
-	"perk:rotation": {"sym": "Rn", "stat": "Low = high", "letter": "rotate"},
-	"perk:moneyball": {"sym": "Bi", "stat": "Numbers ×3", "letter": "tall"},
+	"perk:odd": {"sym": "OB", "stat": "Odd +20", "letter": "odd"},
+	"perk:even": {"sym": "EM", "stat": "+0.75 Chain", "letter": "even"},
+	"perk:prime": {"sym": "PC", "stat": "Primes ×2", "letter": "cut"},
+	"perk:fibonacci": {"sym": "LN", "stat": "Fibonacci +35", "letter": "spiral"},
+	"perk:rotation": {"sym": "R", "stat": "Low = high", "letter": "rotate"},
+	"perk:moneyball": {"sym": "BN", "stat": "Numbers ×3", "letter": "tall"},
 	# Solids
-	"perk:solids": {"sym": "S", "stat": "+35", "letter": "plate"},
-	"perk:solidgold": {"sym": "Sg", "stat": "$1 each", "letter": "ingot"},
+	"perk:solids": {"sym": "So", "stat": "+35", "letter": "plate"},
+	"perk:solidgold": {"sym": "SG", "stat": "$1 each", "letter": "ingot"},
 	"perk:bedrock": {"sym": "Be", "stat": "+1 Heat", "letter": "strata"},
-	"perk:steadyrun": {"sym": "Sr", "stat": "+12 per solid", "letter": "steps"},
-	"perk:solidsonly": {"sym": "So", "stat": "×3 / ×0.5", "letter": "only"},
-	"perk:lastsolid": {"sym": "Ld", "stat": "×8", "letter": "spotlight"},
-	"perk:lowball": {"sym": "Lb", "stat": "1–3: +45", "letter": "limbo"},
+	"perk:steadyrun": {"sym": "SR", "stat": "+12 per solid", "letter": "steps"},
+	"perk:solidsonly": {"sym": "SO", "stat": "×3 / ×0.5", "letter": "only"},
+	"perk:lastsolid": {"sym": "LS", "stat": "×8", "letter": "spotlight"},
+	"perk:lowball": {"sym": "LB", "stat": "1–3: +45", "letter": "limbo"},
 	# Stripes
 	"perk:stripes": {"sym": "St", "stat": "×1.5", "letter": "band"},
-	"perk:racing": {"sym": "Rg", "stat": "60%+: ×2", "letter": "racing"},
-	"perk:luckystripe": {"sym": "Li", "stat": "1 in 3: ×3", "letter": "clover"},
-	"perk:tiger": {"sym": "Ti", "stat": "+0.25 Chain", "letter": "tiger"},
-	"perk:stripesonly": {"sym": "Sy", "stat": "×2 / ×0.5", "letter": "pinstripe"},
-	"perk:laststripe": {"sym": "Ls", "stat": "×5", "letter": "laststripe"},
-	"perk:highball": {"sym": "Hr", "stat": "13–15: ×2.5", "letter": "dice"},
+	"perk:racing": {"sym": "RS", "stat": "60%+: ×2", "letter": "racing"},
+	"perk:luckystripe": {"sym": "Lt", "stat": "1 in 3: ×3", "letter": "clover"},
+	"perk:tiger": {"sym": "TS", "stat": "+0.25 Chain", "letter": "tiger"},
+	"perk:stripesonly": {"sym": "Sn", "stat": "×2 / ×0.5", "letter": "pinstripe"},
+	"perk:laststripe": {"sym": "La", "stat": "×5", "letter": "laststripe"},
+	"perk:highball": {"sym": "HR", "stat": "13–15: ×2.5", "letter": "dice"},
 	# The 8-ball
-	"perk:eight": {"sym": "Bh", "stat": "8 safe, $3", "letter": "behind"},
-	"perk:darkhorse": {"sym": "Dh", "stat": "8 scores ×8", "letter": "dark"},
-	"perk:hushmoney": {"sym": "Hm", "stat": "8 costs $3", "letter": "hush"},
-	"perk:kissblack": {"sym": "Kb", "stat": "+0.75 Chain", "letter": "kiss"},
-	"perk:steerclear": {"sym": "Ce", "stat": "+0.75 Chain", "letter": "steer"},
-	"perk:lastcall": {"sym": "Lc", "stat": "×5 and $5", "letter": "neon"},
-	"perk:eightcount": {"sym": "Ec", "stat": "Every 8th ×3", "letter": "tally"},
-	"perk:trouble": {"sym": "Tb", "stat": "+3 Heat", "letter": "hazard"},
+	"perk:eight": {"sym": "B8", "stat": "8 safe, $3", "letter": "behind"},
+	"perk:darkhorse": {"sym": "DH", "stat": "8 scores ×8", "letter": "dark"},
+	"perk:hushmoney": {"sym": "HM", "stat": "8 costs $3", "letter": "hush"},
+	"perk:kissblack": {"sym": "KB", "stat": "+0.75 Chain", "letter": "kiss"},
+	"perk:steerclear": {"sym": "Sl", "stat": "+0.75 Chain", "letter": "steer"},
+	"perk:lastcall": {"sym": "Ll", "stat": "×5 and $5", "letter": "neon"},
+	"perk:eightcount": {"sym": "EC", "stat": "Every 8th ×3", "letter": "tally"},
+	"perk:trouble": {"sym": "TM", "stat": "+3 Heat", "letter": "hazard"},
 	# Banks & cushions
-	"perk:bank": {"sym": "Bk", "stat": "+1/cushion", "letter": "banknote"},
-	"perk:ricochet": {"sym": "Re", "stat": "+0.25/rail", "letter": "ricochet"},
-	"perk:cushion": {"sym": "Ra", "stat": "+30", "letter": "pillow"},
+	"perk:bank": {"sym": "BM", "stat": "+1/cushion", "letter": "banknote"},
+	"perk:ricochet": {"sym": "Ri", "stat": "+0.25/rail", "letter": "ricochet"},
+	"perk:cushion": {"sym": "Sa", "stat": "+30", "letter": "pillow"},
 	"perk:geometry": {"sym": "Ge", "stat": "×1.5/rail", "letter": "angles"},
-	"perk:tracer": {"sym": "Tc", "stat": "Cue +0.25", "letter": "trace"},
+	"perk:tracer": {"sym": "T", "stat": "Cue +0.25", "letter": "trace"},
 	# Utility
-	"perk:lever": {"sym": "Ga", "stat": "Long ×1.5", "letter": "long"},
-	"perk:chalk": {"sym": "Ca", "stat": "+1 Chalk", "letter": "chalky"},
-	"perk:lens": {"sym": "Ln", "stat": "Long +1 Chain", "letter": "lens"},
+	"perk:lever": {"sym": "LG", "stat": "Long ×1.5", "letter": "long"},
+	"perk:chalk": {"sym": "Sh", "stat": "+1 Chalk", "letter": "chalky"},
+	"perk:lens": {"sym": "LL", "stat": "Long +1 Chain", "letter": "lens"},
 	"perk:insurance": {"sym": "In", "stat": "2 free misses", "letter": "shield"},
-	"perk:oracle": {"sym": "Si", "stat": "See the score", "letter": "eye"},
+	"perk:oracle": {"sym": "SS", "stat": "See the score", "letter": "eye"},
 	# Economy
-	"perk:gold": {"sym": "Gd", "stat": "$1 a sink", "letter": "rail"},
+	"perk:gold": {"sym": "GR", "stat": "$1 a sink", "letter": "rail"},
 	"perk:thrift": {"sym": "Th", "stat": "+$5", "letter": "tag"},
-	"perk:venture": {"sym": "Pd", "stat": "+0.25 per $5", "letter": "deep"},
-	"perk:hunter": {"sym": "Sh", "stat": "Bets ×2", "letter": "hustle"},
+	"perk:venture": {"sym": "DP", "stat": "+0.25 per $5", "letter": "deep"},
+	"perk:hunter": {"sym": "Ss", "stat": "Bets ×2", "letter": "hustle"},
 	"perk:overflow": {"sym": "O", "stat": "Carry 25%", "letter": "beaker"},
 	# Risk & scaling
 	"perk:catalyst": {"sym": "Sb", "stat": "+0.75 each", "letter": "snowball"},
-	"perk:golden": {"sym": "Fl", "stat": "First ×2", "letter": "drip"},
+	"perk:golden": {"sym": "FB", "stat": "First ×2", "letter": "drip"},
 	"perk:glasscannon": {"sym": "Al", "stat": "×2, −2 Chalk", "letter": "chips"},
-	"perk:echo": {"sym": "Db", "stat": "Scores twice", "letter": "double"},
+	"perk:echo": {"sym": "DT", "stat": "Scores twice", "letter": "double"},
 	# Clearing your set
-	"perk:thinrack": {"sym": "Tn", "stat": "+12 each", "letter": "thin"},
-	"perk:missing": {"sym": "Mn", "stat": "+0.5 each", "letter": "missing"},
-	"perk:cleanhouse": {"sym": "Ch", "stat": "Free", "letter": "clean"},
+	"perk:thinrack": {"sym": "TR", "stat": "+12 each", "letter": "thin"},
+	"perk:missing": {"sym": "Mc", "stat": "+0.5 each", "letter": "missing"},
+	"perk:cleanhouse": {"sym": "CH", "stat": "Free", "letter": "clean"},
 	# Gear, imbues, special balls
-	"perk:packrat": {"sym": "Pa", "stat": "+2 slots", "letter": "slots"},
-	"perk:quartermaster": {"sym": "Qm", "stat": "Items −$1", "letter": "stencil"},
-	"perk:tinkerer": {"sym": "Te", "stat": "Free consumable", "letter": "cog"},
-	"perk:enchanter": {"sym": "Er", "stat": "Imbues −$2", "letter": "enchant"},
-	"perk:secondcoat": {"sym": "Co", "stat": "Imbued ×1.5", "letter": "coat"},
-	"perk:goldrush": {"sym": "Ru", "stat": "Specials ×2", "letter": "nuggets"},
+	"perk:packrat": {"sym": "PR", "stat": "+2 slots", "letter": "slots"},
+	"perk:quartermaster": {"sym": "Q", "stat": "Items −$1", "letter": "stencil"},
+	"perk:tinkerer": {"sym": "Ti", "stat": "Free consumable", "letter": "cog"},
+	"perk:enchanter": {"sym": "E", "stat": "Imbues −$2", "letter": "enchant"},
+	"perk:secondcoat": {"sym": "Se", "stat": "Imbued ×1.5", "letter": "coat"},
+	"perk:goldrush": {"sym": "Gs", "stat": "Specials ×2", "letter": "nuggets"},
 	"perk:menagerie": {"sym": "Me", "stat": "+0.25 each", "letter": "menagerie"},
-	"perk:alchemy": {"sym": "Am", "stat": "+1 special", "letter": "transmute"},
+	"perk:alchemy": {"sym": "A", "stat": "+1 special", "letter": "transmute"},
 	# Pausing
-	"perk:stillness": {"sym": "Sl", "stat": "+0.5 a pause", "letter": "still"},
-	"perk:quickhands": {"sym": "Qh", "stat": "1 free use", "letter": "blur"},
-	"perk:afterimage": {"sym": "Ag", "stat": "+1 Chain", "letter": "chroma"},
-	"perk:overclock": {"sym": "Oc", "stat": "2 charges", "letter": "chip"},
-	# Samples of the other kinds
-	"imbue:vein": {"sym": "Vn", "stat": "+20, spreads", "letter": "mirror"},
+	"perk:stillness": {"sym": "SL", "stat": "+0.5 a pause", "letter": "still"},
+	"perk:quickhands": {"sym": "QH", "stat": "1 free use", "letter": "blur"},
+	"perk:afterimage": {"sym": "Af", "stat": "+1 Chain", "letter": "chroma"},
+	"perk:overclock": {"sym": "Ov", "stat": "2 charges", "letter": "chip"},
+	# Imbues, special balls and items made with the first five samples
+	"imbue:vein": {"sym": "V", "stat": "+20, spreads", "letter": "veins"},
 	"ball:gold": {"sym": "Au", "stat": "45 pts", "on": "Cushions", "letter": "gold"},
-	"item:secondstrike": {"sym": "Ss", "stat": "Hit again", "on": "Cue ball", "letter": "echo"},
-	"item:trapdoor": {"sym": "Td", "stat": "+1 pocket", "on": "Cushion", "letter": "drop"},
+	"item:secondstrike": {"sym": "S2", "stat": "Hit again", "on": "Cue ball", "letter": "echo"},
+	"item:trapdoor": {"sym": "Tr", "stat": "+1 pocket", "on": "Cushion", "letter": "drop"},
+	# Imbues
+	"imbue:spark": {"sym": "Sk", "stat": "+1 Chain a hit", "letter": "spark"},
+	"imbue:gold": {"sym": "G", "stat": "$1, +$1 a table", "letter": "gilt"},
+	"imbue:heavy": {"sym": "W", "stat": "Number ×3, ×4…", "letter": "weights"},
+	"imbue:glass": {"sym": "H", "stat": "×3, may crack", "letter": "hairline"},
+	"imbue:ember": {"sym": "K", "stat": "+2 Heat", "letter": "kindle"},
+	"imbue:lucky": {"sym": "L", "stat": "1 in 2: ×2", "letter": "horseshoe"},
+	"imbue:volatile": {"sym": "Vo", "stat": "Explodes on hit", "letter": "volatile"},
+	"imbue:jinxed": {"sym": "J", "stat": "×4, halves Heat", "letter": "jinx"},
+	"imbue:mirror": {"sym": "M", "stat": "Copies its hitter", "letter": "mirror"},
+	"imbue:pawned": {"sym": "P", "stat": "$4, no points", "letter": "pawn"},
+	"imbue:frosted": {"sym": "Fr", "stat": "Next miss safe", "letter": "frosted"},
+	"imbue:magnetic": {"sym": "Ma", "stat": "Pockets pull it", "letter": "poles"},
+	"imbue:charged": {"sym": "Cr", "stat": "+0.5 Chain a rail", "letter": "battery"},
+	"imbue:prismatic": {"sym": "Rn", "stat": "+0.25 a touch", "letter": "resonance"},
+	"imbue:hollow": {"sym": "Ho", "stat": "Half weight", "letter": "hollow"},
+	"imbue:leaded": {"sym": "Pb", "stat": "×2 weight, +45", "letter": "lead"},
+	"imbue:bounty": {"sym": "Bo", "stat": "$1 per Heat", "letter": "wanted"},
+	"imbue:starry": {"sym": "Sy", "stat": "+0.5 to the rest", "letter": "starry"},
+	"imbue:twin": {"sym": "Tw", "stat": "Counts twice", "letter": "twin"},
+	# Special balls
+	"ball:void": {"sym": "Vd", "stat": "Others ×2", "on": "Same shot", "letter": "void"},
+	"ball:glass": {"sym": "Gl", "stat": "×3, shatters", "on": "Hard hits", "letter": "glass"},
+	"ball:iron": {"sym": "Fe", "stat": "Worth 70", "on": "Double weight", "letter": "iron"},
+	"ball:feather": {"sym": "Fh", "stat": "+0.5 Chain", "on": "¼ weight", "letter": "plume"},
+	"ball:ember": {"sym": "Eb", "stat": "Hot pocket", "on": "Its pocket", "letter": "coal"},
+	"ball:frost": {"sym": "Fs", "stat": "Stops balls dead", "on": "Touch", "letter": "iceblock"},
+	"ball:magnet": {"sym": "Mg", "stat": "Pulls balls", "on": "Nearby balls", "letter": "pull"},
+	"ball:prism": {"sym": "Pm", "stat": "Solid + stripe", "on": "Both sets", "letter": "prism"},
+	"ball:wild": {"sym": "Wi", "stat": "Copies a number", "on": "Last sunk", "letter": "wild"},
+	"ball:clock": {"sym": "Cl", "stat": "15, +9 a shot", "on": "Shots taken", "letter": "clock"},
+	"ball:coin": {"sym": "Cn", "stat": "$1 a cue hit", "on": "Cue ball", "letter": "coin"},
+	"ball:bomb": {"sym": "Bm", "stat": "Takes one down", "on": "Nearest ball", "letter": "bomb"},
+	"ball:seed": {"sym": "Sd", "stat": "30, +15 a sink", "on": "Whole run", "letter": "sprout"},
+	"ball:clover": {"sym": "Cv", "stat": "No Chalk lost", "on": "Its shots", "letter": "bigclover"},
+	"ball:star": {"sym": "Sr", "stat": "+1 Chain", "on": "Cushions", "letter": "star"},
+	"ball:heart": {"sym": "He", "stat": "+1 Chalk", "on": "Last ball", "letter": "heart"},
+	"ball:dice": {"sym": "Di", "stat": "1–15 each shot", "on": "Its number", "letter": "die"},
+	"ball:moon": {"sym": "Mo", "stat": "×2 in a side", "on": "Side pockets", "letter": "moon"},
+	"ball:sun": {"sym": "Su", "stat": "×2 in a corner", "on": "Corners", "letter": "sun"},
+	"ball:anchor": {"sym": "An", "stat": "Worth 105", "on": "Cue ball only", "letter": "anchor"},
+	"ball:eraser": {"sym": "Er", "stat": "$4, erases two", "on": "Last touched", "letter": "erase"},
+	"ball:echo": {"sym": "Eh", "stat": "Comes back once", "on": "Foot spot", "letter": "return"},
+	"ball:comet": {"sym": "Co", "stat": "No friction", "on": "Till a cushion", "letter": "comet"},
+	# The Hustler's Kit
+	"item:calledshot": {"sym": "Cd", "stat": "×3 if called", "on": "Ball + pocket", "letter": "called"},
+	"item:ghostchalk": {"sym": "GC", "stat": "Pass through", "on": "One ball", "letter": "ghost"},
+	"item:swap": {"sym": "Sw", "stat": "Swap two balls", "on": "Two balls", "letter": "swap"},
+	"item:polish": {"sym": "Pl", "stat": "Glides free", "on": "One ball", "letter": "chrome"},
+	"item:leadweight": {"sym": "LW", "stat": "×4 weight", "on": "One ball", "letter": "kettle"},
+	"item:spotter": {"sym": "Sp", "stat": "Respot a ball", "on": "Foot spot", "letter": "spot"},
+	"item:pocketcover": {"sym": "Pv", "stat": "Opposite +30%", "on": "Pockets", "letter": "lid"},
+	"item:wall": {"sym": "PW", "stat": "Raise a wall", "on": "This shot", "letter": "bricks"},
+	"item:blink": {"sym": "Bl", "stat": "Move the cue", "on": "Cue ball", "letter": "blink"},
+	"item:freezeframe": {"sym": "FF", "stat": "Stop one dead", "on": "One ball", "letter": "film"},
+	"item:nudge": {"sym": "N", "stat": "Push one ball", "on": "One ball", "letter": "nudge"},
+	"item:englishdial": {"sym": "ED", "stat": "Add your spin", "on": "Cue ball", "letter": "dial"},
+	"item:gravitypebble": {"sym": "GP", "stat": "Bends balls", "on": "This shot", "letter": "warp"},
+	"item:rewind": {"sym": "Re", "stat": "Undo a shot", "on": "Last shot", "letter": "rewind"},
+	"item:slip": {"sym": "IS", "stat": "Chalk back", "on": "Last shot", "letter": "slip"},
+	"item:triangle": {"sym": "Tn", "stat": "Re-rack", "on": "All balls", "letter": "rack"},
+	"item:ballinhand": {"sym": "BH", "stat": "Place the cue", "on": "Cue ball", "letter": "place"},
+	"item:post": {"sym": "Po", "stat": "Place a bumper", "on": "This table", "letter": "post"},
+	"item:portal": {"sym": "PP", "stat": "Linked portals", "on": "Rolling balls", "letter": "portal"},
+	# Side bets: a picture of the bet instead of letters, and a shared card back
+	"bet:solid": {"sym": "", "title": "Any solid", "stat": "Wins 1× stake", "on": "Balls", "letter": "b_solid"},
+	"bet:stripe": {"sym": "", "title": "Any stripe", "stat": "Wins 1× stake", "on": "Balls", "letter": "b_stripe"},
+	"bet:corner": {"sym": "", "title": "Corner pocket", "stat": "Wins 1× stake", "on": "Pockets", "letter": "b_corner"},
+	"bet:side": {"sym": "", "title": "Side pocket", "stat": "Wins 1× stake", "on": "Pockets", "letter": "b_side"},
+	"bet:hot": {"sym": "", "title": "Hot pocket", "stat": "Wins 1× stake", "on": "Pockets", "letter": "b_hot"},
+	"bet:breakpot": {"sym": "", "title": "Sink on the break", "stat": "Wins 1× stake", "on": "The break", "letter": "b_breakpot"},
+	"bet:hard": {"sym": "", "title": "Power sink, 85%+", "stat": "Wins 1× stake", "on": "Power", "letter": "b_hard"},
+	"bet:soft": {"sym": "", "title": "Soft sink, 35% or less", "stat": "Wins 1× stake", "on": "Power", "letter": "b_soft"},
+	"bet:heat3": {"sym": "", "title": "Reach Heat 3", "stat": "Wins 1× stake", "on": "Heat", "letter": "b_heat3"},
+	"bet:double": {"sym": "", "title": "Two in one shot", "stat": "Wins 2× stake", "on": "One shot", "letter": "b_double"},
+	"bet:bank": {"sym": "", "title": "Bank shot", "stat": "Wins 2× stake", "on": "Cushions", "letter": "b_bank"},
+	"bet:combo": {"sym": "", "title": "Combination", "stat": "Wins 2× stake", "on": "One shot", "letter": "b_combo"},
+	"bet:kick": {"sym": "", "title": "Kick shot", "stat": "Wins 2× stake", "on": "Cushions", "letter": "b_kick"},
+	"bet:heat4": {"sym": "", "title": "Reach Heat 4", "stat": "Wins 2× stake", "on": "Heat", "letter": "b_heat4"},
+	"bet:chain5": {"sym": "", "title": "Chain 5 in one shot", "stat": "Wins 2× stake", "on": "Chain", "letter": "b_chain5"},
+	"bet:quarter": {"sym": "", "title": "Quarter of the target", "stat": "Wins 2× stake", "on": "One shot", "letter": "b_quarter"},
+	"bet:triple": {"sym": "", "title": "Three in one shot", "stat": "Wins 3× stake", "on": "One shot", "letter": "b_triple"},
+	"bet:bank2": {"sym": "", "title": "Two-cushion bank", "stat": "Wins 3× stake", "on": "Cushions", "letter": "b_bank2"},
+	"bet:heat5": {"sym": "", "title": "Reach Heat 5", "stat": "Wins 3× stake", "on": "Heat", "letter": "b_heat5"},
+	"bet:chain7": {"sym": "", "title": "Chain 7 in one shot", "stat": "Wins 3× stake", "on": "Chain", "letter": "b_chain7"},
+	"bet:half": {"sym": "", "title": "Half the target", "stat": "Wins 3× stake", "on": "One shot", "letter": "b_half"},
+	"bet:hot2": {"sym": "", "title": "Two in the hot pocket", "stat": "Wins 3× stake", "on": "One shot", "letter": "b_hot2"},
+	"bet:eight": {"sym": "", "title": "Last-ball 8", "stat": "Wins 3× stake", "on": "The 8-ball", "letter": "b_eight"},
+	"bet:back": {"sym": "", "title": "Side bet", "stat": "Bet, peek or pass", "on": "This table", "letter": "b_back"},
 }
+## Side bet tiers: Easy, Medium, Hard. The face-down back has its own colour.
+const BET_COLORS := [Color(0.45, 0.9, 0.5), Color(1.0, 0.72, 0.3), Color(1.0, 0.42, 0.4)]
+const BET_BACK := Color(0.62, 0.66, 0.98)
 const WHEN_SHORT := {"setup": "While aiming", "pause": "While paused", "after": "After a shot", "any": "Any time"}
 const PAPER := Color(0.97, 0.95, 0.9)
 
@@ -154,12 +247,35 @@ const PAPER := Color(0.97, 0.95, 0.9)
 ## other is plain. "name" is kept for comparison in tools/tile_preview.gd.
 static var effects_on := "symbol"
 
-var kind := ""   # perk, imbue, ball, item
+var kind := ""   # perk, imbue, ball, item, bet
 var id := ""
-var ball := 0    # imbues: which numbered ball
+var ball := 0    # imbues: which numbered ball (0 while you still choose)
 var tint := Color.WHITE
 var data := {}
 var motif := ""
+
+
+## The ball numbers a card singles out, straight from the game's rules; [] when
+## it works on any ball. Used to glow those balls on the table, and (for cards
+## that name numbers) to float them on the tile.
+static func balls_for(k: String, i: String) -> Array:
+	if k != "perk":
+		return []
+	match i:
+		"odd": return [1, 3, 5, 7, 9, 11, 13, 15]
+		"even": return [2, 4, 6, 8, 10, 12, 14]
+		"prime": return Catalog.PRIMES.duplicate()
+		"fibonacci": return [1, 2, 3, 5, 8, 13]
+		"lowball": return [1, 2, 3]
+		"highball": return [13, 14, 15]
+		"eight", "darkhorse", "hushmoney", "kissblack", "steerclear", "lastcall", "trouble": return [8]
+		"solids", "solidgold", "bedrock", "steadyrun", "solidsonly", "lastsolid": return [1, 2, 3, 4, 5, 6, 7]
+		"stripes", "racing", "luckystripe", "tiger", "stripesonly", "laststripe": return [9, 10, 11, 12, 13, 14, 15]
+	return []
+
+
+## Cards whose numbers are not obvious from the name show them on the tile.
+const FLOAT_NUMBERS := ["odd", "even", "prime", "fibonacci", "lowball", "highball"]
 
 
 static func has_tile(k: String, i: String) -> bool:
@@ -184,9 +300,13 @@ func setup(k: String, i: String, b := 0) -> TileArt:
 		"item":
 			tint = Catalog.WHEN_COLORS[Catalog.ITEMS[i].when]
 			motif = IconArt.motif_for(i)
+		"bet":
+			tint = BET_BACK if i == "back" else BET_COLORS[int(Catalog.BOUNTIES[i].tier)]
 	custom_minimum_size = SIZE
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var recipe: String = data.get("letter", "")
+	if k == "perk" and i in FLOAT_NUMBERS:
+		add_child(Floaters.new(balls_for(k, i), tint))
 	if effects_on == "symbol":
 		add_child(Lettering.new(data.sym, recipe, tint, 46, 74.0, PAPER))
 	else:
@@ -219,6 +339,8 @@ func _draw() -> void:
 	# Top right: motif, or for imbues the ball it goes on.
 	if kind == "imbue":
 		_mini_ball(Vector2(w - 20, 19), 10.0)
+	elif kind == "bet":
+		_chip(Vector2(w - 20, 19), 10.0)
 	elif motif != "":
 		IconArt.paint(self, motif, Vector2(w - 20, 20), 0.27, tint, tint.darkened(0.82), F_SEMI, 1.7)
 	# Symbol and name: whichever does not carry the effect is drawn plain here.
@@ -247,6 +369,7 @@ func _kind_name() -> String:
 		"imbue": return "Imbue"
 		"ball": return "Special ball"
 		"item": return "Tool" if Catalog.ITEMS[id].kind == "tool" else "Consumable"
+		"bet": return "Side bet"
 	return ""
 
 
@@ -265,28 +388,38 @@ func _sub() -> Array:
 			var it: Dictionary = Catalog.ITEMS[id]
 			var when: String = WHEN_SHORT[it.when]
 			return [when + (" · 1 per table" if it.kind == "tool" else " · 1 use"), dim]
+		"bet":
+			if id == "back":
+				return ["Face down", dim]
+			return [Catalog.BET_TIERS[int(Catalog.BOUNTIES[id].tier)], tint]
 	return ["", dim]
 
 
 func _acts_on() -> String:
 	match kind:
 		"perk": return Catalog.family_name(id)
-		"imbue": return "%d-ball" % ball
+		"imbue": return "%d-ball" % ball if ball > 0 else "Any ball"
 	return data.get("on", "")
 
 
 func _name() -> String:
 	match kind:
 		"perk": return Catalog.PERKS[id].name
-		"imbue": return "%s %d-ball" % [Catalog.IMBUES[id].name, ball]
+		"imbue": return "%s %d-ball" % [Catalog.IMBUES[id].name, ball] if ball > 0 else "%s Imbue" % Catalog.IMBUES[id].name
 		"ball": return Catalog.BALL_TYPES[id].name + " ball"
 		"item": return Catalog.ITEMS[id].name
+		"bet": return data.get("title", id)
 	return id
 
 
-## The imbued ball, small, ringed in the imbue colour.
+## The imbued ball, small, ringed in the imbue colour (a question mark until
+## you choose it).
 func _mini_ball(c: Vector2, r: float) -> void:
 	draw_arc(c, r + 2.5, 0, TAU, 28, tint, 1.6, true)
+	if ball <= 0:
+		draw_arc(c, r, 0, TAU, 28, Color(tint, 0.6), 1.2, true)
+		_text(F_SEMI, "?", c + Vector2(0, 4), 12, tint)
+		return
 	var col := Catalog.ball_color(ball)
 	if Catalog.is_stripe(ball):
 		draw_circle(c, r, Color(0.95, 0.93, 0.88))
@@ -295,6 +428,16 @@ func _mini_ball(c: Vector2, r: float) -> void:
 		draw_circle(c, r, col)
 	draw_circle(c, r * 0.55, Color(0.97, 0.95, 0.9))
 	_text(F_SEMI, str(ball), c + Vector2(0, 3.5), 9, Color(0.06, 0.06, 0.08))
+
+
+## A betting chip, for side bets.
+func _chip(c: Vector2, r: float) -> void:
+	draw_circle(c, r, tint, true, -1.0, true)
+	for i in 6:
+		var a := TAU * i / 6.0
+		draw_line(c + Vector2.from_angle(a) * (r - 3.5), c + Vector2.from_angle(a) * r, Color(1, 1, 1, 0.85), 2.0, true)
+	draw_circle(c, r * 0.55, tint.darkened(0.25), true, -1.0, true)
+	draw_arc(c, r * 0.55, 0, TAU, 20, Color(1, 1, 1, 0.6), 1.0, true)
 
 
 ## Text on a tile drawn with the card's own lettering effect: the name (14px)
@@ -360,6 +503,8 @@ class Lettering extends Control:
 
 	func _ready() -> void:
 		set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		if has_method("_p_" + recipe):
+			add_child(TileArt.Motes.new(self, "_p_" + recipe))
 
 	func _col() -> Color:
 		return colour
@@ -371,13 +516,17 @@ class Lettering extends Control:
 	func _width(t: String) -> float:
 		return font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 
-	func _draw() -> void:
-		var pos := Vector2(size.x * 0.5 - _width(text) * 0.5, baseline)
-		x0 = pos.x
-		x1 = pos.x + _width(text)
+	## Sets the text's box (x0, x1, top, cx, cy) for drawing.
+	func _box() -> void:
+		x0 = size.x * 0.5 - _width(text) * 0.5
+		x1 = x0 + _width(text)
 		top = baseline - cap
 		cx = size.x * 0.5
 		cy = baseline - cap * 0.5
+
+	func _draw() -> void:
+		var pos := Vector2(size.x * 0.5 - _width(text) * 0.5, baseline)
+		_box()
 		match recipe:
 			"door":
 				_door()
@@ -590,7 +739,7 @@ class Lettering extends Control:
 			"spin": return [0, colour.lerp(Color.WHITE, 0.7), tint.lerp(colour, 0.5)]
 			"sketch": return [3, colour, Color(colour, 0.0), colour, 3.2 * u, 0.5]
 			"stoke": return [0, colour, Color(1, 0.5, 0.22)]
-			"stub": return [9, colour, colour, colour, 1.0, 0.38]
+			"stub": return [9, colour, colour, colour, 1.0, 0.2]
 			"simmer": return [0, colour, Color(1, 0.66, 0.36)]
 			"glow": return [0, Color(1, 0.95, 0.84), Color(1, 0.78, 0.5)]
 			"frost": return [0, Color(0.95, 0.99, 1), Color(0.55, 0.8, 1)]
@@ -617,6 +766,41 @@ class Lettering extends Control:
 			"nuggets": return [0, Color(1, 0.93, 0.6), Color(0.86, 0.56, 0.12)]
 			"transmute": return [1, Color(0.64, 0.66, 0.72), Color(1, 0.82, 0.3)]
 			"chip": return [10, tint.lerp(colour, 0.7), tint.lerp(colour, 0.25), colour, 3.0 * u, 0.55]
+			# Imbues
+			"spark": return [0, colour, Color(0.6, 1.0, 0.95)]
+			"gilt": return [14, colour, Color(1, 0.82, 0.35), colour, 0.0, 0.62]
+			"weights": return [0, colour, tint.lerp(colour, 0.4)]
+			"hairline": return [13, colour, Color(1, 1, 1), colour, 0.0, 0.3]
+			"kindle": return [0, colour, Color(1, 0.6, 0.25)]
+			"veins": return [0, colour, tint.lerp(colour, 0.35)]
+			"volatile": return [0, Color(1, 0.95, 0.7), Color(1, 0.55, 0.15)]
+			"jinx": return [0, colour, Color(0.72, 0.55, 1.0)]
+			"pawn": return [0, colour, Color(1, 0.85, 0.5)]
+			"frosted": return [0, Color(0.82, 0.93, 1.0), Color(0.55, 0.75, 1.0)]
+			"poles": return [15, Color(1, 0.45, 0.45), Color(0.5, 0.65, 1.0)]
+			"battery": return [0, Color(1, 1, 0.78), Color(1, 0.85, 0.3)]
+			"resonance": return [1, Color(1, 0.62, 0.95), Color(0.55, 0.9, 1.0)]
+			"lead": return [0, Color(0.82, 0.84, 0.88), Color(0.5, 0.53, 0.6)]
+			"starry": return [17, Color(0.16, 0.18, 0.42), Color(1, 0.95, 0.78)]
+			"twin": return [15, colour, tint.lerp(colour, 0.2)]
+			# Special balls
+			"glass": return [13, Color(0.6, 0.82, 0.95, 0.45), Color(1, 1, 1, 0.95), colour, 0.0, 0.42]
+			"iron": return [2, Color(0.88, 0.9, 0.93), Color(0.68, 0.7, 0.75), colour, 2.0 * u, 0.5]
+			"coal": return [0, Color(0.42, 0.24, 0.16), Color(0.95, 0.38, 0.1)]
+			"iceblock": return [0, Color(0.95, 0.99, 1), Color(0.6, 0.85, 1)]
+			"prism": return [16, colour]
+			"wild": return [3, Color(0.8, 0.52, 1.0), Color(1, 0.86, 0.32), colour, 7.0 * u, 0.5]
+			"sprout": return [0, colour, Color(0.62, 0.95, 0.5)]
+			"bigclover": return [0, colour, Color(0.68, 1.0, 0.68)]
+			"star": return [0, Color(1, 1, 0.86), Color(1, 0.82, 0.3)]
+			"heart": return [0, colour, Color(1, 0.62, 0.76)]
+			"moon": return [0, Color(0.93, 0.94, 1.0), Color(0.66, 0.68, 0.8)]
+			"sun": return [0, Color(1, 0.96, 0.62), Color(1, 0.6, 0.15)]
+			"erase": return [9, colour, colour, colour, 2.0, 0.1]
+			"comet": return [0, Color(1, 1, 1), Color(0.6, 0.8, 1.0)]
+			# Items
+			"ghost": return [9, Color(colour, 0.9), colour, colour, -1.0, 0.1]
+			"chrome": return [18, colour]
 		return []
 
 	const FILL_CODE := """
@@ -658,8 +842,8 @@ void fragment() {
 			float y = ty + 0.09 * sin(lp.x * 0.45 + ty * 6.0);
 			col = y < 0.5 ? mix(a, b, y * 2.0) : mix(b, c, (y - 0.5) * 2.0);
 		}
-		else if (mode == 9) {                                                     // worn away (p1 > 0: top, < 0: bottom)
-			float t = p1 > 0.0 ? ty : 1.0 - ty;
+		else if (mode == 9) {                                                     // worn away (p1 > 1.5: right, > 0: top, < 0: bottom)
+			float t = p1 > 1.5 ? 1.0 - tx : (p1 > 0.0 ? ty : 1.0 - ty);
 			col.a *= smoothstep(p2 - 0.2, p2 + 0.25, t);
 		}
 		else if (mode == 10) { col = mod(lp.y, p1) < p1 * p2 ? a : b; }           // screen lines
@@ -668,6 +852,22 @@ void fragment() {
 		else if (mode == 13) {                                                    // a sheen across
 			float d = tx - (1.0 - ty) * 0.35 - p2;
 			col = mix(a, b, smoothstep(0.12, 0.0, abs(d)));
+		}
+		else if (mode == 14) {                                                    // gold leaf over part
+			float e = tx * 0.75 + (1.0 - ty) * 0.45 + (hash(floor(lp / 2.5)) - 0.5) * 0.14;
+			col = e > p2 ? b : a;
+		}
+		else if (mode == 15) { col = tx < 0.5 ? a : b; }                          // two halves
+		else if (mode == 16) {                                                    // rainbow
+			vec3 h = clamp(abs(mod(tx * 5.1 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+			col = vec4(mix(vec3(1.0), h, 0.55), a.a);
+		}
+		else if (mode == 17) {                                                    // starfield
+			col = vec4(mix(a.rgb, a.rgb * 1.7, ty), a.a);
+			if (hash(floor(lp / 2.0)) > 0.93) { col = b; }
+		}
+		else if (mode == 18) {                                                    // chrome
+			col = ty < 0.48 ? mix(vec4(1.0), vec4(0.72, 0.75, 0.8, 1.0), ty / 0.48) : mix(vec4(0.3, 0.32, 0.38, 1.0), vec4(0.86, 0.88, 0.92, 1.0), (ty - 0.48) / 0.52);
 		}
 		COLOR = vec4(col.rgb, col.a * COLOR.a);
 	}
@@ -698,9 +898,35 @@ void fragment() {
 
 	## Velvet Cloth: a soft nap of colour all round.
 	func _r_velvet() -> void:
-		for i in 12:
-			var a := TAU * i / 12.0
-			_text_at(Color(tint, 0.07), Vector2(cos(a), sin(a)) * 2.8 * u)
+		# A length of velvet draped behind the letters: it hangs in soft folds
+		# (lit ridges, deep shadowed valleys, a wavy lower edge) from a stitched
+		# hem, with a paler swipe where the pile has been brushed the other way.
+		var l := x0 - 22 * u
+		var r := x1 + 22 * u
+		var t := top - 6 * u
+		var b := baseline + 2 * u
+		var folds := 4.0
+		var n := 64
+		var deep := tint.darkened(0.72)
+		var lit := tint.darkened(0.38)
+		for i in n:
+			var k0 := i / float(n)
+			var k1 := (i + 1) / float(n)
+			var s0 := 0.5 + 0.5 * cos(k0 * folds * TAU)
+			var s1 := 0.5 + 0.5 * cos(k1 * folds * TAU)
+			var xa := lerpf(l, r, k0)
+			var xb := lerpf(l, r, k1) + 0.5
+			var col := deep.lerp(lit, pow((s0 + s1) * 0.5, 1.6))
+			draw_colored_polygon(PackedVector2Array([Vector2(xa, t), Vector2(xb, t), Vector2(xb, b + s1 * 5 * u), Vector2(xa, b + s0 * 5 * u)]), col)
+		# The brushed swipe, and a sheen along each ridge.
+		_poly(PackedVector2Array([Vector2(cx + 2 * u, t), Vector2(cx + 20 * u, t), Vector2(cx - 6 * u, b + 2 * u), Vector2(cx - 24 * u, b + 2 * u)]), Color(1, 1, 1, 0.09))
+		for f in int(folds) + 1:
+			var x := lerpf(l, r, f / folds)
+			draw_line(Vector2(x, t + 5 * u), Vector2(x, b + 3 * u), Color(tint.lightened(0.4), 0.22), 1.0 * u, true)
+		# The hem: a darker band with a row of stitches.
+		draw_rect(Rect2(l, t, r - l, 4.5 * u), Color(0, 0, 0, 0.28))
+		_dashes(PackedVector2Array([Vector2(l + 2 * u, t + 2.3 * u), Vector2(r - 2 * u, t + 2.3 * u)]), Color(colour, 0.75), 1.1 * u, 3 * u, 2.2 * u)
+		_text_at(Color(0, 0, 0, 0.45), Vector2(1.5, 2.2) * u)
 		_text_at(_ink())
 
 	## Featherweight: floating free of its own shadow, drifting.
@@ -738,12 +964,23 @@ void fragment() {
 		for i in gl.size():
 			_put(gl[i], _ink(), Vector2(0, -7 * u if i % 2 else -1 * u), deg_to_rad(6 if i % 2 else -4))
 
-	## Slow Cloth: cloth weave in tightly braked letters, skid marks behind.
+	## Slow Cloth: a deep, shaggy pile under tightly braked letters, and a ball
+	## that has rolled a short way into it and stopped dead.
 	func _r_brake() -> void:
-		for k in 3:
-			var y := top + (8 + 9 * k) * u
-			var l := (26 - 6 * k) * u
-			draw_polyline_colors(PackedVector2Array([Vector2(x0 - 4 * u - l, y), Vector2(x0 - 3 * u, y)]), PackedColorArray([Color(tint, 0), Color(tint, 0.75)]), 2 * u, true)
+		var l := x0 - 30 * u
+		var r := x1 + 8 * u
+		var y := baseline + 6 * u
+		var x := l
+		var i := 0
+		while x < r:
+			var hgt := (4.0 + 3.5 * _h(i, 3)) * u
+			draw_line(Vector2(x, y), Vector2(x + (_h(i, 5) - 0.5) * 2 * u, y - hgt), Color(tint, 0.45 + 0.4 * _h(i, 7)), 1.3 * u, true)
+			x += 2.1 * u
+			i += 1
+		var ball := Vector2(x0 - 9 * u, y - 7.5 * u)
+		draw_polyline_colors(PackedVector2Array([ball - Vector2(19 * u, 0), ball - Vector2(5 * u, 0)]), PackedColorArray([Color(colour, 0), Color(colour, 0.7)]), 1.6 * u, true)
+		draw_circle(ball, 4.6 * u, Color(0.96, 0.95, 0.9), true, -1.0, true)
+		draw_line(ball + Vector2(7 * u, -5 * u), ball + Vector2(7 * u, 5 * u), Color(1, 0.45, 0.4, 0.95), 1.8 * u, true)
 		for g: Dictionary in _layout(-2.5 * u):
 			_put(g, _ink())
 
@@ -793,8 +1030,23 @@ void fragment() {
 		_text_at(Color(colour, 0.22), Vector2(0, -2.5 * u))
 		_text_at(_ink())
 
-	## Power Stroke: bold, leaning hard into the shot, speed lines behind.
+	## A power gauge under the letters: the stretch from `from` to `to` (0-1 of
+	## full power) is lit, the rest is an empty track, with a tick at each end of it.
+	func _gauge(from: float, to: float, col: Color) -> void:
+		var l := x0 - 8 * u
+		var w := x1 - x0 + 16 * u
+		var y := baseline + 1.6 * u
+		var h := 3.0 * u
+		_rr(Rect2(l, y, w, h), h * 0.5, Color(colour, 0.2))
+		_rr(Rect2(l + w * from, y, w * (to - from), h), h * 0.5, col)
+		for f: float in [from, to]:
+			if f > 0.02 and f < 0.98:
+				draw_line(Vector2(l + w * f, y - 1.2 * u), Vector2(l + w * f, y + h + 1.2 * u), Color(colour, 0.95), 1.3 * u, true)
+
+	## Power Stroke: bold, leaning hard into the shot, speed lines behind, and
+	## the top 15% of the power gauge lit (85% power and up).
 	func _r_power() -> void:
+		_gauge(0.85, 1.0, Color(1.0, 0.42, 0.28))
 		for k in 3:
 			var y := top + (7 + 9 * k) * u
 			var l := (16 + 8 * (1 - absi(k - 1))) * u
@@ -804,6 +1056,7 @@ void fragment() {
 
 	## Soft Touch: hollow letters in a soft glow, the lightest touch.
 	func _r_soft() -> void:
+		_gauge(0.0, 0.35, Color(0.55, 0.82, 1.0))   # 35% power or less
 		_edge(Color(tint, 0.12), 11 * u)
 		_edge(Color(colour, 0.9), 4 * u)
 		_text_at(bg)
@@ -876,10 +1129,11 @@ void fragment() {
 		_text_at(_ink())
 		_edge(Color(colour, 0.85), 1.5 * u, Vector2(0.7, -0.5) * u)
 		_edge(Color(colour, 0.45), 1.2 * u, Vector2(-0.8, 0.7) * u)
-		var pts := PackedVector2Array()
-		for i in 11:
-			pts.append(Vector2(lerpf(x0 - 2 * u, x1 + 2 * u, i / 10.0), baseline + 5 * u + (1.3 * u if i % 2 else -1.3 * u)))
-		draw_polyline(pts, Color(tint, 0.6), 1.3 * u, true)
+		# A draw shot: the cue ball comes back the way it came.
+		var y := baseline + 3.6 * u
+		draw_circle(Vector2(x1 + 5 * u, y), 3.2 * u, Color(0.96, 0.95, 0.9), true, -1.0, true)
+		_dashes(PackedVector2Array([Vector2(x1 - 1 * u, y), Vector2(x0 - 4 * u, y)]), Color(tint, 0.85), 1.6 * u, 2.5 * u, 2.5 * u)
+		_head(Vector2(x0 - 8 * u, y), Vector2.LEFT, 6 * u, Color(tint, 0.95))
 
 	# --- Perks: Combos & clusters ---------------------------------------------------
 
@@ -915,8 +1169,8 @@ void fragment() {
 		for p: Vector2 in [Vector2(0, 0), Vector2(7, 0), Vector2(3.5, -6)]:
 			draw_circle(c + p * u, 3.4 * u, Color(tint, 0.6), true, -1.0, true)
 		var gl := _layout(-3 * u)
-		_put(gl[0], _ink(), Vector2(1 * u, 0), deg_to_rad(-6))
-		_put(gl[1], _ink(), Vector2(-1 * u, -2 * u), deg_to_rad(8))
+		for i in gl.size():
+			_put(gl[i], _ink(), Vector2(1 * u, 0) if i % 2 == 0 else Vector2(-1 * u, -2 * u), deg_to_rad(-6 if i % 2 == 0 else 8))
 
 	## Clean Sweep: a broad sweep under letters leaning into it.
 	func _r_sweep() -> void:
@@ -949,9 +1203,13 @@ void fragment() {
 	## Domino: toppling one after the other.
 	func _r_topple() -> void:
 		var gl := _layout(1 * u)
-		_put(gl[0], _ink(), Vector2.ZERO, deg_to_rad(-3), Vector2.ONE, 0.0, 0.0, 0.0)
-		_put(gl[1], _ink(), Vector2(-3 * u, 0), deg_to_rad(18), Vector2.ONE, 0.0, 0.0, 0.0)
-		var foot := Vector2(gl[1].x + gl[1].w * 0.5, baseline)
+		var last := gl.size() - 1
+		for i in gl.size():
+			if i < last:
+				_put(gl[i], _ink(), Vector2.ZERO, deg_to_rad(-3), Vector2.ONE, 0.0, 0.0, 0.0)
+			else:
+				_put(gl[i], _ink(), Vector2(-3 * u if last > 0 else 0.0, 0), deg_to_rad(16), Vector2.ONE, 0.0, 0.0, 0.0)
+		var foot := Vector2(gl[last].x + gl[last].w * 0.5, baseline)
 		draw_arc(foot, xh + 5 * u, -PI * 0.5 + 0.1, -PI * 0.5 + 0.75, 10, Color(tint, 0.55), 1.4 * u, true)
 		var r := Rect2(x1 + 7 * u, baseline - 5 * u, 15 * u, 5 * u)
 		_rr(r, 1.2 * u, Color(tint, 0.85))
@@ -1157,8 +1415,8 @@ void fragment() {
 			draw_polyline(pts, Color(tint, 0.7), 1.8 * u, true)
 			_head(pts[pts.size() - 1], pts[pts.size() - 1] - pts[pts.size() - 2], 5.5 * u, Color(tint, 0.95))
 		var gl := _layout(1 * u)
-		_put(gl[0], _ink(), Vector2.ZERO, deg_to_rad(-8))
-		_put(gl[1], _ink(), Vector2.ZERO, deg_to_rad(8))
+		for i in gl.size():
+			_put(gl[i], _ink(), Vector2.ZERO, deg_to_rad(-8 if i % 2 == 0 else 8))
 
 	## Big Numbers: drawn tall against a ruler.
 	func _r_tall() -> void:
@@ -1203,7 +1461,7 @@ void fragment() {
 	## Steady Run: climbing a step at a time.
 	func _r_steps() -> void:
 		var gl := _layout(3 * u)
-		var rise := 7 * u
+		var rise := 5 * u
 		var y := baseline + 3 * u
 		var pts := PackedVector2Array([Vector2(gl[0].x - 6 * u, y)])
 		for i in gl.size():
@@ -1256,6 +1514,7 @@ void fragment() {
 
 	## Racing Stripe: twin racing stripes and a chequered flag.
 	func _r_racing() -> void:
+		_gauge(0.6, 1.0, tint)   # 60% power or more
 		_text_at(_ink())
 		var o := Vector2(x1 + 6 * u, top + 2 * u)
 		var sq := 2.6 * u
@@ -1565,15 +1824,22 @@ void fragment() {
 		_oval_line(c, (x1 - x0) * 0.5 + 7 * u, 5 * u, Color(tint, 0.6), 1.4 * u)
 		_text_at(_ink(), Vector2(0, 3 * u))
 
-	## Side Hustle: letters shuffling side to side.
+	## Side Hustle: a side bet card on one side, its winnings doubled on the other.
 	func _r_hustle() -> void:
 		for g: Dictionary in _layout(2 * u):
 			_put(g, _ink(), Vector2.ZERO, 0.0, Vector2.ONE, 0.2)
-		var y := baseline + 5.5 * u
-		var col := Color(tint, 0.85)
-		draw_line(Vector2(x0 - 2 * u, y), Vector2(x1 + 2 * u, y), col, 1.5 * u, true)
-		_head(Vector2(x1 + 5 * u, y), Vector2.RIGHT, 5 * u, col)
-		_head(Vector2(x0 - 5 * u, y), Vector2.LEFT, 5 * u, col)
+		var card := Rect2(x0 - 21 * u, cy - 10 * u, 13 * u, 19 * u)
+		_rr(card, 2 * u, Color(0.97, 0.95, 0.9))
+		_rr(Rect2(card.position + Vector2(2, 3) * u, Vector2(9, 7) * u), 1 * u, tint.darkened(0.6))
+		for k in 2:
+			draw_line(card.position + Vector2(2.5 * u, (13 + 2.6 * k) * u), card.position + Vector2(10.5 * u, (13 + 2.6 * k) * u), Color(0.2, 0.18, 0.15, 0.8), 1.0 * u, true)
+		for k in 2:
+			var c := Vector2(x1 + 12 * u, cy + (5 - 9 * k) * u)
+			draw_circle(c + Vector2(0, 1.2 * u), 6 * u, Color(0, 0, 0, 0.35), true, -1.0, true)
+			draw_circle(c, 6 * u, tint, true, -1.0, true)
+			draw_arc(c, 3.6 * u, 0, TAU, 20, Color(1, 1, 1, 0.8), 1.0 * u, true)
+			for q in 6:
+				draw_line(c + Vector2.from_angle(TAU * q / 6.0) * 4.4 * u, c + Vector2.from_angle(TAU * q / 6.0) * 6 * u, Color(1, 1, 1, 0.9), 1.3 * u, true)
 
 	## Overflow: too big for its beaker, spilling over.
 	func _r_beaker() -> void:
@@ -1809,6 +2075,1313 @@ void fragment() {
 		_edge(Color(tint, 0.2), 6 * u)
 		_text_at(_ink())
 
+	# --- Shared pieces for imbues, balls, items and bets -----------------------------
+
+	## A repeatable 0..1 noise for particle i, channel k.
+	func _h(i: int, k := 0) -> float:
+		return fposmod(sin(i * 12.9898 + k * 78.233) * 43758.5453, 1.0)
+
+	## A jagged lightning bolt from a to b.
+	func _bolt(ci: CanvasItem, a: Vector2, b: Vector2, col: Color, w: float, seed: int, n := 6) -> void:
+		var pts := PackedVector2Array([a])
+		var d := b - a
+		var nrm := d.orthogonal().normalized()
+		for i in range(1, n):
+			pts.append(a + d * (float(i) / n) + nrm * (_h(seed, i) - 0.5) * d.length() * 0.35)
+		pts.append(b)
+		ci.draw_polyline(pts, col, w, true)
+
+	## A pool ball: n's colour, solid or striped, with its number.
+	func _ballpic(c: Vector2, r: float, n: int) -> void:
+		var col: Color = Catalog.BALL_COLORS.get(n, Color(0.96, 0.95, 0.9))
+		if n >= 9 and n <= 15:
+			draw_circle(c, r, Color(0.96, 0.95, 0.9), true, -1.0, true)
+			var band := PackedVector2Array()
+			for i in 13:
+				var a := lerpf(-0.75, 0.75, i / 12.0)
+				band.append(c + Vector2(cos(PI + a), sin(PI + a) * 0.62) * r)
+			for i in 13:
+				var a := lerpf(-0.75, 0.75, i / 12.0)
+				band.append(c + Vector2(cos(a), sin(a) * 0.62) * r)
+			draw_colored_polygon(band, col)
+		else:
+			draw_circle(c, r, col, true, -1.0, true)
+		if n > 0:
+			draw_circle(c, r * 0.5, Color(0.97, 0.95, 0.9), true, -1.0, true)
+			var f := maxi(6, roundi(r * 0.75))
+			var tw := font.get_string_size(str(n), HORIZONTAL_ALIGNMENT_LEFT, -1, f).x
+			draw_string(font, c + Vector2(-tw * 0.5, f * 0.36), str(n), HORIZONTAL_ALIGNMENT_LEFT, -1, f, Color(0.06, 0.06, 0.08))
+		draw_circle(c + Vector2(-0.35, -0.4) * r, r * 0.22, Color(1, 1, 1, 0.45), true, -1.0, true)
+
+	## A pocket: a dark hole with a coloured lip.
+	func _pocket(c: Vector2, r: float, lip := Color.TRANSPARENT) -> void:
+		draw_circle(c, r, Color(0.02, 0.02, 0.03, 0.92), true, -1.0, true)
+		draw_arc(c, r, 0, TAU, 24, lip if lip.a > 0 else Color(tint, 0.85), maxf(1.0, 1.4 * u), true)
+
+	## A number in the symbol font, centred on c.
+	func _num(txt: String, c: Vector2, size_px: float, col: Color) -> void:
+		var f := roundi(size_px)
+		var tw := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, f).x
+		draw_string(font, c + Vector2(-tw * 0.5, f * 0.36), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, f, col)
+
+	## A heart shape, w across, centred on c.
+	func _heart_pts(c: Vector2, w: float) -> PackedVector2Array:
+		var pts := PackedVector2Array()
+		for i in 36:
+			var t := TAU * i / 36.0
+			pts.append(c + Vector2(16 * pow(sin(t), 3), -(13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t))) * w / 34.0)
+		return pts
+
+	## A five-pointed star.
+	func _star5(c: Vector2, ro: float, ri: float, rot := 0.0) -> PackedVector2Array:
+		var pts := PackedVector2Array()
+		for i in 10:
+			pts.append(c + Vector2.from_angle(-PI * 0.5 + rot + PI * i / 5.0) * (ro if i % 2 == 0 else ri))
+		return pts
+
+	# --- Imbues -----------------------------------------------------------------------
+
+	## Spark: crackling with arcs of electricity.
+	func _r_spark() -> void:
+		var zap := Color(0.55, 1.0, 0.95)
+		_edge(Color(zap, 0.16), 8 * u)
+		_text_at(_ink())
+		var gl := _layout()
+		_bolt(self, Vector2(x0 - 14 * u, cy - 8 * u), Vector2(x0 + 1 * u, top + 9 * u), Color(zap, 0.9), 1.6 * u, 3)
+		_bolt(self, Vector2(x1 - 1 * u, baseline - 7 * u), Vector2(x1 + 15 * u, cy + 1 * u), Color(zap, 0.9), 1.6 * u, 7)
+		var a := Vector2(gl[0].x + gl[0].w * 0.5, top - 1 * u)
+		var b := Vector2(gl[-1].x + gl[-1].w * 0.5, baseline - _gh(gl[-1].ch) - 1 * u)
+		_bolt(self, a, b, Color(zap, 0.7), 1.2 * u, 11, 5)
+
+	func _p_spark(ci: CanvasItem, t: float) -> void:
+		for i in 5:
+			var life := fposmod(t * 1.7 + _h(i), 1.0)
+			if life > 0.35:
+				continue
+			var k := floori(t * 1.7 + _h(i)) * 7 + i
+			var p := Vector2(lerpf(x0 - 8 * u, x1 + 8 * u, _h(k, 1)), lerpf(top - 2 * u, baseline + 2 * u, _h(k, 2)))
+			var d := Vector2.from_angle(_h(k, 3) * TAU) * 5 * u
+			_bolt(ci, p - d, p + d, Color(0.7, 1.0, 1.0, 1.0 - life / 0.35), 1.1 * u, k, 3)
+
+	## Gilded: gold leaf laid over half the letters, flakes coming loose.
+	func _r_gilt() -> void:
+		_text_at(_ink())
+		for f in [[0.82, -0.25, 0.4], [1.12, 0.15, -0.3], [1.0, 0.7, 0.9], [-0.1, 0.9, 0.2]]:
+			var c := Vector2(lerpf(x0, x1, f[0]), lerpf(top, baseline, f[1]))
+			draw_set_transform(c, f[2])
+			_rr(Rect2(-2 * u, -1.5 * u, 4 * u, 3 * u), 0.5 * u, Color(1, 0.84, 0.38))
+			draw_set_transform(Vector2.ZERO)
+
+	func _p_gilt(ci: CanvasItem, t: float) -> void:
+		for i in 4:
+			var life := fposmod(t * 0.28 + i * 0.25, 1.0)
+			var x := lerpf(x0, x1 + 6 * u, _h(i, 1)) + sin(life * TAU * 1.5 + i) * 4 * u
+			var y := lerpf(top - 6 * u, baseline + 6 * u, life)
+			ci.draw_set_transform(Vector2(x, y), life * TAU * 2.0 + i, Vector2(1.0, absf(cos(life * TAU * 2.0)) + 0.2))
+			ci.draw_rect(Rect2(-1.6 * u, -1.2 * u, 3.2 * u, 2.4 * u), Color(1, 0.86, 0.4, sin(life * PI)))
+		ci.draw_set_transform(Vector2.ZERO)
+
+	## Weighted: pressed down by a weight that reads ×3, and climbing.
+	func _r_weights() -> void:
+		var gl := _layout()
+		for g: Dictionary in gl:
+			_put(g, _ink(), Vector2.ZERO, 0.0, Vector2(1.08, 0.86), 0.0, 0.0, 0.0)
+		var y := baseline - cap * 0.86 - 1 * u
+		var bw := 26 * u
+		var bh := 10 * u
+		var pts := PackedVector2Array([Vector2(cx - bw * 0.36, y - bh), Vector2(cx + bw * 0.36, y - bh), Vector2(cx + bw * 0.5, y), Vector2(cx - bw * 0.5, y)])
+		_poly(pts, tint.darkened(0.35))
+		draw_arc(Vector2(cx, y - bh), 4 * u, PI, TAU, 12, tint.darkened(0.35), 2 * u, true)
+		_num("×3", Vector2(cx, y - bh * 0.5), 9 * u, Color(0.96, 0.95, 0.9))
+		for k in 2:
+			_num("×%d" % (4 + k), Vector2(x1 + (8 + 9 * k) * u, baseline - (6 + 7 * k) * u), (8 - k) * u, Color(tint, 0.55 - 0.2 * k))
+
+	## Hairline: a glossy coat with a fine crack running through it.
+	func _r_hairline() -> void:
+		_text_at(_ink())
+		var w := x1 - x0
+		var crack := PackedVector2Array([Vector2(x0 + w * 0.05, top + cap * 0.18), Vector2(x0 + w * 0.3, top + cap * 0.36), Vector2(x0 + w * 0.42, top + cap * 0.3), Vector2(x0 + w * 0.62, top + cap * 0.58), Vector2(x0 + w * 0.95, top + cap * 0.66)])
+		draw_polyline(crack, Color(bg, 0.9), 1.4 * u, true)
+		draw_polyline(crack, Color(1, 1, 1, 0.95), 0.7 * u, true)
+		draw_line(crack[3], crack[3] + Vector2(-3, 7) * u, Color(1, 1, 1, 0.8), 0.6 * u, true)
+		draw_line(crack[1], crack[1] + Vector2(1, -6) * u, Color(1, 1, 1, 0.8), 0.6 * u, true)
+
+	## Kindled: kindling crossed under the letter, catching light.
+	func _r_kindle() -> void:
+		var wood := Color(0.55, 0.32, 0.16)
+		var b := baseline + 3 * u
+		draw_line(Vector2(cx - 15 * u, b + 3 * u), Vector2(cx + 13 * u, b - 3 * u), wood, 3 * u, true)
+		draw_line(Vector2(cx - 13 * u, b - 3 * u), Vector2(cx + 15 * u, b + 3 * u), wood.darkened(0.2), 3 * u, true)
+		_flame(Vector2(cx, baseline + 1 * u), 6 * u, 14 * u, Color(1, 0.5, 0.12, 0.85))
+		_flame(Vector2(cx + 1 * u, baseline + 1 * u), 3 * u, 8 * u, Color(1, 0.86, 0.4, 0.95))
+		_text_at(_ink())
+
+	func _p_kindle(ci: CanvasItem, t: float) -> void:
+		for i in 6:
+			var life := fposmod(t * 0.7 + i / 6.0, 1.0)
+			var p := Vector2(cx + (_h(i) - 0.5) * 18 * u + sin(life * 9.0 + i) * 2 * u, baseline - life * (cap + 8 * u))
+			ci.draw_circle(p, (1.4 - life) * u, Color(1, 0.6 + 0.3 * _h(i, 2), 0.2, 1.0 - life), true, -1.0, true)
+
+	## Vein: veins branching out of the letter, spreading.
+	func _vein_paths() -> Array:
+		var out := []
+		for start in [[0.3, 0.62, 0.25], [0.12, 0.2, -0.3]]:
+			for side in [-1.0, 1.0]:
+				var p := Vector2(cx + side * (x1 - x0) * start[0], lerpf(top, baseline, start[1]))
+				var pts := PackedVector2Array([p])
+				var ang: float = (0.0 if side > 0 else PI) + side * start[2]
+				for k in 6:
+					ang += side * (0.22 + _h(k + int(side * 3) + int(start[1] * 10), 2) * 0.25) * (1.0 if k % 2 else -1.0)
+					p += Vector2.from_angle(ang) * 5.5 * u
+					p.y = clampf(p.y, top - 4 * u, baseline + 4 * u)
+					pts.append(p)
+				out.append(pts)
+		return out
+
+	func _r_veins() -> void:
+		var vein := tint.lerp(Color(1, 0.3, 0.6), 0.3)
+		for path: PackedVector2Array in _vein_paths():
+			for i in path.size() - 1:
+				var wv := lerpf(2.4, 0.8, float(i) / path.size()) * u
+				draw_line(path[i], path[i + 1], Color(vein, 0.8), wv, true)
+				if i % 2 == 1:
+					var d := (path[i + 1] - path[i]).rotated(0.9 if i % 4 == 1 else -0.9) * 0.6
+					draw_line(path[i], path[i] + d, Color(vein, 0.55), wv * 0.6, true)
+		_text_at(_ink())
+
+	func _p_veins(ci: CanvasItem, t: float) -> void:
+		var paths := _vein_paths()
+		for j in paths.size():
+			var path: PackedVector2Array = paths[j]
+			var f := fposmod(t * 0.6 + j * 0.27, 1.0) * (path.size() - 1)
+			var i := mini(floori(f), path.size() - 2)
+			var p := path[i].lerp(path[i + 1], f - i)
+			ci.draw_circle(p, 2.2 * u, Color(1, 0.75, 0.95, 0.85), true, -1.0, true)
+
+	## Lucky: hung inside a horseshoe, ends up so the luck stays in.
+	func _r_horseshoe() -> void:
+		var c := Vector2(cx, cy - 1 * u)
+		var r := cap * 0.5 + 4 * u
+		var steel := Color(0.8, 0.83, 0.9)
+		draw_arc(c, r, -0.1 * PI, 1.1 * PI, 32, Color(steel, 0.85), 6 * u, true)
+		draw_arc(c, r, -0.1 * PI, 1.1 * PI, 32, Color(bg, 0.6), 1 * u, true)
+		for k in 6:
+			var a := lerpf(0.0, PI, (k + 0.5) / 6.0)
+			draw_circle(c + Vector2.from_angle(a) * r, 0.9 * u, Color(0.1, 0.1, 0.12), true, -1.0, true)
+		_text_at(_ink())
+
+	func _p_horseshoe(ci: CanvasItem, t: float) -> void:
+		var c := Vector2(cx, cy - 1 * u)
+		var r := cap * 0.5 + 4 * u
+		for k in 2:
+			var a := -0.1 * PI if k == 0 else 1.1 * PI
+			var s := pow(maxf(0.0, sin(t * 2.2 + k * 2.4)), 6.0)
+			_twinkle(ci, c + Vector2.from_angle(a) * r, 5 * u * s, Color(1, 1, 0.9, s))
+
+	## A thin four-pointed twinkle for particles.
+	func _twinkle(ci: CanvasItem, c: Vector2, r: float, col: Color) -> void:
+		if r < 0.3:
+			return
+		ci.draw_line(c - Vector2(r, 0), c + Vector2(r, 0), col, 1.0, true)
+		ci.draw_line(c - Vector2(0, r), c + Vector2(0, r), col, 1.0, true)
+		ci.draw_circle(c, r * 0.25, col, true, -1.0, true)
+
+	## Volatile: shaking in front of a blast about to happen.
+	func _r_volatile() -> void:
+		var c := Vector2(cx, cy)
+		var pts := PackedVector2Array()
+		for i in 24:
+			pts.append(c + Vector2.from_angle(TAU * i / 24.0) * (cap * 0.5 + (11 if i % 2 == 0 else 3) * u + _h(i) * 4 * u))
+		_poly(pts, Color(1, 0.55, 0.1, 0.3))
+		var inner := PackedVector2Array()
+		for i in 24:
+			inner.append(c + (pts[i] - c) * 0.72)
+		_poly(inner, Color(1, 0.8, 0.25, 0.28))
+		_text_at(Color(1, 0.3, 0.2, 0.7), Vector2(-1.5, 1) * u)
+		_text_at(Color(1, 0.9, 0.3, 0.7), Vector2(1.5, -1) * u)
+		_text_at(_ink())
+
+	func _p_volatile(ci: CanvasItem, t: float) -> void:
+		for i in 7:
+			var life := fposmod(t * 2.3 + _h(i), 1.0)
+			var a := _h(floori(t * 2.3 + _h(i)) * 11 + i) * TAU
+			var p := Vector2(cx, cy) + Vector2.from_angle(a) * (cap * 0.5 + (6 + life * 10) * u)
+			ci.draw_circle(p, (1.3 - life) * u, Color(1, 0.75, 0.25, 1.0 - life), true, -1.0, true)
+
+	## Jinxed: under its own little rain cloud.
+	func _r_jinx() -> void:
+		var gl := _layout()
+		for g: Dictionary in gl:
+			_put(g, _ink(), Vector2(-3 * u, 1 * u), deg_to_rad(9))
+		var c := Vector2(x1 + 5 * u, top + 1 * u)
+		var cloud := Color(0.42, 0.36, 0.55)
+		for b in [[-6, 1, 4.5], [0, -2, 5.5], [6, 0, 4.5], [1, 2.5, 4.5]]:
+			draw_circle(c + Vector2(b[0], b[1]) * u, b[2] * u, cloud, true, -1.0, true)
+		for k in 4:
+			var x := c.x + (-6 + 4 * k) * u
+			draw_line(Vector2(x, c.y + 7 * u), Vector2(x - 2.5 * u, c.y + 13 * u), Color(0.6, 0.55, 0.95, 0.7), 1.2 * u, true)
+
+	func _p_jinx(ci: CanvasItem, t: float) -> void:
+		var c := Vector2(x1 + 5 * u, top + 1 * u)
+		for i in 5:
+			var life := fposmod(t * 1.6 + i * 0.2, 1.0)
+			var x := c.x + (-7 + 3.5 * i) * u - life * 5 * u
+			var y := c.y + 7 * u + life * 24 * u
+			ci.draw_line(Vector2(x, y), Vector2(x - 1.2 * u, y + 3.5 * u), Color(0.7, 0.65, 1.0, 0.8 * (1.0 - life)), 1.1 * u, true)
+
+	## Pawned: hanging under the pawnbroker's three gold balls.
+	func _r_pawn() -> void:
+		_text_at(_ink())
+		var gold := Color(1, 0.8, 0.3)
+		var bar := Vector2(x1 + 3 * u, top + 2 * u)
+		draw_line(bar, bar + Vector2(18 * u, 0), Color(colour, 0.7), 1.6 * u, true)
+		for p: Vector2 in [Vector2(5, 7), Vector2(15, 7), Vector2(10, 15)]:
+			var c := bar + p * u
+			draw_line(Vector2(c.x, bar.y), c, Color(colour, 0.5), 0.8 * u, true)
+			draw_circle(c, 3.6 * u, gold, true, -1.0, true)
+			draw_circle(c + Vector2(-1.1, -1.1) * u, 1.1 * u, Color(1, 0.96, 0.75), true, -1.0, true)
+
+	## Frosted: iced like a cake, with snow along the tops.
+	func _r_frosted() -> void:
+		_edge(Color(0.88, 0.96, 1.0, 0.95), 4 * u)
+		_text_at(_ink())
+		for g: Dictionary in _layout():
+			var y := baseline - _gh(g.ch)
+			for k in 3:
+				var x: float = g.x + g.w * (0.2 + 0.3 * k)
+				draw_circle(Vector2(x, y + 0.5 * u), (2.6 - 0.5 * (k % 2)) * u, Color(0.97, 0.99, 1.0), true, -1.0, true)
+
+	func _p_frosted(ci: CanvasItem, t: float) -> void:
+		for i in 6:
+			var life := fposmod(t * 0.22 + i / 6.0, 1.0)
+			var p := Vector2(lerpf(x0 - 10 * u, x1 + 10 * u, _h(i, 1)) + sin(life * 8.0 + i) * 3 * u, lerpf(top - 6 * u, baseline + 6 * u, life))
+			var r := (1.2 + _h(i, 2)) * u
+			for k in 3:
+				var d := Vector2.from_angle(PI * k / 3.0 + life * 3.0) * r
+				ci.draw_line(p - d, p + d, Color(0.9, 0.97, 1.0, sin(life * PI)), 0.8, true)
+
+	## Magnetic: split into north and south, field lines looping round.
+	func _r_poles() -> void:
+		var c := Vector2(cx, cy)
+		var rx := (x1 - x0) * 0.5 + 6 * u
+		for k in 2:
+			var ry := cap * 0.5 + (5 + 5 * k) * u
+			_dashes(_oval_arc(c, rx + 4 * u * k, ry, PI * 1.05, PI * 1.95, 24), Color(tint, 0.5 - 0.15 * k), 1.2 * u, 3 * u, 2 * u)
+			_dashes(_oval_arc(c, rx + 4 * u * k, ry, PI * 0.05, PI * 0.95, 24), Color(tint, 0.5 - 0.15 * k), 1.2 * u, 3 * u, 2 * u)
+		_text_at(_ink())
+
+	## Charged: inside a battery, bolt at the terminal.
+	func _r_battery() -> void:
+		var r := Rect2(x0 - 9 * u, top - 5 * u, x1 - x0 + 18 * u, cap + 10 * u)
+		_rr(r, 4 * u, Color(tint, 0.1))
+		_rr(r, 4 * u, Color(tint, 0.8), 1.6 * u)
+		_rr(Rect2(r.end.x, cy - 5 * u, 3.5 * u, 10 * u), 1.2 * u, Color(tint, 0.8))
+		for k in 3:
+			_rr(Rect2(r.position.x + 3 * u, r.end.y - (6 + 6 * k) * u, 3 * u, 4.5 * u), 0.8 * u, Color(tint, 0.5))
+		_text_at(_ink())
+		var bolt := PackedVector2Array([Vector2(4, -11), Vector2(-3, 1), Vector2(1, 1), Vector2(-3, 11), Vector2(5, -2), Vector2(1, -2)])
+		var o := Vector2(r.end.x + 10 * u, cy)
+		var pts := PackedVector2Array()
+		for p in bolt:
+			pts.append(o + p * u * 0.9)
+		_poly(pts, Color(1, 0.95, 0.4))
+
+	func _p_battery(ci: CanvasItem, t: float) -> void:
+		var o := Vector2(x1 + 9 * u + 3.5 * u + 10 * u, cy)
+		var s := pow(maxf(0.0, sin(t * 5.0)), 4.0)
+		for k in 3:
+			var d := Vector2.from_angle(TAU * k / 3.0 + t) * 9 * u
+			if s > 0.1:
+				_bolt(ci, o, o + d, Color(1, 1, 0.6, s), 0.9 * u, floori(t * 5.0) * 3 + k, 3)
+
+	## Resonant: ringing, its waves rippling out.
+	func _r_resonance() -> void:
+		var c := Vector2(cx, cy)
+		for k in 3:
+			_oval_line(c, (x1 - x0) * 0.5 + (6 + 6 * k) * u, cap * 0.5 + (2 + 3 * k) * u, Color(tint, 0.45 - 0.13 * k), 1.2 * u)
+		_text_at(_ink())
+
+	func _p_resonance(ci: CanvasItem, t: float) -> void:
+		var c := Vector2(cx, cy)
+		for k in 2:
+			var life := fposmod(t * 0.45 + k * 0.5, 1.0)
+			var pts := _oval(c, (x1 - x0) * 0.5 + (4 + 22 * life) * u, cap * 0.5 + (1 + 9 * life) * u)
+			pts.append(pts[0])
+			ci.draw_polyline(pts, Color(tint, 0.6 * (1.0 - life)), 1.2 * u, true)
+
+	## Hollow: an empty shell, light enough to float.
+	func _r_hollow() -> void:
+		_poly(_oval(Vector2(cx, baseline + 5 * u), (x1 - x0) * 0.4, 1.8 * u), Color(0, 0, 0, 0.3))
+		_edge(colour, 4 * u, Vector2(0, -3 * u))
+		_text_at(Color(tint.darkened(0.6), 1.0), Vector2(0, -3 * u))
+		_text_at(Color(tint, 0.18), Vector2(0, -3 * u))
+		draw_line(Vector2(x0 + 4 * u, top), Vector2(x0 + 9 * u, top - 1 * u), Color(1, 1, 1, 0.6), 1 * u, true)
+
+	## Leaded: cast in solid lead, deep and heavy.
+	func _r_lead() -> void:
+		for k in range(6, 0, -1):
+			_text_at(Color(0.2, 0.22, 0.27).lerp(Color(0.12, 0.13, 0.16), k / 6.0), Vector2(k, k) * 0.6 * u)
+		_text_at(_ink())
+
+	## Bounty: on a wanted poster.
+	func _r_wanted() -> void:
+		var r := Rect2(x0 - 10 * u, top - 6 * u, x1 - x0 + 20 * u, cap + 12 * u)
+		var paper := Color(0.88, 0.78, 0.56)
+		var pts := PackedVector2Array([r.position, Vector2(r.end.x, r.position.y)])
+		for i in 9:
+			var t := i / 8.0
+			pts.append(Vector2(lerpf(r.end.x, r.position.x, t), r.end.y - (1.5 * u if i % 2 else 0.0)))
+		_poly(pts, paper)
+		for p: Vector2 in [r.position + Vector2(3, 3) * u, Vector2(r.end.x - 3 * u, r.position.y + 3 * u)]:
+			draw_circle(p, 1.2 * u, Color(0.35, 0.25, 0.15), true, -1.0, true)
+		_text_at(Color(0.33, 0.2, 0.08))
+
+	## Starry: a night sky, with stars trailing after it.
+	func _r_starry() -> void:
+		_edge(Color(colour, 0.95), 2.4 * u)
+		_text_at(_ink())
+		for k in 3:
+			var p := Vector2(x1 + (6 + 8 * k) * u, cy + (2 - 4 * k) * u)
+			_poly(_star5(p, (4.2 - k) * u, (1.8 - 0.4 * k) * u), Color(1, 0.9, 0.55, 0.95 - 0.25 * k))
+
+	func _p_starry(ci: CanvasItem, t: float) -> void:
+		for i in 5:
+			var s := pow(maxf(0.0, sin(t * 1.8 + i * 1.7)), 4.0)
+			var p := Vector2(lerpf(x0 - 10 * u, x1 + 4 * u, _h(i, 1)), lerpf(top - 5 * u, baseline + 5 * u, _h(i, 2)))
+			_twinkle(ci, p, 3.5 * u * s, Color(1, 0.95, 0.75, s))
+
+	## Twin: a solid and its striped twin, hopping over the letters.
+	func _r_twin() -> void:
+		var a := Vector2(x0 - 11 * u, baseline - 7 * u)
+		var b := Vector2(x1 + 11 * u, baseline - 7 * u)
+		var arc := PackedVector2Array()
+		for i in 21:
+			var t := i / 20.0
+			arc.append(a.lerp(b, t) + Vector2(0, -sin(t * PI) * (cap + 8 * u)))
+		_dashes(arc, Color(tint, 0.7), 1.3 * u, 3 * u, 2.5 * u)
+		_head(arc[arc.size() - 1], arc[arc.size() - 1] - arc[arc.size() - 2], 5 * u, Color(tint, 0.9))
+		_text_at(_ink())
+		_ballpic(a, 6 * u, 3)
+		_ballpic(b + Vector2(0, 2) * u, 6 * u, 11)
+
+	# --- Special balls -----------------------------------------------------------------
+
+	## Void: a black hole pulling everything round into it.
+	func _r_void() -> void:
+		var c := Vector2(cx, cy)
+		for k in 3:
+			var pts := PackedVector2Array()
+			for i in 30:
+				var th := i * 0.12
+				pts.append(c + Vector2.from_angle(th + TAU * k / 3.0) * Vector2(1.5, 1.0) * (24 * u * exp(-0.12 * th)))
+			draw_polyline(pts, Color(0.65, 0.35, 1.0, 0.5), 1.6 * u, true)
+		draw_circle(c, 12 * u, Color(0, 0, 0, 0.85), true, -1.0, true)
+		_edge(Color(0.85, 0.65, 1.0), 4 * u)
+		_text_at(Color(0.1, 0.03, 0.18))
+
+	func _p_void(ci: CanvasItem, t: float) -> void:
+		var c := Vector2(cx, cy)
+		for i in 6:
+			var life := fposmod(t * 0.4 + i / 6.0, 1.0)
+			var p := c + Vector2.from_angle(life * 5.0 + i * 1.3) * (30 * u * (1.0 - life))
+			ci.draw_circle(p, 1.3 * u, Color(0.8, 0.6, 1.0, life), true, -1.0, true)
+
+	## Glass: clear letters, a bright reflection across them.
+	func _r_glass() -> void:
+		_edge(Color(0.9, 0.97, 1.0), 3 * u)
+		_text_at(bg)
+		_text_at(_ink())
+
+	func _p_glass(ci: CanvasItem, t: float) -> void:
+		var s := pow(maxf(0.0, sin(t * 1.3)), 8.0)
+		_twinkle(ci, Vector2(x1 - 3 * u, top + 3 * u), 6 * u * s, Color(1, 1, 1, s))
+
+	## Iron: brushed steel on a riveted plate.
+	func _r_iron() -> void:
+		var r := Rect2(x0 - 9 * u, top - 5 * u, x1 - x0 + 18 * u, cap + 10 * u)
+		_rr(r, 3 * u, Color(0.28, 0.3, 0.34))
+		_rr(r, 3 * u, Color(0.55, 0.58, 0.63), 1 * u)
+		for p: Vector2 in [r.position + Vector2(3.5, 3.5) * u, Vector2(r.end.x - 3.5 * u, r.position.y + 3.5 * u), r.end - Vector2(3.5, 3.5) * u, Vector2(r.position.x + 3.5 * u, r.end.y - 3.5 * u)]:
+			draw_circle(p, 1.5 * u, Color(0.75, 0.77, 0.82), true, -1.0, true)
+		_edge(Color(0.1, 0.11, 0.13), 2 * u)
+		_text_at(_ink())
+
+	## Feather: in front of a quill feather.
+	func _r_plume() -> void:
+		var a := Vector2(x0 - 12 * u, baseline + 5 * u)
+		var b := Vector2(x1 + 14 * u, top - 5 * u)
+		var d := (b - a).normalized()
+		var n := d.orthogonal()
+		var len := a.distance_to(b)
+		var vane := PackedVector2Array()
+		for i in 13:
+			var t := lerpf(0.2, 1.0, i / 12.0)
+			vane.append(a + d * len * t + n * sin((t - 0.2) / 0.8 * PI) * 8 * u)
+		for i in range(12, -1, -1):
+			var t := lerpf(0.2, 1.0, i / 12.0)
+			vane.append(a + d * len * t - n * sin((t - 0.2) / 0.8 * PI) * 6 * u)
+		_poly(vane, Color(tint.lerp(colour, 0.6), 0.22))
+		for i in 9:
+			var p := a + d * len * lerpf(0.3, 0.92, i / 8.0)
+			draw_line(p, p + (n * 6 * u + d * 4 * u) * sin(lerpf(0.15, 0.95, i / 8.0) * PI), Color(tint, 0.35), 0.8 * u, true)
+		draw_line(a, b, Color(colour, 0.6), 1.2 * u, true)
+		_text_at(_ink())
+
+	## Ember: a coal glowing through its cracks.
+	func _r_coal() -> void:
+		_edge(Color(1, 0.45, 0.1, 0.22), 9 * u)
+		_edge(Color(1, 0.55, 0.15), 2.5 * u)
+		_text_at(_ink())
+
+	func _p_coal(ci: CanvasItem, t: float) -> void:
+		_p_kindle(ci, t * 0.8)
+
+	## Frost: frozen into a block of ice.
+	func _r_iceblock() -> void:
+		var r := Rect2(x0 - 9 * u, top - 6 * u, x1 - x0 + 18 * u, cap + 12 * u)
+		_rr(r, 3 * u, Color(0.7, 0.9, 1.0, 0.16))
+		_rr(r, 3 * u, Color(0.85, 0.96, 1.0, 0.75), 1.4 * u)
+		draw_line(r.position + Vector2(3, 6) * u, r.position + Vector2(3, 14) * u, Color(1, 1, 1, 0.7), 1.2 * u, true)
+		draw_line(r.position + Vector2(5, 3) * u, r.position + Vector2(13, 3) * u, Color(1, 1, 1, 0.7), 1.2 * u, true)
+		_text_at(_ink())
+
+	func _p_iceblock(ci: CanvasItem, t: float) -> void:
+		for i in 3:
+			var s := pow(maxf(0.0, sin(t * 1.5 + i * 2.1)), 6.0)
+			var p := Vector2(lerpf(x0 - 6 * u, x1 + 6 * u, _h(i, 4)), lerpf(top - 3 * u, baseline + 3 * u, _h(i, 5)))
+			_twinkle(ci, p, 4 * u * s, Color(1, 1, 1, s))
+
+	## Magnet: a horseshoe magnet drawing balls in.
+	func _r_pull() -> void:
+		var c := Vector2(x0 - 13 * u, cy)
+		var r := 7 * u
+		draw_arc(c, r, PI * 0.5, PI * 1.5, 16, Color(0.9, 0.2, 0.2), 4 * u, true)
+		draw_line(c + Vector2(0, -r), c + Vector2(6 * u, -r), Color(0.9, 0.2, 0.2), 4 * u, true)
+		draw_line(c + Vector2(0, r), c + Vector2(6 * u, r), Color(0.9, 0.2, 0.2), 4 * u, true)
+		for s in [-1.0, 1.0]:
+			draw_line(c + Vector2(6 * u, s * r), c + Vector2(9 * u, s * r), Color(0.85, 0.87, 0.92), 4 * u, true)
+		_text_at(_ink())
+		for k in 2:
+			var p := Vector2(x1 + (7 + 9 * k) * u, cy + (k * 6 - 3) * u)
+			for m in 3:
+				draw_line(p + Vector2((4 + m * 2) * u, (m - 1) * 1.6 * u), p + Vector2((7 + m * 3) * u, (m - 1) * 1.6 * u), Color(tint, 0.45), 1 * u, true)
+			_ballpic(p, 3.4 * u, 0)
+
+	## Prism: white light splitting into a rainbow.
+	func _r_prism() -> void:
+		var c := Vector2(x0 - 12 * u, cy)
+		var tri := PackedVector2Array([c + Vector2(0, -9) * u, c + Vector2(8, 6) * u, c + Vector2(-8, 6) * u])
+		draw_line(Vector2(c.x - 18 * u, cy + 4 * u), c + Vector2(-3, 1) * u, Color(1, 1, 1, 0.8), 1.4 * u, true)
+		var hues := [0.0, 0.08, 0.16, 0.33, 0.55, 0.75]
+		for k in hues.size():
+			var col := Color.from_hsv(hues[k], 0.7, 1.0, 0.55)
+			draw_line(c + Vector2(3, 0) * u, Vector2(x0 + 2 * u, cy - 9 * u + k * 3.6 * u), col, 1.4 * u, true)
+		_poly(tri, Color(0.85, 0.95, 1.0, 0.3))
+		tri.append(tri[0])
+		draw_polyline(tri, Color(0.9, 0.97, 1.0, 0.9), 1.2 * u, true)
+		_text_at(_ink())
+
+	## Wild: any number at all behind it.
+	func _r_wild() -> void:
+		var spots := [[0.0, 0.2], [0.18, -0.15], [0.86, -0.12], [1.05, 0.35], [0.95, 0.95], [-0.08, 0.85], [0.45, 1.1], [0.62, -0.25]]
+		for i in spots.size():
+			var p := Vector2(lerpf(x0 - 10 * u, x1 + 10 * u, spots[i][0]), lerpf(top, baseline, spots[i][1]))
+			_num(str([7, 13, 2, 11, 5, 14, 9, 3][i]), p, 10 * u, Color(tint.lerp(colour, 0.4), 0.3))
+		_text_at(_ink())
+
+	## Clock: on a clock face, the second hand sweeping round.
+	func _r_clock() -> void:
+		var c := Vector2(cx, cy)
+		var r := cap * 0.5 + 9 * u
+		draw_circle(c, r, Color(tint, 0.1), true, -1.0, true)
+		draw_arc(c, r, 0, TAU, 48, Color(tint, 0.75), 1.6 * u, true)
+		for i in 12:
+			var d := Vector2.from_angle(TAU * i / 12.0)
+			draw_line(c + d * (r - (3.5 if i % 3 == 0 else 2.0) * u), c + d * r, Color(tint, 0.8), 1.2 * u, true)
+		draw_line(c, c + Vector2.from_angle(-PI * 0.5 - 1.05) * r * 0.55, Color(tint, 0.6), 2 * u, true)
+		draw_line(c, c + Vector2.from_angle(-PI * 0.5 + 1.05) * r * 0.8, Color(tint, 0.6), 1.4 * u, true)
+		_text_at(_ink())
+
+	func _p_clock(ci: CanvasItem, t: float) -> void:
+		var c := Vector2(cx, cy)
+		var r := cap * 0.5 + 9 * u
+		var a := -PI * 0.5 + TAU * floorf(t) / 60.0
+		ci.draw_line(c, c + Vector2.from_angle(a) * (r - 1 * u), Color(1, 0.45, 0.4, 0.85), 0.8 * u, true)
+
+	## Coin: struck on a coin with a milled edge.
+	func _r_coin() -> void:
+		var c := Vector2(cx, cy)
+		var r := cap * 0.5 + 8 * u
+		var face := Color(0.95, 0.75, 0.22)
+		draw_circle(c, r, face, true, -1.0, true)
+		for i in 48:
+			var d := Vector2.from_angle(TAU * i / 48.0)
+			draw_line(c + d * (r - 2 * u), c + d * r, face.darkened(0.3), 0.8 * u, true)
+		draw_arc(c, r - 4 * u, 0, TAU, 48, face.darkened(0.25), 1 * u, true)
+		for g: Dictionary in _layout(0.0, 0.8):
+			_put(g, Color(1, 0.95, 0.72), Vector2(-0.8, -0.8) * u, 0.0, Vector2(0.8, 0.8))
+			_put(g, Color(0.5, 0.33, 0.06), Vector2.ZERO, 0.0, Vector2(0.8, 0.8))
+
+	func _p_coin(ci: CanvasItem, t: float) -> void:
+		var r := cap * 0.5 + 8 * u
+		var s := pow(maxf(0.0, sin(t * 1.4)), 6.0)
+		_twinkle(ci, Vector2(cx, cy) + Vector2.from_angle(-2.3) * r, 6 * u * s, Color(1, 1, 0.85, s))
+
+	## Bomb: in front of a bomb, its fuse lit.
+	func _r_bomb() -> void:
+		var c := Vector2(cx, cy + 1 * u)
+		var r := cap * 0.5 + 7 * u
+		draw_circle(c, r, Color(0.1, 0.1, 0.12), true, -1.0, true)
+		draw_circle(c + Vector2(-0.4, -0.45) * r, r * 0.22, Color(1, 1, 1, 0.12), true, -1.0, true)
+		var cap_at := c + Vector2.from_angle(-0.8) * r
+		draw_set_transform(cap_at, 0.75)
+		_rr(Rect2(-3.5 * u, -3 * u, 7 * u, 5 * u), 1 * u, Color(0.3, 0.3, 0.34))
+		draw_set_transform(Vector2.ZERO)
+		var fuse := PackedVector2Array()
+		for i in 7:
+			var t := i / 6.0
+			fuse.append(cap_at + Vector2(t * 9 * u, -t * 7 * u - sin(t * PI) * 3 * u))
+		draw_polyline(fuse, Color(0.75, 0.6, 0.4), 1.4 * u, true)
+		_star(fuse[fuse.size() - 1], 3.5 * u, Color(1, 0.75, 0.25))
+		_edge(Color(0.1, 0.1, 0.12), 3 * u)
+		_text_at(_ink())
+
+	func _p_bomb(ci: CanvasItem, t: float) -> void:
+		var c := Vector2(cx, cy + 1 * u) + Vector2.from_angle(-0.8) * (cap * 0.5 + 7 * u) + Vector2(9, -7) * u
+		for i in 5:
+			var life := fposmod(t * 2.5 + i / 5.0, 1.0)
+			var p := c + Vector2.from_angle(_h(floori(t * 2.5 + i / 5.0) * 5 + i) * TAU) * life * 7 * u
+			ci.draw_circle(p, (1.1 - life) * u, Color(1, 0.8, 0.3, 1.0 - life), true, -1.0, true)
+
+	## Seed: a sprout coming up beside it.
+	func _r_sprout() -> void:
+		var soil := Color(0.45, 0.3, 0.18)
+		draw_line(Vector2(x0 - 8 * u, baseline + 3 * u), Vector2(x1 + 18 * u, baseline + 3 * u), soil, 2 * u, true)
+		var s := Vector2(x1 + 10 * u, baseline + 2 * u)
+		_poly(_oval(s + Vector2(0, 1) * u, 3 * u, 2 * u, 12), Color(0.75, 0.6, 0.35))
+		var stem := PackedVector2Array()
+		for i in 9:
+			var t := i / 8.0
+			stem.append(s + Vector2(sin(t * PI) * 2.5 * u, -t * 22 * u))
+		var green := Color(0.45, 0.85, 0.35)
+		draw_polyline(stem, green, 1.6 * u, true)
+		var tip := stem[stem.size() - 1]
+		for side in [-1.0, 1.0]:
+			var leaf := PackedVector2Array()
+			for i in 9:
+				var t := i / 8.0
+				leaf.append(tip + Vector2(side * t * 9 * u, -sin(t * PI) * 3.5 * u - t * 3 * u))
+			for i in range(7, 0, -1):
+				var t := i / 8.0
+				leaf.append(tip + Vector2(side * t * 9 * u, sin(t * PI) * 1.5 * u - t * 3 * u))
+			_poly(leaf, green)
+		_text_at(_ink())
+
+	## Clover: in front of a big four-leaf clover.
+	func _r_bigclover() -> void:
+		var c := Vector2(cx, cy)
+		var green := Color(0.35, 0.8, 0.45, 0.38)
+		for k in 4:
+			var d := Vector2.from_angle(PI * 0.25 + PI * 0.5 * k)
+			var leaf := _heart_pts(c + d * 11 * u, 22 * u)
+			_poly(_turned(leaf, c + d * 11 * u, PI * 0.5 * k + PI * 0.75), green)
+		draw_line(c + Vector2(0, 4 * u), c + Vector2(8, 24) * u, Color(0.35, 0.8, 0.45, 0.6), 2 * u, true)
+		_text_at(_ink())
+
+	## Star: in front of a star, bouncing off the rail at full speed.
+	func _r_star() -> void:
+		var c := Vector2(cx, cy)
+		var pts := _star5(c, cap * 0.5 + 7 * u, 9 * u)
+		_poly(pts, Color(1, 0.85, 0.3, 0.28))
+		pts.append(pts[0])
+		draw_polyline(pts, Color(1, 0.88, 0.4, 0.75), 1.3 * u, true)
+		_text_at(_ink())
+
+	func _p_star(ci: CanvasItem, t: float) -> void:
+		var c := Vector2(cx, cy)
+		for k in 5:
+			var s := pow(maxf(0.0, sin(t * 2.0 + k * 1.3)), 6.0)
+			_twinkle(ci, c + Vector2.from_angle(-PI * 0.5 + TAU * k / 5.0) * (cap * 0.5 + 7 * u), 4 * u * s, Color(1, 1, 0.85, s))
+
+	## Heart: in front of a heart.
+	func _r_heart() -> void:
+		var c := Vector2(cx, cy + 1 * u)
+		var pts := _heart_pts(c + Vector2(0, -5 * u), 50 * u)
+		_poly(pts, Color(1, 0.4, 0.6, 0.3))
+		pts.append(pts[0])
+		draw_polyline(pts, Color(1, 0.55, 0.72, 0.8), 1.4 * u, true)
+		_text_at(_ink())
+
+	func _p_heart(ci: CanvasItem, t: float) -> void:
+		for i in 3:
+			var life := fposmod(t * 0.35 + i / 3.0, 1.0)
+			var p := Vector2(lerpf(x0 - 8 * u, x1 + 8 * u, _h(i, 7)) + sin(life * 6.0 + i) * 3 * u, baseline - life * (cap + 10 * u))
+			var pts := _heart_pts(p, 6 * u)
+			ci.draw_colored_polygon(pts, Color(1, 0.55, 0.75, sin(life * PI) * 0.9))
+
+	## Dice: beside a tumbling die.
+	func _r_die() -> void:
+		_text_at(_ink())
+		var c := Vector2(x1 + 12 * u, cy + 2 * u)
+		var s := 8 * u
+		var top_f := PackedVector2Array([c + Vector2(0, -s), c + Vector2(s, -s * 0.5), c, c + Vector2(-s, -s * 0.5)])
+		var left_f := PackedVector2Array([c + Vector2(-s, -s * 0.5), c, c + Vector2(0, s), c + Vector2(-s, s * 0.5)])
+		var right_f := PackedVector2Array([c, c + Vector2(s, -s * 0.5), c + Vector2(s, s * 0.5), c + Vector2(0, s)])
+		draw_colored_polygon(top_f, Color(0.97, 0.96, 0.94))
+		draw_colored_polygon(left_f, Color(0.82, 0.82, 0.86))
+		draw_colored_polygon(right_f, Color(0.7, 0.7, 0.76))
+		var pip := Color(0.12, 0.12, 0.16)
+		draw_circle(c + Vector2(0, -s * 0.5), 1.1 * u, pip, true, -1.0, true)
+		for p: Vector2 in [Vector2(-0.7, 0.05), Vector2(-0.3, 0.45)]:
+			draw_circle(c + p * s, 1 * u, pip, true, -1.0, true)
+		for p: Vector2 in [Vector2(0.3, -0.05), Vector2(0.5, 0.15), Vector2(0.7, 0.35)]:
+			draw_circle(c + p * s, 0.9 * u, pip, true, -1.0, true)
+
+	## Moon: cratered, under a crescent moon.
+	func _r_moon() -> void:
+		var c := Vector2(x0 - 10 * u, top + 4 * u)
+		draw_circle(c, 8 * u, Color(0.92, 0.93, 1.0, 0.9), true, -1.0, true)
+		draw_circle(c + Vector2(4, -2) * u, 7.5 * u, bg, true, -1.0, true)
+		_text_at(_ink())
+		for p in [[0.2, 0.3, 2.0], [0.55, 0.7, 1.6], [0.8, 0.35, 1.3], [0.35, 0.8, 1.2]]:
+			var q := Vector2(lerpf(x0, x1, p[0]), lerpf(top, baseline, p[1]))
+			draw_arc(q, p[2] * u, 0, TAU, 12, Color(0.55, 0.58, 0.7, 0.8), 0.8 * u, true)
+		for s in [[1.08, 0.1], [1.15, 0.6]]:
+			_star(Vector2(lerpf(x0, x1, s[0]), lerpf(top, baseline, s[1])), 2.4 * u, Color(1, 1, 0.9, 0.85))
+
+	## Sun: rays blazing out from behind.
+	func _r_sun() -> void:
+		var c := Vector2(cx, cy)
+		var r := cap * 0.5 + 1 * u
+		draw_circle(c, r, Color(1, 0.75, 0.2, 0.35), true, -1.0, true)
+		for i in 12:
+			var a := TAU * i / 12.0
+			var d := Vector2.from_angle(a)
+			var n := d.orthogonal()
+			_poly(PackedVector2Array([c + d * (r + 2 * u) + n * 2.6 * u, c + d * (r + (7 if i % 2 == 0 else 5) * u), c + d * (r + 2 * u) - n * 2.6 * u]), Color(1, 0.8, 0.25, 0.65))
+		_text_at(_ink())
+
+	## Anchor: in front of a ship's anchor.
+	func _r_anchor() -> void:
+		var c := Vector2(cx, cy)
+		var col := Color(tint.lerp(colour, 0.4), 0.55)
+		var h := cap * 0.5 + 6 * u
+		draw_line(c + Vector2(0, -h + 4 * u), c + Vector2(0, h), col, 2.4 * u, true)
+		draw_arc(c + Vector2(0, -h + 1.5 * u), 2.8 * u, 0, TAU, 14, col, 1.6 * u, true)
+		draw_line(c + Vector2(-9 * u, -h + 8 * u), c + Vector2(9 * u, -h + 8 * u), col, 2.4 * u, true)
+		draw_arc(c + Vector2(0, h - 13 * u), 13 * u, PI * 0.15, PI * 0.85, 20, col, 2.4 * u, true)
+		for s in [-1.0, 1.0]:
+			var tip := c + Vector2(0, h - 13 * u) + Vector2.from_angle(PI * 0.5 - s * PI * 0.35) * 13 * u
+			_head(tip + Vector2(0, -2 * u), Vector2(s * 0.3, -1), 6 * u, col)
+		_text_at(_ink())
+
+	## Eraser: being rubbed out from the right.
+	func _r_erase() -> void:
+		_text_at(_ink())
+		var c := Vector2(x1 + 4 * u, baseline - 4 * u)
+		draw_set_transform(c, -0.45)
+		_rr(Rect2(-5 * u, -6 * u, 18 * u, 10 * u), 2 * u, Color(1, 0.6, 0.68))
+		_rr(Rect2(5 * u, -6 * u, 8 * u, 10 * u), 1 * u, Color(0.4, 0.5, 1.0))
+		draw_set_transform(Vector2.ZERO)
+		for d in [[2, 6, 1.0], [-4, 8, 0.8], [6, 9, 0.7]]:
+			draw_circle(c + Vector2(d[0], d[1]) * u, d[2] * u, Color(1, 0.6, 0.68, 0.8), true, -1.0, true)
+
+	func _p_erase(ci: CanvasItem, t: float) -> void:
+		var c := Vector2(x1 + 4 * u, baseline - 4 * u)
+		for i in 4:
+			var life := fposmod(t * 0.9 + i * 0.25, 1.0)
+			ci.draw_circle(c + Vector2((-6 + 4 * i) * u, (4 + life * 10) * u), 0.8 * u, Color(1, 0.6, 0.68, 1.0 - life), true, -1.0, true)
+
+	## Echo: looping back round to the foot spot.
+	func _r_return() -> void:
+		var r := cap * 0.5 + 3 * u
+		var c := Vector2(x1 + 3 * u, cy)
+		var pts := _oval_arc(c, 12 * u, r, -PI * 0.5, PI * 0.5, 16)
+		pts.append(Vector2(x0 - 4 * u, c.y + r))
+		_dashes(pts, Color(tint, 0.75), 1.4 * u, 3 * u, 2.5 * u)
+		var spot := Vector2(x0 - 9 * u, c.y + r)
+		_head(spot + Vector2(1.5 * u, 0), Vector2.LEFT, 5 * u, Color(tint, 0.9))
+		_poly(PackedVector2Array([spot + Vector2(-3, 0) * u, spot + Vector2(0, -2) * u, spot + Vector2(3, 0) * u, spot + Vector2(0, 2) * u]), colour)
+		_text_at(_ink())
+
+	## Comet: blazing across, its tail streaming behind.
+	func _r_comet() -> void:
+		var head := Vector2(x1 + 7 * u, top + 3 * u)
+		var tail := Vector2(x0 - 22 * u, baseline + 4 * u)
+		var d := (head - tail).normalized()
+		var n := d.orthogonal()
+		var pts := PackedVector2Array([tail, head + n * 6 * u, head - n * 6 * u])
+		draw_polygon(pts, PackedColorArray([Color(0.6, 0.8, 1.0, 0.0), Color(0.75, 0.88, 1.0, 0.55), Color(0.75, 0.88, 1.0, 0.55)]))
+		draw_circle(head, 6 * u, Color(0.8, 0.9, 1.0, 0.35), true, -1.0, true)
+		draw_circle(head, 3.6 * u, Color(0.95, 0.98, 1.0), true, -1.0, true)
+		_text_at(_ink())
+
+	func _p_comet(ci: CanvasItem, t: float) -> void:
+		var head := Vector2(x1 + 7 * u, top + 3 * u)
+		var tail := Vector2(x0 - 22 * u, baseline + 4 * u)
+		for i in 6:
+			var life := fposmod(t * 0.8 + i / 6.0, 1.0)
+			var p := head.lerp(tail, life) + (head - tail).orthogonal().normalized() * (_h(i) - 0.5) * 8 * u * life
+			ci.draw_circle(p, (1.4 - life) * u, Color(0.9, 0.95, 1.0, 1.0 - life), true, -1.0, true)
+
+	# --- Items ---------------------------------------------------------------------------
+
+	## Called Shot: the ball called into its pocket, the target ringed.
+	func _r_called() -> void:
+		var pk := Vector2(x1 + 13 * u, baseline - 3 * u)
+		var a := Vector2(x0 - 4 * u, top - 3 * u)
+		var arc := PackedVector2Array()
+		for i in 21:
+			var t := i / 20.0
+			arc.append(a.lerp(pk, t) + Vector2(0, -sin(t * PI) * 6 * u))
+		_dashes(arc, Color(tint, 0.75), 1.3 * u, 3 * u, 2.5 * u)
+		_pocket(pk, 4 * u)
+		draw_arc(pk, 7 * u, 0, TAU, 24, Color(tint, 0.6), 1 * u, true)
+		_head(pk + Vector2(-4.5, -2.5) * u, arc[20] - arc[18], 5 * u, Color(tint, 0.95))
+		_text_at(_ink())
+
+	## Ghost Chalk: a ghost the ball passes straight through.
+	func _r_ghost() -> void:
+		var y := cy + 1 * u
+		draw_line(Vector2(x0 - 18 * u, y), Vector2(x1 + 8 * u, y), Color(tint, 0.3), 1 * u, true)
+		_dashes(_oval(Vector2(x0 + (x1 - x0) * 0.55, y), 7 * u, 7 * u), Color(1, 1, 1, 0.7), 1.2 * u, 2 * u, 1.6 * u)
+		_text_at(_ink())
+		var pts := PackedVector2Array()
+		for i in 17:
+			var t := i / 16.0
+			pts.append(Vector2(lerpf(x0, x1, t), baseline + 2 * u + sin(t * TAU * 2.0) * 1.6 * u))
+		draw_polyline(pts, Color(colour, 0.5), 1.2 * u, true)
+		_ballpic(Vector2(x1 + 12 * u, y), 4 * u, 0)
+
+	func _p_ghost(ci: CanvasItem, t: float) -> void:
+		for i in 3:
+			var life := fposmod(t * 0.4 + i / 3.0, 1.0)
+			var p := Vector2(lerpf(x0, x1, _h(i, 3)) + sin(life * 7.0 + i) * 3 * u, top - life * 8 * u + 4 * u)
+			ci.draw_circle(p, (2.2 - life) * u, Color(1, 1, 1, 0.35 * (1.0 - life)), true, -1.0, true)
+
+	## Swap: the two letters trading places.
+	func _r_swap() -> void:
+		var gl := _layout(6 * u)
+		var a := Vector2(gl[0].x + gl[0].w * 0.5, top - 3 * u)
+		var b := Vector2(gl[-1].x + gl[-1].w * 0.5, top - 3 * u)
+		for s in [-1.0, 1.0]:
+			var p0 := a if s < 0 else b + Vector2(0, cap + 5 * u)
+			var p1 := b if s < 0 else a + Vector2(0, cap + 5 * u)
+			var arc := PackedVector2Array()
+			for i in 13:
+				var t := i / 12.0
+				arc.append(p0.lerp(p1, t) + Vector2(0, s * sin(t * PI) * (5 if s < 0 else 3) * u))
+			draw_polyline(arc, Color(tint, 0.8), 1.5 * u, true)
+			_head(arc[12], arc[12] - arc[10], 5 * u, Color(tint, 0.95))
+		for g: Dictionary in gl:
+			_put(g, _ink())
+
+	## Polish: buffed to a mirror shine.
+	func _r_chrome() -> void:
+		for k in 3:
+			draw_arc(Vector2(x1 + 10 * u, baseline - 4 * u), (3 + 2.5 * k) * u, -PI * 0.9 + k, PI * 0.4 + k, 12, Color(tint, 0.5 - 0.12 * k), 1 * u, true)
+		_edge(Color(0.25, 0.28, 0.32), 2 * u)
+		_text_at(_ink())
+
+	func _p_chrome(ci: CanvasItem, t: float) -> void:
+		var life := fposmod(t * 0.35, 1.0)
+		if life < 0.4:
+			_twinkle(ci, Vector2(lerpf(x0, x1, life / 0.4), top + cap * 0.3), 5 * u * sin(life / 0.4 * PI), Color(1, 1, 1, sin(life / 0.4 * PI)))
+
+	## Lead Weight: stamped on a lead weight.
+	func _r_kettle() -> void:
+		var bw := x1 - x0 + 20 * u
+		var y0 := top - 3 * u
+		var y1 := baseline + 6 * u
+		var pts := PackedVector2Array([Vector2(cx - bw * 0.38, y0), Vector2(cx + bw * 0.38, y0), Vector2(cx + bw * 0.5, y1), Vector2(cx - bw * 0.5, y1)])
+		draw_polygon(pts, PackedColorArray([Color(0.48, 0.5, 0.56), Color(0.48, 0.5, 0.56), Color(0.28, 0.3, 0.35), Color(0.28, 0.3, 0.35)]))
+		draw_arc(Vector2(cx, y0), 6 * u, PI, TAU, 16, Color(0.48, 0.5, 0.56), 2.4 * u, true)
+		_text_at(Color(0.85, 0.87, 0.92))
+
+	## Spotter: a ball dropping back onto the foot spot.
+	func _r_spot() -> void:
+		var spot := Vector2(x1 + 12 * u, baseline + 2 * u)
+		draw_line(spot - Vector2(6 * u, 0), spot + Vector2(6 * u, 0), Color(tint, 0.6), 1 * u, true)
+		draw_line(spot - Vector2(0, 3 * u), spot + Vector2(0, 3 * u), Color(tint, 0.6), 1 * u, true)
+		draw_circle(spot, 1.6 * u, colour, true, -1.0, true)
+		_dashes(PackedVector2Array([spot + Vector2(0, -26) * u, spot + Vector2(0, -9) * u]), Color(tint, 0.7), 1.2 * u, 2.5 * u, 2 * u)
+		_head(spot + Vector2(0, -6) * u, Vector2.DOWN, 5 * u, Color(tint, 0.9))
+		_ballpic(spot + Vector2(0, -29) * u + Vector2(0, 2) * u, 4 * u, 5)
+		_text_at(_ink())
+
+	## Pocket Cover: one pocket lidded, the other opening wide.
+	func _r_lid() -> void:
+		var a := Vector2(x0 - 12 * u, cy)
+		var b := Vector2(x1 + 13 * u, cy)
+		_pocket(a, 5 * u)
+		_rr(Rect2(a - Vector2(7, 4) * u, Vector2(14, 8) * u), 2 * u, Color(0.6, 0.62, 0.68))
+		for s in [-1.0, 1.0]:
+			draw_circle(a + Vector2(s * 4.5 * u, 0), 1 * u, Color(0.3, 0.32, 0.36), true, -1.0, true)
+		_pocket(b, 7 * u)
+		for s in [-1.0, 1.0]:
+			_head(b + Vector2(0, s * 11 * u), Vector2(0, s), 4 * u, Color(tint, 0.85))
+		_text_at(_ink())
+
+	## Pop-up Wall: a brick wall rising from below.
+	func _r_bricks() -> void:
+		var x_a := x0 - 12 * u
+		var x_b := x1 + 12 * u
+		var bh := 5 * u
+		for row in 3:
+			var y := baseline + 5 * u - (row + 1) * bh
+			var off := 0.0 if row % 2 == 0 else 5 * u
+			var x := x_a - off
+			while x < x_b:
+				var r := Rect2(maxf(x, x_a), y, minf(x + 10 * u, x_b) - maxf(x, x_a), bh)
+				if r.size.x > 1:
+					_rr(r.grow(-0.5 * u), 0.6 * u, Color(0.75, 0.38, 0.28, 0.55 - row * 0.1))
+				x += 10 * u
+		for s in [-1.0, 1.0]:
+			_head(Vector2(x_a - 4 * u if s < 0 else x_b + 4 * u, baseline - 14 * u), Vector2.UP, 5 * u, Color(tint, 0.85))
+		_text_at(_ink(), Vector2(0, -4 * u))
+
+	## Blink: vanishing from one spot and appearing at another.
+	func _r_blink() -> void:
+		var a := Vector2(x0 - 13 * u, baseline - 5 * u)
+		var b := Vector2(x1 + 13 * u, top + 3 * u)
+		_dashes(_oval(a, 4 * u, 4 * u, 16), Color(1, 1, 1, 0.55), 1 * u, 1.6 * u, 1.6 * u)
+		var arc := PackedVector2Array()
+		for i in 17:
+			var t := i / 16.0
+			arc.append(a.lerp(b, t) + Vector2(0, -sin(t * PI) * 10 * u))
+		_dashes(arc, Color(tint, 0.5), 1 * u, 1.5 * u, 3 * u)
+		_ballpic(b, 4 * u, 0)
+		_text_at(_ink())
+
+	func _p_blink(ci: CanvasItem, t: float) -> void:
+		var a := Vector2(x0 - 13 * u, baseline - 5 * u)
+		var b := Vector2(x1 + 13 * u, top + 3 * u)
+		for i in 4:
+			var s := pow(maxf(0.0, sin(t * 3.0 + i * 1.6)), 4.0)
+			var at := a if i % 2 == 0 else b
+			_twinkle(ci, at + Vector2.from_angle(i * 2.2) * 6 * u, 3 * u * s, Color(1, 1, 1, s))
+
+	## Freeze Frame: caught on a strip of film.
+	func _r_film() -> void:
+		var r := Rect2(x0 - 14 * u, top - 7 * u, x1 - x0 + 28 * u, cap + 14 * u)
+		for y: float in [r.position.y, r.end.y - 4 * u]:
+			_rr(Rect2(r.position.x, y, r.size.x, 4 * u), 0.8 * u, Color(0.1, 0.1, 0.12, 0.9))
+			var x := r.position.x + 2 * u
+			while x < r.end.x - 3 * u:
+				draw_rect(Rect2(x, y + 1.2 * u, 2.4 * u, 1.6 * u), Color(tint, 0.5))
+				x += 5 * u
+		draw_line(Vector2(r.position.x, r.position.y + 4 * u), Vector2(r.position.x, r.end.y - 4 * u), Color(tint, 0.4), 1 * u)
+		draw_line(Vector2(r.end.x, r.position.y + 4 * u), Vector2(r.end.x, r.end.y - 4 * u), Color(tint, 0.4), 1 * u)
+		_text_at(_ink())
+
+	## Nudge: pushed a little way along.
+	func _r_nudge() -> void:
+		_text_at(Color(tint, 0.2), Vector2(-5 * u, 0))
+		var y := cy
+		draw_line(Vector2(x0 - 20 * u, y), Vector2(x0 - 4 * u, y), Color(tint, 0.85), 2 * u, true)
+		_head(Vector2(x0 - 1 * u, y), Vector2.RIGHT, 6 * u, Color(tint, 0.95))
+		for k in 3:
+			var a := -0.6 + 0.6 * k
+			draw_line(Vector2(x0 + 2 * u, y) + Vector2.from_angle(PI + a) * 2 * u, Vector2(x0 + 2 * u, y) + Vector2.from_angle(PI + a) * 1 * u, Color(colour, 0.5), 1 * u, true)
+		_text_at(_ink(), Vector2(2 * u, 0))
+
+	## English Dial: in front of a spin dial.
+	func _r_dial() -> void:
+		var c := Vector2(cx, cy)
+		var r := cap * 0.5 + 9 * u
+		draw_arc(c, r, -PI * 1.25, PI * 0.25, 40, Color(tint, 0.6), 1.6 * u, true)
+		for i in 13:
+			var a := lerpf(-PI * 1.25, PI * 0.25, i / 12.0)
+			var d := Vector2.from_angle(a)
+			draw_line(c + d * (r + 1 * u), c + d * (r + (4.0 if i % 3 == 0 else 2.2) * u), Color(tint, 0.7), 1.1 * u, true)
+		var needle := Vector2.from_angle(-PI * 0.2)
+		draw_line(c + needle * (r - 6 * u), c + needle * (r + 5 * u), Color(1, 0.5, 0.4), 1.8 * u, true)
+		_text_at(_ink())
+
+	## Gravity Pebble: the cloth bent into a well.
+	func _warp(p: Vector2, c: Vector2) -> Vector2:
+		var d := c - p
+		var l := d.length()
+		return p + d.normalized() * minf(l * 0.7, 140.0 * u * u / (l + 12 * u))
+
+	func _r_warp() -> void:
+		var c := Vector2(cx, baseline + 1 * u)
+		var a := Vector2(x0 - 22 * u, top - 6 * u)
+		var b := Vector2(x1 + 22 * u, baseline + 8 * u)
+		for k in 6:
+			var y := lerpf(a.y, b.y, k / 5.0)
+			var pts := PackedVector2Array()
+			for i in 21:
+				pts.append(_warp(Vector2(lerpf(a.x, b.x, i / 20.0), y), c))
+			draw_polyline(pts, Color(tint, 0.28), 1 * u, true)
+		for k in 9:
+			var x := lerpf(a.x, b.x, k / 8.0)
+			var pts := PackedVector2Array()
+			for i in 13:
+				pts.append(_warp(Vector2(x, lerpf(a.y, b.y, i / 12.0)), c))
+			draw_polyline(pts, Color(tint, 0.28), 1 * u, true)
+		draw_circle(c, 2.6 * u, Color(0.6, 0.62, 0.7), true, -1.0, true)
+		_text_at(_ink())
+
+	func _p_warp(ci: CanvasItem, t: float) -> void:
+		var c := Vector2(cx, baseline + 1 * u)
+		var life := fposmod(t * 0.35, 1.0)
+		var r := lerpf(26.0, 3.0, life) * u
+		var p := c + Vector2(cos(t * 3.0) * r, sin(t * 3.0) * r * 0.45)
+		ci.draw_circle(p, 2.2 * u, Color(0.96, 0.95, 0.9, sin(life * PI)), true, -1.0, true)
+
+	## Rewind: running backwards.
+	func _r_rewind() -> void:
+		var o := Vector2(x0 - 7 * u, cy)
+		for k in 2:
+			var tip := o + Vector2(-k * 7 * u - 7 * u, 0)
+			_poly(PackedVector2Array([tip, tip + Vector2(7, -6) * u, tip + Vector2(7, 6) * u]), Color(tint, 0.85))
+		for k in 3:
+			var y := top + (6 + 9 * k) * u
+			draw_line(Vector2(x1 + 3 * u, y), Vector2(x1 + (16 - 4 * k) * u, y), Color(tint, 0.5), 1.6 * u, true)
+		_text_at(_ink())
+
+	## Insurance Slip: printed on a slip, stamped.
+	func _r_slip() -> void:
+		var r := Rect2(x0 - 11 * u, top - 6 * u, x1 - x0 + 22 * u, cap + 12 * u)
+		_rr(r, 1.5 * u, Color(0.93, 0.9, 0.82, 0.95))
+		_dashes(PackedVector2Array([r.position + Vector2(4 * u, 1 * u), Vector2(r.position.x + 4 * u, r.end.y - 1 * u)]), Color(0.5, 0.45, 0.4, 0.7), 1 * u, 2 * u, 1.6 * u)
+		_text_at(Color(0.15, 0.2, 0.35))
+		var st := Vector2(r.end.x - 5 * u, r.end.y - 5 * u)
+		draw_arc(st, 7 * u, 0, TAU, 24, Color(0.85, 0.2, 0.25, 0.75), 1.4 * u, true)
+		draw_arc(st, 5 * u, 0, TAU, 24, Color(0.85, 0.2, 0.25, 0.6), 0.8 * u, true)
+		draw_polyline(PackedVector2Array([st + Vector2(-2.5, 0) * u, st + Vector2(-0.5, 2) * u, st + Vector2(3, -2.5) * u]), Color(0.85, 0.2, 0.25, 0.85), 1.4 * u, true)
+
+	## Triangle: racked up for a fresh break.
+	func _r_rack() -> void:
+		var h := cap + 14 * u
+		var apex := Vector2(cx, baseline + 4 * u - h)
+		var hw := h * 0.62
+		var pts := PackedVector2Array([apex, Vector2(cx + hw, baseline + 4 * u), Vector2(cx - hw, baseline + 4 * u), apex])
+		draw_polyline(pts, Color(0.62, 0.4, 0.22), 3 * u, true)
+		draw_polyline(pts, Color(0.8, 0.58, 0.35), 1 * u, true)
+		_ballpic(apex + Vector2(0, 5) * u, 3 * u, 1)
+		_ballpic(Vector2(cx - hw + 6 * u, baseline + 0.5 * u), 3 * u, 9)
+		_ballpic(Vector2(cx + hw - 6 * u, baseline + 0.5 * u), 3 * u, 3)
+		_text_at(_ink())
+
+	## Ball in Hand: the cue ball lifted, its new spot marked.
+	func _r_place() -> void:
+		var b := Vector2(x1 + 12 * u, top)
+		var spot := Vector2(x1 + 12 * u, baseline + 2 * u)
+		_dashes(PackedVector2Array([b + Vector2(0, 6 * u), spot - Vector2(0, 4 * u)]), Color(tint, 0.6), 1 * u, 2 * u, 2 * u)
+		draw_arc(spot, 4 * u, 0, TAU, 20, Color(tint, 0.85), 1.2 * u, true)
+		for d: Vector2 in [Vector2.LEFT, Vector2.RIGHT]:
+			draw_line(spot + d * 5 * u, spot + d * 8 * u, Color(tint, 0.85), 1.2 * u, true)
+		_poly(_oval(b + Vector2(0, 8 * u), 4 * u, 1.2 * u, 12), Color(0, 0, 0, 0.3))
+		_ballpic(b, 5 * u, 0)
+		_text_at(_ink())
+
+	## Post: a bumper post, a ball bouncing off it.
+	func _r_post() -> void:
+		var c := Vector2(x1 + 12 * u, cy + 2 * u)
+		draw_circle(c, 7 * u, Color(tint, 0.85), true, -1.0, true)
+		draw_circle(c, 4.5 * u, Color(0.85, 0.86, 0.9), true, -1.0, true)
+		draw_circle(c, 2 * u, Color(0.55, 0.57, 0.62), true, -1.0, true)
+		var hit := c + Vector2(-5, -6) * u
+		draw_line(hit + Vector2(-10, -8) * u, hit, Color(tint, 0.55), 1.2 * u, true)
+		draw_line(hit, hit + Vector2(-2, -12) * u, Color(tint, 0.55), 1.2 * u, true)
+		for k in 3:
+			var d := Vector2.from_angle(-PI * 0.75 + (k - 1) * 0.45)
+			draw_line(c + d * 8.5 * u, c + d * 11 * u, Color(colour, 0.7), 1 * u, true)
+		_text_at(_ink())
+
+	## Portal Pair: in one portal and out of the other.
+	func _r_portal() -> void:
+		var a := Vector2(x0 - 12 * u, cy)
+		var b := Vector2(x1 + 12 * u, cy)
+		for p in [[a, Color(0.35, 0.65, 1.0)], [b, Color(1.0, 0.6, 0.2)]]:
+			var c: Vector2 = p[0]
+			var col: Color = p[1]
+			_poly(_oval(c, 5 * u, 15 * u), Color(col, 0.18))
+			_oval_line(c, 5 * u, 15 * u, Color(col, 0.95), 2 * u)
+			_oval_line(c, 3 * u, 10 * u, Color(col, 0.5), 1 * u)
+		_dashes(PackedVector2Array([a + Vector2(5, 0) * u, b - Vector2(5, 0) * u]), Color(colour, 0.25), 1 * u, 2 * u, 3 * u)
+		_text_at(_ink())
+
+	func _p_portal(ci: CanvasItem, t: float) -> void:
+		var a := Vector2(x0 - 12 * u, cy)
+		var b := Vector2(x1 + 12 * u, cy)
+		for i in 6:
+			var c := a if i < 3 else b
+			var ang := t * (2.0 if i < 3 else -2.0) + i * TAU / 3.0
+			ci.draw_circle(c + Vector2(cos(ang) * 4 * u, sin(ang) * 12 * u), 1 * u, Color(1, 1, 1, 0.7), true, -1.0, true)
+
+	# --- Side bets: a picture of what to do, instead of letters ---------------------------
+
+	func _r_b_solid() -> void:
+		_ballpic(Vector2(cx, cy), 15 * u, 3)
+
+	func _r_b_stripe() -> void:
+		_ballpic(Vector2(cx, cy), 15 * u, 11)
+
+	func _rails(corner: Vector2, ax: Vector2, ay: Vector2, len: float) -> void:
+		var felt := Color(0.1, 0.45, 0.3, 0.55)
+		_poly(PackedVector2Array([corner, corner + ax * len, corner + ax * len + ay * len * 0.8, corner + ay * len * 0.8]), felt)
+		draw_line(corner, corner + ax * len, Color(0.5, 0.3, 0.15), 3 * u, true)
+		draw_line(corner, corner + ay * len * 0.8, Color(0.5, 0.3, 0.15), 3 * u, true)
+
+	func _r_b_corner() -> void:
+		var corner := Vector2(cx - 20 * u, top - 4 * u)
+		_rails(corner, Vector2.RIGHT, Vector2.DOWN, 44 * u)
+		_pocket(corner + Vector2(3, 3) * u, 6 * u)
+		var b := corner + Vector2(26, 22) * u
+		_dashes(PackedVector2Array([b, corner + Vector2(9, 8) * u]), Color(1, 1, 1, 0.6), 1.2 * u, 2.5 * u, 2 * u)
+		_ballpic(b, 5 * u, 1)
+
+	func _r_b_side() -> void:
+		var y := top - 2 * u
+		_poly(PackedVector2Array([Vector2(cx - 30 * u, y), Vector2(cx + 30 * u, y), Vector2(cx + 30 * u, baseline + 6 * u), Vector2(cx - 30 * u, baseline + 6 * u)]), Color(0.1, 0.45, 0.3, 0.55))
+		draw_line(Vector2(cx - 30 * u, y), Vector2(cx + 30 * u, y), Color(0.5, 0.3, 0.15), 3 * u, true)
+		_pocket(Vector2(cx, y + 2 * u), 6 * u)
+		var b := Vector2(cx + 8 * u, baseline - 4 * u)
+		_dashes(PackedVector2Array([b, Vector2(cx + 1 * u, y + 9 * u)]), Color(1, 1, 1, 0.6), 1.2 * u, 2.5 * u, 2 * u)
+		_ballpic(b, 5 * u, 6)
+
+	func _hotpocket(c: Vector2, r: float) -> void:
+		for i in 8:
+			var a := TAU * i / 8.0
+			var base := c + Vector2.from_angle(a) * (r + 1 * u)
+			var d := Vector2.from_angle(a)
+			var n := d.orthogonal()
+			_poly(PackedVector2Array([base + n * 3 * u, base + d * (6 + (i % 2) * 3) * u, base - n * 3 * u]), Color(1, 0.5 + (i % 2) * 0.25, 0.15, 0.85))
+		_pocket(c, r, Color(1, 0.6, 0.2))
+
+	func _r_b_hot() -> void:
+		_hotpocket(Vector2(cx, cy), 11 * u)
+
+	func _r_b_breakpot() -> void:
+		var o := Vector2(cx + 6 * u, cy)
+		var r := 4.6 * u
+		var nums := [1, 9, 2, 10, 8, 3]
+		var k := 0
+		for row in 3:
+			for j in row + 1:
+				var p := o + Vector2(row * r * 1.75, (j - row * 0.5) * r * 2.05)
+				_ballpic(p + Vector2.from_angle(TAU * k / 6.0) * 1.5 * u, r, nums[k])
+				k += 1
+		var cue := o + Vector2(-26, 0) * u
+		draw_line(cue + Vector2(-16, 0) * u, cue + Vector2(-6, 0) * u, Color(0.85, 0.7, 0.45), 2.4 * u, true)
+		_ballpic(cue, r, 0)
+		for k2 in 3:
+			var d := Vector2.from_angle(PI + (k2 - 1) * 0.5)
+			draw_line(o + Vector2(-5 * u, 0) + d * 3 * u, o + Vector2(-5 * u, 0) + d * 7 * u, Color(1, 1, 0.8, 0.8), 1.2 * u, true)
+
+	func _meter(fill: float, col: Color) -> void:
+		var r := Rect2(cx - 28 * u, cy - 5 * u, 56 * u, 10 * u)
+		_rr(r, 3 * u, Color(0, 0, 0, 0.45))
+		_rr(Rect2(r.position, Vector2(r.size.x * fill, r.size.y)), 3 * u, col)
+		_rr(r, 3 * u, Color(tint, 0.8), 1.2 * u)
+		for f: float in [0.35, 0.85]:
+			var x := r.position.x + r.size.x * f
+			draw_line(Vector2(x, r.position.y - 3 * u), Vector2(x, r.end.y + 3 * u), Color(colour, 0.8), 1 * u, true)
+
+	func _r_b_hard() -> void:
+		_meter(0.95, Color(1, 0.4, 0.25))
+		var o := Vector2(cx + 22 * u, cy - 15 * u)
+		var bolt := PackedVector2Array([Vector2(4, -9), Vector2(-3, 1), Vector2(1, 1), Vector2(-3, 10), Vector2(5, -2), Vector2(1, -2)])
+		var pts := PackedVector2Array()
+		for p in bolt:
+			pts.append(o + p * u * 0.8)
+		_poly(pts, Color(1, 0.9, 0.35))
+
+	func _r_b_soft() -> void:
+		_meter(0.3, Color(0.5, 0.8, 1.0))
+		var a := Vector2(cx - 26 * u, cy - 9 * u)
+		var b := Vector2(cx - 8 * u, cy - 17 * u)
+		var d := (b - a).normalized()
+		var n := d.orthogonal()
+		var vane := PackedVector2Array()
+		for i in 9:
+			var t := i / 8.0
+			vane.append(a.lerp(b, t) + n * sin(t * PI) * 4 * u)
+		for i in range(8, -1, -1):
+			var t := i / 8.0
+			vane.append(a.lerp(b, t) - n * sin(t * PI) * 3 * u)
+		_poly(vane, Color(0.95, 0.95, 1.0, 0.75))
+
+	func _flamebadge(n: int, scale_f: float) -> void:
+		var base := Vector2(cx, baseline - 5 * u)
+		_flame(base, 13 * u * scale_f, 34 * u * scale_f, Color(1, 0.45, 0.12, 0.85))
+		_flame(base, 8 * u * scale_f, 19 * u * scale_f, Color(1, 0.8, 0.3, 0.9))
+		_num(str(n), base - Vector2(0, 8 * u * scale_f), 20 * u * scale_f, Color(0.25, 0.08, 0.02))
+
+	func _r_b_heat3() -> void:
+		_flamebadge(3, 0.85)
+
+	func _r_b_heat4() -> void:
+		_flamebadge(4, 0.95)
+
+	func _r_b_heat5() -> void:
+		_flamebadge(5, 1.05)
+
+	func _r_b_double() -> void:
+		var pk := Vector2(cx, baseline - 2 * u)
+		_pocket(pk, 8 * u)
+		_ballpic(pk + Vector2(-9, -17) * u, 5.5 * u, 4)
+		_ballpic(pk + Vector2(8, -21) * u, 5.5 * u, 12)
+		for s in [-1.0, 1.0]:
+			_head(pk + Vector2(s * 4, -9) * u, Vector2(-s * 0.3, 1), 4 * u, Color(colour, 0.7))
+
+	func _bankpic(bounces: int) -> void:
+		var top_y := top - 3 * u
+		draw_line(Vector2(cx - 32 * u, top_y), Vector2(cx + 32 * u, top_y), Color(0.5, 0.3, 0.15), 3 * u, true)
+		if bounces > 1:
+			draw_line(Vector2(cx + 32 * u, top_y), Vector2(cx + 32 * u, baseline + 6 * u), Color(0.5, 0.3, 0.15), 3 * u, true)
+		var b := Vector2(cx - 22 * u, baseline - 2 * u)
+		var pk := Vector2(cx + 2 * u, baseline + 2 * u) if bounces == 1 else Vector2(cx - 6 * u, baseline + 3 * u)
+		var pts := PackedVector2Array([b, Vector2(cx - 8 * u, top_y + 2 * u)])
+		if bounces > 1:
+			pts.append(Vector2(cx + 30 * u, cy - 2 * u))
+		pts.append(pk)
+		_dashes(pts, Color(1, 1, 1, 0.65), 1.3 * u, 3 * u, 2 * u)
+		for k in range(1, pts.size() - 1):
+			draw_circle(pts[k], 1.6 * u, Color(tint, 0.95), true, -1.0, true)
+		_pocket(pk, 5 * u)
+		_ballpic(b, 5 * u, 7)
+
+	func _r_b_bank() -> void:
+		_bankpic(1)
+
+	func _r_b_bank2() -> void:
+		_bankpic(2)
+
+	func _r_b_combo() -> void:
+		var y := cy + 2 * u
+		var xs := [cx - 26 * u, cx - 10 * u, cx + 4 * u]
+		draw_line(Vector2(xs[0], y), Vector2(cx + 20 * u, y), Color(1, 1, 1, 0.35), 1.2 * u, true)
+		_ballpic(Vector2(xs[0], y), 5 * u, 0)
+		_ballpic(Vector2(xs[1], y), 5 * u, 2)
+		_ballpic(Vector2(xs[2], y), 5 * u, 5)
+		_pocket(Vector2(cx + 22 * u, y), 6 * u)
+		for x: float in [xs[0] + 6 * u, xs[1] + 6 * u]:
+			draw_line(Vector2(x, y - 6 * u), Vector2(x + 2 * u, y - 8 * u), Color(1, 1, 0.8, 0.8), 1 * u, true)
+
+	func _r_b_kick() -> void:
+		var rail_y := top - 3 * u
+		draw_line(Vector2(cx - 32 * u, rail_y), Vector2(cx + 32 * u, rail_y), Color(0.5, 0.3, 0.15), 3 * u, true)
+		var cue := Vector2(cx - 24 * u, baseline - 2 * u)
+		var hit := Vector2(cx - 6 * u, rail_y + 2 * u)
+		var obj := Vector2(cx + 10 * u, cy + 4 * u)
+		_dashes(PackedVector2Array([cue, hit, obj - Vector2(4, 4) * u]), Color(1, 1, 1, 0.65), 1.3 * u, 3 * u, 2 * u)
+		draw_circle(hit, 1.8 * u, Color(tint, 0.95), true, -1.0, true)
+		_ballpic(cue, 5 * u, 0)
+		_ballpic(obj, 5 * u, 13)
+		_pocket(Vector2(cx + 26 * u, baseline + 3 * u), 5 * u)
+
+	func _chainbadge(n: int) -> void:
+		for k in 4:
+			var c := Vector2(cx - 24 * u + k * 13 * u, cy + 2 * u)
+			if k % 2 == 0:
+				_oval_line(c, 8 * u, 4.5 * u, Color(tint, 0.8), 2.2 * u)
+			else:
+				draw_line(c - Vector2(7 * u, 0), c + Vector2(7 * u, 0), Color(tint, 0.8), 2.6 * u, true)
+		draw_circle(Vector2(cx, cy), 11 * u, Color(0.06, 0.06, 0.08, 0.95), true, -1.0, true)
+		draw_arc(Vector2(cx, cy), 11 * u, 0, TAU, 32, Color(tint, 0.95), 1.6 * u, true)
+		_num(str(n), Vector2(cx, cy), 18 * u, colour)
+
+	func _r_b_chain5() -> void:
+		_chainbadge(5)
+
+	func _r_b_chain7() -> void:
+		_chainbadge(7)
+
+	func _pie(frac: float) -> void:
+		var c := Vector2(cx, cy)
+		var r := 15 * u
+		draw_circle(c, r, Color(0, 0, 0, 0.4), true, -1.0, true)
+		var pts := PackedVector2Array([c])
+		for i in 25:
+			pts.append(c + Vector2.from_angle(-PI * 0.5 + TAU * frac * i / 24.0) * r)
+		_poly(pts, Color(tint, 0.9))
+		draw_arc(c, r, 0, TAU, 40, Color(colour, 0.8), 1.4 * u, true)
+		draw_arc(c, r + 4 * u, 0, TAU, 40, Color(colour, 0.4), 1 * u, true)
+
+	func _r_b_quarter() -> void:
+		_pie(0.25)
+
+	func _r_b_half() -> void:
+		_pie(0.5)
+
+	func _r_b_triple() -> void:
+		var pk := Vector2(cx, baseline - 1 * u)
+		_pocket(pk, 8 * u)
+		for p in [[-13, -16, 1], [0, -23, 11], [13, -16, 6]]:
+			_ballpic(pk + Vector2(p[0], p[1]) * u, 5 * u, p[2])
+
+	func _r_b_hot2() -> void:
+		var pk := Vector2(cx, cy + 5 * u)
+		_hotpocket(pk, 7 * u)
+		_ballpic(pk + Vector2(-17, -10) * u, 5 * u, 2)
+		_ballpic(pk + Vector2(17, -12) * u, 5 * u, 14)
+
+	func _r_b_eight() -> void:
+		var c := Vector2(cx, cy + 1 * u)
+		var pts := PackedVector2Array([c + Vector2(-5, -24) * u, c + Vector2(5, -24) * u, c + Vector2(20, 16) * u, c + Vector2(-20, 16) * u])
+		draw_polygon(pts, PackedColorArray([Color(1, 1, 0.9, 0.3), Color(1, 1, 0.9, 0.3), Color(1, 1, 0.9, 0.04), Color(1, 1, 0.9, 0.04)]))
+		for p: Vector2 in [Vector2(-24, 8), Vector2(24, 4)]:
+			_dashes(_oval(c + p * u, 4 * u, 4 * u, 14), Color(tint, 0.35), 1 * u, 1.5 * u, 1.5 * u)
+		_ballpic(c + Vector2(0, 4) * u, 11 * u, 8)
+
+	## The back of every face-down bet: a lattice of little atoms and a question mark.
+	func _r_b_back() -> void:
+		var r := Rect2(8, 36, TileArt.SIZE.x - 16, 44)
+		var col := Color(tint, 0.22)
+		var y := r.position.y + 4
+		var row := 0
+		while y < r.end.y:
+			var x := r.position.x + 5 + (7.0 if row % 2 else 0.0)
+			while x < r.end.x - 2:
+				draw_arc(Vector2(x, y), 2.4, 0, TAU, 10, col, 0.8, true)
+				x += 14
+			y += 8
+			row += 1
+		var c := Vector2(cx, 58)
+		draw_circle(c, 17, bg, true, -1.0, true)
+		draw_arc(c, 17, 0, TAU, 40, Color(tint, 0.9), 1.6, true)
+		for k in 3:
+			var pts := _turned(_oval(c, 15, 5.5, 28), c, PI * k / 3.0)
+			pts.append(pts[0])
+			draw_polyline(pts, Color(tint, 0.35), 0.8, true)
+		_num("?", c + Vector2(0, 1), 26, colour)
+
+	# --- Particles for perks --------------------------------------------------------------
+
+	func _p_stoke(ci: CanvasItem, t: float) -> void:
+		for i in 6:
+			var life := fposmod(t * 0.55 + i / 6.0, 1.0)
+			var x := lerpf(x0, x1, _h(i, 1)) + sin(life * 6.0 + i) * 2 * u
+			ci.draw_circle(Vector2(x, _top_at(x) - 1 * u - life * 9 * u), (1.5 - life) * u, Color(1, 0.6 + 0.3 * _h(i, 2), 0.2, 1.0 - life), true, -1.0, true)
+
+	func _p_inferno(ci: CanvasItem, t: float) -> void:
+		for i in 8:
+			var life := fposmod(t * 0.9 + i / 8.0, 1.0)
+			var x := lerpf(x0 - 2 * u, x1 + 2 * u, _h(i, 4)) + sin(life * 9.0 + i * 2.0) * 3 * u
+			ci.draw_circle(Vector2(x, top + 4 * u - life * 14 * u), (1.3 - life) * u, Color(1, 0.75 + 0.2 * _h(i, 5), 0.3, 1.0 - life), true, -1.0, true)
+
+	func _p_simmer(ci: CanvasItem, t: float) -> void:
+		for i in 4:
+			var life := fposmod(t * 0.4 + i / 4.0, 1.0)
+			var x := lerpf(x0, x1, _h(i, 6)) + sin(life * 5.0 + i) * 1.5 * u
+			ci.draw_arc(Vector2(x, _top_at(x) - life * 10 * u), (0.8 + life * 2.0) * u, 0, TAU, 12, Color(tint, 0.8 * (1.0 - life)), 1.0, true)
+
+	func _p_frost(ci: CanvasItem, t: float) -> void:
+		_p_frosted(ci, t)
+
+	func _p_clean(ci: CanvasItem, t: float) -> void:
+		for i in 3:
+			var s := pow(maxf(0.0, sin(t * 1.6 + i * 2.1)), 6.0)
+			var p := Vector2(lerpf(x0 - 4 * u, x1 + 6 * u, _h(i, 8)), lerpf(top - 2 * u, baseline, _h(i, 9)))
+			_twinkle(ci, p, 4 * u * s, Color(1, 1, 1, s))
+
+	func _p_nuggets(ci: CanvasItem, t: float) -> void:
+		_p_clean(ci, t * 0.8 + 1.0)
+
 	# --- Gold ------------------------------------------------------------------------
 
 	func _gold_material() -> ShaderMaterial:
@@ -1848,3 +3421,91 @@ void fragment() {
 		m.set_shader_parameter("bottom", baseline)
 		m.set_shader_parameter("phase", 0.15)
 		return m
+
+
+## The real ball numbers a card works on, as little balls floating either side
+## of the symbol. They bob gently, and hold still while Fx.minimal_particles is on.
+class Floaters extends Control:
+	var nums := []
+	var tint := Color.WHITE
+	var t := 0.0
+
+	func _init(n: Array, c: Color) -> void:
+		nums = n
+		tint = c
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _ready() -> void:
+		set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	func _process(delta: float) -> void:
+		if not Fx.minimal_particles and is_visible_in_tree():
+			t += delta
+			queue_redraw()
+
+	func _draw() -> void:
+		var half := ceili(nums.size() / 2.0)
+		for i in nums.size():
+			var left := i < half
+			var j := i if left else i - half
+			var n_side := half if left else nums.size() - half
+			var col := j % 2
+			var row := j / 2
+			var rows := ceili(n_side / 2.0)
+			var x := (11.0 + col * 16.0) if left else (TileArt.SIZE.x - 27.0 + col * 16.0)
+			if n_side == 1:
+				x = 19.0 if left else TileArt.SIZE.x - 19.0
+			var y := 58.0 + (row - (rows - 1) * 0.5) * 17.0 + (4.0 if col == 1 and n_side > 2 else 0.0) - (2.0 if n_side > 2 else 0.0)
+			var c := Vector2(x, y + sin(t * 1.4 + i * 1.3) * 1.4)
+			var n: int = nums[i]
+			var bc := Catalog.ball_color(n)
+			draw_circle(c, 8.2, Color(tint, 0.16), true, -1.0, true)
+			if Catalog.is_stripe(n):
+				draw_circle(c, 6.8, Color(0.95, 0.93, 0.88), true, -1.0, true)
+				var band := PackedVector2Array()
+				var half_a := asin(3.4 / 6.8)
+				for q in 7:
+					band.append(c + Vector2.from_angle(lerpf(-half_a, half_a, q / 6.0)) * 6.8)
+				for q in 7:
+					band.append(c + Vector2.from_angle(PI + lerpf(-half_a, half_a, q / 6.0)) * 6.8)
+				draw_colored_polygon(band, bc)
+			else:
+				draw_circle(c, 6.8, bc, true, -1.0, true)
+			draw_circle(c, 4.1, Color(0.97, 0.95, 0.9), true, -1.0, true)
+			var txt := str(n)
+			var fsz := 8 if n < 10 else 7
+			var tw := TileArt.F_SEMI.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz).x
+			draw_string(TileArt.F_SEMI, c + Vector2(-tw * 0.5, fsz * 0.37), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, Color(0.06, 0.06, 0.08))
+
+
+## Small moving particles over a tile's lettering (embers, sparkles, snow...),
+## drawn by the effect's _p_<name> method. Nothing is drawn while
+## Fx.minimal_particles is on; the still lettering is complete without them.
+class Motes extends Control:
+	var host: Lettering
+	var fn := ""
+	var t := 1.7
+	var shown := true
+
+	func _init(h: Lettering, f: String) -> void:
+		host = h
+		fn = f
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _ready() -> void:
+		set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	func _process(delta: float) -> void:
+		var want := not Fx.minimal_particles
+		if want != shown:
+			shown = want
+			queue_redraw()
+		if want and is_visible_in_tree():
+			t += delta
+			queue_redraw()
+
+	func _draw() -> void:
+		if Fx.minimal_particles:
+			return
+		host._box()
+		host.call(fn, self, t)

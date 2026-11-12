@@ -1,243 +1,165 @@
-# Card art still needed
+# Card art: status
 
-All 100 Perk tiles are done. These cards still need art. Match the style of the existing tiles in `src/ui/tile_art.gd`: each card needs a **symbol** (1–2 letters, never the same as another card; see the symbol rules below), a short **stat** (the headline effect, about 16 characters at most), and a **lettering effect** for the symbol that hints at what the card does.
+**Every card has art.** That is 189 tiles: all 100 Perks, 20 Imbues, 24 special balls, 21 Hustler's Kit items, 23 side bets and the face-down card back. Every tile is drawn in code by `TileArt` in [src/ui/tile_art.gd](../../src/ui/tile_art.gd); the data is the `TILES` table at the top. Preview sheets of every tile, at twice their real size, are in this folder (`perk-tiles-*.png`, `imbue-tiles-1.png`, `ball-tiles-*.png`, `item-tiles-*.png`, `bet-cards-*.png`).
 
-Existing tile keys look like `"imbue:vein"`, `"ball:gold"` and `"item:trapdoor"`. Use the ID column below in the same way.
+[tests/test_tiles.gd](../../tests/test_tiles.gd) checks that every card has a tile, that no two cards share a symbol or a lettering effect, that every effect is drawn, and that each stat and name fits its tile.
+
+## Still to do (code, not art)
+
+- **Side bets are shown as cards in the game.** The side panel shows `BetCard.from_run(run)` at half size beside the Bet / Peek / Pass buttons; resting on it (or tapping it) shows it full size.
+- **Starting cues have no tiles** (optional in the brief). The cue-select screen draws its own 150-wide cards with the cue stick, so tiles would need that screen reworked first.
 
 ## Symbol rules
 
-1. **Use a real element symbol only when it genuinely fits the name.** Gold is **Au**, Iron is **Fe**, Silver would be **Ag**. The symbol should still make sense to someone who knows the element.
-2. **Otherwise, for a name of two or more words, use the first letter of the first two words, both capitals.** Follow Through is **FT**, Called Shot is **CS**, Pop-up Wall is **PW**, Ball in Hand is **BH** (skip small words like "in", "of", "the").
-3. **For a one-word name with no fitting element, use its first letter, or its first two letters if that letter is taken** (Blink is **B**, then **Bl** if B is taken).
-4. **No two cards may share a symbol.** If two names give the same initials, the newer card uses the first letter of the first word plus the next consonant of the second (for example **Sd** instead of a second **SS**).
+The symbols follow the rules this file set out: a real element only where it genuinely fits (**Au** Gold ball, **Fe** Iron ball, **Pb** Leaded), otherwise the initials of the first two words (**FT** Follow Through), or a one-word name's first letter and then its first two (**B** Boomerang, **Bl** Blink). Later clashes take the first letter plus the next consonant.
 
-## Existing tiles to re-letter: 91
+All 91 re-letterings from the earlier list are in, with two changes where that list clashed with a tile it did not include:
 
-These tiles were made before the symbol rules. Each needs its symbol changed in `TILES` in `src/ui/tile_art.gd` (and its lettering effect checked so it still fits two capitals). Suggested symbols follow the rules above and are all unique; where two names share initials, the later one is adjusted and the clash is noted.
+- **Stillness is SL**, not St: **St** already belongs to Stripes, and every other pair from Stillness was taken.
+- **Snowball is Sb**, not Sw, so Swap can have the natural **Sw**.
 
-| Card | ID | Now | Should be | Note |
+Lucky Numbers' stat now says **Fibonacci +35**, matching its new card text. The Vein Imbue now spreads instead of adding Chain, so the mirror lettering moved to the new **Mirror** Imbue, and Vein's letter grows branching veins.
+
+## Imbues
+
+An Imbue offered before you choose its ball shows a question-mark ball, **Any ball**, and the name "*Spark Imbue*". Once a ball is chosen (or a new 11–15 arrives imbued), the tile shows that ball.
+
+| Card | ID | Symbol | Stat | Lettering |
 |---|---|---|---|---|
-| Velvet Cloth | `perk:velvet` | V | **VC** | |
-| Heavy Hitter | `perk:heavyhit` | Hs | **HH** | |
-| Live Rails | `perk:liverails` | Lv | **LR** | |
-| Slow Cloth | `perk:slowcloth` | Cl | **SC** | |
-| Backspin Wax | `perk:backspin` | Ba | **BW** | |
-| Big Break | `perk:bigbreak` | Br | **BB** | |
-| Long Arm | `perk:longarm` | Lr | **LA** | |
-| Kick Drum | `perk:kick` | K | **KD** | |
-| Power Stroke | `perk:power` | P | **PS** | |
-| Soft Touch | `perk:finesse` | Ts | **ST** | |
-| Clean Stroke | `perk:precision` | Cs | **CS** | |
-| Stun Master | `perk:stun` | Mt | **SM** | |
-| Break Artist | `perk:afterburner` | Ar | **BA** | |
-| Massé Master | `perk:masse` | Ms | **MM** | |
-| Follow Through | `perk:followthru` | Fr | **FT** | |
-| Draw Artist | `perk:drawartist` | Ds | **DA** | |
-| Loud Table | `perk:elastic` | Ta | **LT** | |
-| Daisy Chain | `perk:chain` | Dy | **DC** | |
-| Cluster | `perk:multi` | Cu | **C** | |
-| Clean Sweep | `perk:supernova` | Cn | **Cw** | clashes with Clean Stroke (CS) |
-| Same Pocket | `perk:fusion` | Po | **SP** | |
-| Domino | `perk:domino` | Dm | **D** | |
-| Stoker | `perk:streak` | Sk | **S** | |
-| Last Chalk | `perk:comeback` | La | **LC** | |
-| Simmer | `perk:entropy` | Sm | **Si** | clashes with Stoker (S) |
-| Hot Hand | `perk:hothand` | Ho | **Hn** | clashes with Heavy Hitter (HH) |
-| Stay Hot | `perk:migration` | At | **SH** | |
-| Cold Start | `perk:coupon` | Cd | **Ct** | clashes with Clean Stroke (CS) |
-| Inferno | `perk:minimalist` | Ir | **I** | |
-| Corner Man | `perk:corner` | Cr | **CM** | |
-| Side Door | `perk:side` | Sd | **SD** | |
-| Wide Jaws | `perk:jaws` | W | **WJ** | |
-| Magnetic Pockets | `perk:magnet` | Mg | **MP** | |
-| Grand Tour | `perk:collector` | Gt | **GT** | |
-| Odd Balls | `perk:odd` | Os | **OB** | |
-| Even Money | `perk:even` | Ev | **EM** | |
-| Prime Cut | `perk:prime` | Pr | **PC** | |
-| Lucky Numbers | `perk:fibonacci` | Lu | **LN** | |
-| Rotation | `perk:rotation` | Rn | **R** | |
-| Big Numbers | `perk:moneyball` | Bi | **BN** | |
-| Solids | `perk:solids` | S | **So** | clashes with Stoker (S) |
-| Solid Gold | `perk:solidgold` | Sg | **SG** | |
-| Steady Run | `perk:steadyrun` | Sr | **SR** | |
-| Solids Only | `perk:solidsonly` | So | **SO** | |
-| Last Solid | `perk:lastsolid` | Ld | **LS** | |
-| Low Ball | `perk:lowball` | Lb | **LB** | |
-| Racing Stripe | `perk:racing` | Rg | **RS** | |
-| Lucky Stripe | `perk:luckystripe` | Li | **Lt** | clashes with Last Solid (LS) |
-| Tiger Stripes | `perk:tiger` | Ti | **TS** | |
-| Stripes Only | `perk:stripesonly` | Sy | **Sn** | clashes with Solids Only (SO) |
-| Last Stripe | `perk:laststripe` | Ls | **La** | clashes with Last Solid (LS) |
-| High Roller | `perk:highball` | Hr | **HR** | |
-| Behind the 8 | `perk:eight` | Bh | **B8** | |
-| Dark Horse | `perk:darkhorse` | Dh | **DH** | |
-| Hush Money | `perk:hushmoney` | Hm | **HM** | |
-| Kiss the Black | `perk:kissblack` | Kb | **KB** | |
-| Steer Clear | `perk:steerclear` | Ce | **Sl** | clashes with Slow Cloth (SC) |
-| Last Call | `perk:lastcall` | Lc | **Ll** | clashes with Last Chalk (LC) |
-| Eight Count | `perk:eightcount` | Ec | **EC** | |
-| Trouble Maker | `perk:trouble` | Tb | **TM** | |
-| Bank Manager | `perk:bank` | Bk | **BM** | |
-| Ricochet | `perk:ricochet` | Re | **Ri** | clashes with Rotation (R) |
-| Soft Rails | `perk:cushion` | Ra | **Sa** | clashes with Steady Run (SR) |
-| Tracer | `perk:tracer` | Tc | **T** | |
-| Long Game | `perk:lever` | Ga | **LG** | |
-| Spare Chalk | `perk:chalk` | Ca | **Sh** | clashes with Slow Cloth (SC) |
-| Long Lens | `perk:lens` | Ln | **LL** | |
-| Second Sight | `perk:oracle` | Si | **SS** | |
-| Gold Rail | `perk:gold` | Gd | **GR** | |
-| Deep Pockets | `perk:venture` | Pd | **DP** | |
-| Side Hustle | `perk:hunter` | Sh | **Ss** | clashes with Stay Hot (SH) |
-| Snowball | `perk:catalyst` | Sb | **Sw** | S is taken by Stoker, Sn by Stripes Only |
-| First Blood | `perk:golden` | Fl | **FB** | |
-| Double Take | `perk:echo` | Db | **DT** | |
-| Thin Rack | `perk:thinrack` | Tn | **TR** | |
-| Missing Piece | `perk:missing` | Mn | **Mc** | clashes with Magnetic Pockets (MP) |
-| Clean House | `perk:cleanhouse` | Ch | **CH** | |
-| Pack Rat | `perk:packrat` | Pa | **PR** | |
-| Quartermaster | `perk:quartermaster` | Qm | **Q** | |
-| Tinkerer | `perk:tinkerer` | Te | **Ti** | clashes with Tracer (T) |
-| Enchanter | `perk:enchanter` | Er | **E** | |
-| Second Coat | `perk:secondcoat` | Co | **Se** | clashes with Slow Cloth (SC) |
-| Gold Rush | `perk:goldrush` | Ru | **Gs** | clashes with Gold Rail (GR) |
-| Alchemy | `perk:alchemy` | Am | **A** | |
-| Stillness | `perk:stillness` | Sl | **St** | every other pair from its letters is taken; St is fine beside Soft Touch's ST because the capitals differ |
-| Quick Hands | `perk:quickhands` | Qh | **QH** | |
-| Afterimage | `perk:afterimage` | Ag | **Af** | clashes with Alchemy (A) |
-| Overclock | `perk:overclock` | Oc | **Ov** | clashes with Overflow (O) |
-| Vein | `imbue:vein` | Vn | **V** | |
-| Second Strike | `item:secondstrike` | Ss | **S2** | SS is taken by Second Sight; the 2 reads as "second" |
-| Trapdoor | `item:trapdoor` | Td | **Tr** | clashes with Tracer (T) |
+| Vein | `imbue:vein` | **V** | +20, spreads | veins branching out of the letter (particles) |
+| Spark | `imbue:spark` | **Sk** | +1 Chain a hit | crackling with arcs of electricity (particles) |
+| Gilded | `imbue:gold` | **G** | $1, +$1 a table | gold leaf laid over half the letter, flakes drifting off (particles) |
+| Weighted | `imbue:heavy` | **W** | Number ×3, ×4… | squashed under a weight marked ×3, with ×4 and ×5 waiting |
+| Hairline | `imbue:glass` | **H** | ×3, may crack | a glossy coat with a fine crack through it |
+| Kindled | `imbue:ember` | **K** | +2 Heat | kindling crossed under the letter, catching light (particles) |
+| Lucky | `imbue:lucky` | **L** | 1 in 2: ×2 | inside a lucky horseshoe, ends up (particles) |
+| Volatile | `imbue:volatile` | **Vo** | Explodes on hit | shaking in front of a blast (particles) |
+| Jinxed | `imbue:jinxed` | **J** | ×4, halves Heat | tilted under its own rain cloud (particles) |
+| Mirror | `imbue:mirror` | **M** | Copies its hitter | a faint reflection below, as on a polished surface |
+| Pawned | `imbue:pawned` | **P** | $4, no points | under the pawnbroker's three gold balls |
+| Frosted | `imbue:frosted` | **Fr** | Next miss safe | iced like a cake, snow along the tops (particles) |
+| Magnetic | `imbue:magnetic` | **Ma** | Pockets pull it | split red and blue like a magnet, field lines round it |
+| Charged | `imbue:charged` | **Cr** | +0.5 Chain a rail | inside a battery, a bolt at the terminal (particles) |
+| Resonant | `imbue:prismatic` | **Rn** | +0.25 a touch | rings of vibration rippling out (particles) |
+| Hollow | `imbue:hollow` | **Ho** | Half weight | an empty shell floating over its shadow |
+| Leaded | `imbue:leaded` | **Pb** | ×2 weight, +45 | cast deep in solid lead |
+| Bounty | `imbue:bounty` | **Bo** | $1 per Heat | on a wanted poster |
+| Starry | `imbue:starry` | **Sy** | +0.5 to the rest | a night sky, stars trailing after it (particles) |
+| Twin | `imbue:twin` | **Tw** | Counts twice | a solid ball and its striped twin hopping over the letters |
 
-## Particle effects (optional, per card)
+## Special balls
 
-Many cards can have a small animated particle effect: embers for Heat cards, sparkles for Gold, frost for Frosted, bubbles for Simmer and so on. Keep each effect small and tied to what the card does.
+| Card | ID | Symbol | Stat | On | Lettering |
+|---|---|---|---|---|---|
+| Gold | `ball:gold` | **Au** | 45 pts | Cushions | gold with a glint sweeping across |
+| Void | `ball:void` | **Vd** | Others ×2 | Same shot | a black hole swirling round it (particles) |
+| Glass | `ball:glass` | **Gl** | ×3, shatters | Hard hits | clear glass with a bright reflection (particles) |
+| Iron | `ball:iron` | **Fe** | Worth 70 | Double weight | brushed steel on a riveted plate |
+| Feather | `ball:feather` | **Fh** | +0.5 Chain | ¼ weight | in front of a quill feather |
+| Ember | `ball:ember` | **Eb** | Hot pocket | Its pocket | a glowing coal (particles) |
+| Frost | `ball:frost` | **Fs** | Stops balls dead | Touch | frozen in a block of ice (particles) |
+| Magnet | `ball:magnet` | **Mg** | Pulls balls | Nearby balls | a horseshoe magnet pulling balls in |
+| Prism | `ball:prism` | **Pm** | Solid + stripe | Both sets | white light splitting into a rainbow |
+| Wild | `ball:wild` | **Wi** | Copies a number | Last sunk | any number at all floating behind it |
+| Clock | `ball:clock` | **Cl** | 15, +9 a shot | Shots taken | on a clock face, the second hand ticking (particles) |
+| Coin | `ball:coin` | **Cn** | $1 a cue hit | Cue ball | struck on a coin with a milled edge (particles) |
+| Bomb | `ball:bomb` | **Bm** | Takes one down | Nearest ball | in front of a bomb with its fuse lit (particles) |
+| Seed | `ball:seed` | **Sd** | 30, +15 a sink | Whole run | a sprout coming up beside it |
+| Clover | `ball:clover` | **Cv** | No Chalk lost | Its shots | in front of a four-leaf clover |
+| Star | `ball:star` | **Sr** | +1 Chain | Cushions | in front of a star (particles) |
+| Heart | `ball:heart` | **He** | +1 Chalk | Last ball | in front of a heart (particles) |
+| Dice | `ball:dice` | **Di** | 1–15 each shot | Its number | beside a tumbling die |
+| Moon | `ball:moon` | **Mo** | ×2 in a side | Side pockets | cratered, under a crescent moon |
+| Sun | `ball:sun` | **Su** | ×2 in a corner | Corners | rays blazing out from behind |
+| Anchor | `ball:anchor` | **An** | Worth 105 | Cue ball only | in front of a ship's anchor |
+| Eraser | `ball:eraser` | **Er** | $4, erases two | Last touched | being rubbed out by an eraser (particles) |
+| Echo | `ball:echo` | **Eh** | Comes back once | Foot spot | looping back round to the foot spot |
+| Comet | `ball:comet` | **Co** | No friction | Till a cushion | a comet tail streaming behind (particles) |
 
-**Rule:** every particle effect must check `Fx.minimal_particles` (in `src/ui/fx.gd`) and draw nothing when it is true. That switch is on when the player sets **Particles: minimum** or **Reduced motion** in Settings. The still tile art (symbol, lettering, stat) must look complete without the particles.
+## Items (the Hustler's Kit)
 
-## Imbues: 19
+| Card | ID | Symbol | Stat | On | Lettering |
+|---|---|---|---|---|---|
+| Second Strike | `item:secondstrike` | **S2** | Hit again | Cue ball | faded copies trailing behind, like a second hit |
+| Trapdoor | `item:trapdoor` | **Tr** | +1 pocket | Cushion | the end slips down, as if through a trapdoor |
+| Called Shot | `item:calledshot` | **Cd** | ×3 if called | Ball + pocket | a dashed call into a ringed pocket |
+| Ghost Chalk | `item:ghostchalk` | **GC** | Pass through | One ball | a ghost the ball passes straight through (particles) |
+| Swap | `item:swap` | **Sw** | Swap two balls | Two balls | two arrows trading places |
+| Polish | `item:polish` | **Pl** | Glides free | One ball | buffed to a mirror shine (particles) |
+| Lead Weight | `item:leadweight` | **LW** | ×4 weight | One ball | stamped on a lead weight |
+| Spotter | `item:spotter` | **Sp** | Respot a ball | Foot spot | a ball dropping back onto the foot spot |
+| Pocket Cover | `item:pocketcover` | **Pv** | Opposite +30% | Pockets | one pocket lidded, the other opening wide |
+| Pop-up Wall | `item:wall` | **PW** | Raise a wall | This shot | a brick wall rising from below |
+| Blink | `item:blink` | **Bl** | Move the cue | Cue ball | vanishing from one spot and appearing at another (particles) |
+| Freeze Frame | `item:freezeframe` | **FF** | Stop one dead | One ball | caught on a strip of film |
+| Nudge | `item:nudge` | **N** | Push one ball | One ball | pushed a little way along |
+| English Dial | `item:englishdial` | **ED** | Add your spin | Cue ball | in front of a spin dial |
+| Gravity Pebble | `item:gravitypebble` | **GP** | Bends balls | This shot | the cloth bent into a gravity well (particles) |
+| Rewind | `item:rewind` | **Re** | Undo a shot | Last shot | rewind arrows, running backwards |
+| Insurance Slip | `item:slip` | **IS** | Chalk back | Last shot | printed on a stamped slip |
+| Triangle | `item:triangle` | **Tn** | Re-rack | All balls | inside a triangle rack |
+| Ball in Hand | `item:ballinhand` | **BH** | Place the cue | Cue ball | the cue ball lifted, its new spot marked |
+| Post | `item:post` | **Po** | Place a bumper | This table | a ball bouncing off a bumper post |
+| Portal Pair | `item:portal` | **PP** | Linked portals | Rolling balls | between a blue portal and an orange one (particles) |
 
-| Name | ID | What it does |
-|---|---|---|
-| Spark | `imbue:spark` | +1 Chain every time it is struck. Struck 3 or more times in one shot, it overloads and arcs onto the last ball it hit. |
-| Gilded | `imbue:gold` | Pays $1 when sunk, plus $1 for every table in a row you have sunk it (up to $5). A table where it stays up resets the streak. |
-| Weighted | `imbue:heavy` | Worth 10 + 3 × its number, and the number counts one more time with every sink (×4, ×5...). Any miss drops it back to ×3. |
-| Hairline | `imbue:glass` | Scores ×3 when sunk, but the coating may crack off: 1 in 4 the first time, 2 in 4 the next, then 3 in 4. |
-| Kindled | `imbue:ember` | +2 Heat when sunk. But while it is still on the table, a miss wipes your Heat to 0 instead of halving it. |
-| Lucky | `imbue:lucky` | 1 in 2 chance to score ×2 when sunk. If it misses, Lucky jumps to another ball with no Imbue and the next win scores ×3, then ×4, and so on. |
-| Volatile | `imbue:volatile` | The first time anything hits this ball it explodes: it counts as sunk (points and Heat), but it leaves your set for good. |
-| Jinxed | `imbue:jinxed` | Scores ×4 when sunk, but sinking it halves your Heat. |
-| Mirror | `imbue:mirror` | Scores what the ball that hit it is worth instead of its own value: a low ball struck by the 15 scores like the 15. |
-| Pawned | `imbue:pawned` | Pays $4 when sunk instead of any points. |
-| Frosted | `imbue:frosted` | When it sinks, your next miss on this table keeps your Heat. |
-| Magnetic | `imbue:magnetic` | Pockets pull this ball in. |
-| Charged | `imbue:charged` | +0.5 Chain every time this ball touches a cushion. |
-| Resonant | `imbue:prismatic` | Every ball it touches in a shot adds +0.25 Chain. |
-| Hollow | `imbue:hollow` | Half the weight: it flies further when struck. |
-| Leaded | `imbue:leaded` | Twice as heavy, and worth +45. |
-| Bounty | `imbue:bounty` | Pays $1 for every point of Heat when it sinks, then cashes out 2 Heat. |
-| Starry | `imbue:starry` | Every ball after it in the same shot gets +0.5 Chain. |
-| Twin | `imbue:twin` | Its value counts twice. Then it hops to its colour twin (the 3 and the 11, the 1 and the 9...), if that one is free. |
+## Ball numbers on Perk tiles
 
-## Special balls: 23
+Perks that name ball numbers float those balls either side of the symbol: Odd Balls, Even Money, Prime Cut, Lucky Numbers, Low Ball and High Roller. `TileArt.balls_for("perk", id)` lists the balls any Perk works on (also the solid, stripe and 8-ball Perks). In the game, resting the pointer on a Perk you own rings those balls on the table with light (`TableView.spotlight`).
 
-| Name | ID | What it does |
-|---|---|---|
-| Void | `ball:void` | Worth nothing itself, but every other ball in the same shot scores ×2. |
-| Glass | `ball:glass` | Scores ×3 if it sinks, but anything that hits it hard shatters it, and it leaves your set. |
-| Iron | `ball:iron` | Twice as heavy. Worth 70. |
-| Feather | `ball:feather` | A quarter the weight: it barely moves other balls, and adds +0.5 Chain as it sinks. |
-| Ember | `ball:ember` | The pocket it sinks into becomes the hot pocket. |
-| Frost | `ball:frost` | Any ball that touches it stops dead. |
-| Magnet | `ball:magnet` | Pulls nearby rolling balls towards itself. |
-| Prism | `ball:prism` | Counts as both a solid and a stripe. |
-| Wild | `ball:wild` | Copies the number of the last ball you sank, and counts as that number. |
-| Clock | `ball:clock` | Worth 15, plus 9 for every shot already taken on this table. |
-| Coin | `ball:coin` | Pays $1 every time the cue ball hits it in a scoring shot. |
-| Bomb | `ball:bomb` | When it sinks, the nearest ball (never the 8) sinks with it. |
-| Seed | `ball:seed` | Worth 30, and 15 more every time you sink it this run. |
-| Clover | `ball:clover` | No shot it is part of can cost Chalk. |
-| Star | `ball:star` | Comes off cushions with no loss of speed, and adds +1 Chain as it sinks. |
-| Heart | `ball:heart` | If it is the only ball left on the table when you sink it, +1 Chalk. |
-| Dice | `ball:dice` | Shows a new number from 1 to 15 every shot, and counts as that number. |
-| Moon | `ball:moon` | Corner pockets reject it. Scores ×2 in a side pocket. |
-| Sun | `ball:sun` | Side pockets reject it. Scores ×2 in a corner pocket. |
-| Anchor | `ball:anchor` | Only the cue ball can move it: other balls bounce off it like a post. Worth 105. |
-| Eraser | `ball:eraser` | When it sinks it pays $4, and both it and the last ball it touched leave your set (never the 8). |
-| Echo | `ball:echo` | The first time it sinks on a table, it comes back to the foot spot. |
-| Comet | `ball:comet` | Feels no cloth friction until it first hits a cushion. |
+## Side bets
 
-## Items (the Hustler's Kit): 19
+Side bets are **playing cards**, not periodic tiles: `BetCard` in [src/ui/bet_card.gd](../../src/ui/bet_card.gd), portrait (180×252) with an ivory face. Each face shows, with nothing upside down and nothing covering the wording:
 
-| Name | ID | What it does |
-|---|---|---|
-| Called Shot | `item:calledshot` | Pick a ball and a pocket. If that ball sinks there on your next shot, it scores ×3. |
-| Ghost Chalk | `item:ghostchalk` | Pick a ball. Your next shot passes straight through it. |
-| Swap | `item:swap` | Swap the places of two balls (not the cue ball). |
-| Polish | `item:polish` | Pick a ball. On your next shot it glides with no cloth friction until it first hits something. |
-| Lead Weight | `item:leadweight` | Pick a ball. On your next shot it is four times as heavy. |
-| Spotter | `item:spotter` | Bring a ball you sank on this table back to the foot spot. Never the 8. |
-| Pocket Cover | `item:pocketcover` | Cover a pocket for the rest of this table. The pocket opposite opens 30% wider. |
-| Pop-up Wall | `item:wall` | While a shot is paused, raise a short wall for the rest of the shot. |
-| Blink | `item:blink` | While a shot is paused, move the cue ball anywhere. It keeps its speed and direction. |
-| Freeze Frame | `item:freezeframe` | While a shot is paused, stop one ball dead. It holds still like a post for the rest of the shot. |
-| Nudge | `item:nudge` | While a shot is paused, push one ball a short way in any direction. |
-| English Dial | `item:englishdial` | While a shot is paused, put the spin you have set onto the rolling cue ball. |
-| Gravity Pebble | `item:gravitypebble` | While a shot is paused, place a small well that bends rolling balls for the rest of the shot. |
-| Rewind | `item:rewind` | Undo your last shot entirely: balls, score, Heat and Chalk. |
-| Insurance Slip | `item:slip` | If your last shot cost Chalk, get it back. |
-| Triangle | `item:triangle` | Re-rack every ball still on the table and break again. |
-| Ball in Hand | `item:ballinhand` | Pick up the cue ball and place it anywhere. |
-| Post | `item:post` | Place a bumper anywhere on this table. |
-| Portal Pair | `item:portal` | Place two linked portals. A ball rolling into one comes out of the other at the same speed. |
+- **Top left:** what the bet wins as a multiple of the stake, worked out from the real payout (so 2.5× on later tables), and one to three pips for the tier.
+- **Top middle:** SIDE BET and the tier. The frame colour also gives the tier (Easy green, Medium amber, Hard red).
+- **Top right:** the chip slot. It is an empty dashed ring until you bet, then a chip carrying your stake.
+- **Picture:** the bet's own picture, in a dark window.
+- **Wording:** the bet's full text. Bets that depend on the table say the real number: with a target of 215, "a quarter of the target" reads "Score 54 points in one shot", with "A quarter of the 215 target" under it.
+- **Bottom:** the stake and what the bet pays back, in dollars. The labels change with the state: Riding / Pays, Staked / Paid, Passed / Would pay.
 
-## Side bets: 23
+The **card back** is violet: a lattice of little atoms, a question mark at the heart of an atom with circling electrons, the stake and the most the bet could pay. A won card turns gold with sparkles round the frame; a passed card is dimmed. The moving parts stop while `Fx.minimal_particles` is on.
 
-One card per side bet. The card is shown face down until you take or peek at the bet, so it also needs a shared **card back**. Tier colours suggested: Easy green, Medium amber, Hard red.
+The periodic-tile versions below still exist in `TILES` (their `letter` is the picture the card uses), but the game should show `BetCard`.
 
-| Bet | ID | Tier |
-|---|---|---|
-| Sink a solid ball | `bet:solid` | Easy |
-| Sink a striped ball | `bet:stripe` | Easy |
-| Sink a ball into a corner pocket | `bet:corner` | Easy |
-| Sink a ball into a side pocket | `bet:side` | Easy |
-| Sink a ball into the hot pocket | `bet:hot` | Easy |
-| Sink a ball on the break | `bet:breakpot` | Easy |
-| Sink a ball with a power shot (85%+) | `bet:hard` | Easy |
-| Sink a ball with a soft shot (35% or less) | `bet:soft` | Easy |
-| Reach Heat 3 | `bet:heat3` | Easy |
-| Sink 2 or more balls in one shot | `bet:double` | Medium |
-| Sink a bank shot | `bet:bank` | Medium |
-| Sink a combination | `bet:combo` | Medium |
-| Sink a ball off a kick shot | `bet:kick` | Medium |
-| Reach Heat 4 | `bet:heat4` | Medium |
-| Reach Chain 5 in one shot | `bet:chain5` | Medium |
-| Score a quarter of this table's target in one shot | `bet:quarter` | Medium |
-| Sink 3 or more balls in one shot | `bet:triple` | Hard |
-| Sink a ball off 2 cushions | `bet:bank2` | Hard |
-| Reach Heat 5 | `bet:heat5` | Hard |
-| Reach Chain 7 in one shot | `bet:chain7` | Hard |
-| Score half of this table's target in one shot | `bet:half` | Hard |
-| Sink 2 balls into the hot pocket in one shot | `bet:hot2` | Hard |
-| Sink the 8 when it is the only ball left | `bet:eight` | Hard |
-| (card back, shared by every face-down bet) | `bet:back` | - |
+| Bet | ID | Tile title | Stat | On |
+|---|---|---|---|---|
+| Sink a solid ball | `bet:solid` | Any solid | Wins 1× stake | Balls |
+| Sink a striped ball | `bet:stripe` | Any stripe | Wins 1× stake | Balls |
+| Sink a ball into a corner pocket | `bet:corner` | Corner pocket | Wins 1× stake | Pockets |
+| Sink a ball into a side pocket | `bet:side` | Side pocket | Wins 1× stake | Pockets |
+| Sink a ball into the hot pocket | `bet:hot` | Hot pocket | Wins 1× stake | Pockets |
+| Sink a ball on the break | `bet:breakpot` | Sink on the break | Wins 1× stake | The break |
+| Sink a ball with a power shot (85%+) | `bet:hard` | Power sink, 85%+ | Wins 1× stake | Power |
+| Sink a ball with a soft shot (35% or less) | `bet:soft` | Soft sink, 35% or less | Wins 1× stake | Power |
+| Reach Heat 3 | `bet:heat3` | Reach Heat 3 | Wins 1× stake | Heat |
+| Sink 2 or more balls in one shot | `bet:double` | Two in one shot | Wins 2× stake | One shot |
+| Sink a bank shot | `bet:bank` | Bank shot | Wins 2× stake | Cushions |
+| Sink a combination | `bet:combo` | Combination | Wins 2× stake | One shot |
+| Sink a ball off a kick shot | `bet:kick` | Kick shot | Wins 2× stake | Cushions |
+| Reach Heat 4 | `bet:heat4` | Reach Heat 4 | Wins 2× stake | Heat |
+| Reach Chain 5 in one shot | `bet:chain5` | Chain 5 in one shot | Wins 2× stake | Chain |
+| Score a quarter of this table's target in one shot | `bet:quarter` | Quarter of the target | Wins 2× stake | One shot |
+| Sink 3 or more balls in one shot | `bet:triple` | Three in one shot | Wins 3× stake | One shot |
+| Sink a ball off 2 cushions | `bet:bank2` | Two-cushion bank | Wins 3× stake | Cushions |
+| Reach Heat 5 | `bet:heat5` | Reach Heat 5 | Wins 3× stake | Heat |
+| Reach Chain 7 in one shot | `bet:chain7` | Chain 7 in one shot | Wins 3× stake | Chain |
+| Score half of this table's target in one shot | `bet:half` | Half the target | Wins 3× stake | One shot |
+| Sink 2 balls into the hot pocket in one shot | `bet:hot2` | Two in the hot pocket | Wins 3× stake | One shot |
+| Sink the 8 when it is the only ball left | `bet:eight` | Last-ball 8 | Wins 3× stake | The 8-ball |
+| (card back) | `bet:back` | Side bet | Bet, peek or pass | This table |
 
-## Starting cues: 13 (optional: only if cues get cards on the cue-select screen)
+## Particle effects
 
-| Name | ID | What it does |
-|---|---|---|
-| Classic Maple | `cue:maple` | The all-rounder. $6 to start. |
-| Hot Rod | `cue:hotrod` | Starts with Scorcher (hot pocket ×3), but every table has 1 less Chalk. $4. |
-| Gilded Cue | `cue:gilded` | Starts rich: $12 and Deep Pockets. |
-| Gear Cue | `cue:gearhead` | Starts with Pack Rat, a Second Strike and a Post. $2. |
-| Lean Cue | `cue:lean` | Starts with Thin Rack, and the 1 and 2 are already out of your set. $3. |
-| Black Cue | `cue:black` | Starts with Behind the 8: the 8 costs nothing and pays $3. $3. |
-| Alchemist's Cue | `cue:alchemist` | Starts with a Gold ball in your set, and Gold Rush: special balls score ×2. $3. |
-| Glass Cue | `cue:glass` | Starts with All In (every sink ×2, misses cost 2 Chalk). 1 less Chalk. $4. |
-| Post Cue | `cue:posts` | Carries 4 Posts every table, and starts with Kick Drum: bounce the cue off a post first for ×2. $2. |
-| Portal Cue | `cue:portals` | Carries 4 Portal Pairs every table, and starts with Boomerang: send the cue ball home for ×2. $2. |
-| Wall Cue | `cue:walls` | Carries 4 Pop-up Walls every table, and starts with Bank Manager: banks off your walls build Chain. $2. |
-| Trapdoor Cue | `cue:trapdoors` | Carries 4 Trapdoors every table, and starts with Soft Rails: bank sinks are worth +30. $2. |
-| Gravity Cue | `cue:gravity` | Carries 4 Gravity Pebbles every table, and starts with Magnetic Pockets: bend balls home. $2. |
+Cards marked *(particles)* above have small moving particles: sparks, embers, snow, rain, swirling motes, twinkles and so on. Perks with particles: Clean House, Cold Start, Gold Rush, Inferno, Simmer, Stoker.
 
-**Total: 98 cards** (85 without the cues), including 23 side bets and their card back.
+They are drawn by `TileArt.Motes`, a layer over the lettering that calls the effect's `_p_<name>` method each frame. It draws nothing while `Fx.minimal_particles` is on (**Particles: minimum** or **Reduced motion**), and the tile is complete without them. The Gold ball's glint is a shader on the letters, not a particle.
+
+## Rendering the sheets again
+
+Run from the project folder (it opens a window, so no `--headless`):
+
+```bash
+PS_TILE_SET=imbues PS_TILE_ZOOM=2 godot --path . --script res://tools/tile_preview.gd -- docs/card-art/imbue-tiles.png
+```
+
+`PS_TILE_SET` takes `perks`, `imbues`, `balls`, `items`, `betcards` (the playing cards), `bets` (the old tiles) or `all`. `PS_TILE_ONLY=ball:void,item:post` renders only those cards.

@@ -224,12 +224,38 @@ func _refresh_bet() -> void:
 			bb += "\n[color=#9fb4c8]%s: %s[/color]" % [Glossary.title(term), Glossary.sentence(term)]
 	lbl_bounty.text = bb
 	lbl_bounty.add_theme_color_override("default_color", Color(0.5, 1.0, 0.6) if run.bet_state == "won" else Color(1.0, 0.85, 0.35))
+	# The bet is a playing card; its wording, stake and payout are all on it.
+	lbl_bounty.visible = false
 	for c in bet_row.get_children():
 		bet_row.remove_child(c)
 		c.queue_free()
-	bet_row.visible = run.bet_open() and state == S.AIM
-	if not bet_row.visible:
+	bet_row.visible = true
+	var holder := Control.new()
+	holder.custom_minimum_size = BetCard.SIZE * BET_CARD_SCALE
+	holder.mouse_filter = Control.MOUSE_FILTER_STOP
+	holder.tooltip_text = ""
+	var card := BetCard.from_run(run)
+	card.scale = Vector2.ONE * BET_CARD_SCALE
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(card)
+	holder.name = "bet_card"
+	# Rest on it (or tap it) to see it full size beside the panel.
+	holder.mouse_entered.connect(func(): _show_bet_zoom(holder))
+	holder.mouse_exited.connect(_hide_bet_zoom)
+	holder.gui_input.connect(func(e):
+		if (e is InputEventMouseButton or e is InputEventScreenTouch) and e.pressed:
+			if bet_zoom != null and bet_zoom.visible:
+				_hide_bet_zoom()
+			else:
+				_show_bet_zoom(holder))
+	bet_row.add_child(holder)
+	if not (run.bet_open() and state == S.AIM):
 		return
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 6)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	bet_row.add_child(col)
 	var bet := _button("Bet $%d" % run.bet_stake(), func():
 		if run.take_bet():
 			sfx.play("coin", 0.8)
@@ -248,9 +274,36 @@ func _refresh_bet() -> void:
 		_refresh_hud(), Color(0.6, 0.62, 0.66))
 	for b in [bet, peek, nope]:
 		b.add_theme_font_size_override("font_size", 14)
-		b.custom_minimum_size = Vector2(0, 40 if settings.touch_mode else 30)
+		b.custom_minimum_size = Vector2(0, 38 if settings.touch_mode else 30)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		bet_row.add_child(b)
+		col.add_child(b)
+
+
+const BET_CARD_SCALE := 0.5
+var bet_zoom: Control
+
+
+## The side bet card at full size, just right of the side panel.
+func _show_bet_zoom(from: Control) -> void:
+	_hide_bet_zoom()
+	bet_zoom = Control.new()
+	bet_zoom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bet_zoom.top_level = true
+	var card := BetCard.from_run(run)
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bet_zoom.add_child(card)
+	from.add_child(bet_zoom)
+	var r := from.get_global_rect()
+	var at := Vector2(r.end.x + 16.0, r.position.y - 20.0)
+	var vp := get_viewport().get_visible_rect().size
+	at.y = clampf(at.y, 8.0, vp.y - BetCard.SIZE.y - 8.0)
+	bet_zoom.global_position = at
+
+
+func _hide_bet_zoom() -> void:
+	if bet_zoom != null and is_instance_valid(bet_zoom):
+		bet_zoom.queue_free()
+	bet_zoom = null
 
 
 ## The first ball a player ever sinks gets its score broken down, step by step.
@@ -3211,6 +3264,12 @@ func _perk_card(id: String, slot: int) -> Control:
 		v.add_child(_label("Now: " + now, 12, TermTip.NEON))
 	p.mouse_filter = Control.MOUSE_FILTER_STOP
 	p.set_meta("perk_id", id)
+	# Resting on a Perk rings the balls it works on with light.
+	p.mouse_entered.connect(func(): view.spotlight = TileArt.balls_for("perk", id))
+	p.mouse_exited.connect(func(): view.spotlight = [])
+	p.tree_exiting.connect(func():
+		if view != null and view.spotlight == TileArt.balls_for("perk", id):
+			view.spotlight = [])
 	if state == S.SHOP:
 		var b := _button(("Really sell? $%d" if sell_armed == id else "Sell $%d") % run.sell_value(id), func(): _sell_click(id), Color(1.0, 0.75, 0.3) if sell_armed == id else Color(0.9, 0.4, 0.3))
 		b.add_theme_font_size_override("font_size", 13)

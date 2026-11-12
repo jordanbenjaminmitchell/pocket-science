@@ -80,13 +80,17 @@ func _card(kind: String, id: String, ball: int) -> Control:
 	return p
 
 
-## PS_TILE_SET=perks renders every perk tile instead, 20 to a sheet, saving
-## <out>-1.png, <out>-2.png and so on. PS_TILE_ONLY=a,b limits it to those ids;
-## PS_TILE_ZOOM=2 draws them twice the size for a close look.
+## PS_TILE_SET=perks (or imbues, balls, items, bets, all) renders every tile of
+## that kind instead, 20 to a sheet, saving <out>-1.png, <out>-2.png and so on.
+## PS_TILE_ONLY=a,b limits it to those ids (kind:id outside perks);
+## PS_TILE_ZOOM=2 draws them twice the size for a close look. Imbues are shown
+## on balls 1-15 in turn, the first before its ball is chosen.
 func _perk_sheets(out: String) -> void:
-	var ids: Array = Catalog.PERKS.keys()
+	var set_name := OS.get_environment("PS_TILE_SET")
+	var prefix := {"perks": "perk:", "imbues": "imbue:", "balls": "ball:", "items": "item:", "bets": "bet:", "all": ""}.get(set_name, "perk:") as String
+	var ids: Array = TileArt.TILES.keys().filter(func(k: String) -> bool: return k.begins_with(prefix))
 	if OS.get_environment("PS_TILE_ONLY") != "":
-		ids = Array(OS.get_environment("PS_TILE_ONLY").split(","))
+		ids = Array(OS.get_environment("PS_TILE_ONLY").split(",")).map(func(k: String) -> String: return k if ":" in k else "perk:" + k)
 	var per := 20
 	var cols := 5
 	var zoom := maxf(1.0, OS.get_environment("PS_TILE_ZOOM").to_float())
@@ -103,7 +107,8 @@ func _perk_sheets(out: String) -> void:
 		vp.add_child(bg)
 		var chunk := ids.slice(page * per, page * per + per)
 		for i in chunk.size():
-			var tile := TileArt.new().setup("perk", chunk[i])
+			var key: String = chunk[i]
+			var tile := TileArt.new().setup(key.get_slice(":", 0), key.get_slice(":", 1), (page * per + i) % 16)
 			tile.position = Vector2(12 + (i % cols) * 184, 12 + (i / cols) * 130) * zoom
 			tile.size = TileArt.SIZE
 			tile.scale = Vector2(zoom, zoom)
@@ -117,11 +122,62 @@ func _perk_sheets(out: String) -> void:
 	quit()
 
 
+## PS_TILE_SET=betcards renders every side bet as a playing card (BetCard), with
+## example numbers for a table whose target is 215 and stake is $8, then the
+## card in each of its other states. 15 to a sheet.
+func _bet_sheets(out: String) -> void:
+	var Card: GDScript = load("res://src/ui/bet_card.gd")
+	var cards := []
+	var stake := 8
+	for b in Catalog.BOUNTIES:
+		var tier := int(Catalog.BOUNTIES[b].tier)
+		cards.append([b, "open", {"stake": stake, "reward": stake + stake * (1 + tier), "max_reward": stake * 4, "target": 215}, true])
+	cards.append(["solid", "back", {"stake": stake, "max_reward": stake * 4}, false])
+	cards.append(["bank2", "taken", {"stake": stake, "reward": stake * 4, "target": 215}, true])
+	cards.append(["half", "won", {"stake": 16, "reward": 16 + 56, "target": 840}, true])
+	cards.append(["combo", "passed", {"stake": stake, "reward": stake * 3, "target": 215}, true])
+	cards.append(["solid", "passed", {"stake": stake, "max_reward": stake * 4}, false])
+	if OS.get_environment("PS_TILE_ONLY") != "":
+		var only := OS.get_environment("PS_TILE_ONLY").split(",")
+		cards = cards.filter(func(c: Array) -> bool: return c[0] in only)
+	var per := 15
+	var cols := 5
+	var zoom := maxf(1.0, OS.get_environment("PS_TILE_ZOOM").to_float())
+	var vp := SubViewport.new()
+	vp.size = Vector2i(Vector2(cols * 192 + 12, 3 * 264 + 12) * zoom)
+	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	root.add_child(vp)
+	for page in ceili(cards.size() / float(per)):
+		for c in vp.get_children():
+			c.free()
+		var bg := ColorRect.new()
+		bg.color = Color(0.09, 0.09, 0.1)
+		bg.size = Vector2(vp.size)
+		vp.add_child(bg)
+		var chunk := cards.slice(page * per, page * per + per)
+		for i in chunk.size():
+			var c: Array = chunk[i]
+			var card: Control = Card.new().setup(c[0], c[1], c[2], c[3])
+			card.position = Vector2(12 + (i % cols) * 192, 12 + (i / cols) * 264) * zoom
+			card.scale = Vector2(zoom, zoom)
+			bg.add_child(card)
+		for i in 6:
+			await process_frame
+		await RenderingServer.frame_post_draw
+		var path := out.get_basename() + "-%d.png" % (page + 1)
+		vp.get_texture().get_image().save_png(ProjectSettings.globalize_path(path))
+		print("CAPTURED ", path)
+	quit()
+
+
 func _go() -> void:
 	var out: String = OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else "res://tools/tiles.png"
 	if OS.get_environment("PS_TILE_ON") != "":
 		TileArt.effects_on = OS.get_environment("PS_TILE_ON")
-	if OS.get_environment("PS_TILE_SET") == "perks":
+	if OS.get_environment("PS_TILE_SET") == "betcards":
+		await _bet_sheets(out)
+		return
+	if OS.get_environment("PS_TILE_SET") != "":
 		await _perk_sheets(out)
 		return
 	# A fixed-size off-screen viewport, so the project's window stretch cannot scale it.
