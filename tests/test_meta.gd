@@ -26,7 +26,7 @@ func _go() -> void:
 	m.load_file()
 	var locked := m.locked_perks()
 	check(locked.size() >= 30 and Catalog.PERKS.size() - locked.size() >= 25, "fresh profile: starter perks available, the rest locked (%d locked)" % locked.size())
-	check(m.cue_unlocked("maple") and not m.cue_unlocked("optic") and not m.cue_unlocked("gilded"), "fresh profile: only Classic Maple")
+	check(m.cue_unlocked("maple") and not m.cue_unlocked("posts") and not m.cue_unlocked("gilded"), "fresh profile: only Classic Maple")
 	for id in locked:
 		check(Catalog.PERKS.has(id), "locked id %s exists" % id) if not Catalog.PERKS.has(id) else null
 	# Shop never offers locked perks.
@@ -72,7 +72,7 @@ func _go() -> void:
 	var locked_buttons := _find_text(g.overlay, "Locked")
 	check(locked_buttons == Catalog.CUES.size() - 1, "cue select shows every other cue locked (%d)" % locked_buttons)
 	g._new_run()
-	check(g.run.locked.size() == 39, "a new run uses the profile's locks (%d)" % g.run.locked.size())
+	check(g.run.locked.size() == 41, "a new run uses the profile's locks (%d)" % g.run.locked.size())
 	# Restore whatever profile existed.
 	var fw := FileAccess.open(Meta.PATH, FileAccess.WRITE)
 	fw.store_string(keep)

@@ -370,6 +370,8 @@ func _refresh_items() -> void:
 	for c in item_bar.get_children():
 		item_bar.remove_child(c)
 		c.queue_free()
+	if run.cue_kit() != "":
+		item_bar.add_child(_item_button(run.cue_kit(), true))   # the cue's own object
 	for i in run.tool_slots():
 		var id: String = run.tools[i] if i < run.tools.size() else ""
 		item_bar.add_child(_item_button(id, true))
@@ -415,6 +417,8 @@ func _item_ready(id: String) -> String:
 	var it: Dictionary = Catalog.ITEMS[id]
 	if it.kind == "tool" and int(run.tool_charges.get(id, 0)) <= 0:
 		return "NO CHARGE LEFT ON THIS TABLE"
+	if id == run.cue_kit() and int(run.tool_charges.get(id, 0)) <= 0 and not run.items.has(id):
+		return "NO USES LEFT ON THIS TABLE"
 	match it.when:
 		"setup":
 			return "" if state == S.AIM else "USE THIS WHILE AIMING"
@@ -957,7 +961,12 @@ func _shop_intro_tip(v: VBoxContainer) -> void:
 ## A special ball for a full set: choose which ball it replaces (never the 8).
 func _show_replace_picker(i: int) -> void:
 	var item: Dictionary = run.shop[i]
-	var bt: Dictionary = Catalog.BALL_TYPES[item.id]
+	var bt: Dictionary
+	if item.type == "ball":
+		bt = Catalog.BALL_TYPES[item.id]
+	else:
+		var iso_d: Dictionary = Catalog.IMBUES[item.id]
+		bt = {"name": "%s %d" % [iso_d.name, int(item.ball)], "value": Catalog.ball_points(int(item.ball)), "color": iso_d.color, "accent": iso_d.color}
 	var col: Color = bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", _style(Color(0.08, 0.075, 0.08, 0.99), col, 2, 14))
@@ -3765,7 +3774,7 @@ func _offer_card(i: int) -> Control:
 			if item.has("ball"):
 				title = "%s %d-ball" % [iso.name, item.ball]
 				desc = iso.desc
-				kind = "Imbued ball"
+				kind = "New ball · Imbued" if item.get("adds", false) else "Imbued ball"
 			else:
 				title = "%s Imbue" % iso.name
 				desc = iso.desc
@@ -3821,12 +3830,12 @@ func _offer_card(i: int) -> Control:
 	var d := _term_text(Glossary.link(desc), 13, Color(0.8, 0.82, 0.85), 172.0)
 	d.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(d)
-	var price: int = run.special_cost(i) if item.type == "ball" else int(item.cost)
+	var price: int = run.special_cost(i) if run.adds_ball(i) else int(item.cost)
 	var b := _button("SOLD" if item.sold else "Buy $%d" % price, func():
 		if item.type == "imbue" and not item.has("ball"):
 			_show_imbue_picker(i)
 			return
-		if item.type == "ball" and run.set_full():
+		if run.adds_ball(i) and run.set_full():
 			_show_replace_picker(i)
 			return
 		var err := run.buy(i)

@@ -58,7 +58,7 @@ func _initialize() -> void:
 	print("the ball set")
 	var run := RunState.new()
 	run.start(4)
-	check(run.ball_set == range(1, 16), "a run starts with balls 1-15")
+	check(run.ball_set == range(1, 11), "a run starts with balls 1-10")
 	run.money = 20
 	check(not run.remove_ball(8), "the 8 can never be removed")
 	check(run.buy_removal(3) == "" and not run.ball_set.has(3) and run.money == 17, "removing a ball costs $3")
@@ -71,8 +71,11 @@ func _initialize() -> void:
 	check(not Catalog.is_stripe(16) and not Catalog.is_solid(16), "special balls are neither solids nor stripes")
 	var saved: Dictionary = run.to_dict()
 	check(saved.ball_kinds.has("16") and (saved.ball_set as Array).has(16), "special balls are saved with the run")
+	for hb in [11, 12, 13, 14, 15]:
+		run.ball_set.append(hb)   # fill the set to its 15-ball limit
 	run.shop = [{"type": "ball", "id": "star", "cost": 5, "sold": false}]
 	run.money = 10
+	run.perks.clear()
 	check(run.ball_set.size() == RunState.MAX_SET and run.set_full(), "the set is full at 15 balls")
 	check(run.buy(0) != "" and run.buy_special(0, 8) != "", "a full set needs a ball to replace, and never the 8")
 	var fee := run.removal_cost()
@@ -86,7 +89,14 @@ func _initialize() -> void:
 	var alch := RunState.new()
 	alch.start(6, "alchemist")
 	check(alch.ball_kinds.values() == ["gold"] and alch.perks.has("goldrush"), "the Alchemist's Cue starts with a Gold ball")
-	check(alch.ball_set.size() == 15 and not alch.ball_set.has(1), "in place of the 1, so the set stays at 15")
+	check(alch.ball_set.size() == 11 and alch.ball_set.has(1), "alongside balls 1-10")
+	var hi := RunState.new()
+	hi.start(7)
+	hi.money = 30
+	hi.shop = [{"type": "imbue", "id": "spark", "ball": 13, "adds": true, "cost": 6, "sold": false}]
+	check(hi.buy(0) == "" and hi.ball_set.has(13) and hi.imbues.get(13, "") == "spark" and hi.ball_set.size() == 11, "a high ball from the shop joins the set with its Imbue")
+	hi.roll_shop()
+	check(not hi.shop.any(func(it): return it.get("adds", false) and int(it.ball) == 13), "and is never offered twice")
 
 	print("special balls score")
 	Catalog.kinds = {16: "gold", 17: "void", 18: "echo", 19: "star", 20: "moon", 21: "wild", 22: "eraser", 23: "dice", 24: "ember", 25: "clover", 26: "heart"}

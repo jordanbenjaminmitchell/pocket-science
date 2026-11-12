@@ -36,7 +36,7 @@ func _initialize() -> void:
 		motifs[m] = true
 	var phys := Catalog.PERKS.keys().filter(func(k): return Catalog.PERKS[k].fam == "physics").size()
 	check(phys >= 8, "8 Physics Perks (%d)" % phys)
-	check(Catalog.CUES.size() >= 14, "14 starting cues (%d)" % Catalog.CUES.size())
+	check(Catalog.CUES.size() >= 13, "13 starting cues (%d)" % Catalog.CUES.size())
 
 	print("perks")
 	check(score(h5, {"perks": ["thinrack"], "removed": 2}).total == 44, "Thin Rack: +12 per removed ball")
@@ -150,6 +150,7 @@ func _initialize() -> void:
 	var im := RunState.new()
 	im.start(5)
 	im.begin_table()
+	im.ball_set.append(11)
 	im.imbues = {5: "heavy", 3: "twin", 7: "vein", 2: "gold"}
 	var hitres := {"scored": true, "foul": "", "total": 20, "money": 0, "catalyst_gain": 0.0, "potted": [5], "shattered": [], "lines": [],
 		"weighted_sunk": [5], "twin_hops": [3], "vein_spread": [4], "gilded_sunk": [2]}
@@ -166,15 +167,29 @@ func _initialize() -> void:
 	im.begin_table()
 	check(int(im.imbue_level.get(2, 0)) == 0, "but a table without sinking it resets the streak")
 
+	print("object cues")
+	var pc := RunState.new()
+	pc.start(5, "portals")
+	pc.begin_table()
+	check(pc.cue_kit() == "portal" and int(pc.tool_charges.portal) == 4 and pc.perks.has("boomerang"), "the Portal Cue carries 4 Portal Pairs and Boomerang")
+	for k in 4:
+		pc.spend("portal")
+	check(not pc.spend("portal"), "4 uses a table")
+	pc.begin_table()
+	check(int(pc.tool_charges.portal) == 4, "and they come back every table")
+
 	print("ball set")
 	var lean := RunState.new()
 	lean.start(9, "lean")
-	check(lean.ball_set.size() == 13 and not lean.ball_set.has(1) and lean.removed_count() == 2, "the Lean Cue starts without the 1 and 2")
+	check(lean.ball_set.size() == 8 and not lean.ball_set.has(1) and lean.removed_count() == 2, "the Lean Cue starts without the 1 and 2")
 	var rs := PoolSim.new(TableLayout.new().build(1.0, []))
 	var rr := RandomNumberGenerator.new()
 	rr.seed = 3
 	Rack.build(rs, rr, lean.ball_set)
-	check(rs.count() == 13 and rs.num[4] == 8, "a smaller set racks with the 8 in the middle")
+	check(rs.count() == 8 and Array(rs.num).has(8), "a smaller set racks")
+	var ten := PoolSim.new(TableLayout.new().build(1.0, []))
+	Rack.build(ten, rr, range(1, 11))
+	check(ten.count() == 10 and ten.num[4] == 8, "ten balls rack as one triangle with the 8 in the middle")
 	var big := range(1, 22)
 	var bs := PoolSim.new(TableLayout.new().build(1.0, []))
 	Rack.build(bs, rr, big)

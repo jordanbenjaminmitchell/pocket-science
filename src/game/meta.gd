@@ -8,26 +8,26 @@ const PATH := "user://settings.cfg"
 
 ## id -> {name, hint, perks, cue}
 const MILESTONES := {
-	"first_clear": {"name": "First Clear", "hint": "Clear your first table", "perks": [], "cue": "optic"},
+	"first_clear": {"name": "First Clear", "hint": "Clear your first table", "perks": [], "cue": "posts"},
 	"bank": {"name": "Angles", "hint": "Sink a bank shot", "perks": ["precision", "boomerang", "stun", "afterburner"], "cue": ""},
 	"boss": {"name": "Boss Breaker", "hint": "Clear a table with a special rule", "perks": ["ricochet", "cushion", "geometry", "tracer"], "cue": "hotrod"},
 	"triple": {"name": "Hat Trick", "hint": "Sink 3 or more balls in one shot", "perks": ["supernova", "fusion", "domino"], "cue": ""},
-	"streak5": {"name": "On Fire", "hint": "Reach Heat 5", "perks": ["rhythm", "hothand", "comeback"], "cue": "momentum"},
+	"streak5": {"name": "On Fire", "hint": "Reach Heat 5", "perks": ["rhythm", "hothand", "comeback"], "cue": "gravity"},
 	"pots40": {"name": "Regular", "hint": "Sink 40 balls in total", "perks": ["lowball", "highball", "fibonacci", "rotation", "moneyball"], "cue": ""},
 	"table6": {"name": "Deep Run", "hint": "Clear table 6", "perks": ["venture", "hunter", "coupon", "overflow", "thrift"], "cue": "gilded"},
 	"big": {"name": "Big Number", "hint": "Score 1,000 or more in one shot", "perks": ["echo", "glasscannon", "minimalist"], "cue": ""},
 	"lab": {"name": "Field Work", "hint": "Clear a table on special cloth", "perks": ["featherweight", "velvet", "migration"], "cue": ""},
 	"win": {"name": "Pocket Scientist", "hint": "Win a run", "perks": ["collector", "oracle"], "cue": "glass"},
-	"combos10": {"name": "Chain Gang", "hint": "Sink 10 combinations in total", "perks": [], "cue": "breaker"},
-	"banks10": {"name": "Rail Bird", "hint": "Sink 10 bank shots in total", "perks": [], "cue": "angle"},
-	"hot15": {"name": "Heat Seeker", "hint": "Sink 15 balls into hot pockets in total", "perks": [], "cue": "thermal"},
+	"combos10": {"name": "Chain Gang", "hint": "Sink 10 combinations in total", "perks": [], "cue": "portals"},
+	"banks10": {"name": "Rail Bird", "hint": "Sink 10 bank shots in total", "perks": [], "cue": "walls"},
+	"hot15": {"name": "Heat Seeker", "hint": "Sink 15 balls into hot pockets in total", "perks": [], "cue": "trapdoors"},
 	"eightlast": {"name": "Saved for Last", "hint": "Sink the 8 when it is the only ball left on the table", "perks": ["lastcall", "darkhorse", "trouble"], "cue": "black"},
 	"suited": {"name": "Suited Up", "hint": "Sink 2 or more solids, or 2 or more stripes, in one shot", "perks": ["solidsonly", "stripesonly", "lastsolid", "laststripe"], "cue": ""},
-	"pots100": {"name": "Old Hand", "hint": "Sink 100 balls in total", "perks": [], "cue": "engineer"},
+	"pots100": {"name": "Old Hand", "hint": "Sink 100 balls in total", "perks": ["masse"], "cue": ""},
 	"items5": {"name": "Handy", "hint": "Use 5 items in total", "perks": [], "cue": "gearhead"},
 	"table4": {"name": "Halfway There", "hint": "Clear table 4", "perks": [], "cue": "lean"},
 	"collector3": {"name": "Odd Collection", "hint": "Clear a table with 3 special balls in your set", "perks": [], "cue": "alchemist"},
-	"rich": {"name": "Well Funded", "hint": "Hold $30 at once", "perks": [], "cue": "banker"},
+	"rich": {"name": "Well Funded", "hint": "Hold $30 at once", "perks": ["gold"], "cue": ""},
 }
 
 var earned: Array = []

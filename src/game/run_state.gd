@@ -55,6 +55,7 @@ var lucky_mult := {}            # Lucky Imbue: ball number -> what its next win 
 var imbue_level := {}           # Weighted level, Hairline cracks, Gilded streak: ball number -> count
 var gilded_this_table := {}     # Gilded balls sunk on this table
 var removals := 0               # balls removed in the Pro Shop this run
+var removed_total := 0          # every ball that has left your set (Thin Rack, Missing Piece)
 var frost_shield := false       # this table: the next miss keeps Heat
 var heart_used := false         # this table: a Heart ball has already given Chalk
 var quick_used := false         # this table: Quick Hands has saved an item
@@ -70,6 +71,8 @@ const PAR_SHOTS := 10
 ## A set never holds more than 15 balls: a new special ball takes the place of one
 ## you choose, so every slot is a trade between a cheap ball and a better one.
 const MAX_SET := 15
+const START_BALLS := 10
+const CUE_KIT_USES := 4
 const QUICK_MAX := 5
 const OVERKILL_MAX := 10
 const TOOL_SLOTS := 2
@@ -97,7 +100,9 @@ func start(s: int, cue_id: String = "maple", handicap_level: int = 0) -> void:
 	perks.assign(c.perks)
 	items.assign(c.get("items", []))
 	tools.assign(c.get("tools", []))
-	ball_set = range(1, 16).filter(func(n): return not (c.get("remove", []) as Array).has(n))
+	# A run starts with ten balls, 1 to 10 (one triangle); 11 to 15 come from the Pro Shop.
+	ball_set = range(1, START_BALLS + 1).filter(func(n): return not (c.get("remove", []) as Array).has(n))
+	removed_total = (c.get("remove", []) as Array).size()
 	ball_kinds = {}
 	seed_growth = {}
 	lucky_mult = {}
@@ -176,6 +181,8 @@ func begin_table() -> void:
 	tool_charges = {}
 	for t in tools:
 		tool_charges[t] = 2 if perks.has("overclock") else 1
+	if cue_kit() != "":
+		tool_charges[cue_kit()] = CUE_KIT_USES   # the cue's own object, 4 uses every table
 	next_boost = 1.0
 	next_all_hot = false
 	next_magnet = false
@@ -364,6 +371,7 @@ func remove_ball(n: int) -> bool:
 	if n == 8 or n == 0 or not ball_set.has(n):
 		return false
 	ball_set.erase(n)
+	removed_total += 1
 	imbues.erase(n)
 	imbue_level.erase(n)
 	lucky_mult.erase(n)
@@ -501,7 +509,20 @@ func replace_targets() -> Array:
 	return ball_set.filter(func(n): return n != 8)
 
 
-## What a special ball costs right now: its price, plus the removal fee for the
+## Adds a numbered ball (11 to 15) to your set with an Imbue already on it.
+func _add_numbered(n: int, iso: String) -> void:
+	if not ball_set.has(n):
+		ball_set.append(n)
+		ball_set.sort()
+	imbues[n] = iso
+
+
+## Shop entries that put a new ball in your set: special balls, and balls 11 to 15.
+func adds_ball(i: int) -> bool:
+	return shop[i].type == "ball" or bool(shop[i].get("adds", false))
+
+
+## What a new ball costs right now: its price, plus the removal fee for the
 ## ball it pushes out when the set is already full.
 func special_cost(i: int) -> int:
 	return int(shop[i].cost) + (removal_cost() if set_full() else 0)
@@ -521,7 +542,10 @@ func buy_special(i: int, replace: int = -1) -> String:
 		var err := buy_removal(replace)
 		if err != "":
 			return err
-	add_special(item.id)
+	if item.type == "ball":
+		add_special(item.id)
+	else:
+		_add_numbered(int(item.ball), item.id)
 	money -= item.cost
 	item.sold = true
 	return ""
@@ -565,6 +589,9 @@ func consumable_ids() -> Array:
 ## Tools spend a charge, consumables leave the bag (Quick Hands may save one).
 ## Returns false if there was nothing to spend.
 func spend(id: String) -> bool:
+	if id == cue_kit() and int(tool_charges.get(id, 0)) > 0:
+		tool_charges[id] = int(tool_charges[id]) - 1
+		return true
 	if Catalog.ITEMS[id].kind == "tool":
 		if int(tool_charges.get(id, 0)) <= 0:
 			return false
@@ -589,7 +616,12 @@ func imbue_cost(id: String) -> int:
 
 ## Numbered balls (1-15) no longer in your set.
 func removed_count() -> int:
-	return range(1, 16).filter(func(n): return not ball_set.has(n)).size()
+	return removed_total
+
+
+## The placeable object this run's cue carries ("" for most cues).
+func cue_kit() -> String:
+	return str(Catalog.CUES.get(cue, {}).get("kit", ""))
 
 
 ## How hard a shot hits relative to its power setting.
@@ -702,10 +734,10 @@ func _roll_shop_items() -> void:
 	var loose: String = keys[rng.randi_range(0, keys.size() - 1)]
 	shop.append({"type": "imbue", "id": loose, "cost": imbue_cost(loose), "sold": false})
 	# A high ball, 11 to 15, that already carries a random Imbue.
-	var high: Array = range(11, 16).filter(func(n): return ball_set.has(n) and not imbues.has(n))
+	var high: Array = range(11, 16).filter(func(n): return not ball_set.has(n))
 	if not high.is_empty():
 		var iso: String = keys[rng.randi_range(0, keys.size() - 1)]
-		shop.append({"type": "imbue", "id": iso, "ball": high[rng.randi_range(0, high.size() - 1)], "cost": imbue_cost(iso), "sold": false})
+		shop.append({"type": "imbue", "id": iso, "ball": high[rng.randi_range(0, high.size() - 1)], "adds": true, "cost": imbue_cost(iso) + 2, "sold": false})
 	if not (intro and table_index < 2):
 		var types := Catalog.BALL_TYPES.keys()
 		var bt: String = types[rng.randi_range(0, types.size() - 1)]
@@ -781,6 +813,13 @@ func buy(i: int) -> String:
 		"imbue":
 			if not item.has("ball"):
 				return "Choose a ball for this Imbue"
+			if item.get("adds", false):
+				if set_full():
+					return "Choose a ball for it to replace"
+				_add_numbered(int(item.ball), item.id)
+				money -= item.cost
+				item.sold = true
+				return ""
 			if imbues.has(int(item.ball)):
 				return "That ball already has an Imbue"
 			imbues[int(item.ball)] = item.id
@@ -1087,7 +1126,7 @@ func to_dict() -> Dictionary:
 		"best_shot": best_shot, "tables_cleared": tables_cleared, "best_heat": best_heat,
 		"phase": phase, "carry": carry, "record_id": record_id, "daily_key": daily_key,
 		"handicap": handicap, "total_score": total_score, "items": items, "ball_set": ball_set,
-		"ball_kinds": _kinds_out(), "lucky_mult": _keys_out(lucky_mult), "imbue_level": _keys_out(imbue_level), "seed_growth": seed_growth, "removals": removals, "tools": tools,
+		"ball_kinds": _kinds_out(), "lucky_mult": _keys_out(lucky_mult), "imbue_level": _keys_out(imbue_level), "seed_growth": seed_growth, "removals": removals, "removed_total": removed_total, "tools": tools,
 	}
 	if phase == "table":
 		d["table"] = {
@@ -1217,6 +1256,7 @@ func load_dict(d: Dictionary) -> bool:
 	for k in d.get("imbue_level", {}):
 		imbue_level[int(k)] = int(d.imbue_level[k])
 	removals = int(d.get("removals", 0))
+	removed_total = int(d.get("removed_total", removals))
 	# v1 saves only knew "start of table".
 	phase = str(d.get("phase", "table"))
 	table_snapshot = {}

@@ -125,10 +125,11 @@ func _initialize() -> void:
 	im.money = 50
 	im.shop = [{"type": "imbue", "id": "vein", "cost": 5, "sold": false}, {"type": "imbue", "id": "twin", "cost": 4, "sold": false}, {"type": "imbue", "id": "spark", "ball": 12, "cost": 4, "sold": false}]
 	check(im.buy(0) != "", "a loose Imbue needs a ball chosen")
-	check(im.buy_imbue(0, 14) == "" and im.imbues[14] == "vein", "you choose which ball gets it")
-	check(im.buy_imbue(1, 14) != "", "a ball holds only one Imbue")
+	check(im.buy_imbue(0, 9) == "" and im.imbues[9] == "vein", "you choose which ball gets it")
+	check(im.buy_imbue(1, 9) != "", "a ball holds only one Imbue")
 	check(im.buy_imbue(1, 8) != "", "never the 8")
-	check(im.buy(2) == "" and im.imbues[12] == "spark", "a pre-imbued high ball applies directly")
+	im.ball_set.append(12)
+	check(im.buy(2) == "" and im.imbues[12] == "spark", "a pre-imbued ball applies directly")
 	var sr := RunState.new()
 	sr.start(4)
 	sr.roll_shop()

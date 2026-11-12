@@ -51,7 +51,8 @@ func _go() -> void:
 	print("counts")
 	check(Catalog.IMBUES.size() >= 16, "16 imbues")
 	check(Catalog.BOUNTIES.size() == 23, "23 side bets")
-	check(Catalog.CUES.size() >= 14, "14 or more cues")
+	check(Catalog.CUES.size() >= 13, "13 or more cues")
+	check(["posts", "portals", "walls", "trapdoors", "gravity"].all(func(c): return Catalog.CUES.has(c) and Catalog.CUES[c].has("kit")), "an object cue for each placeable object")
 	check(Catalog.BOSSES.size() >= 20, "at least 20 boss tables")
 	for id in Catalog.BOSSES:
 		check(Catalog.LABS.has(Catalog.BOSSES[id].lab), "%s uses a known lab" % id)
@@ -145,7 +146,7 @@ func _go() -> void:
 	for id in Catalog.CUES:
 		if id != "maple":
 			check(m.cue_hint(id) != "", "%s has an unlock route" % id)
-	check(not m.cue_unlocked("banker"), "banker starts locked")
+	check(not m.cue_unlocked("portals"), "the Portal Cue starts locked")
 	var mr := fresh()
 	mr.money = 31
 	check(m.on_shot(hit(), mr).has("rich"), "holding $30 unlocks the Banker's Cue")

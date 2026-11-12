@@ -222,24 +222,22 @@ One card per side bet. The card is shown face down until you take or peek at the
 | Sink the 8 when it is the only ball left | `bet:eight` | Hard |
 | (card back, shared by every face-down bet) | `bet:back` | - |
 
-## Starting cues (optional: only if cues get cards on the cue-select screen): 15
+## Starting cues: 13 (optional: only if cues get cards on the cue-select screen)
 
 | Name | ID | What it does |
 |---|---|---|
 | Classic Maple | `cue:maple` | The all-rounder. $6 to start. |
-| Optic Cue | `cue:optic` | Starts with Long Lens: every predicted sink shows its points, and long sinks add Chain. $2. |
 | Hot Rod | `cue:hotrod` | Starts with Scorcher (hot pocket ×3), but every table has 1 less Chalk. $4. |
-| Momentum Cue | `cue:momentum` | Starts with Stoker: multi-sink shots build extra Heat. $4. |
 | Gilded Cue | `cue:gilded` | Starts rich: $12 and Deep Pockets. |
-| Break Cue | `cue:breaker` | Starts with Break Artist (break shots +3 Chain). $3. |
-| Banker's Cue | `cue:banker` | Starts with Thrift and $8. |
-| Thermal Cue | `cue:thermal` | Starts with Stay Hot: while On fire, a miss only costs 1 Heat. $3. |
-| Angle Cue | `cue:angle` | Starts with Bank Manager (banks +1 Chain per cushion). $2. |
-| Engineer's Cue | `cue:engineer` | Starts with Backspin Wax: draw and follow 50% stronger. $3. |
 | Gear Cue | `cue:gearhead` | Starts with Pack Rat, a Second Strike and a Post. $2. |
 | Lean Cue | `cue:lean` | Starts with Thin Rack, and the 1 and 2 are already out of your set. $3. |
 | Black Cue | `cue:black` | Starts with Behind the 8: the 8 costs nothing and pays $3. $3. |
-| Alchemist's Cue | `cue:alchemist` | Starts with a Gold ball in your set and Gold Rush: special balls score ×2. $3. |
+| Alchemist's Cue | `cue:alchemist` | Starts with a Gold ball in your set, and Gold Rush: special balls score ×2. $3. |
 | Glass Cue | `cue:glass` | Starts with All In (every sink ×2, misses cost 2 Chalk). 1 less Chalk. $4. |
+| Post Cue | `cue:posts` | Carries 4 Posts every table, and starts with Kick Drum: bounce the cue off a post first for ×2. $2. |
+| Portal Cue | `cue:portals` | Carries 4 Portal Pairs every table, and starts with Boomerang: send the cue ball home for ×2. $2. |
+| Wall Cue | `cue:walls` | Carries 4 Pop-up Walls every table, and starts with Bank Manager: banks off your walls build Chain. $2. |
+| Trapdoor Cue | `cue:trapdoors` | Carries 4 Trapdoors every table, and starts with Soft Rails: bank sinks are worth +30. $2. |
+| Gravity Cue | `cue:gravity` | Carries 4 Gravity Pebbles every table, and starts with Magnetic Pockets: bend balls home. $2. |
 
-**Total: 100 cards** (85 without the cues), including 23 side bets and their card back.
+**Total: 98 cards** (85 without the cues), including 23 side bets and their card back.
