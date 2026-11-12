@@ -1513,6 +1513,9 @@ var last_aim_mouse := Vector2.INF
 var aim_hold_t := 0.0
 const AIM_HOLD := 0.25
 const AIM_TAP := 0.25    # degrees per tap of an aim key or nudge button
+## After an aim key, the mouse steers again only once it moves this far (screen px).
+const KEY_AIM_RELEASE := 40.0
+var key_aim_at := Vector2.INF
 const AIM_FINE := 0.05   # with Shift
 const POWER_STEP := 0.05
 var fc_power := -1.0
@@ -1534,6 +1537,7 @@ func _step_aim(dir: float) -> void:
 	if settings.smooth_arrows:
 		return
 	var deg := AIM_FINE if Input.is_key_pressed(KEY_SHIFT) else AIM_TAP
+	key_aim_at = mouse_pos   # park the aim: the mouse takes over again only once it really moves
 	aim_dir = aim_dir.rotated(deg_to_rad(deg * dir))
 	guide_dirty = true
 
@@ -1550,6 +1554,11 @@ func _update_aim(delta: float) -> void:
 		power_w.set_power(drag_power)
 	else:
 		var may_steer: bool = touch_aiming if settings.touch_mode else true
+		if key_aim_at != Vector2.INF and not settings.touch_mode:
+			if mouse_pos.distance_to(key_aim_at) < KEY_AIM_RELEASE:
+				may_steer = false   # fine-tuned with the keys: a nudge of the mouse won't undo it
+			else:
+				key_aim_at = Vector2.INF
 		var mouse_moved := m.distance_to(last_aim_mouse) > 0.5
 		last_aim_mouse = m
 		if settings.touch_mode and settings.fine_drag:
@@ -1582,6 +1591,8 @@ func _update_aim(delta: float) -> void:
 				rot -= spd
 			if held_r:
 				rot += spd
+			if held_l or held_r:
+				key_aim_at = mouse_pos
 			rot += touch_rot * 0.3
 		if settings.touch_mode and power_slider.value != power:
 			power_slider.set_value_no_signal(power)

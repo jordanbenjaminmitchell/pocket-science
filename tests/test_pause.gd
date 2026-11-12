@@ -161,6 +161,21 @@ func _go() -> void:
 	_press(KEY_RIGHT)
 	await _frames(1)
 	check(absf(rad_to_deg(before.angle_to(g.aim_dir)) - 0.25) < 0.01, "and Right turns it back")
+	# The keys park the aim: a small mouse wobble keeps it, a real move takes over.
+	var was_fine: bool = g.fine_aim
+	g.fine_aim = false
+	var cue_scr: Vector2 = g.view.base_position + g.sim.pos[g._cue_index()] * g.TABLE_SCALE
+	g.mouse_pos = cue_scr + Vector2(150, 0)
+	await _frames(2)
+	g._step_aim(1.0)
+	var parked: Vector2 = g.aim_dir
+	g.mouse_pos += Vector2(12, 8)
+	await _frames(2)
+	check(g.aim_dir == parked, "after an aim key, a small mouse wobble does not snap the aim back")
+	g.mouse_pos = cue_scr + Vector2(0, -120)
+	await _frames(2)
+	check(g.aim_dir.y < -0.9, "but moving the mouse properly hands the aim back to it (%s)" % g.aim_dir)
+	g.fine_aim = was_fine
 	g.power = 0.3
 	g.guide_dirty = true
 	await _until(func(): return g.fc_sim == null and g.fc_complete, 400)
