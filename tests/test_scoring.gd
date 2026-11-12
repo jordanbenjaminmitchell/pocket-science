@@ -98,5 +98,25 @@ func _initialize() -> void:
 	check(r.chalk == chalk0 and a.has("forgiven"), "The Local forgives the first miss")
 	r.apply_shot(miss, false, 5, true)
 	check(r.chalk == chalk0 - 1, "the second miss costs Chalk")
+	print("the on-screen sum")
+	var sum_cases := [
+		[h5, {}],
+		[h5, {"perks": ["solids", "odd", "corner"], "heat": 3}],
+		[[hit(0, 12), pot(12, 1)], {"perks": ["side", "stripes", "highball"], "hot_pocket": 1, "heat": 5}],
+		[[hit(0, 3), hit(3, 5), pot(5, 0), pot(3, 2)], {"perks": ["domino", "multi", "golden"], "imbues": {5: "jinxed"}, "heat": 2}],
+	]
+	for sc in sum_cases:
+		var rr: Dictionary = run_case(sc[0], sc[1])
+		for l in rr.lines:
+			var v := 0.0
+			var m := 1.0
+			for st in l.steps:
+				if st.op == "=" or st.op == "+":
+					v += float(st.v)
+				elif st.op == "×":
+					m *= float(st.v)
+			check(int(floor(v * m + 0.0001)) == int(l.points), "the shown sum for the %d-ball adds up to its score (%s x %s vs %d)" % [l.ball, v, m, l.points])
+	var named: Dictionary = run_case(h5, {"perks": ["solids"]})
+	check((named.lines[0].steps as Array).any(func(st): return st.src == "perk:solids" and st.op == "+" and int(st.v) == 35), "each piece knows its source (Solids +35)")
 	print("scoring tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

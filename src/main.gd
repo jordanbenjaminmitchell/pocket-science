@@ -102,6 +102,7 @@ var fit_key := ""
 var debug_hole := -1.0   # capture tool: pretend the phone has this camera cutout
 var debug_window := Vector2i.ZERO   # tests: pretend the window is this size
 var overlay: Control
+var score_eq: ScoreEq
 var selected_perk := -1
 var banner: Label
 var banner_t := 0.0
@@ -1553,6 +1554,8 @@ func _update_aim(delta: float) -> void:
 		view.show_guide = true
 		_update_preview()
 	_update_plan_hover()
+	if not _show_paths():
+		view.forecast_paths = []   # lines off: clear at once (the sink scores keep coming)
 	if not _forecast_wanted():
 		view.forecast_paths = []
 		fc_complete = false
@@ -1662,7 +1665,7 @@ func _show_paths() -> bool:
 
 
 func _forecast_wanted() -> bool:
-	return _show_paths() or run.perks.has("oracle") or run.perks.has("lens")
+	return true   # every predicted sink shows its score, so the forecast always runs
 
 
 ## Starts an incremental forecast; _step_forecast advances it within a frame budget.
@@ -1708,14 +1711,13 @@ func _step_forecast() -> void:
 	# The last finished prediction stays up while the next is worked out, so the
 	# lines never shrink back to stubs while you aim; partial ones show only at first.
 	if done or not fc_complete:
-		view.forecast_paths = out
+		view.forecast_paths = out if _show_paths() else []   # the scores still come; the lines follow the setting
 	if done:
 		fc_complete = true
 	if done:
 		if run.perks.has("oracle"):
 			_show_shot_forecast()
-		if run.perks.has("lens"):
-			_show_sink_tags()
+		_show_sink_tags()
 		fc_sim = null
 
 
@@ -1731,6 +1733,8 @@ func _show_sink_tags() -> void:
 			if l.get("kind", "") == "pot":
 				tags.append([int(l.pocket), "+%d" % int(l.points)])
 	view.sink_tags = tags
+	if not tags.is_empty():
+		view.preview_text = ""   # each predicted sink has its own score now
 
 
 ## Second Sight: score the simulated shot with the same rules the real one will use.
@@ -2044,6 +2048,8 @@ func _settled() -> void:
 
 func _update_tally(delta: float) -> void:
 	tally_timer -= delta * (3.0 if fast else 1.0)
+	if fast and score_eq.playing:
+		score_eq.finish_now()
 	if tally_timer > 0.0:
 		return
 	if tally_phase == 0:
@@ -2052,7 +2058,7 @@ func _update_tally(delta: float) -> void:
 			var l: Dictionary = lines[tally_i]
 			_apply_tally_line(l, tally_i)
 			tally_i += 1
-			tally_timer = clampf(0.5 / maxf(1.0, lines.size() * 0.5), 0.08, 0.22)
+			tally_timer = 0.08 if fast else ScoreEq.duration(l.get("steps", []))
 		else:
 			tally_phase = 1
 			tally_timer = 0.55
@@ -2088,21 +2094,46 @@ func _apply_tally_line(l: Dictionary, i: int) -> void:
 	if i == 0:
 		_explain_first_score(l)
 	_set_meters(l.chain, run.heat)
-	var p: Vector2 = layout.pockets[l.pocket].pos + _inward(l.pocket) * 80.0
-	p += Vector2(randf_range(-20, 20), randf_range(-10, 10))
+	var pk: int = int(l.pocket)
+	var at := Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5)
+	if pk >= 0 and pk < layout.pockets.size():
+		at = layout.pockets[pk].pos + _inward(pk) * 90.0
 	var big: bool = float(l.x) > 1.0
-	var col := Color(1.0, 0.45, 0.3) if big else Color(1.0, 0.85, 0.35)
-	sfx.play("xmult" if big else "tick", 0.7, pow(1.059, i))
-	if big:
-		view.add_shake(2.5)
-		view.punch(0.012)
+	var steps: Array = l.get("steps", [])
+	var vt := view.get_global_transform()
+	score_eq.bounds = Rect2(_eq_point(vt * Vector2.ZERO), _eq_point(vt * Vector2(TableLayout.W, TableLayout.H)) - _eq_point(vt * Vector2.ZERO))
+	score_eq.play(steps, int(l.points), _eq_point(view.get_global_transform() * at), _eq_sources(pk), fast)
 	var sum := "%s × Chain %s × Heat %s" % [_fmt(l.value), _fmt(l.chain), _fmt(l.heat)]
 	if big:
 		sum += " × %s" % _fmt(l.x)
 	lbl_line.text = "%s: %s = %d" % [l.label, sum, l.points]
 	if not (l.tags as Array).is_empty():
 		lbl_line.text += "\n" + ", ".join(l.tags)
-	view.popup(p, "+%d" % l.points, col, 24, 1.0)
+
+
+## A point in global canvas space, in the score equation's own space.
+func _eq_point(g: Vector2) -> Vector2:
+	return score_eq.get_global_transform().affine_inverse() * g
+
+
+## Where each kind of score piece flies in from: the ball's pocket, the Perk card
+## that gave it, the Chain or Heat meter, the hot pocket, the table, the item bar.
+func _eq_sources(pocket: int) -> Dictionary:
+	var vt := view.get_global_transform()
+	var d := {}
+	var pk_pos := Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5)
+	if pocket >= 0 and pocket < layout.pockets.size():
+		pk_pos = layout.pockets[pocket].pos
+	d["ball"] = _eq_point(vt * pk_pos)
+	d["table"] = _eq_point(vt * Vector2(TableLayout.W * 0.5, 0))
+	d["chain"] = _eq_point(lbl_chain.get_global_rect().get_center())
+	d["heat"] = _eq_point(lbl_heat.get_global_rect().get_center())
+	d["item"] = _eq_point(item_bar.get_global_rect().get_center()) if item_bar else d.ball
+	d["hot"] = _eq_point(vt * layout.pockets[run.hot_pocket].pos) if run.hot_pocket >= 0 and run.hot_pocket < layout.pockets.size() else d.ball
+	for c in perk_row.get_children():
+		if c.has_meta("perk_id"):
+			d["perk:" + str(c.get_meta("perk_id"))] = _eq_point((c as Control).get_global_rect().get_center())
+	return d
 
 
 func _after_shot() -> void:
@@ -2989,6 +3020,17 @@ func _build_ui() -> void:
 	banner.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	banner.visible = false
 	root.add_child(banner)
+	score_eq = ScoreEq.new()
+	score_eq.font = F_SEMI
+	score_eq.cap_font = F_REG
+	score_eq.sfx = sfx
+	score_eq.piece_added.connect(func(n: int):
+		# Three pieces in, the table starts to shake; five and it really goes.
+		if n >= 3 and not settings.reduced_motion:
+			view.add_shake(1.0 + (n - 2) * 0.9)
+		if n >= 5 and not settings.reduced_motion:
+			view.punch(0.006))
+	root.add_child(score_eq)
 	overlay = Control.new()
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -3159,6 +3201,7 @@ func _perk_card(id: String, slot: int) -> Control:
 	if now != "":
 		v.add_child(_label("Now: " + now, 12, TermTip.NEON))
 	p.mouse_filter = Control.MOUSE_FILTER_STOP
+	p.set_meta("perk_id", id)
 	if state == S.SHOP:
 		var b := _button(("Really sell? $%d" if sell_armed == id else "Sell $%d") % run.sell_value(id), func(): _sell_click(id), Color(1.0, 0.75, 0.3) if sell_armed == id else Color(0.9, 0.4, 0.3))
 		b.add_theme_font_size_override("font_size", 13)

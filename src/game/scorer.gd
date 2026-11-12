@@ -273,12 +273,18 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		if imbues.get(n, "") == "heavy":
 			weight = int(imbue_level.get(n, imbue_level.get(str(n), 3)))   # Weighted climbs with every sink
 		var value := float(Catalog.ball_points(n, weight)) + float(ctx.get("catalyst", 0.0))
+		# Every step of this ball's score, with where it came from, for the on-screen sum.
+		var steps: Array = [{"op": "=", "v": float(Catalog.ball_points(n, weight)), "src": "ball", "label": Catalog.ball_label(n)}]
+		if float(ctx.get("catalyst", 0.0)) > 0.0:
+			steps.append({"op": "+", "v": float(ctx.catalyst), "src": "perk:catalyst", "label": "Snowball"})
 		# Rotation: the lowest ball on the table pays like the highest one.
 		if perks.has("rotation") and facts.lowest and int(ctx.get("highest", -1)) > n:
 			value += float(Catalog.ball_points(int(ctx.highest), weight) - Catalog.ball_points(n, weight))
 			tags.append("Rotation")
-		if perks.has("thinrack"):
+			steps.append({"op": "+", "v": float(Catalog.ball_points(int(ctx.highest), weight) - Catalog.ball_points(n, weight)), "src": "perk:rotation", "label": "Rotation"})
+		if perks.has("thinrack") and int(ctx.get("removed", 0)) > 0:
 			value += 12.0 * int(ctx.get("removed", 0))
+			steps.append({"op": "+", "v": 12.0 * int(ctx.get("removed", 0)), "src": "perk:thinrack", "label": "Thin Rack"})
 		var pre_chain := 0.0
 		var x := 1.0
 		for id in perks:
@@ -290,7 +296,9 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			x *= float(fx.get("x", 1.0))
 			money += int(fx.get("money", 0))
 			tags.append(Catalog.PERKS[id].name)
+			_step(steps, Catalog.PERKS[id].name, "perk:" + id, [0.0, 1.0, 0.0], float(fx.get("value", 0)), float(fx.get("x", 1.0)), float(fx.get("chain", 0.0)))
 		# Built-in shot types.
+		var snap := [value, x, pre_chain]
 		if rails > 0:
 			if perks.has("bank"):
 				pre_chain += float(rails)
@@ -300,12 +308,16 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 				tags.append("Geometry")
 			out.banks += 1
 			out.max_rails = maxi(out.max_rails, rails)
+			_step(steps, "Bank", "perk:" + ("geometry" if perks.has("geometry") else "bank"), snap, value, x, pre_chain)
+			snap = [value, x, pre_chain]
 		if by != 0:
 			out.combos += 1
 		if k == hot or all_hot:
 			x *= 3.0 if perks.has("heat") else 2.0
 			tags.append("Hot pocket")
 			out.hot_pots += 1
+			_step(steps, "Hot pocket", "hot", snap, value, x, pre_chain)
+			snap = [value, x, pre_chain]
 		if solid:
 			if perks.has("steadyrun"):
 				value += 12.0 * mini(solid_run, 8)
@@ -331,6 +343,12 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		if perks.has("gold") and gold_paid < 3:
 			gold_paid += 1
 			money += 1
+		var suit_src := ""
+		for sp in ["steadyrun", "solidsonly", "stripesonly", "tiger", "luckystripe", "gold"]:
+			if perks.has(sp) and suit_src == "":
+				suit_src = sp
+		_step(steps, Catalog.PERKS[suit_src].name if suit_src != "" else "Suits", "perk:" + suit_src, snap, value, x, pre_chain)
+		snap = [value, x, pre_chain]
 		# Imbues.
 		match imbues.get(n, ""):
 			"gold":
@@ -384,6 +402,9 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 				out.bounty_cash += 2
 			"starry":
 				bonus_after += 0.5
+		if imbues.has(n):
+			_step(steps, Catalog.IMBUES[imbues[n]].name, "ball", snap, value, x, pre_chain)
+		snap = [value, x, pre_chain]
 		# Special balls.
 		match kind:
 			"gold":
@@ -427,6 +448,8 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			x *= 2.0
 		if kind != "" and perks.has("goldrush"):
 			x *= 2.0
+		_step(steps, Catalog.BALL_TYPES[kind].name if kind != "" else ("Void" if void_shot else "Special"), "ball", snap, value, x, pre_chain)
+		snap = [value, x, pre_chain]
 		# The table's own rule.
 		match boss:
 			"drift":
@@ -458,23 +481,34 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 				if fused.label != "":
 					tags.append(fused.label)
 				out.heat_gain += fused.heat
+		_step(steps, "Table rule", "table", snap, value, x, pre_chain)
+		snap = [value, x, pre_chain]
 		x *= float(ctx.get("boost", 1.0))
+		_step(steps, "Double Down", "item", snap, value, x, pre_chain)
+		snap = [value, x, pre_chain]
 		var call: Dictionary = ctx.get("called", {})
 		if not call.is_empty() and int(call.ball) == n and int(call.pocket) == k:
 			x *= 3.0
 			tags.append("Called")
+			steps.append({"op": "×", "v": 3.0, "src": "item", "label": "Called Shot"})
 		if perks.has("secondcoat") and imbues.has(n):
 			x *= 1.5
+			steps.append({"op": "×", "v": 1.5, "src": "perk:secondcoat", "label": "Second Coat"})
 		chain += pre_chain
+		if chain != 1.0:
+			steps.append({"op": "×", "v": chain, "src": "chain", "label": "Chain"})
+		if hm != 1.0:
+			steps.append({"op": "×", "v": hm, "src": "heat", "label": "Heat"})
 		var pts := value * chain * hm * x
 		if idx == 0 and perks.has("echo"):
 			pts *= 2.0
 			tags.append("Double Take")
+			steps.append({"op": "×", "v": 2.0, "src": "perk:echo", "label": "Double Take"})
 		var pays := int(floor(pts))
 		total += pays
 		out.lines.append({
 			"label": Catalog.ball_label(n), "kind": "pot", "ball": n, "pocket": k, "value": value, "chain": chain,
-			"heat": hm, "x": x, "points": pays, "tags": tags,
+			"heat": hm, "x": x, "points": pays, "tags": tags, "steps": steps,
 		})
 		chain += AFTER_POT + bonus_after
 		seen_pocket[k] = true
@@ -500,6 +534,17 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 	out.element_mix = mix
 	out.scored = true
 	return out
+
+
+## Records what one source changed: a flat value ("+"), Chain before the sink
+## ("+c") and a multiplier ("×"), comparing [value, x, pre_chain] before and after.
+static func _step(steps: Array, label: String, src: String, before: Array, value: float, x: float, pre_chain: float) -> void:
+	if absf(value - float(before[0])) > 0.001:
+		steps.append({"op": "+", "v": value - float(before[0]), "src": src, "label": label})
+	if absf(pre_chain - float(before[2])) > 0.001:
+		steps.append({"op": "+c", "v": pre_chain - float(before[2]), "src": src, "label": label})
+	if float(before[1]) != 0.0 and absf(x / float(before[1]) - 1.0) > 0.001:
+		steps.append({"op": "×", "v": x / float(before[1]), "src": src, "label": label})
 
 
 static func _long_pot(ctx: Dictionary, n: int, e: Dictionary) -> bool:

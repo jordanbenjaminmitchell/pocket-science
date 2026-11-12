@@ -48,6 +48,21 @@ func _go() -> void:
 					k += 1
 			game.view.refresh_glows(game.sim, game.run.imbues)
 			await _frames(90)
+		"equation":
+			# A big sink mid-count: value, Perk bonuses, Imbue, Chain and Heat, crackling.
+			game._new_run()
+			game.run.perks.assign(["solids", "odd", "corner", "hothand", "lowball"])
+			game.run.imbues = {3: "jinxed"}
+			game.run.heat = 4
+			game._setup_table()
+			game._enter_aim()
+			game._refresh_hud()
+			await _frames(5)
+			var ctx: Dictionary = game._shot_ctx()
+			ctx["events"] = [{"type": "ball", "a": 0, "b": 3}, {"type": "pocket", "a": 3, "pocket": 0, "rails": 0, "at": Vector2.ZERO}]
+			var res: Dictionary = Scorer.score(ctx)
+			game._apply_tally_line(res.lines[0], 1)
+			await _frames(int(OS.get_environment("PS_EQ_FRAMES")) if OS.get_environment("PS_EQ_FRAMES") != "" else 75)
 		"settings":
 			game._show_settings(game._show_title)
 			await _frames(4)
