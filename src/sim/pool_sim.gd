@@ -41,6 +41,8 @@ var side_power := 1.0        # how much english bends off cushions (Massé Maste
 var portal_lock := PackedInt32Array()   # the portal end a ball just came out of
 var pull := PackedFloat64Array()        # per-ball pocket pull (Magnetic Imbue)
 var bounce := PackedFloat64Array()      # per-ball cushion liveliness; 0 = the table's own (Star balls)
+var cue_magnet := 0.0                   # Neodymium Magnet: the rolling cue ball tugs nearby object balls
+var first_boost := 1.0                  # Uranium Reactor: the first ball the cue hits leaves this much faster
 var anchor8 := false                    # Lead Anchor: the 8 rattles out of pockets while other balls remain
 var grip := PackedFloat64Array()        # per-ball cloth friction, 1 = the table's own (Rubidium Rush, Gallium Glide)
 const GLASS_BREAK := 700.0              # impact speed that shatters a Glass ball
@@ -88,6 +90,8 @@ func clone() -> PoolSim:
 	s.bounce = bounce.duplicate()
 	s.grip = grip.duplicate()
 	s.anchor8 = anchor8
+	s.cue_magnet = cue_magnet
+	s.first_boost = first_boost
 	s.ghost = ghost
 	s.glide = glide.duplicate()
 	s.pinned = pinned.duplicate()
@@ -355,6 +359,8 @@ func _resolve_balls(i: int, j: int) -> void:
 		if cue_damp < 1.0:
 			vel[c] *= cue_damp
 			spin[c] *= cue_damp
+		if first_boost != 1.0:
+			vel[j if cue_i else i] *= first_boost
 	events.append({"t": time, "type": "ball", "a": num[i], "b": num[j], "speed": rel})
 	for pnd in [i, j]:
 		if pinned[pnd] == 1:
@@ -414,10 +420,21 @@ func _forces(dt: float) -> void:
 	for i in pos.size():
 		if alive[i] == 1 and num[i] > 15 and _kind(i) == "magnet":
 			magnets.append(i)
+	# Neodymium Magnet: while the cue ball rolls, it tugs object balls near it.
+	var cue_at := Vector2.INF
+	if cue_magnet > 0.0:
+		var ci := index_of(0)
+		if ci >= 0 and alive[ci] == 1 and vel[ci].length_squared() > 2500.0:
+			cue_at = pos[ci]
 	for i in pos.size():
 		if alive[i] == 0:
 			continue
 		var v := vel[i]
+		if cue_at != Vector2.INF and num[i] != 0 and pinned[i] == 0:
+			var cd := cue_at - pos[i]
+			var cl := cd.length()
+			if cl < MAGNET_REACH and cl > R * 2.0:
+				v += cd / cl * 3200.0 * cue_magnet * (1.0 - cl / MAGNET_REACH) * dt
 		if spin[i] != Vector2.ZERO:
 			var dv := spin[i] * minf(1.0, dt * 7.0)
 			v += dv

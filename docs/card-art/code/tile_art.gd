@@ -36,7 +36,7 @@ const TILES := {
 	"perk:longarm": {"sym": "Mo", "stat": "Full power +15%", "letter": "reach"},
 	# Cue control
 	"perk:kick": {"sym": "K", "stat": "Kick shots ×2", "letter": "kick"},
-	"perk:power": {"sym": "U", "stat": "85%+ power: +1 Chain", "letter": "power"},
+	"perk:power": {"sym": "U", "stat": "Power hits fly 20% faster", "letter": "power"},
 	"perk:finesse": {"sym": "In", "stat": "Soft shots ×2", "letter": "soft"},
 	"perk:boomerang": {"sym": "Br", "stat": "Cue comes home: ×2", "letter": "boomerang"},
 	"perk:precision": {"sym": "Cl", "stat": "Clean sinks +1 Chain", "letter": "crosshair"},
@@ -46,7 +46,7 @@ const TILES := {
 	"perk:followthru": {"sym": "Fr", "stat": "2+ sinks save a scratch", "letter": "follow"},
 	"perk:drawartist": {"sym": "Yb", "stat": "Draw shots ×1.5", "letter": "sketch"},
 	# Combos & clusters
-	"perk:elastic": {"sym": "Nd", "stat": "Every hit +0.25 Chain", "letter": "loud"},
+	"perk:elastic": {"sym": "Nd", "stat": "Magnetic cue ball", "letter": "ndmagnet"},
 	"perk:chain": {"sym": "S", "stat": "Combinations ×2", "letter": "links"},
 	"perk:multi": {"sym": "B", "stat": "Extra sinks +1 Chain", "letter": "cluster"},
 	"perk:supernova": {"sym": "Ni", "stat": "3+ sinks: all ×2", "letter": "sweep"},
@@ -83,7 +83,7 @@ const TILES := {
 	"perk:steadyrun": {"sym": "Y", "stat": "Solid streaks add value", "letter": "steps"},
 	"perk:solidsonly": {"sym": "Ta", "stat": "Solids ×3, stripes ×0.5", "letter": "only"},
 	"perk:lastsolid": {"sym": "Bi", "stat": "Last solid ×8", "letter": "spotlight"},
-	"perk:lowball": {"sym": "Li", "stat": "Balls 1–3 +45", "letter": "limbo"},
+	"perk:lowball": {"sym": "Li", "stat": "Balls 1–3 keep speed", "letter": "limbo"},
 	# Stripes
 	"perk:stripes": {"sym": "Cr", "stat": "Stripes ×1.5", "letter": "band"},
 	"perk:racing": {"sym": "Rb", "stat": "Light, fast stripes", "letter": "racing"},
@@ -98,7 +98,7 @@ const TILES := {
 	"perk:hushmoney": {"sym": "Ag", "stat": "Early 8 costs $3", "letter": "hush"},
 	"perk:kissblack": {"sym": "Sb", "stat": "Touch the 8: +Chain", "letter": "kiss"},
 	"perk:steerclear": {"sym": "Ne", "stat": "Miss the 8: +Chain", "letter": "steer"},
-	"perk:lastcall": {"sym": "Po", "stat": "Last-ball 8: ×5, $5", "letter": "neon"},
+	"perk:lastcall": {"sym": "Po", "stat": "Last 8 pulled in, ×5", "letter": "neon"},
 	"perk:eightcount": {"sym": "Kr", "stat": "Every 8th sink ×3", "letter": "tally"},
 	"perk:trouble": {"sym": "Pu", "stat": "Early 8: +3 Heat", "letter": "hazard"},
 	# Banks & cushions
@@ -1409,13 +1409,6 @@ void fragment() {
 		_head(Vector2(x0 - 8 * u, y), Vector2.LEFT, 6 * u, Color(tint, 0.95))
 
 	# --- Perks: Combos & clusters ---------------------------------------------------
-
-	## Loud Table: sound waves rolling off the letters.
-	func _r_loud() -> void:
-		var c := Vector2(x1 + 1 * u, cy)
-		for k in 3:
-			draw_arc(c, (7 + 6 * k) * u, -0.95, 0.95, 16, Color(tint, 0.85 - 0.25 * k), 2 * u, true)
-		_text_at(_ink())
 
 	## Daisy Chain: hung on a chain with a daisy at its end.
 	func _r_links() -> void:
@@ -3343,6 +3336,23 @@ void fragment() {
 			draw_circle(Vector2(x, baseline + h * 0.4 + 1 * u), 1.4 * u, Color(colour, 0.7), true, -1.0, true)
 		draw_circle(Vector2(x1 + 14 * u, y - 0.5 * u), 4 * u, Color(0.97, 0.96, 0.92), true, -1.0, true)
 		draw_circle(Vector2(x1 + 12.6 * u, y - 2 * u), 1.2 * u, Color(1, 1, 1), true, -1.0, true)
+
+	## Neodymium Magnet: a rolling cue ball, field lines reaching out to a ball it tugs along.
+	func _r_ndmagnet() -> void:
+		var cue := Vector2(x1 + 12 * u, cy + 6 * u)
+		var b := Vector2(x1 + 16 * u, top - 4 * u)
+		for k in 3:
+			var pts := PackedVector2Array()
+			for i in 11:
+				var t := i / 10.0
+				pts.append(cue.lerp(b, t) + Vector2((k - 1) * 5 * u * sin(t * PI), 0))
+			_dashes(pts, Color(tint, 0.65 - 0.15 * absi(k - 1)), 1.1 * u, 2 * u, 1.6 * u)
+		draw_polyline_colors(PackedVector2Array([cue - Vector2(22 * u, 0), cue - Vector2(5 * u, 0)]), PackedColorArray([Color(colour, 0), Color(colour, 0.6)]), 1.6 * u, true)
+		_head(b + Vector2(0, 7 * u), Vector2.DOWN, 4 * u, Color(tint, 0.9))
+		_text_at(_ink())
+		draw_circle(cue, 4.5 * u, Color(0.97, 0.96, 0.92), true, -1.0, true)
+		draw_arc(cue, 7 * u, 0, TAU, 20, Color(1, 0.3, 0.3, 0.7), 1.2 * u, true)
+		_ballpic(b, 3.6 * u, 6)
 
 	# --- Catalysts drawn for the rework ----------------------------------------------
 

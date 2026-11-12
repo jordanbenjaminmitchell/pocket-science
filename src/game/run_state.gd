@@ -1052,6 +1052,8 @@ func apply_physics(s: PoolSim) -> void:
 	if perks.has("hothand") and heat >= 3:
 		s.pocket_pull = maxf(s.pocket_pull, 0.7)   # Holmium Magnet
 	s.anchor8 = perks.has("laststripe")   # Lead Anchor
+	s.cue_magnet = 1.0 if perks.has("elastic") else 0.0   # Neodymium Magnet
+	s.first_boost = 1.0   # Uranium Reactor sets this per shot, when the shot is struck
 	if perks.has("domino"):
 		s.ball_e = 1.0   # Dysprosium Domino: hits lose no speed
 	else:
@@ -1096,8 +1098,10 @@ func apply_physics(s: PoolSim) -> void:
 				"leaded":
 					m *= 2.0
 		if i < s.pull.size():
-			s.pull[i] = 1.0 if imbues.get(s.num[i], "") == "magnetic" else 0.0
-			s.bounce[i] = 1.0 if Catalog.kind_of(s.num[i]) == "star" or (perks.has("lever") and Catalog.is_stripe(s.num[i])) else 0.0
+			var halo: bool = perks.has("lastcall") and s.num[i] == 8 and s.object_balls_left() == 1   # Polonium Halo
+			s.pull[i] = 1.0 if imbues.get(s.num[i], "") == "magnetic" or halo else 0.0
+			var charged: bool = perks.has("lowball") and s.num[i] >= 1 and s.num[i] <= 3   # Lithium Cell
+			s.bounce[i] = 1.0 if Catalog.kind_of(s.num[i]) == "star" or (perks.has("lever") and Catalog.is_stripe(s.num[i])) or charged else 0.0
 		s.mass[i] = m
 		if i < s.grip.size():
 			var g := 1.0
@@ -1106,6 +1110,11 @@ func apply_physics(s: PoolSim) -> void:
 			elif s.num[i] != 0 and perks.has("racing") and Catalog.is_stripe(s.num[i]):
 				g = 0.8   # Rubidium Rush: rolls 25% further
 			s.grip[i] = g
+
+
+## Uranium Reactor: a full-power shot sends the first ball it hits off 20% faster.
+func first_boost(power: float) -> float:
+	return 1.2 if perks.has("power") and power >= 0.85 else 1.0
 
 
 ## Everything the scorer needs to know about the shot about to be taken.

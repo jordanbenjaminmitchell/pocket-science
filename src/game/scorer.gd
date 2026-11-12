@@ -21,8 +21,6 @@ static func start_chain(ctx: Dictionary) -> float:
 	var c := 1.0
 	if ctx.get("boss", "") == "sinkhole":
 		c = 2.0
-	if perks.has("power") and float(ctx.get("power", 0.5)) >= 0.85:
-		c += 1.0
 	if perks.has("entropy") and int(ctx.get("heat", 0)) < 3:
 		c += 1.0   # Simmer: a cool table still builds
 	if perks.has("venture"):
@@ -43,8 +41,6 @@ static func chain_step(e: Dictionary, ctx: Dictionary, contacted: bool) -> float
 	var add := 0.0
 	match e.type:
 		"ball":
-			if e.a != 0 and e.b != 0 and perks.has("elastic"):
-				add += 0.25
 			if (e.a == 8 or e.b == 8) and perks.has("kissblack"):
 				add += 0.75
 			for n in [e.a, e.b]:

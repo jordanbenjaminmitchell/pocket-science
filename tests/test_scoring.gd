@@ -41,7 +41,7 @@ func _initialize() -> void:
 	check(run_case([hit(0, 8), pot(8, 0)], {"objects": 1}).total == 26, "the 8 pays plainly when it is the last ball")
 	print("items make bounces count")
 	check(run_case([hit(0, 5), rail5, pot(5, 0)], {"perks": ["ricochet"]}).total == 25, "Ricochet: cushion adds Chain")
-	check(run_case([hit(0, 3), hit(3, 5), pot(5, 0)], {"perks": ["elastic"]}).total == 25, "Loud Table: ball hit adds Chain")
+	check(run_case([hit(0, 3), hit(3, 5), pot(5, 0)], {"perks": ["elastic"]}).total == run_case([hit(0, 3), hit(3, 5), pot(5, 0)]).total, "Neodymium Magnet moves balls, it adds no Chain")
 	check(run_case([hit(0, 5), pot(5, 0, 2)], {"perks": ["bank"]}).total == 60, "Bank Manager: +1 Chain per cushion")
 	check(run_case([hit(0, 5), pot(5, 0)], {"imbues": {5: "spark"}}).total == 40, "Spark: struck ball adds Chain")
 	print("perks")

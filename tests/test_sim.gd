@@ -197,6 +197,40 @@ func _test_boss_physics() -> void:
 	var rwd1 := rwslick.stop_distance(0)
 	rwslick.grip[0] = 0.7
 	check(rwslick.stop_distance(0) > rwd1 * 1.3, "less grip, a longer roll in the prediction too")
+	# Neodymium Magnet, Lithium Cell, Polonium Halo, Uranium Reactor.
+	var ph := _run_with("", ["elastic", "lowball", "lastcall", "power"])
+	var s6 := PoolSim.new(TableLayout.new().build())
+	s6.add_ball(0, Vector2(200, 250))
+	s6.add_ball(2, Vector2(600, 100))
+	s6.add_ball(8, Vector2(700, 300))
+	ph.apply_physics(s6)
+	check(s6.cue_magnet > 0.0, "Neodymium Magnet: the cue ball is magnetic")
+	check(is_equal_approx(s6.rail_e_of(1), 1.0), "Lithium Cell: balls 1-3 lose no speed off cushions")
+	check(s6.pull[2] == 0.0, "Polonium Halo: no pull while other balls remain")
+	s6.alive[1] = 0
+	ph.apply_physics(s6)
+	check(s6.pull[2] > 0.0, "and the pockets pull the 8 when it is the last ball")
+	check(is_equal_approx(ph.first_boost(0.9), 1.2) and is_equal_approx(ph.first_boost(0.6), 1.0), "Uranium Reactor: only full-power shots")
+	# The magnet tugs a resting ball as the cue rolls past.
+	var mg := PoolSim.new(TableLayout.new().build())
+	mg.add_ball(0, Vector2(200, 250))
+	mg.add_ball(5, Vector2(500, 310))
+	mg.cue_magnet = 1.0
+	mg.strike(Vector2.RIGHT, 900.0, 0.0, 0.0)
+	for k in 120:
+		mg.step(PoolSim.STEP)
+	check(mg.pos[1].y < 310.0, "Neodymium Magnet pulls a resting ball towards the passing cue ball")
+	# The boost: the first ball struck at full power leaves faster.
+	var b0 := PoolSim.new(TableLayout.new().build())
+	b0.add_ball(0, Vector2(300, 250))
+	b0.add_ball(4, Vector2(400, 250))
+	var b1 := b0.clone()
+	b1.first_boost = 1.2
+	for bs in [b0, b1]:
+		bs.strike(Vector2.RIGHT, 800.0, 0.0, 0.0)
+		while bs.vel[1] == Vector2.ZERO:
+			bs.step(PoolSim.STEP)
+	check(b1.vel[1].length() > b0.vel[1].length() * 1.15, "Uranium Reactor: the struck ball flies off faster")
 	var ho := _run_with("", ["hothand"])
 	var rws5 := PoolSim.new(TableLayout.new().build())
 	rws5.add_ball(0, Vector2(300, 250))

@@ -2,7 +2,7 @@
 
 Every Element now has a two-word name, the element and a noun, such as **Hydrogen Balloon** or **Lead Anchor**. The tile still shows the real symbol (H, Pb) and the atomic number. Each tile also has a short description of what the card does across its bottom row, such as "Object balls 30% lighter".
 
-Eleven Elements were **reworked** to change the physics, or to trigger on a pause, a scratch or the break, instead of adding points. They are marked **Reworked** below, and the full list of changes is under [What changed in the game](#what-changed-in-the-game). The [ideas section](#more-physics-ideas-not-built) lists further reworks that need new simulation features.
+Fourteen Elements were **reworked**, and one gained a physical effect, to change the physics, or to trigger on a pause, a scratch or the break, instead of adding points. They are marked **Reworked** below, and the full list of changes is under [What changed in the game](#what-changed-in-the-game). The [ideas section](#more-physics-ideas-not-built) lists further reworks that need new simulation features.
 
 ## All 100
 
@@ -10,7 +10,7 @@ Eleven Elements were **reworked** to change the physics, or to trigger on a paus
 |---|---|---|---|
 | 1 | Hydrogen Balloon | `featherweight` | **Reworked.** Object balls are 30% lighter (was 25%), so they float further when struck. Now Hydrogen, swapped with Beryllium |
 | 2 | Helium Fusion | `fusion` | A second ball into the same pocket in one shot scores ×3 |
-| 3 | Lithium Cell | `lowball` | Balls 1, 2 and 3 are worth +45 |
+| 3 | Lithium Cell | `lowball` | **Reworked.** Balls 1, 2 and 3 are charged: they lose no speed off cushions. Was balls 1–3 +45 |
 | 4 | Beryllium Avalanche | `catalyst` | Every ball you sink makes all balls worth +0.75 for the rest of the run. Now Beryllium, swapped with Hydrogen |
 | 5 | Boron Cluster | `multi` | Every ball after the first in a shot adds +1 Chain |
 | 6 | Carbon Core | `eight` | The 8 costs nothing, scores like any ball and pays $3 |
@@ -67,7 +67,7 @@ Eleven Elements were **reworked** to change the physics, or to trigger on a paus
 | 57 | Lanthanum Lantern | `comeback` | On your last Chalk, every sink ×2 |
 | 58 | Cerium Flint | `thrift` | Clear a table with 2+ Chalk left: +$5 |
 | 59 | Praseodymium Twin | `rotation` | The lowest ball scores as the highest |
-| 60 | Neodymium Speaker | `elastic` | Every ball-to-ball hit adds +0.25 Chain |
+| 60 | Neodymium Magnet | `elastic` | **Reworked.** The cue ball is magnetic: as it rolls past, it tugs nearby balls towards it. Was +0.25 Chain a hit, and named Neodymium Speaker |
 | 61 | Promethium Prime | `prime` | Prime balls score ×2 |
 | 62 | Samarium Simmer | `entropy` | Below Heat 3, +1 Chain |
 | 63 | Europium Double | `echo` | The first sink of every shot counts twice |
@@ -91,7 +91,7 @@ Eleven Elements were **reworked** to change the physics, or to trigger on a paus
 | 81 | Thallium Felt | `slowcloth` | Balls stop 25% sooner |
 | 82 | Lead Anchor | `laststripe` | **Reworked.** The 8 weighs 300% and rattles out of the pockets until it is the last ball, so it can't go in early. Was the last stripe ×5 |
 | 83 | Bismuth Crystal | `lastsolid` | The last solid scores ×8 |
-| 84 | Polonium Halo | `lastcall` | A last-ball 8 scores ×5 and pays $5 |
+| 84 | Polonium Halo | `lastcall` | **Added to.** When the 8 is the last ball, the pockets pull it in; sinking it still scores ×5 and pays $5 |
 | 85 | Astatine Edge | `glasscannon` | Every sink ×2, but misses cost 2 Chalk |
 | 86 | Radon Burst | `bigbreak` | Breaks hit 25% harder |
 | 87 | Francium Fizz | `followthru` | **Reworked.** Scratch while sinking 2+ balls and the shot still scores, with no Chalk lost. Was follow shots +0.5 Chain |
@@ -99,7 +99,7 @@ Eleven Elements were **reworked** to change the physics, or to trigger on a paus
 | 89 | Actinium Ray | `highball` | Balls 13–15 score ×2.5 |
 | 90 | Thorium Stopper | `stun` | The cue ball loses 60% of its speed at its first hit |
 | 91 | Protactinium Pack | `packrat` | +1 Catalyst slot |
-| 92 | Uranium Reactor | `power` | Shots at 85%+ power start with +1 Chain |
+| 92 | Uranium Reactor | `power` | **Reworked.** At 85%+ power, the first ball the cue ball hits flies off 20% faster. Was +1 Chain at 85%+ |
 | 93 | Neptunium Tide | `overflow` | Points over the target carry over (up to 25%) |
 | 94 | Plutonium Pit | `trouble` | An early 8 gives +3 Heat |
 | 95 | Americium Beacon | `afterimage` | Impulse and Superposition add +1 Chain |
@@ -124,6 +124,10 @@ The changes to rules, rarity, cost or family, all in `src/game/catalog.gd` unles
 - **Xenon Flash** (`stillness`): once a table, the first pause speeds every rolling ball up by 30%, with a banner. It no longer adds Chain on each pause.
 - **Francium Fizz** (`followthru`): a scratch with 2+ other balls sunk still scores and costs no Chalk. It no longer pays for follow shots. Its family changed from Cue control to Risk, its rarity from Common to Uncommon, and its cost from $5 to $6.
 - **Berkelium Break** (`afterburner`): the break, and a scratch on the break, let you place the cue ball anywhere, not just behind the line. It no longer adds +3 Chain on the break.
+- **Neodymium Magnet** (`elastic`): was Neodymium Speaker. The rolling cue ball tugs nearby object balls towards it (`PoolSim.cue_magnet`). It no longer adds Chain on hits. Its rarity changed from Common to Uncommon and its cost from $4 to $6.
+- **Lithium Cell** (`lowball`): balls 1–3 lose no speed off cushions. They are no longer worth +45.
+- **Uranium Reactor** (`power`): at 85%+ power, the first ball struck leaves 20% faster (`PoolSim.first_boost`, set when the shot is struck, and in the prediction too). It no longer adds +1 Chain.
+- **Polonium Halo** (`lastcall`): keeps its ×5 and $5, and now the pockets also pull the 8 in when it is the last ball.
 - **Weights are shown as percentages** everywhere: Lead Anchor 300%, Mass Shift 400%, Leaded and the Iron ball 200%, Hollow 50%, the Feather ball 25%.
 - **Silver Tongue** moved from The 8-ball family to Economy. This keeps eight Elements in the 8-ball family now that Lead Anchor has joined it.
 - **The simulation** (`src/sim/pool_sim.gd`) has two new settings:
@@ -147,15 +151,10 @@ Each idea below needs something new in the simulation, so none of them are built
 
 | Element | Idea | Needs |
 |---|---|---|
-| Neodymium Speaker | Balls cling together for a moment after they touch, so clusters move as one | Ball-to-ball attraction |
 | Fluorine Flare | Odd balls push each other apart before they touch | A short-range repulsion between chosen balls |
 | Mercury Messenger | A slick puddle on the cloth where balls lose no speed | Friction zones (also useful for Snell's Law) |
 | Sodium Cushion | Soft cushions: balls come off 20% slower and settle by the rail | Per-cushion liveliness, as Hooke's Law already does for one segment |
 | Xenon Flash | Pausing freezes every object ball for half a second | A timed freeze when a shot is resumed |
-| Iron Fist | The cue ball is magnetic and tugs the first ball it passes | Attraction to the cue ball only |
-| Lithium Cell | Balls 1–3 are charged: they keep their speed off the first cushion | Per-ball cushion liveliness by number (the `bounce` array already exists) |
-| Uranium Reactor | At 85%+ power, the cue ball keeps 20% more speed after its first hit | The opposite of Thorium's `cue_damp` |
-| Polonium Halo | When the 8 is the last ball, the pockets pull it in | Pull on one ball, depending on the table state |
 | Krypton Tally | The guide line also shows the 8's path after any hit | A guide-line feature, not physics |
 | Helium Fusion | Two balls that meet in a pocket's jaws both drop | Pocket capture by contact |
 | Silicon Wafer | Solids slide flat and ignore spin passed on by the cue ball | Per-ball spin transfer |

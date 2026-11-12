@@ -1811,6 +1811,7 @@ func _forecast_wanted() -> bool:
 ## Starts an incremental forecast; _step_forecast advances it within a frame budget.
 func _compute_forecast() -> void:
 	fc_sim = sim.clone()
+	fc_sim.first_boost = run.first_boost(_current_power())
 	fc_sim.strike(aim_dir, _speed(_current_power()) * run.power_mult(is_break), _shot_follow(), _shot_side())
 	# Bent tables only need the opening curve; the full picture is the option or Perk.
 	fc_limit = 30.0 if settings.guide_lines == 1 or plan_lock or run.perks.has("oracle") else 2.5
@@ -1969,6 +1970,7 @@ func _begin_roll() -> void:
 	live_chain = Scorer.start_chain(pre_ctx)
 	live_contacted = false
 	_set_meters(live_chain, run.heat)
+	sim.first_boost = run.first_boost(shot_power)
 	sim.strike(aim_dir, _speed(shot_power) * run.power_mult(is_break), _shot_follow(), _shot_side())
 	if run.shots_taken >= 1 and meta.first_time("pause"):
 		_flash_banner("TIP: PRESS P (OR PAUSE) TO FREEZE A SHOT", Color(0.55, 0.95, 0.85), 2.6)

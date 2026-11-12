@@ -74,7 +74,7 @@ func _initialize() -> void:
 	var s12 := [hit(0, 12), pot(12)]
 	check(score(s5, {"perks": ["solids"]}).total == 55, "Solids +35")
 	check(score(s12, {"perks": ["stripes"]}).total == 51, "Stripes ×1.5")
-	check(score([hit(0, 2), pot(2)], {"perks": ["lowball"]}).total == 59 and score(s5, {"perks": ["lowball"]}).total == 20, "Low Ball: balls 1-3 +45, nothing else")
+	check(score([hit(0, 2), pot(2)], {"perks": ["lowball"]}).total == 14, "Lithium Cell changes physics, not points")
 	check(score([hit(0, 14), pot(14)], {"perks": ["highball"]}).total == 95 and score(s12, {"perks": ["highball"]}).total == 34, "High Roller: balls 13-15 ×2.5, nothing else")
 	check(score(s5, {"perks": ["solidgold"]}).money == 1, "Solid Gold pays $1")
 	check(score(s5, {"perks": ["bedrock"]}).heat_gain == 1, "Bedrock: only solids adds Heat")
