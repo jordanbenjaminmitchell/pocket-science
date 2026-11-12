@@ -7,7 +7,8 @@ const LINK_COLOR := "#8fd8ff"
 
 const TERMS := {
 	"sink": {"title": "Sink", "text": "To knock a numbered ball into a pocket."},
-	"pay": {"title": "Pay", "text": "The points a ball earns as it sinks: value × Chain × Heat, times any other multipliers."},
+	"score": {"title": "Score", "text": "The points a ball earns as it sinks: value × Chain × Heat, times any other multipliers."},
+	"pay": {"title": "Pay", "text": "Money you earn, always shown with a $ sign."},
 	"value": {"title": "Value", "text": "What a ball is worth before multipliers: 10 plus twice its number."},
 	"chain": {"title": "Chain", "text": "Multiplies balls within one shot: ×1 to start, and +0.5 for every ball sunk before it."},
 	"heat": {"title": "Heat", "text": "Multiplies every ball sunk this table; each scoring shot adds 1 Heat (+0.5×) and a miss halves it."},
@@ -17,7 +18,7 @@ const TERMS := {
 	"combination": {"title": "Combination", "text": "The cue ball hits one ball, and that ball knocks another one into a pocket."},
 	"kick": {"title": "Kick shot", "text": "The cue ball hits a cushion before it touches any ball, often to get round a blocker."},
 	"clean": {"title": "Clean sink", "text": "A sink straight from the cue ball, with no cushions or other balls involved."},
-	"hot": {"title": "Hot pocket", "text": "The glowing pocket, which pays ×2 and moves after each shot."},
+	"hot": {"title": "Hot pocket", "text": "The glowing pocket, which scores ×2 and moves after each shot."},
 	"chalk": {"title": "Chalk", "text": "Your lives on a table: a miss or scratch costs one, and at zero the run ends."},
 	"scratch": {"title": "Scratch", "text": "Knocking the cue ball into a pocket."},
 	"miss": {"title": "Miss", "text": "A shot that sinks nothing."},
@@ -36,7 +37,7 @@ const TERMS := {
 ## Words as they appear in text, mapped to the term they open.
 const WORDS := {
 	"sink": "sink", "sinks": "sink", "sunk": "sink", "sinking": "sink",
-	"pay": "pay", "pays": "pay", "worth": "value", "value": "value",
+	"score": "score", "scores": "score", "pay": "pay", "pays": "pay", "worth": "value", "value": "value",
 	"chain": "chain", "heat": "heat", "on fire": "on_fire",
 	"bank": "bank", "banks": "bank", "cushion": "cushion", "cushions": "cushion",
 	"combination": "combination", "combinations": "combination",

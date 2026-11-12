@@ -93,7 +93,7 @@ const TILES := {
 	"perk:highball": {"sym": "Hr", "stat": "13–15: ×2.5", "letter": "dice"},
 	# The 8-ball
 	"perk:eight": {"sym": "Bh", "stat": "8 safe, $3", "letter": "behind"},
-	"perk:darkhorse": {"sym": "Dh", "stat": "8 pays ×8", "letter": "dark"},
+	"perk:darkhorse": {"sym": "Dh", "stat": "8 scores ×8", "letter": "dark"},
 	"perk:hushmoney": {"sym": "Hm", "stat": "8 costs $3", "letter": "hush"},
 	"perk:kissblack": {"sym": "Kb", "stat": "+0.75 Chain", "letter": "kiss"},
 	"perk:steerclear": {"sym": "Ce", "stat": "+0.75 Chain", "letter": "steer"},
@@ -122,7 +122,7 @@ const TILES := {
 	"perk:catalyst": {"sym": "Sb", "stat": "+0.75 each", "letter": "snowball"},
 	"perk:golden": {"sym": "Fl", "stat": "First ×2", "letter": "drip"},
 	"perk:glasscannon": {"sym": "Al", "stat": "×2, −2 Chalk", "letter": "chips"},
-	"perk:echo": {"sym": "Db", "stat": "Pays twice", "letter": "double"},
+	"perk:echo": {"sym": "Db", "stat": "Scores twice", "letter": "double"},
 	# Clearing your set
 	"perk:thinrack": {"sym": "Tn", "stat": "+12 each", "letter": "thin"},
 	"perk:missing": {"sym": "Mn", "stat": "+0.5 each", "letter": "missing"},

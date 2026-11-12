@@ -1585,7 +1585,7 @@ func _update_coach() -> void:
 	elif not coach_seen_pot:
 		view.coach_text = "Swing your aim until a line ends in a gold ring.\nThe white ring shows where the cue ball hits."
 	elif run.heat >= 1:
-		view.coach_text = "Heat is building! Every scoring shot raises it.\nThe glowing pocket pays ×2."
+		view.coach_text = "Heat is building! Every scoring shot raises it.\nThe glowing pocket scores ×2."
 	else:
 		view.coach_text = ""
 	view.coach_pos = cue + Vector2(0, 50 if cue.y < TableLayout.H * 0.6 else -110)
@@ -3195,7 +3195,7 @@ func _perk_now(id: String) -> String:
 			return "the next sink is the 8th" if left == 1 else "×3 in %d sinks" % left
 		"rhythm":
 			var k := int(c.get("shots_taken", 0)) % 3
-			return "this shot pays ×2" if k == 2 else "×2 in %d shots" % (2 - k)
+			return "this shot scores ×2" if k == 2 else "×2 in %d shots" % (2 - k)
 		"hothand":
 			return "ON, +30 to every ball" if heat >= 3 else "off until Heat 3"
 		"minimalist":
@@ -3533,7 +3533,7 @@ func _show_help() -> void:
 [b]Score:[/b] Each ball pays as it sinks: its [color=#ffd060]value[/color] (10 + twice its number) × [color=#60d0a0]Chain[/color] × [color=#ff9040]Heat[/color]. Bouncing off cushions and other balls earns nothing by itself.
 [color=#60d0a0]Chain[/color] starts at 1 each shot and rises by 0.5 for every ball you sink in that shot, so the last ball of a big shot pays the most.
 [color=#ff9040]Heat[/color] lasts all table. Every scoring shot adds 1, and each point of Heat adds ×0.5. A miss cuts your Heat in half.
-The [color=#ff8a30]hot pocket[/color] pays ×2. The black 8 also pays ×2.
+The [color=#ff8a30]hot pocket[/color] scores ×2. The black 8 also scores ×2.
 
 [b]The 8-ball:[/b] Avoid it. If the 8 sinks while other balls are still on the table, you lose 15% of the table's target, unless a Perk changes that. Once it is the only ball left on the table it is safe, and sinking it brings a fresh rack.
 

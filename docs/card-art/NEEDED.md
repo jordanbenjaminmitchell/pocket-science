@@ -17,12 +17,12 @@ Many cards can have a small animated particle effect: embers for Heat cards, spa
 | Spark | `imbue:spark` | +1 Chain every time it is struck. Struck 3 or more times in one shot, it overloads and arcs onto the last ball it hit. |
 | Gilded | `imbue:gold` | Pays $1 when sunk, plus $1 for every table in a row you have sunk it (up to $5). A table where it stays up resets the streak. |
 | Weighted | `imbue:heavy` | Worth 10 + 3 × its number, and the number counts one more time with every sink (×4, ×5...). Any miss drops it back to ×3. |
-| Hairline | `imbue:glass` | Pays ×3 when sunk, but the coating may crack off: 1 in 4 the first time, 2 in 4 the next, then 3 in 4. |
+| Hairline | `imbue:glass` | Scores ×3 when sunk, but the coating may crack off: 1 in 4 the first time, 2 in 4 the next, then 3 in 4. |
 | Kindled | `imbue:ember` | +2 Heat when sunk. But while it is still on the table, a miss wipes your Heat to 0 instead of halving it. |
-| Lucky | `imbue:lucky` | 1 in 2 chance to pay ×2 when sunk. If it misses, Lucky jumps to another ball with no Imbue and the next win pays ×3, then ×4, and so on. |
+| Lucky | `imbue:lucky` | 1 in 2 chance to score ×2 when sunk. If it misses, Lucky jumps to another ball with no Imbue and the next win scores ×3, then ×4, and so on. |
 | Volatile | `imbue:volatile` | The first time anything hits this ball it explodes: it counts as sunk (points and Heat), but it leaves your set for good. |
-| Jinxed | `imbue:jinxed` | Pays ×4 when sunk, but sinking it halves your Heat. |
-| Mirror | `imbue:mirror` | Pays what the ball that hit it is worth instead of its own value: a low ball struck by the 15 pays like the 15. |
+| Jinxed | `imbue:jinxed` | Scores ×4 when sunk, but sinking it halves your Heat. |
+| Mirror | `imbue:mirror` | Pays what the ball that hit it is worth instead of its own value: a low ball struck by the 15 scores like the 15. |
 | Pawned | `imbue:pawned` | Pays $4 when sunk instead of any points. |
 | Frosted | `imbue:frosted` | When it sinks, your next miss on this table keeps your Heat. |
 | Magnetic | `imbue:magnetic` | Pockets pull this ball in. |
@@ -38,8 +38,8 @@ Many cards can have a small animated particle effect: embers for Heat cards, spa
 
 | Name | ID | What it does |
 |---|---|---|
-| Void | `ball:void` | Worth nothing itself, but every other ball in the same shot pays ×2. |
-| Glass | `ball:glass` | Pays ×3 if it sinks, but anything that hits it hard shatters it, and it leaves your set. |
+| Void | `ball:void` | Worth nothing itself, but every other ball in the same shot scores ×2. |
+| Glass | `ball:glass` | Scores ×3 if it sinks, but anything that hits it hard shatters it, and it leaves your set. |
 | Iron | `ball:iron` | Twice as heavy. Worth 70. |
 | Feather | `ball:feather` | A quarter the weight: it barely moves other balls, and adds +0.5 Chain as it sinks. |
 | Ember | `ball:ember` | The pocket it sinks into becomes the hot pocket. |
@@ -55,8 +55,8 @@ Many cards can have a small animated particle effect: embers for Heat cards, spa
 | Star | `ball:star` | Comes off cushions with no loss of speed, and adds +1 Chain as it sinks. |
 | Heart | `ball:heart` | If it is the only ball left on the table when you sink it, +1 Chalk. |
 | Dice | `ball:dice` | Shows a new number from 1 to 15 every shot, and counts as that number. |
-| Moon | `ball:moon` | Corner pockets reject it. Pays ×2 in a side pocket. |
-| Sun | `ball:sun` | Side pockets reject it. Pays ×2 in a corner pocket. |
+| Moon | `ball:moon` | Corner pockets reject it. Scores ×2 in a side pocket. |
+| Sun | `ball:sun` | Side pockets reject it. Scores ×2 in a corner pocket. |
 | Anchor | `ball:anchor` | Only the cue ball can move it: other balls bounce off it like a post. Worth 105. |
 | Eraser | `ball:eraser` | When it sinks it pays $4, and both it and the last ball it touched leave your set (never the 8). |
 | Echo | `ball:echo` | The first time it sinks on a table, it comes back to the foot spot. |
@@ -66,7 +66,7 @@ Many cards can have a small animated particle effect: embers for Heat cards, spa
 
 | Name | ID | What it does |
 |---|---|---|
-| Called Shot | `item:calledshot` | Pick a ball and a pocket. If that ball sinks there on your next shot, it pays ×3. |
+| Called Shot | `item:calledshot` | Pick a ball and a pocket. If that ball sinks there on your next shot, it scores ×3. |
 | Ghost Chalk | `item:ghostchalk` | Pick a ball. Your next shot passes straight through it. |
 | Swap | `item:swap` | Swap the places of two balls (not the cue ball). |
 | Polish | `item:polish` | Pick a ball. On your next shot it glides with no cloth friction until it first hits something. |
@@ -134,7 +134,7 @@ One card per side bet. The card is shown face down until you take or peek at the
 | Gear Cue | `cue:gearhead` | Starts with Pack Rat, a Second Strike and a Post. $2. |
 | Lean Cue | `cue:lean` | Starts with Thin Rack, and the 1 and 2 are already out of your set. $3. |
 | Black Cue | `cue:black` | Starts with Behind the 8: the 8 costs nothing and pays $3. $3. |
-| Alchemist's Cue | `cue:alchemist` | Starts with a Gold ball in your set and Gold Rush: special balls pay ×2. $3. |
+| Alchemist's Cue | `cue:alchemist` | Starts with a Gold ball in your set and Gold Rush: special balls score ×2. $3. |
 | Glass Cue | `cue:glass` | Starts with All In (every sink ×2, misses cost 2 Chalk). 1 less Chalk. $4. |
 
 **Total: 100 cards** (85 without the cues), including 23 side bets and their card back.
