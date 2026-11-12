@@ -1,6 +1,6 @@
 # Perk pass: scoring with Value = 10 + 2 × number
 
-Pay = Value × Chain × Heat × multipliers. Flat bonuses are added to Value
+Score = Value × Chain × Heat × multipliers. Flat bonuses are added to Value
 before anything multiplies, so they scale with Chain and Heat too.
 
 ## The rule this pass follows
@@ -20,7 +20,7 @@ Reference values: solids average 18, stripes average 34, all balls except the 8 
 | Even Money | +0.5 Chain | +0.75 Chain | Evens it up with Odd Balls |
 | Prime Cut | ×1.5 | ×2 | Uncommon but weaker than the common Odd Balls |
 | Lucky Numbers | +0.5 Chain | +35 | Mostly low balls, so a flat bonus suits it |
-| Rotation | lowest ball ×1.5 | the lowest ball pays as the highest on the table | ×1.5 on a 12-point ball was worth 6 points. Now it uses the new values |
+| Rotation | lowest ball ×1.5 | the lowest ball scores as the highest on the table | ×1.5 on a 12-point ball was worth 6 points. Now it uses the new values |
 | Low Ball | solids +0.5 Chain | balls 1–3 +45 | Low balls get a real reason to be sunk |
 | High Roller | stripes +30 | balls 13–15 ×2.5 | Mirrors Low Ball. A flat bonus on stripes was stronger than the Stripes Perk |
 | Solids Only | ×2 / stripes ×0.5 | ×3 / stripes ×0.5 | At ×2 the solids gained about what the stripes lost |

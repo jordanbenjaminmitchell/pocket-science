@@ -17,7 +17,7 @@ The APK is signed with a personal key from the build PC, so it is for your own d
 
 1. **Choose a cue.** Each cue starts the run differently. More unlock as you play.
 2. **Every table is a boss** with its own rule and a target score. As in real pool, you keep shooting while you sink. A miss or scratch costs one **Chalk**, and when your Chalk runs out before the target, the run ends.
-3. **Avoid the 8.** Dropping the 8 while other balls are still up costs 15% of the table's target, unless a Perk changes that. Once it is the last ball it is safe.
+3. **Avoid the 8.** Sinking the 8 while other balls are still up costs 15% of the table's target, unless a Perk changes that. Once it is the last ball it is safe.
 4. **The Pro Shop** opens between tables:
    - **Perks:** 100 passive rules for your six slots.
    - **Imbues:** 16 lasting upgrades for one ball.
@@ -28,12 +28,12 @@ The APK is signed with a personal key from the build PC, so it is for your own d
 
 ### Scoring
 
-Each ball pays as it drops: **value × Chain × Heat**.
+Each ball scores as it sinks: **value × Chain × Heat**.
 
 - **Value:** 10 plus the ball's number.
-- **Chain:** starts at 1 every shot and rises as balls drop, so the last ball of a big shot pays most.
+- **Chain:** starts at 1 every shot and rises as balls sink, so the last ball of a big shot scores most.
 - **Heat:** lasts the whole table, rises with every scoring shot and halves on a miss.
-- **Hot pocket:** the glowing pocket pays ×2.
+- **Hot pocket:** the glowing pocket scores ×2.
 
 Bouncing off cushions or balls earns nothing by itself. Only a Perk, an Imbue or a table's own rule makes contact count. Tap or hover any highlighted word in the game for a one-line definition.
 

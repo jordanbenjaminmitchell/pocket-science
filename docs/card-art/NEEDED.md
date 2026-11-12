@@ -22,7 +22,7 @@ Many cards can have a small animated particle effect: embers for Heat cards, spa
 | Lucky | `imbue:lucky` | 1 in 2 chance to score ×2 when sunk. If it misses, Lucky jumps to another ball with no Imbue and the next win scores ×3, then ×4, and so on. |
 | Volatile | `imbue:volatile` | The first time anything hits this ball it explodes: it counts as sunk (points and Heat), but it leaves your set for good. |
 | Jinxed | `imbue:jinxed` | Scores ×4 when sunk, but sinking it halves your Heat. |
-| Mirror | `imbue:mirror` | Pays what the ball that hit it is worth instead of its own value: a low ball struck by the 15 scores like the 15. |
+| Mirror | `imbue:mirror` | Scores what the ball that hit it is worth instead of its own value: a low ball struck by the 15 scores like the 15. |
 | Pawned | `imbue:pawned` | Pays $4 when sunk instead of any points. |
 | Frosted | `imbue:frosted` | When it sinks, your next miss on this table keeps your Heat. |
 | Magnetic | `imbue:magnetic` | Pockets pull this ball in. |
