@@ -44,7 +44,7 @@ func _initialize() -> void:
 	check(score(h5, {"perks": ["followthru"], "follow": 0.6}).total == 30, "Follow Through pays with follow")
 	check(score(h5, {"perks": ["drawartist"], "follow": -0.6}).total == 30, "Draw Artist pays with draw")
 	check(score(h5, {"perks": ["drawartist"], "follow": 0.0}).total == 20, "and only with draw")
-	check(score(h5, {"perks": ["secondcoat"], "imbues": {5: "heavy"}}).total == 45, "Second Coat ×1.5 on imbued balls")
+	check(score(h5, {"perks": ["secondcoat"], "imbues": {5: "heavy"}}).total == 37, "Second Coat ×1.5 on imbued balls")
 	check(score(h5, {"boost": 2.0}).total == 40, "Double Down doubles the shot")
 	check(score(h5, {"all_hot": true, "hot_pocket": 3}).total == 40, "Spotlight makes every pocket hot")
 	var run := RunState.new()
@@ -111,6 +111,60 @@ func _initialize() -> void:
 	hot.heat = 4
 	hot.apply_shot(miss, false, 9, true)
 	check(hot.heat == 2, "but below Heat 5 it still halves")
+
+	print("lucky and volatile")
+	var lk := RunState.new()
+	lk.start(5)
+	lk.begin_table()
+	lk.imbues = {5: "lucky", 6: "glass"}
+	var lmiss := {"scored": true, "foul": "", "total": 20, "money": 0, "catalyst_gain": 0.0, "potted": [5], "shattered": [], "lines": [], "lucky_misses": [5], "lucky_hits": []}
+	var lo: Dictionary = lk.apply_shot(lmiss, false, 9, true)
+	var to: int = lo.lucky_moves[0][1]
+	check(not lk.imbues.has(5) and lk.imbues.get(to, "") == "lucky" and to != 6 and to != 8 and int(lk.lucky_mult[to]) == 3, "a Lucky miss jumps to a free ball at ×3")
+	var lk2 := RunState.new()
+	lk2.load_dict(JSON.parse_string(JSON.stringify(lk.to_dict())))
+	check(int(lk2.lucky_mult.get(to, 0)) == 3, "and the climb is saved with the run")
+	var jk := RunState.new()
+	jk.start(5)
+	jk.begin_table()
+	jk.heat = 6
+	jk.apply_shot({"scored": true, "foul": "", "total": 80, "money": 0, "catalyst_gain": 0.0, "potted": [5], "shattered": [], "lines": [], "jinxed": true}, false, 9, true)
+	check(jk.heat == 3, "Jinxed halves Heat after the shot's gain (%d)" % jk.heat)
+	var vs := RunState.new()
+	vs.start(5)
+	vs.begin_table()
+	vs.imbues = {5: "volatile"}
+	var vlay := vs.build_layout()
+	var vsim := PoolSim.new(vlay)
+	vsim.add_ball(0, Vector2(300, 250))
+	vsim.add_ball(5, Vector2(380, 250))
+	vs.apply_physics(vsim)
+	vsim.vel[0] = Vector2(400, 0)
+	vsim.settle()
+	check(vsim.alive[1] == 0 and vsim.events.any(func(e): return e.type == "shatter" and e.get("exploded", false)), "a Volatile ball explodes when first hit")
+	var vclone := PoolSim.new(vlay)
+	vs.apply_physics(vclone)
+	check(vclone.volatile.has(5), "and the prediction knows it will")
+
+	print("Imbues that move and grow")
+	var im := RunState.new()
+	im.start(5)
+	im.begin_table()
+	im.imbues = {5: "heavy", 3: "twin", 7: "vein", 2: "gold"}
+	var hitres := {"scored": true, "foul": "", "total": 20, "money": 0, "catalyst_gain": 0.0, "potted": [5], "shattered": [], "lines": [],
+		"weighted_sunk": [5], "twin_hops": [3], "vein_spread": [4], "gilded_sunk": [2]}
+	var io: Dictionary = im.apply_shot(hitres, false, 9, true)
+	check(int(im.imbue_level[5]) == 4, "Weighted climbs to ×4 after a sink")
+	check(im.imbues.get(11, "") == "twin" and not im.imbues.has(3), "Twin hops to its colour twin (3 to 11)")
+	check(im.imbues.get(4, "") == "vein" and im.imbues.get(7, "") == "vein", "Vein spreads to the ball that knocked it in")
+	check((io.imbue_moves as Array).size() >= 3, "and each move is announced")
+	im.apply_shot(miss, false, 9, true)
+	check(not im.imbue_level.has(5), "a miss drops Weighted back to ×3")
+	check(int(im.imbue_level.get(2, 0)) == 1, "Gilded keeps its streak through the table")
+	im.table_index += 1
+	im.gilded_this_table = {}
+	im.begin_table()
+	check(int(im.imbue_level.get(2, 0)) == 0, "but a table without sinking it resets the streak")
 
 	print("ball set")
 	var lean := RunState.new()

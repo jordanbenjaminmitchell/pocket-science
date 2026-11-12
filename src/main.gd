@@ -2138,9 +2138,24 @@ func _after_shot() -> void:
 		_refresh_bet()
 		view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(1.0, 0.85, 0.35), 40, 300)
 	for e in sim.events:
-		if e.type == "shatter":
+		if e.type == "shatter" and e.get("exploded", false):
+			view.burst(e.at, Color(1.0, 0.62, 0.1), 40, 340)
+			view.add_shake(10.0)
+			sfx.play("bad", 0.7, 0.7)
+			view.popup(e.at, "BOOM! %d-ball counts as sunk" % e.a, Color(1.0, 0.7, 0.2), 20, 1.5)
+		elif e.type == "shatter":
 			view.burst(e.at, Color(0.75, 0.9, 1.0), 26, 260)
 			sfx.play("bad", 0.5, 1.6)
+	for mv in out.get("lucky_moves", []):
+		if mv[0] != mv[1]:
+			view.popup(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.4), "Lucky slipped to the %d-ball: next win ×%d" % [mv[1], mv[2]], Color(0.35, 0.95, 0.5), 18, 1.6)
+		else:
+			view.popup(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.4), "Lucky missed: next win ×%d" % mv[2], Color(0.35, 0.95, 0.5), 18, 1.6)
+	var said: Array = out.get("imbue_moves", [])
+	for k in said.size():
+		view.popup(Vector2(TableLayout.W * 0.5, TableLayout.H * (0.32 + 0.07 * k)), said[k], Color(0.75, 0.9, 1.0), 17, 1.8)
+	if not out.get("lucky_moves", []).is_empty() or not said.is_empty():
+		view.refresh_glows(sim, run.imbues)
 	for n in result.get("lost_balls", []):
 		view.popup(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.66), "%s left your set" % Catalog.ball_label(n), Color(1.0, 0.6, 0.6), 20, 1.5)
 	if out.has("heart"):
@@ -4334,7 +4349,10 @@ func _show_run_info() -> void:
 	balls.sort()
 	for n in balls:
 		var iso: Dictionary = Catalog.IMBUES[run.imbues[n]]
-		c1.add_child(_label("%d-ball: %s - %s" % [n, iso.name, iso.desc], 15, iso.color, F_REG))
+		var il := _label("%d-ball: %s - %s" % [n, iso.name, iso.desc], 15, iso.color, F_REG)
+		il.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # long Imbue rules wrap instead of widening the panel
+		il.custom_minimum_size = Vector2(c1.custom_minimum_size.x if c1.custom_minimum_size.x > 0.0 else 430.0, 0)
+		c1.add_child(il)
 
 	# Column 2: tables
 	var c2 := VBoxContainer.new()

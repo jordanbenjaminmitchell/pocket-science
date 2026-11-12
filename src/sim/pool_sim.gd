@@ -47,6 +47,7 @@ var ghost := -1                         # Ghost Chalk: nothing collides with thi
 var glide := PackedByteArray()          # Polish: no cloth friction until the first hit
 var pinned := PackedByteArray()         # Freeze Frame: held still like a post
 var extra_wells: Array = []             # Gravity Pebbles: [position, strength]
+var volatile := {}                      # Volatile Imbue: ball number -> true; explodes when first touched
 const MAGNET_REACH := 150.0
 
 
@@ -86,6 +87,7 @@ func clone() -> PoolSim:
 	s.glide = glide.duplicate()
 	s.pinned = pinned.duplicate()
 	s.extra_wells = extra_wells.duplicate(true)
+	s.volatile = volatile.duplicate()
 	return s
 
 
@@ -354,6 +356,14 @@ func _resolve_balls(i: int, j: int) -> void:
 	if _kind(j) == "frost":
 		vel[i] = Vector2.ZERO
 		spin[i] = Vector2.ZERO
+	# Volatile: the first touch blows the ball up; scoring counts it as a sink.
+	for g in [i, j]:
+		if volatile.has(num[g]) and alive[g] == 1:
+			volatile.erase(num[g])
+			alive[g] = 0
+			vel[g] = Vector2.ZERO
+			spin[g] = Vector2.ZERO
+			events.append({"t": time, "type": "shatter", "a": num[g], "at": pos[g], "exploded": true})
 	for g in [i, j]:
 		if _kind(g) == "glass" and rel > GLASS_BREAK and alive[g] == 1:
 			alive[g] = 0

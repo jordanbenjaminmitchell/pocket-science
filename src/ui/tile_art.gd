@@ -142,7 +142,7 @@ const TILES := {
 	"perk:afterimage": {"sym": "Ag", "stat": "+1 Chain", "letter": "chroma"},
 	"perk:overclock": {"sym": "Oc", "stat": "2 charges", "letter": "chip"},
 	# Samples of the other kinds
-	"imbue:vein": {"sym": "Vn", "stat": "+1 Chain, +30", "letter": "mirror"},
+	"imbue:vein": {"sym": "Vn", "stat": "+20, spreads", "letter": "mirror"},
 	"ball:gold": {"sym": "Au", "stat": "45 pts", "on": "Cushions", "letter": "gold"},
 	"item:secondstrike": {"sym": "Ss", "stat": "Hit again", "on": "Cue ball", "letter": "echo"},
 	"item:trapdoor": {"sym": "Td", "stat": "+1 pocket", "on": "Cushion", "letter": "drop"},

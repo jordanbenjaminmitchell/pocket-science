@@ -10,25 +10,29 @@ Many cards can have a small animated particle effect: embers for Heat cards, spa
 
 **Rule:** every particle effect must check `Fx.minimal_particles` (in `src/ui/fx.gd`) and draw nothing when it is true. That switch is on when the player sets **Particles: minimum** or **Reduced motion** in Settings. The still tile art (symbol, lettering, stat) must look complete without the particles.
 
-## Imbues: 15
+## Imbues: 19
 
 | Name | ID | What it does |
 |---|---|---|
-| Spark | `imbue:spark` | +1 Chain every time this ball is struck. |
-| Gilded | `imbue:gold` | Pays $2 when sunk. |
-| Weighted | `imbue:heavy` | This ball's number counts ×4. |
-| Hairline | `imbue:glass` | Pays ×3 when sunk, but 1 in 4 times the coating cracks off. |
-| Kindled | `imbue:ember` | +1 Heat when sunk. |
-| Lucky | `imbue:lucky` | 1 in 3 chance to pay ×4 when sunk. |
+| Spark | `imbue:spark` | +1 Chain every time it is struck. Struck 3 or more times in one shot, it overloads and arcs onto the last ball it hit. |
+| Gilded | `imbue:gold` | Pays $1 when sunk, plus $1 for every table in a row you have sunk it (up to $5). A table where it stays up resets the streak. |
+| Weighted | `imbue:heavy` | Worth 10 + 3 × its number, and the number counts one more time with every sink (×4, ×5...). Any miss drops it back to ×3. |
+| Hairline | `imbue:glass` | Pays ×3 when sunk, but the coating may crack off: 1 in 4 the first time, 2 in 4 the next, then 3 in 4. |
+| Kindled | `imbue:ember` | +2 Heat when sunk. But while it is still on the table, a miss wipes your Heat to 0 instead of halving it. |
+| Lucky | `imbue:lucky` | 1 in 2 chance to pay ×2 when sunk. If it misses, Lucky jumps to another ball with no Imbue and the next win pays ×3, then ×4, and so on. |
+| Volatile | `imbue:volatile` | The first time anything hits this ball it explodes: it counts as sunk (points and Heat), but it leaves your set for good. |
+| Jinxed | `imbue:jinxed` | Pays ×4 when sunk, but sinking it halves your Heat. |
+| Mirror | `imbue:mirror` | Pays what the ball that hit it is worth instead of its own value: a low ball struck by the 15 pays like the 15. |
+| Pawned | `imbue:pawned` | Pays $4 when sunk instead of any points. |
 | Frosted | `imbue:frosted` | When it sinks, your next miss on this table keeps your Heat. |
 | Magnetic | `imbue:magnetic` | Pockets pull this ball in. |
 | Charged | `imbue:charged` | +0.5 Chain every time this ball touches a cushion. |
 | Resonant | `imbue:prismatic` | Every ball it touches in a shot adds +0.25 Chain. |
 | Hollow | `imbue:hollow` | Half the weight: it flies further when struck. |
 | Leaded | `imbue:leaded` | Twice as heavy, and worth +45. |
-| Bounty | `imbue:bounty` | Pays $1 for every point of Heat when it sinks. |
+| Bounty | `imbue:bounty` | Pays $1 for every point of Heat when it sinks, then cashes out 2 Heat. |
 | Starry | `imbue:starry` | Every ball after it in the same shot gets +0.5 Chain. |
-| Twin | `imbue:twin` | This ball's value counts twice. |
+| Twin | `imbue:twin` | Its value counts twice. Then it hops to its colour twin (the 3 and the 11, the 1 and the 9...), if that one is free. |
 
 ## Special balls: 23
 
@@ -133,4 +137,4 @@ One card per side bet. The card is shown face down until you take or peek at the
 | Alchemist's Cue | `cue:alchemist` | Starts with a Gold ball in your set and Gold Rush: special balls pay ×2. $3. |
 | Glass Cue | `cue:glass` | Starts with All In (every sink ×2, misses cost 2 Chalk). 1 less Chalk. $4. |
 
-**Total: 96 cards** (81 without the cues), including 23 side bets and their card back.
+**Total: 100 cards** (85 without the cues), including 23 side bets and their card back.

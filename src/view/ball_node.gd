@@ -53,6 +53,7 @@ const IMBUE_FX := {
 	"spark": "spark", "gold": "glint", "heavy": "sink", "glass": "glint", "ember": "ember",
 	"vein": "rise", "lucky": "rise", "frosted": "frost", "magnetic": "field", "charged": "spark",
 	"prismatic": "rainbow", "hollow": "hollow", "leaded": "sink", "bounty": "glint", "starry": "stars", "twin": "echo",
+	"volatile": "spark", "jinxed": "void", "pawned": "glint", "mirror": "echo",
 }
 ## Special ball type -> particle style.
 const FX_SIZE := 1.6

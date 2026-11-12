@@ -87,11 +87,23 @@ static func score(ctx: Dictionary) -> Dictionary:
 	var toucher := {}
 	var clover := false
 	var shattered_balls: Array = []
+	# A Volatile ball that exploded counts as sunk: follow its blast with a sink event.
+	var blown: Array = []
+	for e in events:
+		blown.append(e)
+		if e.type == "shatter" and e.get("exploded", false):
+			blown.append({"type": "pocket", "a": e.a, "pocket": 6, "rails": 0, "at": e.at, "exploded": true})
+	events = blown
+	var spark_hits := {}
+	var last_hit := {}
 	for e in events:
 		match e.type:
 			"shatter":
 				shattered_balls.append(e.a)
 			"ball":
+				for pair in [[e.a, e.b], [e.b, e.a]]:
+					spark_hits[pair[0]] = int(spark_hits.get(pair[0], 0)) + 1
+					last_hit[pair[0]] = pair[1]
 				if Catalog.kind_of(e.a) == "clover" or Catalog.kind_of(e.b) == "clover":
 					clover = true
 				if first_contact < 0 and (e.a == 0 or e.b == 0):
@@ -120,7 +132,20 @@ static func score(ctx: Dictionary) -> Dictionary:
 		"element_mix": ctx.get("element_mix", []),
 		"penalty": 0, "eight_fine": 0, "last_eight": false, "frost": false, "heart": false, "lost_balls": [], "grown": [], "safe": false, "new_hot": -1,
 		"solid_run": int(ctx.get("solid_run", 0)), "stripe_run": int(ctx.get("stripe_run", 0)),
+		"lucky_hits": [], "lucky_misses": [], "jinxed": false,
+		"weighted_sunk": [], "hairline_sunk": [], "gilded_sunk": [], "spark_jumps": [], "vein_spread": [], "twin_hops": [],
+		"bounty_cash": 0, "kindled_live": false,
 	}
+	var imbue_level: Dictionary = ctx.get("imbue_level", {})
+	var imb0: Dictionary = ctx.get("imbues", {})
+	# Spark: three strikes in one shot and it arcs onto the last ball it hit.
+	for sn in spark_hits:
+		if imb0.get(sn, "") == "spark" and int(spark_hits[sn]) >= 3 and int(last_hit.get(sn, 0)) > 0:
+			out.spark_jumps.append([sn, int(last_hit[sn])])
+	# Kindled: a miss while it is still on the table wipes the Heat.
+	for kn in ctx.get("on_table", []):
+		if imb0.get(kn, "") == "ember" and not pots.any(func(p): return p.a == kn):
+			out.kindled_live = true
 	out.safe = clover
 	out.lost_balls.append_array(shattered_balls)
 	# The 8 is an obstacle while other balls remain. The break is luck, so it is let off.
@@ -164,6 +189,7 @@ static func _charge_eight(ctx: Dictionary, out: Dictionary) -> void:
 static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionary, kick: bool, left_after: int, eight_early: bool, out: Dictionary) -> Dictionary:
 	var perks: Array = ctx.get("perks", [])
 	var imbues: Dictionary = ctx.get("imbues", {})
+	var imbue_level: Dictionary = ctx.get("imbue_level", {})
 	var boss: String = ctx.get("boss", "")
 	var rng: RandomNumberGenerator = ctx.get("rng", null)
 	var hot: int = ctx.get("hot_pocket", -1)
@@ -245,7 +271,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		var tags: Array = []
 		var weight := (3 if perks.has("moneyball") else Catalog.NUMBER_WEIGHT)
 		if imbues.get(n, "") == "heavy":
-			weight = 4
+			weight = int(imbue_level.get(n, imbue_level.get(str(n), 3)))   # Weighted climbs with every sink
 		var value := float(Catalog.ball_points(n, weight)) + float(ctx.get("catalyst", 0.0))
 		# Rotation: the lowest ball on the table pays like the highest one.
 		if perks.has("rotation") and facts.lowest and int(ctx.get("highest", -1)) > n:
@@ -308,30 +334,54 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		# Imbues.
 		match imbues.get(n, ""):
 			"gold":
-				money += 2
+				money += 1 + mini(int(imbue_level.get(n, imbue_level.get(str(n), 0))), 4)
+				out.gilded_sunk.append(n)
 			"heavy":
-				pass   # Weighted: its number already counted ×4 above
+				out.weighted_sunk.append(n)   # its number already counted above
 			"glass":
 				x *= 3.0
-				if rng != null and rng.randf() < 0.25:
+				var cracks := int(imbue_level.get(n, imbue_level.get(str(n), 0)))
+				if rng != null and rng.randf() < 0.25 * (1 + cracks):
 					out.shattered.append(n)
+				else:
+					out.hairline_sunk.append(n)
 			"ember":
-				out.heat_gain += 1
+				out.heat_gain += 2
 			"vein":
-				pre_chain += 1.0
-				value += 30.0
+				value += 20.0
+				var by_ball := int(toucher.get(n, 0))
+				if by_ball != 0 and by_ball != 8:
+					out.vein_spread.append(by_ball)
+			"mirror":
+				if by != 0:
+					value += float(Catalog.ball_points(by, weight) - Catalog.ball_points(n, weight))
+					tags.append("Mirror")
 			"lucky":
-				if rng != null and rng.randf() < 1.0 / 3.0:
-					x *= 4.0
-					tags.append("Lucky")
+				if rng != null:
+					var lm: Dictionary = ctx.get("lucky_mult", {})
+					var mult := float(lm.get(n, lm.get(str(n), 2)))
+					if rng.randf() < 0.5:
+						x *= mult
+						tags.append("Lucky ×%d" % int(mult))
+						out.lucky_hits.append(n)
+					else:
+						out.lucky_misses.append(n)
+			"jinxed":
+				x *= 4.0
+				out.jinxed = true
+			"pawned":
+				x = 0.0
+				money += 4
 			"twin":
 				value += float(Catalog.ball_points(n, weight))
+				out.twin_hops.append(n)
 			"frosted":
 				out.frost = true
 			"leaded":
 				value += 45.0
 			"bounty":
 				money += heat
+				out.bounty_cash += 2
 			"starry":
 				bonus_after += 0.5
 		# Special balls.
@@ -428,7 +478,8 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		})
 		chain += AFTER_POT + bonus_after
 		seen_pocket[k] = true
-		out.pocket_list.append(k)
+		if k < 6:
+			out.pocket_list.append(k)
 		idx += 1
 	if idx == 0 and not stirred:
 		out.foul = EIGHT_FOUL

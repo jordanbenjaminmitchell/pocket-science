@@ -56,19 +56,37 @@ func _go() -> void:
 	for id in Catalog.BOSSES:
 		check(Catalog.LABS.has(Catalog.BOSSES[id].lab), "%s uses a known lab" % id)
 	print("imbues")
-	check(score(h5, {"imbues": {5: "heavy"}}).total == 30, "Weighted: the number counts ×4")
-	check(score(h5, {"imbues": {5: "gold"}}).money == 2, "gilded pays")
+	check(score(h5, {"imbues": {5: "heavy"}}).total == 25, "Weighted: the number counts ×3 to start")
+	check(score(h5, {"imbues": {5: "heavy"}, "imbue_level": {5: 5}}).total == 35, "and ×5 after two sinks")
+	check(score(h5, {"imbues": {5: "gold"}}).money == 1, "Gilded pays $1")
+	check(score(h5, {"imbues": {5: "gold"}, "imbue_level": {5: 3}}).money == 4, "plus $1 per table in a row")
 	check(score(h5, {"imbues": {5: "twin"}}).total == 40, "twin doubles the value")
-	check(score(h5, {"imbues": {5: "vein"}}).total == 100, "vein adds Chain and value")
+	check(score(h5, {"imbues": {5: "vein"}}).total == 40, "Vein adds +20")
+	var vs2 := score([{"type": "ball", "a": 0, "b": 3}, {"type": "ball", "a": 3, "b": 5}, pot(5, 0)], {"imbues": {5: "vein"}})
+	check((vs2.vein_spread as Array).has(3), "and spreads to the ball that knocked it in")
+	var mir := score([{"type": "ball", "a": 0, "b": 15}, {"type": "ball", "a": 15, "b": 5}, pot(5, 0)], {"imbues": {5: "mirror"}})
+	check(mir.total == 40, "Mirror pays what the ball that hit it is worth (%d)" % mir.total)
 	check(score(h5, {"imbues": {5: "glass"}}).total == 60, "glass ×3")
-	check(score(h5, {"imbues": {5: "ember"}}).heat_gain == 1, "ember adds Heat")
+	check(score(h5, {"imbues": {5: "ember"}}).heat_gain == 2, "Kindled adds 2 Heat")
+	check(score([{"type": "ball", "a": 0, "b": 3}], {"imbues": {5: "ember"}, "on_table": [3, 5]}).kindled_live, "and a miss with it on the table is flagged")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
 	var lucky := 0
 	for i in 3000:
-		if score(h5, {"imbues": {5: "lucky"}, "rng": rng}).total == 80:
+		if score(h5, {"imbues": {5: "lucky"}, "rng": rng}).total == 40:
 			lucky += 1
-	check(lucky > 850 and lucky < 1150, "lucky fires about 1 in 3 (%d/3000)" % lucky)
+	check(lucky > 1350 and lucky < 1650, "Lucky pays ×2 about 1 in 2 (%d/3000)" % lucky)
+	var climbed := 0
+	for i in 400:
+		if score(h5, {"imbues": {5: "lucky"}, "lucky_mult": {5: 3}, "rng": rng}).total == 60:
+			climbed += 1
+	check(climbed > 150 and climbed < 250, "after misses it pays ×3 (%d/400)" % climbed)
+	var jx := score(h5, {"imbues": {5: "jinxed"}})
+	check(jx.total == 80 and jx.jinxed, "Jinxed pays ×4 and flags the Heat cost")
+	var pw := score(h5, {"imbues": {5: "pawned"}})
+	check(pw.total == 0 and pw.money == 4, "Pawned pays $4 instead of points")
+	var boom := score([{"type": "ball", "a": 0, "b": 5}, {"type": "shatter", "a": 5, "at": Vector2.ZERO, "exploded": true}], {"imbues": {5: "volatile"}})
+	check(boom.scored and boom.total == 20 and (boom.potted as Array).has(5) and (boom.lost_balls as Array).has(5), "an exploded Volatile ball counts as sunk and leaves the set")
 	print("bounties")
 	var cases := {
 		"quarter": hit([1], 30), "half": hit([1], 30), "triple": hit([1, 2, 3]), "stripe": hit([11]), "solid": hit([3]),

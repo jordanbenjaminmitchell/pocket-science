@@ -51,6 +51,9 @@ var ball_set: Array = []        # the balls this run racks; starts as 1-15
 var table_mods := {}            # this table only: placed bumpers and portals, wider pockets
 var ball_kinds := {}            # special ball number (16+) -> type
 var seed_growth := {}           # Seed balls: times sunk, keyed by number as a string
+var lucky_mult := {}            # Lucky Imbue: ball number -> what its next win pays (2, 3, 4...)
+var imbue_level := {}           # Weighted level, Hairline cracks, Gilded streak: ball number -> count
+var gilded_this_table := {}     # Gilded balls sunk on this table
 var removals := 0               # balls removed in the Pro Shop this run
 var frost_shield := false       # this table: the next miss keeps Heat
 var heart_used := false         # this table: a Heart ball has already given Chalk
@@ -97,6 +100,9 @@ func start(s: int, cue_id: String = "maple", handicap_level: int = 0) -> void:
 	ball_set = range(1, 16).filter(func(n): return not (c.get("remove", []) as Array).has(n))
 	ball_kinds = {}
 	seed_growth = {}
+	lucky_mult = {}
+	imbue_level = {}
+	gilded_this_table = {}
 	removals = 0
 	Catalog.kinds = ball_kinds
 	for t in c.get("add", []):
@@ -142,6 +148,10 @@ func current() -> Dictionary:
 
 
 func begin_table() -> void:
+	for n in imbues:
+		if imbues[n] == "gold" and not gilded_this_table.has(n) and table_index > 0:
+			imbue_level.erase(n)
+	gilded_this_table = {}
 	score = carry
 	carry = 0
 	heat = 0
@@ -355,6 +365,8 @@ func remove_ball(n: int) -> bool:
 		return false
 	ball_set.erase(n)
 	imbues.erase(n)
+	imbue_level.erase(n)
+	lucky_mult.erase(n)
 	ball_kinds.erase(n)
 	Catalog.kinds = ball_kinds
 	return true
@@ -412,6 +424,72 @@ func buy_imbue(i: int, n: int) -> String:
 	money -= item.cost
 	item.sold = true
 	return ""
+
+
+## Moves an Imbue from one ball to another, with its level, if the target is free.
+func _move_imbue(from: int, to: int) -> bool:
+	if to == from or to == 8 or not ball_set.has(to) or imbues.has(to) or not imbues.has(from):
+		return false
+	imbues[to] = imbues[from]
+	imbues.erase(from)
+	if imbue_level.has(from):
+		imbue_level[to] = imbue_level[from]
+		imbue_level.erase(from)
+	return true
+
+
+## After a scoring shot: Weighted and Hairline climb, Gilded keeps its streak,
+## Spark arcs, Vein spreads and Twin hops. Returns lines for the table.
+func _imbues_after(res: Dictionary) -> Array:
+	var said: Array = []
+	for n in res.get("weighted_sunk", []):
+		imbue_level[n] = mini(int(imbue_level.get(n, 3)) + 1, 8)
+		said.append("Weighted %d-ball: number now counts ×%d" % [n, imbue_level[n]])
+	for n in res.get("hairline_sunk", []):
+		imbue_level[n] = mini(int(imbue_level.get(n, 0)) + 1, 3)
+	for n in res.get("gilded_sunk", []):
+		imbue_level[n] = mini(int(imbue_level.get(n, 0)) + 1, 4)
+		gilded_this_table[n] = true
+	for j in res.get("spark_jumps", []):
+		if _move_imbue(int(j[0]), int(j[1])):
+			said.append("Spark overloaded: it arced to the %d-ball" % int(j[1]))
+	for to in res.get("vein_spread", []):
+		if int(to) != 8 and ball_set.has(int(to)) and not imbues.has(int(to)):
+			imbues[int(to)] = "vein"
+			said.append("Vein spread to the %d-ball" % int(to))
+	for n in res.get("twin_hops", []):
+		var pair := int(n) + 8 if int(n) < 8 else int(n) - 8
+		if int(n) <= 15 and _move_imbue(int(n), pair):
+			said.append("Twin hopped to the %d-ball" % pair)
+	return said
+
+
+## Lucky: a win resets it to ×2 on its ball. A miss sends it to a random ball with
+## no Imbue, one step richer (×3, ×4...); with nowhere to go it climbs where it is.
+## Returns [[from, to, mult], ...] for the shot log.
+func _move_lucky(res: Dictionary) -> Array:
+	var moves: Array = []
+	for n in res.get("lucky_hits", []):
+		lucky_mult.erase(int(n))
+	for n in res.get("lucky_misses", []):
+		var m := int(lucky_mult.get(int(n), 2)) + 1
+		lucky_mult.erase(int(n))
+		var free: Array = ball_set.filter(func(b): return b != 8 and b != int(n) and not imbues.has(b))
+		var to := int(n)
+		if not free.is_empty():
+			to = free[rng.randi_range(0, free.size() - 1)]
+			imbues.erase(int(n))
+			imbues[to] = "lucky"
+		lucky_mult[to] = m
+		moves.append([int(n), to, m])
+	return moves
+
+
+func _keys_out(dct: Dictionary) -> Dictionary:
+	var o := {}
+	for k in dct:
+		o[str(k)] = dct[k]
+	return o
 
 
 func set_full() -> bool:
@@ -771,6 +849,11 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		total_score += res.total
 		heat += 1 + int(res.get("heat_gain", 0))
 		best_heat = maxi(best_heat, heat)
+		if res.get("jinxed", false):
+			heat = int(heat / 2.0)   # Jinxed: the big pay costs half your Heat
+		out["lucky_moves"] = _move_lucky(res)
+		out["imbue_moves"] = _imbues_after(res)
+		heat = maxi(0, heat - int(res.get("bounty_cash", 0)))   # Bounty cashes Heat out
 		element_mix = res.get("element_mix", [])
 		solid_run = int(res.get("solid_run", solid_run))
 		if res.get("frost", false):
@@ -814,7 +897,10 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 			if perks.has("migration") and heat >= 5:
 				heat -= 1   # Stay Hot: on fire, a miss only costs 1
 			else:
-				heat = int(heat / 2.0)   # a miss cools the table but never wipes it out
+				heat = 0 if res.get("kindled_live", false) else int(heat / 2.0)   # a miss halves Heat; Kindled on the table wipes it
+		for n in imbues:
+			if imbues[n] == "heavy":
+				imbue_level.erase(n)   # Weighted drops back to ×3
 		element_mix = []
 	score = maxi(0, score - int(res.get("penalty", 0)))
 	money = maxi(0, money - int(res.get("eight_fine", 0)))
@@ -862,6 +948,10 @@ func build_layout() -> TableLayout:
 ## Applies lab, perk and anomaly physics. Call after the balls are racked.
 func apply_physics(s: PoolSim) -> void:
 	var t := current()
+	s.volatile = {}
+	for n in imbues:
+		if imbues[n] == "volatile":
+			s.volatile[int(n)] = true
 	# Absolute values, because this also runs mid-table after temporary effects.
 	s.roll_decel = 170.0
 	s.drag = 0.1
@@ -965,7 +1055,7 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 		"target": target(), "on_table": on_table, "total_pots": total_pots,
 		"solid_run": solid_run, "stripe_run": stripe_run,
 		"boost": next_boost, "all_hot": next_all_hot, "removed": removed_count(), "called": called,
-		"specials": ball_kinds.size(), "seed_growth": seed_growth,
+		"specials": ball_kinds.size(), "seed_growth": seed_growth, "lucky_mult": lucky_mult, "imbue_level": imbue_level,
 		"cue_start": s.pos[ci] if ci >= 0 else Vector2.ZERO,
 	}
 
@@ -997,7 +1087,7 @@ func to_dict() -> Dictionary:
 		"best_shot": best_shot, "tables_cleared": tables_cleared, "best_heat": best_heat,
 		"phase": phase, "carry": carry, "record_id": record_id, "daily_key": daily_key,
 		"handicap": handicap, "total_score": total_score, "items": items, "ball_set": ball_set,
-		"ball_kinds": _kinds_out(), "seed_growth": seed_growth, "removals": removals, "tools": tools,
+		"ball_kinds": _kinds_out(), "lucky_mult": _keys_out(lucky_mult), "imbue_level": _keys_out(imbue_level), "seed_growth": seed_growth, "removals": removals, "tools": tools,
 	}
 	if phase == "table":
 		d["table"] = {
@@ -1120,6 +1210,12 @@ func load_dict(d: Dictionary) -> bool:
 				ball_kinds[int(k)] = bk[k]
 	Catalog.kinds = ball_kinds
 	seed_growth = d.get("seed_growth", {}) if typeof(d.get("seed_growth", {})) == TYPE_DICTIONARY else {}
+	lucky_mult = {}
+	for k in d.get("lucky_mult", {}):
+		lucky_mult[int(k)] = int(d.lucky_mult[k])
+	imbue_level = {}
+	for k in d.get("imbue_level", {}):
+		imbue_level[int(k)] = int(d.imbue_level[k])
 	removals = int(d.get("removals", 0))
 	# v1 saves only knew "start of table".
 	phase = str(d.get("phase", "table"))
