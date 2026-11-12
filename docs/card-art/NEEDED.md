@@ -1,4 +1,4 @@
-# Card art: status
+# Card art and Element rework: handoff
 
 **All art from the 2026-11-12 brief is done.** That covers the Element tiles (atomic numbers, group colours, element looks, new names and short descriptions), the 23 temporary symbols, the Catalyst tiles, special balls drawn as balls, the starting cue tiles, the side bet cards, the table art and the music. Everything is drawn in code:
 
@@ -7,6 +7,74 @@
 - Table art: `BoardArt` in [src/view/board_art.gd](../../src/view/board_art.gd)
 
 The Element names and the Elements whose rules changed are in [docs/ELEMENTS_REWORK.md](../ELEMENTS_REWORK.md).
+
+## For the coding chat: read this first (2026-11-12)
+
+The art chat also changed game code, and everything is merged on master: commits `8a39668` and `6473061`. All 25 test suites pass. **None of the rule changes have been played yet.** [docs/ELEMENTS_REWORK.md](../ELEMENTS_REWORK.md) lists every Element with its old and new rules.
+
+### Rules that changed (Elements)
+
+The user asked for Elements that change the physics or trigger on a moment rather than add points. Elements stay passive: nothing to press.
+
+| Element (id) | Now | Was |
+|---|---|---|
+| Hydrogen Balloon (`featherweight`) | Object balls at 70% weight | 75%. It took Hydrogen (Z 1) from `catalyst`, which is now Beryllium (Z 4) |
+| Lead Anchor (`laststripe`) | The 8 weighs 300% and pockets reject it while other balls remain | Last stripe ×5 |
+| Holmium Magnet (`hothand`) | At Heat 3+, pockets pull rolling balls | +30 at Heat 3+ |
+| Tungsten Core (`lever`) | Stripes weigh 140% and lose no speed off cushions | Long sinks ×1.5 |
+| Rubidium Rush (`racing`) | Stripes weigh 70% and have 80% grip | Stripes at 60%+ power ×2 |
+| Dysprosium Domino (`domino`) | Ball-to-ball restitution 1.0 | Combinations +30 |
+| Gallium Glide (`collector`) | Cue ball at 70% grip (rolls further) | +0.5 Chain per pocket used |
+| Xenon Flash (`stillness`) | First pause each table: every rolling ball ×1.3 speed | +0.5 Chain a pause |
+| Francium Fizz (`followthru`) | A scratch with 2+ balls sunk still scores, with no Chalk lost | Follow shots +0.5 Chain |
+| Berkelium Break (`afterburner`) | Ball in hand anywhere for the break, and after a break scratch | Break +3 Chain |
+| Neodymium Magnet (`elastic`) | The rolling cue ball tugs nearby object balls | +0.25 Chain a hit (was Neodymium Speaker) |
+| Lithium Cell (`lowball`) | Balls 1–3 lose no speed off cushions | Balls 1–3 +45 |
+| Uranium Reactor (`power`) | At 85%+ power, the first ball struck leaves 20% faster | +1 Chain at 85%+ |
+| Polonium Halo (`lastcall`) | Also: pockets pull the 8 when it is the last ball | ×5 and $5 only (still has those) |
+
+All 100 Elements were also renamed "element + noun" (for example Hydrogen Balloon, Iron Fist), and the cue descriptions use the new names. Rarity, cost and family changes are listed in ELEMENTS_REWORK.md. Two keep the family counts the tests expect: Silver Tongue moved to Economy, and Tungsten Core to Stripes.
+
+### Where the code changed
+
+- **`src/sim/pool_sim.gd`:** new settings. All of them are copied by `clone()`, so the shot prediction matches.
+  - `grip`: per-ball cloth friction, also used in `stop_distance`.
+  - `anchor8`: in `_rejects`, pockets turn the 8 away while other balls remain.
+  - `cue_magnet`: in `_forces`, before the resting-ball check, so resting balls get tugged.
+  - `first_boost`: applied at the cue's first contact.
+- **`src/game/run_state.gd`:** `apply_physics` sets all of the Element physics. It now resets `ball_e` on every call.
+  - Lithium and Tungsten use `bounce`. Polonium's pull is checked after each shot, so it switches on when the 8 is alone.
+  - New `first_boost(power)` for Uranium.
+  - New `flash_used`, reset in `begin_table` and **not saved**, so reloading mid-table gives Xenon's flash again.
+- **`src/game/scorer.gd`:** removed the Chain bonuses for Gallium (`collector`), Uranium (`power`), Neodymium (`elastic`) and Berkelium (`afterburner`).
+  - A scratch is no longer a foul when Francium is held and 2+ balls went in. The result carries `scratch_saved`.
+  - New helper `perks_of(ctx)`.
+- **`src/main.gd`:**
+  - Xenon Flash runs in `_hold`, with a banner.
+  - Berkelium: every `_begin_place(true)` is now `_begin_place(not run.perks.has("afterburner"))`. So is the break-scratch call.
+  - Uranium: `sim.first_boost` and `fc_sim.first_boost` are set just before each strike.
+  - The "Now:" lines for Gallium (removed) and Holmium were updated.
+  - `view.set_lab(lab, board_id)`.
+- **`src/view/table_view.gd`:** `set_lab(id, board := "")` draws the board's own decal from `BoardArt.DECALS` when it has one.
+- **`src/audio/sfx.gd`:** `TRACKS` covers all 47 boards. 13 files were renamed (black-ice.ogg is now superfluid.ogg, and so on) and 21 are new.
+  - The new boards use ids that are only guesses: `venturi`, `erbridge`, `parabolic`, `whisper`, `membrane`, `sierpinski`, `mobius`, `maxwell`, `chain`, `lorentz`, `foucault`, `galton`, `spiral`, `tesla`, `gulf`, `meissner`, `tectonic`, `lattice`, `stellated`, `lever`, `escape`.
+  - Rename them in `TRACKS` and `BoardArt` if your `BOSSES` ids differ.
+- **`src/ui/icon_art.gd`:** new icons for the reworked Elements.
+- **Tests updated:** `test_sim`, `test_eight_and_suits`, `test_scoring`, `test_items` and `test_tiles`, with new checks for each rework.
+
+### Please check
+
+- **Balance:** about 14 Elements lost their points for physics. Number, stripe and combo builds have less raw scoring now.
+- **Feel in play:**
+  - Is the magnet's tug (`cue_magnet`, strength 3200, reach 150) too strong or too weak?
+  - Is Xenon's ×1.3 too much?
+  - Does Lead Anchor's rattle-out look right in the table view? It uses the Moon and Sun ball reject path.
+- **Flaky test:** `test_input` "ball is rolling" failed once on its own, even without these changes. It passes in full runs.
+
+### Wiring still open (optional)
+
+- `BoardArt` Sharks, moving parts, felts and rail materials, for when those boards exist.
+- Cue tiles on the cue-select screen: `TileArt.new().setup("cue", id)`.
 
 ## Preview sheets (2× size)
 
@@ -126,11 +194,6 @@ The Sharks, moving parts, felts and rails are ready for the boards when they are
 - `PS_BARS=64` and `--quality 2.5` bring back the long form.
 - `Sfx.TRACKS` maps every board id to its file, including the boards not built yet.
 - **Retired tracks are kept** (Frozen Lake, Old Slate, The Hump, Rotation Night, The Iron Rack, Lights Out, The Hustler), because those tables are still in the game.
-
-## Still to do (code, not art)
-
-- Show `BoardArt`'s Sharks, moving parts, felts and rails when those boards are built.
-- If you want, show the cue tiles on the cue-select screen. `TileArt.new().setup("cue", id)` returns one.
 
 ## Rendering the sheets again
 
