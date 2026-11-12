@@ -25,7 +25,7 @@ func _go() -> void:
 	var m := Meta.new()
 	m.load_file()
 	var locked := m.locked_perks()
-	check(locked.size() >= 30 and Catalog.PERKS.size() - locked.size() >= 25, "fresh profile: starter perks available, the rest locked (%d locked)" % locked.size())
+	check(locked.size() >= 30 and Catalog.PERKS.size() - locked.size() >= 25, "fresh profile: starter Elements available, the rest locked (%d locked)" % locked.size())
 	check(m.cue_unlocked("maple") and not m.cue_unlocked("posts") and not m.cue_unlocked("gilded"), "fresh profile: only Classic Maple")
 	for id in locked:
 		check(Catalog.PERKS.has(id), "locked id %s exists" % id) if not Catalog.PERKS.has(id) else null
@@ -39,7 +39,7 @@ func _go() -> void:
 		for it in run.shop:
 			if it.type == "perk" and locked.has(it.id):
 				leaked += 1
-	check(leaked == 0, "shop never offers locked perks (200 rolls)")
+	check(leaked == 0, "shop never offers locked Elements (200 rolls)")
 	# Milestones.
 	run.begin_table()
 	var bank_shot := {"scored": true, "potted": [3], "total": 40, "lines": [], "banks": 1}
@@ -82,7 +82,7 @@ func _go() -> void:
 	var dm := Meta.new()
 	check(not dm.locked_perks().is_empty() and not dm.cue_unlocked("black") and dm.handicap_cap() == 0 and dm.is_intro(), "a new profile starts with things locked")
 	dm.dev_mode = true
-	check(dm.locked_perks().is_empty() and dm.cue_unlocked("black") and dm.handicap_cap() == Catalog.HANDICAPS.size() - 1 and not dm.is_intro(), "Developer mode opens every Perk, cue and difficulty and skips the introduction")
+	check(dm.locked_perks().is_empty() and dm.cue_unlocked("black") and dm.handicap_cap() == Catalog.HANDICAPS.size() - 1 and not dm.is_intro(), "Developer mode opens every Element, cue and difficulty and skips the introduction")
 	dm.dev_mode = false
 	check(not dm.locked_perks().is_empty(), "and turning it off locks them again (nothing was earned)")
 	print("logo")

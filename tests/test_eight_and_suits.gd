@@ -51,7 +51,7 @@ func _initialize() -> void:
 	run.apply_shot({"scored": false, "foul": Scorer.EIGHT_FOUL, "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [8], "shattered": [], "lines": [], "penalty": 500}, false, 9, true)
 	check(run.score == 0, "the score never goes below zero")
 
-	print("8-ball Perks")
+	print("8-ball Elements")
 	r = score(h8, {"perks": ["eight"]})
 	check(r.scored and r.total == 26 and r.penalty == 0 and r.money == 3, "Behind the 8 removes the penalty, pays normally and pays $3")
 	r = score(h8, {"perks": ["darkhorse"]})
@@ -95,8 +95,8 @@ func _initialize() -> void:
 		if fam.has(f):
 			fam[f] += 1
 		check(IconArt.MOTIFS.has(id), "%s has an icon" % id) if not IconArt.MOTIFS.has(id) else null
-	check(fam.solid == 7 and fam.stripe == 7, "seven Perks each for solids and stripes")
-	check(fam.eight == 8, "eight Perks in the 8-ball set")
+	check(fam.solid == 7 and fam.stripe == 7, "seven Elements each for solids and stripes")
+	check(fam.eight == 8, "eight Elements in the 8-ball set")
 
 	print("racks")
 	var sim := PoolSim.new(TableLayout.new().build(1.0, []))

@@ -110,8 +110,8 @@ const PERKS := {
 	"packrat": {"name": "Pack Rat", "r": 0, "cost": 4, "fam": "gear", "desc": "+1 Tool slot and +1 Consumable slot."},
 	"quartermaster": {"name": "Quartermaster", "r": 0, "cost": 4, "fam": "gear", "desc": "Items cost $1 less."},
 	"tinkerer": {"name": "Tinkerer", "r": 1, "cost": 6, "fam": "gear", "desc": "Start every table with a random Consumable, if you have room."},
-	"enchanter": {"name": "Enchanter", "r": 0, "cost": 4, "fam": "imbue", "desc": "Imbues cost $2 less."},
-	"secondcoat": {"name": "Second Coat", "r": 1, "cost": 7, "fam": "imbue", "desc": "Imbued balls score ×1.5."},
+	"enchanter": {"name": "Enchanter", "r": 0, "cost": 4, "fam": "imbue", "desc": "Isotopes cost $2 less."},
+	"secondcoat": {"name": "Second Coat", "r": 1, "cost": 7, "fam": "imbue", "desc": "Isotope balls score ×1.5."},
 	"goldrush": {"name": "Gold Rush", "r": 1, "cost": 6, "fam": "special", "desc": "Special balls score ×2."},
 	"menagerie": {"name": "Menagerie", "r": 1, "cost": 6, "fam": "special", "desc": "Shots start with +0.25 Chain for each special ball in your set."},
 	"alchemy": {"name": "Alchemy", "r": 2, "cost": 8, "fam": "special", "desc": "After each table, one plain ball in your set (never the 8) turns into a random special ball."},
@@ -161,8 +161,8 @@ const IMBUES := {
 	"heavy": {"name": "Weighted", "cost": 3, "color": Color(0.75, 0.78, 0.85), "desc": "Worth 10 + 3 × its number, and the number counts one more time with every sink (×4, ×5...). Any miss drops it back to ×3."},
 	"glass": {"name": "Hairline", "cost": 5, "color": Color(0.7, 0.85, 1.0), "desc": "Scores ×3 when sunk, but the coating may crack off: 1 in 4 the first time, 2 in 4 the next, then 3 in 4."},
 	"ember": {"name": "Kindled", "cost": 5, "color": Color(1.0, 0.45, 0.2), "desc": "+2 Heat when sunk. But while it is still on the table, a miss wipes your Heat to 0 instead of halving it."},
-	"vein": {"name": "Vein", "cost": 5, "color": Color(1.0, 0.55, 0.95), "desc": "Worth +20 when sunk, and it spreads onto the ball that knocked it in (if that ball has no Imbue)."},
-	"lucky": {"name": "Lucky", "cost": 4, "color": Color(0.35, 0.95, 0.5), "desc": "1 in 2 chance to score ×2 when sunk. If it misses, Lucky jumps to another ball with no Imbue and the next win scores ×3, then ×4, and so on."},
+	"vein": {"name": "Vein", "cost": 5, "color": Color(1.0, 0.55, 0.95), "desc": "Worth +20 when sunk, and it spreads onto the ball that knocked it in (if that ball has no Isotope)."},
+	"lucky": {"name": "Lucky", "cost": 4, "color": Color(0.35, 0.95, 0.5), "desc": "1 in 2 chance to score ×2 when sunk. If it misses, Lucky jumps to another ball with no Isotope and the next win scores ×3, then ×4, and so on."},
 	"volatile": {"name": "Volatile", "cost": 4, "color": Color(1.0, 0.62, 0.0), "desc": "The first time anything hits this ball it explodes: it counts as sunk (points and Heat), but it leaves your set for good."},
 	"jinxed": {"name": "Jinxed", "cost": 3, "color": Color(0.55, 0.3, 0.9), "desc": "Scores ×4 when sunk, but sinking it halves your Heat."},
 	"mirror": {"name": "Mirror", "cost": 4, "color": Color(0.8, 0.95, 0.95), "desc": "Scores what the ball that hit it is worth instead of its own value: a low ball struck by the 15 scores like the 15."},
@@ -308,17 +308,12 @@ const BOSSES := {
 	"iron": {"name": "The Iron Rack", "tier": 3, "lab": "dense", "anomaly": "lead", "desc": "Object balls are 60% heavier. Every ball is worth +30."},
 	"lights": {"name": "Lights Out", "tier": 3, "lab": "current", "anomaly": "blind", "desc": "With the lights out, no pocket runs hot. Every sink scores ×1.5."},
 	"hustler": {"name": "The Hustler", "tier": 3, "lab": "magnetlab", "anomaly": "heavycue", "desc": "A heavy cue ball, and the house skims 15% of every sink."},
-	"elements": {"name": "The Element Table", "tier": 9, "lab": "element", "anomaly": "elements", "desc": "Each corner pocket holds an element. Sink them in the right order to fuse multipliers. A miss clears the mix."},
+	"elements": {"name": "The Clockwork Table", "tier": 9, "lab": "element", "anomaly": "elements", "desc": "The pockets are numbered 1 to 6, clockwise. Sink into the next one in order to tick the clock: ticks in a row score ×1.5, ×2, ×2.5 and on. Any other pocket stops the clock."},
 	"final": {"name": "The Grand Final", "tier": 9, "lab": "final", "anomaly": "cursed8", "desc": "The 8 goes last. Sink it early and lose a Chalk; sink it last for ×5."},
 }
 
-## Element Table: corners hold an element and side pockets copy your last one.
-const POCKET_ELEMENTS := ["fire", "wild", "water", "earth", "wild", "air"]
-const ELEMENTS := {
-	"fire": {"name": "Fire", "color": Color(1.0, 0.45, 0.15)}, "water": {"name": "Water", "color": Color(0.3, 0.6, 1.0)},
-	"earth": {"name": "Earth", "color": Color(0.6, 0.85, 0.35)}, "air": {"name": "Air", "color": Color(0.85, 0.9, 1.0)},
-	"wild": {"name": "Copy", "color": Color(0.9, 0.75, 1.0)},
-}
+## Clockwork Table: the pockets in clock order (top-left, top, top-right, then round).
+const CLOCK_ORDER := [0, 1, 2, 5, 4, 3]
 const COMPOUNDS := {"fire+water": "Steam", "earth+fire": "Lava", "air+fire": "Blaze", "earth+water": "Clay", "air+water": "Storm", "air+earth": "Dust"}
 
 ## Side bets: one is dealt face down each table. You can bet the table's stake
@@ -380,7 +375,7 @@ const TABLES := [
 
 const FAMILY_NAMES := {
 	"bank": "Banks & cushions", "cue": "Cue control", "combo": "Combos & clusters", "streak": "Streaks", "heat": "Heat",
-	"pocket": "Pockets", "number": "Ball numbers", "solid": "Solids", "stripe": "Stripes", "eight": "The 8-ball", "clear": "Clearing your set", "gear": "Gear", "imbue": "Imbues", "special": "Special balls", "pause": "Pausing", "money": "Economy", "risk": "Risk & scaling",
+	"pocket": "Pockets", "number": "Ball numbers", "solid": "Solids", "stripe": "Stripes", "eight": "The 8-ball", "clear": "Clearing your set", "gear": "Gear", "imbue": "Isotopes", "special": "Special balls", "pause": "Pausing", "money": "Economy", "risk": "Risk & scaling",
 	"physics": "Physics", "utility": "Utility",
 }
 

@@ -41,7 +41,9 @@ var pebbles: Array = []       # Gravity Pebbles this shot
 var sink_tags: Array = []     # [pocket, text]: the score of every predicted sink
 var heat_level := 0           # FireFx tier: the table burns from On fire up
 var hot_pocket := -1
-var element_pockets: Array = []   # Element Table: one element id per pocket
+var clock_on := false            # Clockwork Table: number the pockets and mark the next
+var clock_pos := 0
+var clock_streak := 0
 var second_pocket := -1   # Two Pockets boss: also scores, shown with a cooler ring
 var hot_mult := 2
 var preview_text := ""
@@ -451,13 +453,17 @@ func _draw_cushions() -> void:
 			var w := font_bold.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			var lp := p + dir * -46.0
 			c.draw_string(font_bold, lp + Vector2(-w * 0.5, 6), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, hc)
-		if k < element_pockets.size():
-			var el: Dictionary = Catalog.ELEMENTS[element_pockets[k]]
-			var ec: Color = el.color
-			c.draw_arc(p, r + 6.0, 0, TAU, 40, Color(ec, 0.75), 3.0)
-			var et: String = el.name
-			var ew := font_bold.get_string_size(et, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
-			c.draw_string(font_bold, p + dir * -50.0 + Vector2(-ew * 0.5, 5), et, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, ec)
+		if clock_on and Catalog.CLOCK_ORDER.has(k):
+			var order: int = Catalog.CLOCK_ORDER.find(k)
+			var nxt: bool = order == clock_pos
+			var cc := Color(1.0, 0.85, 0.4) if nxt else Color(0.75, 0.8, 0.9, 0.8)
+			if nxt:
+				var pulse3 := 0.5 + 0.5 * sin(time * 4.0)
+				for i in 3:
+					c.draw_arc(p, r + 6.0 + i * 3.0 + pulse3 * 3.0, 0, TAU, 40, Color(cc, 0.55 - i * 0.15), 2.5)
+			var ct := str(order + 1) if not nxt else "%d · NEXT ×%s" % [order + 1, str(1.0 + 0.5 * (clock_streak + 1)).rstrip("0").rstrip(".")]
+			var cw := font_bold.get_string_size(ct, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+			c.draw_string(font_bold, p + dir * -50.0 + Vector2(-cw * 0.5, 6), ct, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, cc)
 		if k == second_pocket:
 			var pulse2 := 0.5 + 0.5 * sin(time * 5.0 + PI)
 			for i in 3:

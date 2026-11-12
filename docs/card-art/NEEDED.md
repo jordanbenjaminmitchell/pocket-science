@@ -1,6 +1,6 @@
 # Card art: status
 
-**Every card has art.** That is 189 tiles: all 100 Perks, 20 Imbues, 24 special balls, 21 Hustler's Kit items, 23 side bets and the face-down card back. Every tile is drawn in code by `TileArt` in [src/ui/tile_art.gd](../../src/ui/tile_art.gd); the data is the `TILES` table at the top. Preview sheets of every tile, at twice their real size, are in this folder (`perk-tiles-*.png`, `imbue-tiles-1.png`, `ball-tiles-*.png`, `item-tiles-*.png`, `bet-cards-*.png`).
+**Every card has art.** That is 189 tiles: all 100 Elements, 20 Isotopes, 24 special balls, 21 Hustler's Kit items, 23 side bets and the face-down card back. Every tile is drawn in code by `TileArt` in [src/ui/tile_art.gd](../../src/ui/tile_art.gd); the data is the `TILES` table at the top. Preview sheets of every tile, at twice their real size, are in this folder (`perk-tiles-*.png`, `imbue-tiles-1.png`, `ball-tiles-*.png`, `item-tiles-*.png`, `bet-cards-*.png`).
 
 [tests/test_tiles.gd](../../tests/test_tiles.gd) checks that every card has a tile, that no two cards share a symbol or a lettering effect, that every effect is drawn, and that each stat and name fits its tile.
 
@@ -18,11 +18,11 @@ All 91 re-letterings from the earlier list are in, with two changes where that l
 - **Stillness is SL**, not St: **St** already belongs to Stripes, and every other pair from Stillness was taken.
 - **Snowball is Sb**, not Sw, so Swap can have the natural **Sw**.
 
-Lucky Numbers' stat now says **Fibonacci +35**, matching its new card text. The Vein Imbue now spreads instead of adding Chain, so the mirror lettering moved to the new **Mirror** Imbue, and Vein's letter grows branching veins.
+Lucky Numbers' stat now says **Fibonacci +35**, matching its new card text. The Vein Isotope now spreads instead of adding Chain, so the mirror lettering moved to the new **Mirror** Isotope, and Vein's letter grows branching veins.
 
-## Imbues
+## Isotopes
 
-An Imbue offered before you choose its ball shows a question-mark ball, **Any ball**, and the name "*Spark Imbue*". Once a ball is chosen (or a new 11–15 arrives imbued), the tile shows that ball.
+An Isotope offered before you choose its ball shows a question-mark ball, **Any ball**, and the name "*Spark Isotope*". Once a ball is chosen (or a new 11–15 arrives imbued), the tile shows that ball.
 
 | Card | ID | Symbol | Stat | Lettering |
 |---|---|---|---|---|
@@ -102,9 +102,9 @@ An Imbue offered before you choose its ball shows a question-mark ball, **Any ba
 | Post | `item:post` | **Po** | Place a bumper | This table | a ball bouncing off a bumper post |
 | Portal Pair | `item:portal` | **PP** | Linked portals | Rolling balls | between a blue portal and an orange one (particles) |
 
-## Ball numbers on Perk tiles
+## Ball numbers on Element tiles
 
-Perks that name ball numbers float those balls either side of the symbol: Odd Balls, Even Money, Prime Cut, Lucky Numbers, Low Ball and High Roller. `TileArt.balls_for("perk", id)` lists the balls any Perk works on (also the solid, stripe and 8-ball Perks). In the game, resting the pointer on a Perk you own rings those balls on the table with light (`TableView.spotlight`).
+Elements that name ball numbers float those balls either side of the symbol: Odd Balls, Even Money, Prime Cut, Lucky Numbers, Low Ball and High Roller. `TileArt.balls_for("perk", id)` lists the balls any Element works on (also the solid, stripe and 8-ball Elements). In the game, resting the pointer on an Element you own rings those balls on the table with light (`TableView.spotlight`).
 
 ## Side bets
 
@@ -150,7 +150,7 @@ The periodic-tile versions below still exist in `TILES` (their `letter` is the p
 
 ## Particle effects
 
-Cards marked *(particles)* above have small moving particles: sparks, embers, snow, rain, swirling motes, twinkles and so on. Perks with particles: Clean House, Cold Start, Gold Rush, Inferno, Simmer, Stoker.
+Cards marked *(particles)* above have small moving particles: sparks, embers, snow, rain, swirling motes, twinkles and so on. Elements with particles: Clean House, Cold Start, Gold Rush, Inferno, Simmer, Stoker.
 
 They are drawn by `TileArt.Motes`, a layer over the lettering that calls the effect's `_p_<name>` method each frame. It draws nothing while `Fx.minimal_particles` is on (**Particles: minimum** or **Reduced motion**), and the tile is complete without them. The Gold ball's glint is a shader on the letters, not a particle.
 

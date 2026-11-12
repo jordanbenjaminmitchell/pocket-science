@@ -64,7 +64,7 @@ func _go() -> void:
 			check(name_w <= TileArt.SIZE.x - 12, "%s name \"%s\" fits the tile" % [key, tile._name()])
 			tile.free()
 	var probe := TileArt.new().setup("imbue", "spark", 0)
-	check(probe._name() == "Spark Imbue" and probe._acts_on() == "Any ball", "an Imbue before its ball is chosen says so")
+	check(probe._name() == "Spark Isotope" and probe._acts_on() == "Any ball", "an Isotope before its ball is chosen says so")
 	probe.free()
 	# Side bets as playing cards: real numbers in the wording, and everything fits.
 	check(BetCard.bet_text("quarter", 215) == "Score 54 points in one shot", "a quarter of 215 is worked out as 54 points")
@@ -93,7 +93,7 @@ func _go() -> void:
 	# The balls a Perk singles out match the scoring rules.
 	check(TileArt.balls_for("perk", "prime") == Catalog.PRIMES, "Prime Cut's balls are the primes")
 	check(TileArt.balls_for("perk", "fibonacci") == [1, 2, 3, 5, 8, 13], "Lucky Numbers' balls are the Fibonacci numbers")
-	check(TileArt.balls_for("perk", "side").is_empty(), "a Perk for any ball singles none out")
+	check(TileArt.balls_for("perk", "side").is_empty(), "an Element for any ball singles none out")
 	for id in TileArt.FLOAT_NUMBERS:
 		var nums := TileArt.balls_for("perk", id)
 		check(nums.size() >= 1 and nums.size() <= 8, "%s floats 1-8 numbers on its tile" % id)

@@ -27,8 +27,8 @@ const TERMS := {
 	"solid": {"title": "Solids", "text": "Balls 1 to 7, coloured all over."},
 	"stripe": {"title": "Stripes", "text": "Balls 9 to 15, with a coloured band around the middle."},
 	"eight": {"title": "The 8-ball", "text": "Avoid it: sinking the 8 while other balls remain costs 15% of the table's target."},
-	"perk": {"title": "Perk", "text": "A passive item that sits in one of your six slots."},
-	"imbue": {"title": "Imbue", "text": "An upgrade that stays on one ball all run; each ball holds one, and a loose Imbue lets you pick which."},
+	"perk": {"title": "Element", "text": "A passive item that sits in one of your six slots."},
+	"imbue": {"title": "Isotope", "text": "An upgrade that stays on one ball all run; each ball holds one, and a loose Isotope lets you pick which."},
 	"side_bet": {"title": "Side bet", "text": "An optional goal on each table that pays extra money."},
 	"english": {"title": "English", "text": "Spin from hitting the cue ball left or right of centre."},
 	"target": {"title": "Target", "text": "The score you must reach to clear this table."},
@@ -46,7 +46,7 @@ const WORDS := {
 	"break": "break", "rack": "rack",
 	"solid": "solid", "solids": "solid", "stripe": "stripe", "stripes": "stripe", "striped": "stripe",
 	"the 8": "eight", "8-ball": "eight",
-	"perk": "perk", "perks": "perk", "imbue": "imbue", "imbues": "imbue",
+	"perk": "perk", "perks": "perk", "element": "perk", "elements": "perk", "imbue": "imbue", "imbues": "imbue", "isotope": "imbue", "isotopes": "imbue",
 	"side bet": "side_bet", "side bets": "side_bet", "english": "english", "target": "target",
 }
 

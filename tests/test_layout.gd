@@ -34,9 +34,9 @@ func _geometry() -> void:
 	check(absf(table.get_center().x - 1000.0) <= 0.5, "table is centred across the screen")
 	check(absf(table.get_center().y - 450.0) <= 0.5, "table is centred down the screen")
 	check(w.panel_pos.x >= HOLE, "score panel clears a camera hole on the left")
-	check(w.perks_pos.x + w.perks_size.x <= 2000.0 - HOLE + 0.5, "Perks clear a camera hole on the right")
+	check(w.perks_pos.x + w.perks_size.x <= 2000.0 - HOLE + 0.5, "Elements clear a camera hole on the right")
 	check(w.panel_pos.x + w.panel_size.x <= table.position.x, "score panel does not cover the table")
-	check(w.perks_pos.x >= table.end.x, "Perks do not cover the table")
+	check(w.perks_pos.x >= table.end.x, "Elements do not cover the table")
 
 	check(not ScreenFit.solve(Vector2(1600, 900), true, 0.0).wide, "16:9 screens have nothing to widen")
 	check(not ScreenFit.solve(Vector2(1600, 1000), true, 0.0).wide, "taller screens stay Classic")
@@ -70,10 +70,10 @@ func _in_game() -> void:
 	g._rebuild_cards()
 	await process_frame
 	await process_frame
-	check(g.perk_row.get_child_count() == 6, "six Perk slots in the column")
-	check(g.perk_row.vertical, "Perks are stacked in Wide")
+	check(g.perk_row.get_child_count() == 6, "six Element slots in the column")
+	check(g.perk_row.vertical, "Elements are stacked in Wide")
 	var perks_bottom: float = g.bottom_bar.position.y + g.bottom_bar.size.y
-	check(perks_bottom <= 900.0, "the Perk column fits on screen (%.0f)" % perks_bottom)
+	check(perks_bottom <= 900.0, "the Element column fits on screen (%.0f)" % perks_bottom)
 	var panel_bottom: float = g.left_panel.position.y + g.left_panel.size.y * g.left_panel.scale.y
 	check(panel_bottom <= 900.0, "the score panel fits on screen (%.0f)" % panel_bottom)
 
@@ -89,8 +89,8 @@ func _in_game() -> void:
 	await process_frame
 	check(not g.fit.wide and root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_KEEP, "switching back restores Classic")
 	check(g.view.position == g.TABLE_ORIGIN, "the table returns to its Classic spot")
-	check(not g.perk_row.vertical, "Perks return to a row")
-	check(g.bottom_bar.size == Vector2(1226, 174), "the Perk bar shrinks back")
+	check(not g.perk_row.vertical, "Elements return to a row")
+	check(g.bottom_bar.size == Vector2(1226, 174), "the Element bar shrinks back")
 	check(absf(settings_panel.position.x + settings_panel.size.x * 0.5 - 800.0) <= 1.0, "an open pop-up follows the change")
 
 	g.settings.screen_layout = 1

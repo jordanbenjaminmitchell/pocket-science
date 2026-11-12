@@ -80,10 +80,10 @@ func _go() -> void:
 	check(fresh.entries.is_empty(), "damaged history is ignored, not fatal")
 	print("collection")
 	g.meta = Meta.new()
-	g.screens.tab = "Perks"
+	g.screens.tab = "Elements"
 	var rows: Array = g.screens._rows()
-	check(rows.size() == Catalog.PERKS.size(), "all perks listed")
-	check(rows.filter(func(r): return r.hint != "").size() == g.meta.locked_perks().size(), "locked perks show unlock hints")
+	check(rows.size() == Catalog.PERKS.size(), "all Elements listed")
+	check(rows.filter(func(r): return r.hint != "").size() == g.meta.locked_perks().size(), "locked Elements show unlock hints")
 	for t in MetaScreens.TABS:
 		g.screens.tab = t
 		check(g.screens._rows().size() > 0, "%s tab has entries" % t)

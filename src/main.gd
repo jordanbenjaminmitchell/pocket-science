@@ -313,7 +313,7 @@ func _explain_first_score(l: Dictionary) -> void:
 	var text := "%s: worth %s (10 + twice its number) × Chain %s (this shot: ×1, +0.5 per ball already sunk) × Heat %s (this table: +0.5× per scoring shot) = %d points." % [
 		l.label, _fmt(l.value), _fmt(l.chain), _fmt(l.heat), int(l.points)]
 	if float(l.x) != 1.0:
-		text += " Bonuses such as the hot pocket or Perks multiplied it by %s." % _fmt(l.x)
+		text += " Bonuses such as the hot pocket or Elements multiplied it by %s." % _fmt(l.x)
 	term_tip.show_text("How that ball scored", text, view.base_position + Vector2(TableLayout.W * 0.5, 60.0) * TABLE_SCALE, 12.0)
 
 
@@ -359,7 +359,7 @@ func _ball_info(n: int) -> Array:
 			parts.append("Right now it counts as the %d." % int(Catalog.faces.get(n, 0)))
 	var iso: String = run.imbues.get(n, "") if run != null else ""
 	if iso != "":
-		parts.append("Imbued with %s: %s" % [Catalog.IMBUES[iso].name, Catalog.IMBUES[iso].desc])
+		parts.append("Isotope with %s: %s" % [Catalog.IMBUES[iso].name, Catalog.IMBUES[iso].desc])
 	if n == 8:
 		parts.append(Glossary.sentence("eight"))
 	var pay := _ball_pay(n)
@@ -395,7 +395,7 @@ func _ball_pay(n: int) -> Array:
 	var extra: Array = []
 	var gain := int(full.total) - int(plain.total)
 	if gain > 0:
-		extra.append("+%d from your Perks and Imbues (%d in all)" % [gain, int(full.total)])
+		extra.append("+%d from your Elements and Isotopes (%d in all)" % [gain, int(full.total)])
 	if hot >= 0:
 		ctx["events"] = ev.call(hot)
 		var h := Scorer.score(ctx)
@@ -1028,7 +1028,7 @@ func _show_replace_picker(i: int) -> void:
 	v.add_theme_constant_override("separation", 10)
 	p.add_child(v)
 	v.add_child(_label("%s BALL - REPLACE WHICH?  ($%d + $%d)" % [str(bt.name).to_upper(), item.cost, run.removal_cost()], 24, col, F_PIXB))
-	var why := _label("Your set holds 15 balls, so making room costs the removal fee ($%d) on top of the ball ($%d). The %s ball (worth %d) takes the place of the one you pick, and any Imbue on that ball goes with it. Low balls are worth least; high balls are worth most." % [run.removal_cost(), item.cost, bt.name, int(bt.value)], 14, Color(0.8, 0.82, 0.85), F_REG)
+	var why := _label("Your set holds 15 balls, so making room costs the removal fee ($%d) on top of the ball ($%d). The %s ball (worth %d) takes the place of the one you pick, and any Isotope on that ball goes with it. Low balls are worth least; high balls are worth most." % [run.removal_cost(), item.cost, bt.name, int(bt.value)], 14, Color(0.8, 0.82, 0.85), F_REG)
 	why.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	why.custom_minimum_size = Vector2(520, 0)
 	v.add_child(why)
@@ -1042,7 +1042,7 @@ func _show_replace_picker(i: int) -> void:
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(58, 58)
 		var iso: String = run.imbues.get(n, "")
-		b.tooltip_text = "%s, worth %d%s" % [Catalog.ball_label(n), Catalog.ball_points(n), (" - loses its %s Imbue" % Catalog.IMBUES[iso].name) if iso != "" else ""] if ok.has(n) else "The 8 can't be replaced"
+		b.tooltip_text = "%s, worth %d%s" % [Catalog.ball_label(n), Catalog.ball_points(n), (" - loses its %s Isotope" % Catalog.IMBUES[iso].name) if iso != "" else ""] if ok.has(n) else "The 8 can't be replaced"
 		var icon := _set_ball_icon(n)
 		icon.position = Vector2(9, 9)
 		b.add_child(icon)
@@ -1086,7 +1086,7 @@ func _show_imbue_picker(i: int) -> void:
 	for n in run.ball_set:
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(58, 58)
-		b.tooltip_text = Catalog.ball_label(n) + ("" if ok.has(n) else (" - already imbued" if run.imbues.has(n) else " - not allowed"))
+		b.tooltip_text = Catalog.ball_label(n) + ("" if ok.has(n) else (" - already Isotope" if run.imbues.has(n) else " - not allowed"))
 		var icon := _set_ball_icon(n)
 		icon.position = Vector2(9, 9)
 		b.add_child(icon)
@@ -2313,7 +2313,9 @@ var chosen_handicap := 0
 func _sync_hot() -> void:
 	view.hot_pocket = run.hot_pocket
 	view.second_pocket = 5 - run.hot_pocket if run.current().anomaly == "onepocket" and run.hot_pocket >= 0 else -1
-	view.element_pockets = Catalog.POCKET_ELEMENTS if run.current().id == "elements" else []
+	view.clock_on = run.current().id == "elements"
+	view.clock_pos = run.clock_pos
+	view.clock_streak = run.clock_streak
 
 
 func _enter_aim() -> void:
@@ -3075,7 +3077,7 @@ func _build_ui() -> void:
 	bottom.add_child(fpanel)
 	var fv := VBoxContainer.new()
 	fpanel.add_child(fv)
-	fv.add_child(_label("PERKS  (always active)", 12, Color(0.6, 0.6, 0.6)))
+	fv.add_child(_label("ELEMENTS  (always active)", 12, Color(0.6, 0.6, 0.6)))
 	perk_row = BoxContainer.new()
 	perk_row.add_theme_constant_override("separation", 8)
 	fv.add_child(perk_row)
@@ -3199,8 +3201,8 @@ func _refresh_hud() -> void:
 	lbl_money.text = "$%d" % run.money
 	_refresh_items()
 	var flags: Array[String] = []
-	if run.current().id == "elements" and not run.element_mix.is_empty():
-		flags.append("Mix: " + " + ".join(run.element_mix.map(func(el): return Catalog.ELEMENTS[el].name)))
+	if run.current().id == "elements":
+		flags.append("Clock: pocket %d next, %d in a row" % [run.clock_pos + 1, run.clock_streak])
 	if run.perks.has("catalyst"):
 		flags.append("Snowball: balls worth +%s" % _fmt(run.catalyst))
 	flags_label.text = "\n".join(flags)
@@ -3448,7 +3450,7 @@ func _show_title() -> void:
 	_menu_row(v, "How to Play", _show_help, "Settings", func(): _show_settings(_show_title))
 	_menu_row(v, "Collection", func(): screens.show_collection(), "Records", func(): screens.show_records())
 	_menu_row(v, "Credits", _show_credits, "Quit", func(): get_tree().quit())
-	var prog := _label("Unlocks: " + meta.progress() + "  ·  %d / %d Perks" % [Catalog.PERKS.size() - meta.locked_perks().size(), Catalog.PERKS.size()], 14, Color(0.6, 0.85, 1.0), F_REG)
+	var prog := _label("Unlocks: " + meta.progress() + "  ·  %d / %d Elements" % [Catalog.PERKS.size() - meta.locked_perks().size(), Catalog.PERKS.size()], 14, Color(0.6, 0.85, 1.0), F_REG)
 	prog.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(prog)
 	var best := _load_best()
@@ -3456,7 +3458,7 @@ func _show_title() -> void:
 		var bl := _label("Best run: %d tables cleared  ·  best shot %d  ·  best Heat %d" % [best.tables, best.shot, best.heat], 15, Color(1.0, 0.85, 0.45), F_REG)
 		bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		v.add_child(bl)
-	var foot := _label("Real pool physics · exact guideline · %d Perks · 9 boss tables + endless" % Catalog.PERKS.size(), 13, Color(0.55, 0.55, 0.6), F_REG)
+	var foot := _label("Real pool physics · exact guideline · %d Elements · 9 boss tables + endless" % Catalog.PERKS.size(), 13, Color(0.55, 0.55, 0.6), F_REG)
 	foot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(foot)
 
@@ -3655,14 +3657,14 @@ func _show_help() -> void:
 [color=#ff9040]Heat[/color] lasts all table. Every scoring shot adds 1, and each point of Heat adds ×0.5. A miss cuts your Heat in half.
 The [color=#ff8a30]hot pocket[/color] scores ×2. The black 8 also scores ×2.
 
-[b]The 8-ball:[/b] Avoid it. If the 8 sinks while other balls are still on the table, you lose 15% of the table's target, unless a Perk changes that. Once it is the only ball left on the table it is safe, and sinking it brings a fresh rack.
+[b]The 8-ball:[/b] Avoid it. If the 8 sinks while other balls are still on the table, you lose 15% of the table's target, unless an Element changes that. Once it is the only ball left on the table it is safe, and sinking it brings a fresh rack.
 
 [b]Pausing a shot:[/b] While the balls roll, press [b]P[/b] (or tap [b]Pause[/b] on a phone) and everything freezes. The prediction then shows exactly where every ball goes from that moment. While paused you can use mid-shot items from your bar: [b]Second Strike[/b] (aim with the mouse, set power with the wheel or Up/Down, click to hit), [b]Pop-up Wall[/b] (click where it starts, then where it ends), [b]Blink[/b] (click where the cue ball reappears), and more. Right-click or Esc cancels an item. Press [b]P[/b] again, Space, Enter or click the table to play on.
 [b]Planning a pause:[/b] Press [b]L[/b] (or [b]Plan a pause[/b]) to lock the prediction, move along the cue ball's line and click where the shot should stop by itself. Settings can also pause every shot the moment the cue ball first hits a ball.
 
 [b]Chalk:[/b] As in real pool, you keep shooting while you sink. A miss, a scratch or no contact costs 1 chalk. A dry break is free. Run out of chalk before reaching the target and the run is over. Clearing the whole rack gives +1 chalk and a fresh rack.
 
-[b]Between tables:[/b] Spend money in the Pro Shop on Perks (six slots, always active) and Imbues (upgrade one ball for the rest of the run; you choose which, and each ball holds one). Clearing a table pays $4, plus $1 for every 10% you score over the target (up to $10) and $1 for every shot under 10 you needed (up to $5).
+[b]Between tables:[/b] Spend money in the Pro Shop on Elements (six slots, always active) and Isotopes (upgrade one ball for the rest of the run; you choose which, and each ball holds one). Clearing a table pays $4, plus $1 for every 10% you score over the target (up to $10) and $1 for every shot under 10 you needed (up to $5).
 
 Every table is its own boss with its own rule, and some reward bounces or bumpers. Clear all 9 tables to win, then keep going in endless mode."""
 	var rt := RichTextLabel.new()
@@ -3794,7 +3796,7 @@ func _refresh_shop() -> void:
 	var bar := HBoxContainer.new()
 	bar.add_theme_constant_override("separation", 12)
 	v.add_child(bar)
-	var rr := _button("Reroll perks ($%d)" % run.reroll_cost, func():
+	var rr := _button("Reroll Elements ($%d)" % run.reroll_cost, func():
 		if run.reroll():
 			sfx.play("coin", 0.6, 0.9)
 			shop_anim = true
@@ -3817,9 +3819,9 @@ func _refresh_shop() -> void:
 	go.custom_minimum_size = Vector2(220, 50)
 	go.add_theme_font_size_override("font_size", 22)
 	bar.add_child(go)
-	var tip := "Tip: you can sell a Perk from the bar below for half its price."
+	var tip := "Tip: you can sell an Element from the bar below for half its price."
 	if _load_best().tables == 0:
-		tip = "New here? Perks stay with you for the whole run. Cards glowing green work with Perks you own. Hover a greyed price if you can't afford it yet."
+		tip = "New here? Elements stay with you for the whole run. Cards glowing green work with Elements you own. Hover a greyed price if you can't afford it yet."
 	v.add_child(_label(tip, 13, Color(0.55, 0.55, 0.6), F_REG))
 
 
@@ -3844,11 +3846,11 @@ func _offer_card(i: int) -> Control:
 			if item.has("ball"):
 				title = "%s %d-ball" % [iso.name, item.ball]
 				desc = iso.desc
-				kind = "New ball · Imbued" if item.get("adds", false) else "Imbued ball"
+				kind = "New ball · Isotope" if item.get("adds", false) else "Isotope ball"
 			else:
-				title = "%s Imbue" % iso.name
+				title = "%s Isotope" % iso.name
 				desc = iso.desc
-				kind = "Imbue · choose a ball"
+				kind = "Isotope · choose a ball"
 		"ball":
 			var bt: Dictionary = Catalog.BALL_TYPES[item.id]
 			accent = bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent
@@ -4452,7 +4454,7 @@ func _show_run_info() -> void:
 	c1.custom_minimum_size = Vector2(560, 0)
 	c1.add_theme_constant_override("separation", 6)
 	cols.add_child(c1)
-	c1.add_child(_label("PERKS  (%d / %d)" % [run.perks.size(), RunState.MAX_PERKS], 16, Color(0.6, 0.8, 1.0)))
+	c1.add_child(_label("ELEMENTS  (%d / %d)" % [run.perks.size(), RunState.MAX_PERKS], 16, Color(0.6, 0.8, 1.0)))
 	if run.perks.is_empty():
 		c1.add_child(_label("None yet - buy them in the Pro Shop between tables.", 15, Color(0.6, 0.6, 0.65), F_REG))
 	for id in run.perks:
@@ -4460,7 +4462,7 @@ func _show_run_info() -> void:
 		c1.add_child(_term_text("%s  (%s)  -  %s" % [fd.name, Catalog.rarity_name(fd.r), Glossary.link(fd.desc)], 15, Catalog.rarity_color(fd.r).lerp(Color.WHITE, 0.5), 560.0))
 	if run.perks.has("catalyst"):
 		c1.add_child(_label("Snowball: every ball is worth +%s." % _fmt(run.catalyst), 14, Color(1.0, 0.6, 0.3), F_REG))
-	c1.add_child(_label("IMBUED BALLS", 16, Color(0.6, 0.8, 1.0)))
+	c1.add_child(_label("ISOTOPE BALLS", 16, Color(0.6, 0.8, 1.0)))
 	if run.imbues.is_empty():
 		c1.add_child(_label("None.", 15, Color(0.6, 0.6, 0.65), F_REG))
 	var balls := run.imbues.keys()
@@ -4506,9 +4508,9 @@ func _show_run_info() -> void:
 		"Value: 10 + ball number",
 		"Chain: starts at 1, +0.5 per ball sunk this shot",
 		"Heat: +1 per scoring shot, each point adds ×0.5, a miss halves it",
-		"Bounces score nothing unless a Perk, Imbue or table says so",
+		"Bounces score nothing unless an Element, Isotope or table says so",
 		"Value: 10 + 2 × the ball's number (special balls have their own)",
-		"Hot pocket ×%d, then Perks; the 8 costs 15%% of the target if it sinks early" % hot_x,
+		"Hot pocket ×%d, then Elements; the 8 costs 15%% of the target if it sinks early" % hot_x,
 		"Miss / scratch / no contact: -1 chalk (dry break free)",
 		"Clear the rack: +1 chalk and a new rack",
 		"Clearing pays $4, +$1 per 10% over target, +$1 per shot under 10",

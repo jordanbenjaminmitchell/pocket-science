@@ -42,7 +42,7 @@ func _go() -> void:
 	print("gradual introduction")
 	var m := Meta.new()
 	check(m.is_intro(), "a new profile starts in the introduction")
-	check(not _shop_at(0, true).has("item") and not _shop_at(0, true).has("ball"), "the first shop is Perks and Imbues only")
+	check(not _shop_at(0, true).has("item") and not _shop_at(0, true).has("ball"), "the first shop is Elements and Isotopes only")
 	check(_shop_at(1, true).has("item") and not _shop_at(1, true).has("ball"), "items arrive in the second shop")
 	check(_shop_at(2, true).has("ball"), "special balls arrive in the third")
 	check(_shop_at(0, false).has("item") and _shop_at(0, false).has("ball"), "after the introduction everything is there from the start")
@@ -118,7 +118,7 @@ func _go() -> void:
 	var i3: int = g.sim.index_of(3)
 	g.mouse_pos = g.view.base_position + g.sim.pos[i3] * g.TABLE_SCALE
 	await _frames(2)
-	check(g.term_tip.panel.visible and g.term_tip.heading.text == "3-ball" and g.term_tip.body.text.contains("Vein"), "hovering an imbued ball explains its Imbue")
+	check(g.term_tip.panel.visible and g.term_tip.heading.text == "3-ball" and g.term_tip.body.text.contains("Vein"), "hovering an Isotope ball explains its Isotope")
 	var i8: int = g.sim.index_of(8)
 	g.mouse_pos = g.view.base_position + g.sim.pos[i8] * g.TABLE_SCALE
 	await _frames(2)

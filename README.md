@@ -2,7 +2,7 @@
 
 **A real-pool roguelike. Sink balls, avoid the 8, stack multipliers, beat the target.**
 
-Pocket Science plays like real pool: a 2:1 table with six pockets, all 15 numbered balls, a cue stick and an exact prediction line. On top of that sits a roguelike run of nine boss tables, a Pro Shop of Perks and ball upgrades, and Chain and Heat scoring. Built in Godot 4.7.
+Pocket Science plays like real pool: a 2:1 table with six pockets, all 15 numbered balls, a cue stick and an exact prediction line. On top of that sits a roguelike run of nine boss tables, a Pro Shop of Elements and ball upgrades, and Chain and Heat scoring. Built in Godot 4.7.
 
 ## Download and play
 
@@ -17,10 +17,10 @@ The APK is signed with a personal key from the build PC, so it is for your own d
 
 1. **Choose a cue.** Each cue starts the run differently. More unlock as you play.
 2. **Every table is a boss** with its own rule and a target score. As in real pool, you keep shooting while you sink. A miss or scratch costs one **Chalk**, and when your Chalk runs out before the target, the run ends.
-3. **Avoid the 8.** Sinking the 8 while other balls are still up costs 15% of the table's target, unless a Perk changes that. Once it is the last ball it is safe.
+3. **Avoid the 8.** Sinking the 8 while other balls are still up costs 15% of the table's target, unless an Element changes that. Once it is the last ball it is safe.
 4. **The Pro Shop** opens between tables:
-   - **Perks:** 100 passive rules for your six slots.
-   - **Imbues:** 16 lasting upgrades for one ball.
+   - **Elements:** 100 passive rules for your six slots.
+   - **Isotopes:** 16 lasting upgrades for one ball.
    - **The Hustler's Kit:** 21 items. **Tools** stay all run with one charge per table; **Consumables** are used once. Each works at one moment: while aiming, while a shot is paused, or after a shot. Set-up items show their effect on the prediction first, and are spent only when you shoot.
    - **Special balls:** 24 types to add to your set.
    - **Removal:** take a ball out of your set, never the 8.
@@ -35,7 +35,7 @@ Each ball scores as it sinks: **value × Chain × Heat**.
 - **Heat:** lasts the whole table, rises with every scoring shot and halves on a miss.
 - **Hot pocket:** the glowing pocket scores ×2.
 
-Bouncing off cushions or balls earns nothing by itself. Only a Perk, an Imbue or a table's own rule makes contact count. Tap or hover any highlighted word in the game for a one-line definition.
+Bouncing off cushions or balls earns nothing by itself. Only an Element, an Isotope or a table's own rule makes contact count. Tap or hover any highlighted word in the game for a one-line definition.
 
 ### The prediction line
 

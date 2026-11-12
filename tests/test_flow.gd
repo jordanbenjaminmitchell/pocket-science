@@ -65,7 +65,7 @@ func _go() -> void:
 		if g.run.shop[i].type == "perk":
 			bought = g.run.buy(i) == ""
 			break
-	check(bought and g.run.perks.size() == 1, "bought a perk")
+	check(bought and g.run.perks.size() == 1, "bought an Element")
 	g._refresh_shop()
 	g.run.carry = 37
 	g._next_table()

@@ -126,7 +126,7 @@ func _run_with(anomaly: String, perks: Array) -> RunState:
 
 
 func _test_boss_physics() -> void:
-	print("boss and perk physics")
+	print("boss and Element physics")
 	var r := _run_with("shrink", [])
 	var s0 := r.pocket_scale()
 	for i in 20:

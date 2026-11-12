@@ -2,10 +2,10 @@ class_name MetaScreens
 extends RefCounted
 ## Collection and Records screens. Built on the game controller's UI helpers.
 
-const TABS := ["Perks", "Items", "Balls", "Imbues", "Cues", "Tables"]
+const TABS := ["Elements", "Items", "Balls", "Isotopes", "Cues", "Tables"]
 
 var g: Node
-var tab := "Perks"
+var tab := "Elements"
 
 
 func _init(game: Node) -> void:
@@ -57,7 +57,7 @@ func show_collection() -> void:
 func _rows() -> Array:
 	var rows: Array = []
 	match tab:
-		"Perks":
+		"Elements":
 			for id in Catalog.PERKS:
 				var f: Dictionary = Catalog.PERKS[id]
 				var locked: bool = g.meta.locked_perks().has(id)
@@ -71,10 +71,10 @@ func _rows() -> Array:
 			for id in Catalog.BALL_TYPES:
 				var bt: Dictionary = Catalog.BALL_TYPES[id]
 				rows.append({"icon": "ball_" + id, "title": bt.name + " ball", "sub": "Special ball · $%d" % bt.cost, "desc": bt.desc, "color": bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent, "hint": ""})
-		"Imbues":
+		"Isotopes":
 			for id in Catalog.IMBUES:
 				var r: Dictionary = Catalog.IMBUES[id]
-				rows.append({"icon": "", "title": r.name, "sub": "Ball imbue · $%d" % r.cost, "desc": r.desc, "color": r.color, "hint": ""})
+				rows.append({"icon": "", "title": r.name, "sub": "Ball Isotope · $%d" % r.cost, "desc": r.desc, "color": r.color, "hint": ""})
 		"Cues":
 			for id in Catalog.CUES:
 				var r: Dictionary = Catalog.CUES[id]
@@ -128,7 +128,7 @@ func show_records() -> void:
 	left.add_child(g._label("LIFETIME", 16, Color(0.6, 0.8, 1.0)))
 	var win_rate := "%d%%" % int(round(100.0 * l.wins / l.runs)) if l.runs > 0 else "-"
 	left.add_child(g._label("Runs played: %d\nWins: %d  (%s)\nTables cleared: %d\nBalls sunk: %d\nBest shot: %d\nBest Heat: %d\nDeepest run: %d tables" % [l.runs, l.wins, win_rate, l.tables, l.pots, l.best_shot, l.best_heat, l.best_tables], 17, Color(0.85, 0.87, 0.9), g.F_REG))
-	left.add_child(g._label("FAVOURITE PERKS", 16, Color(0.6, 0.8, 1.0)))
+	left.add_child(g._label("FAVOURITE ELEMENTS", 16, Color(0.6, 0.8, 1.0)))
 	var favs := rec.favourites()
 	if favs.is_empty():
 		left.add_child(g._label("Finish a run to see these.", 15, Color(0.6, 0.6, 0.65), g.F_REG))

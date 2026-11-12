@@ -44,7 +44,7 @@ func _go() -> void:
 	g._rebuild_cards()
 	await process_frame
 	var txt := _find_rich(g.perk_row)
-	check(txt != null and txt.text.contains("[url=bank]"), "Perk cards carry term links")
+	check(txt != null and txt.text.contains("[url=bank]"), "Element cards carry term links")
 	txt.meta_clicked.emit("bank")
 	check(g.term_tip.panel.visible and g.term_tip.heading.text == "Bank", "tapping a term opens its popup")
 	check(g.term_tip.body.text == Glossary.sentence("bank"), "and shows its definition")

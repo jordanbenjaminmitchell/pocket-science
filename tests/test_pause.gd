@@ -58,7 +58,7 @@ func _fresh_shot() -> void:
 
 
 func _go() -> void:
-	check(Catalog.PERKS.size() == 100, "100 Perks (%d)" % Catalog.PERKS.size())
+	check(Catalog.PERKS.size() == 100, "100 Elements (%d)" % Catalog.PERKS.size())
 	g = load("res://main.tscn").instantiate()
 	root.add_child(g)
 	await _frames(3)

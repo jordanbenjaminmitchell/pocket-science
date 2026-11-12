@@ -132,8 +132,8 @@ const TILES := {
 	"perk:packrat": {"sym": "PR", "stat": "+2 slots", "letter": "slots"},
 	"perk:quartermaster": {"sym": "Q", "stat": "Items −$1", "letter": "stencil"},
 	"perk:tinkerer": {"sym": "Ti", "stat": "Free consumable", "letter": "cog"},
-	"perk:enchanter": {"sym": "E", "stat": "Imbues −$2", "letter": "enchant"},
-	"perk:secondcoat": {"sym": "Se", "stat": "Imbued ×1.5", "letter": "coat"},
+	"perk:enchanter": {"sym": "E", "stat": "Isotopes −$2", "letter": "enchant"},
+	"perk:secondcoat": {"sym": "Se", "stat": "Isotope ×1.5", "letter": "coat"},
 	"perk:goldrush": {"sym": "Gs", "stat": "Specials ×2", "letter": "nuggets"},
 	"perk:menagerie": {"sym": "Me", "stat": "+0.25 each", "letter": "menagerie"},
 	"perk:alchemy": {"sym": "A", "stat": "+1 special", "letter": "transmute"},
@@ -365,8 +365,8 @@ static func stat_size(stat: String, on_w: float) -> int:
 
 func _kind_name() -> String:
 	match kind:
-		"perk": return "Perk"
-		"imbue": return "Imbue"
+		"perk": return "Element"
+		"imbue": return "Isotope"
 		"ball": return "Special ball"
 		"item": return "Tool" if Catalog.ITEMS[id].kind == "tool" else "Consumable"
 		"bet": return "Side bet"
@@ -405,7 +405,7 @@ func _acts_on() -> String:
 func _name() -> String:
 	match kind:
 		"perk": return Catalog.PERKS[id].name
-		"imbue": return "%s %d-ball" % [Catalog.IMBUES[id].name, ball] if ball > 0 else "%s Imbue" % Catalog.IMBUES[id].name
+		"imbue": return "%s %d-ball" % [Catalog.IMBUES[id].name, ball] if ball > 0 else "%s Isotope" % Catalog.IMBUES[id].name
 		"ball": return Catalog.BALL_TYPES[id].name + " ball"
 		"item": return Catalog.ITEMS[id].name
 		"bet": return data.get("title", id)

@@ -37,8 +37,8 @@ func _sim(layout: TableLayout, balls: Array) -> PoolSim:
 func _initialize() -> void:
 	print("content")
 	check(Catalog.BALL_TYPES.size() >= 24, "24 special ball types (%d)" % Catalog.BALL_TYPES.size())
-	check(Catalog.IMBUES.size() >= 16, "16 Imbues (%d)" % Catalog.IMBUES.size())
-	check(Catalog.PERKS.size() >= 96, "96 Perks before the pause set (%d)" % Catalog.PERKS.size())
+	check(Catalog.IMBUES.size() >= 16, "16 Isotopes (%d)" % Catalog.IMBUES.size())
+	check(Catalog.PERKS.size() >= 96, "96 Elements before the pause set (%d)" % Catalog.PERKS.size())
 	var looks := {}
 	for id in Catalog.BALL_TYPES:
 		var bt: Dictionary = Catalog.BALL_TYPES[id]
@@ -47,12 +47,12 @@ func _initialize() -> void:
 		looks[look] = true
 		check(bt.motif != "" and int(bt.pattern) >= 0 and int(bt.pattern) <= 9, "%s has an emblem and finish" % id)
 	for id in Catalog.IMBUES:
-		check(BallNode.IMBUE_FX.has(id), "%s Imbue has its own particle effect" % id) if not BallNode.IMBUE_FX.has(id) else null
-	check(BallNode.IMBUE_FX.size() == Catalog.IMBUES.size(), "every Imbue has a particle effect")
+		check(BallNode.IMBUE_FX.has(id), "%s Isotope has its own particle effect" % id) if not BallNode.IMBUE_FX.has(id) else null
+	check(BallNode.IMBUE_FX.size() == Catalog.IMBUES.size(), "every Isotope has a particle effect")
 	check(BallNode.IMBUE_FX.frosted == "frost" and BallNode.BALL_FX.void == "void", "Frosted looks frosty and Void pulls motes in")
 	var iso_cols := {}
 	for id in Catalog.IMBUES:
-		check(not iso_cols.has(Catalog.IMBUES[id].color), "%s Imbue has its own colour" % id)
+		check(not iso_cols.has(Catalog.IMBUES[id].color), "%s Isotope has its own colour" % id)
 		iso_cols[Catalog.IMBUES[id].color] = true
 
 	print("the ball set")
@@ -94,7 +94,7 @@ func _initialize() -> void:
 	hi.start(7)
 	hi.money = 30
 	hi.shop = [{"type": "imbue", "id": "spark", "ball": 13, "adds": true, "cost": 6, "sold": false}]
-	check(hi.buy(0) == "" and hi.ball_set.has(13) and hi.imbues.get(13, "") == "spark" and hi.ball_set.size() == 11, "a high ball from the shop joins the set with its Imbue")
+	check(hi.buy(0) == "" and hi.ball_set.has(13) and hi.imbues.get(13, "") == "spark" and hi.ball_set.size() == 11, "a high ball from the shop joins the set with its Isotope")
 	hi.roll_shop()
 	check(not hi.shop.any(func(it): return it.get("adds", false) and int(it.ball) == 13), "and is never offered twice")
 

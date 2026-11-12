@@ -49,7 +49,7 @@ func _go() -> void:
 	create_timer(120.0).timeout.connect(func(): quit(2))
 	var h5 := [{"type": "ball", "a": 0, "b": 5}, pot(5, 0)]
 	print("counts")
-	check(Catalog.IMBUES.size() >= 16, "16 imbues")
+	check(Catalog.IMBUES.size() >= 16, "16 Isotopes")
 	check(Catalog.BOUNTIES.size() == 23, "23 side bets")
 	check(Catalog.CUES.size() >= 13, "13 or more cues")
 	check(["posts", "portals", "walls", "trapdoors", "gravity"].all(func(c): return Catalog.CUES.has(c) and Catalog.CUES[c].has("kit")), "an object cue for each placeable object")
@@ -140,7 +140,7 @@ func _go() -> void:
 		cr.start(4, id)
 		cr.begin_table()
 		for f in cr.perks:
-			check(Catalog.PERKS.has(f), "%s starts with a real perk" % id)
+			check(Catalog.PERKS.has(f), "%s starts with a real Element" % id)
 		check(cr.chalk >= 4, "%s has playable chalk" % id)
 	var m := Meta.new()
 	for id in Catalog.CUES:

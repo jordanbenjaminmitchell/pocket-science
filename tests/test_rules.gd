@@ -25,7 +25,7 @@ func _initialize() -> void:
 	c.events = [{"type": "ball", "a": 0, "b": 2}, {"type": "ball", "a": 2, "b": 9}, {"type": "pocket", "a": 9, "pocket": 1, "rails": 2, "at": Vector2.ZERO}, {"type": "pocket", "a": 2, "pocket": 1, "rails": 0, "at": Vector2.ZERO}]
 	c.perks = ["fusion", "bank"]
 	r = Scorer.score(c)
-	check(r.scored and r.total > 0, "a combination bank with perks scores")
+	check(r.scored and r.total > 0, "a combination bank with Elements scores")
 	c = base.duplicate()
 	c.events = [{"type": "ball", "a": 0, "b": 3}, {"type": "pocket", "a": 0, "pocket": 2, "rails": 0, "at": Vector2.ZERO}, {"type": "pocket", "a": 3, "pocket": 4, "rails": 0, "at": Vector2.ZERO}]
 	r = Scorer.score(c)
@@ -103,7 +103,7 @@ func _initialize() -> void:
 	check(lb.bet_stake() == 16 and is_equal_approx(lb.bet_multiple(), 4.0), "a Hard bet on table 7 pays 4× a $16 stake")
 	lb.perks.assign(["hunter"])
 	check(lb.bounty_reward() == 16 + 128, "Side Hustle doubles the winnings")
-	print("payout and Imbues")
+	print("payout and Isotopes")
 	var pr := RunState.new()
 	pr.start(3)
 	pr.begin_table()
@@ -124,17 +124,17 @@ func _initialize() -> void:
 	im.start(3)
 	im.money = 50
 	im.shop = [{"type": "imbue", "id": "vein", "cost": 5, "sold": false}, {"type": "imbue", "id": "twin", "cost": 4, "sold": false}, {"type": "imbue", "id": "spark", "ball": 12, "cost": 4, "sold": false}]
-	check(im.buy(0) != "", "a loose Imbue needs a ball chosen")
+	check(im.buy(0) != "", "a loose Isotope needs a ball chosen")
 	check(im.buy_imbue(0, 9) == "" and im.imbues[9] == "vein", "you choose which ball gets it")
-	check(im.buy_imbue(1, 9) != "", "a ball holds only one Imbue")
+	check(im.buy_imbue(1, 9) != "", "a ball holds only one Isotope")
 	check(im.buy_imbue(1, 8) != "", "never the 8")
 	im.ball_set.append(12)
-	check(im.buy(2) == "" and im.imbues[12] == "spark", "a pre-imbued ball applies directly")
+	check(im.buy(2) == "" and im.imbues[12] == "spark", "a pre-Isotope ball applies directly")
 	var sr := RunState.new()
 	sr.start(4)
 	sr.roll_shop()
 	var imb: Array = sr.shop.filter(func(it): return it.type == "imbue")
-	check(imb.any(func(it): return not it.has("ball")) and imb.any(func(it): return it.has("ball") and int(it.ball) >= 11), "the shop offers a loose Imbue and an imbued 11-15 ball")
+	check(imb.any(func(it): return not it.has("ball")) and imb.any(func(it): return it.has("ball") and int(it.ball) >= 11), "the shop offers a loose Isotope and an Isotope 11-15 ball")
 	print("persistence")
 	run.perks.assign(["golden", "bank"])
 	run.imbues[7] = "vein"

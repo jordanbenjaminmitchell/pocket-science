@@ -337,7 +337,7 @@ func _go() -> void:
 	check(not g.hover_shown, "a finger passing over a ball shows nothing")
 	g.finger_still = 1.0
 	await _frames(2)
-	check(g.hover_shown, "holding a finger on an imbued ball explains it")
+	check(g.hover_shown, "holding a finger on an Isotope ball explains it")
 	_tap(kb_scr, false)
 	await _frames(2)
 	check(not g.hover_shown, "and lifting hides it")

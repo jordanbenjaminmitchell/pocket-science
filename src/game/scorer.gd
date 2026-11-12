@@ -207,6 +207,8 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 	var total := 0.0
 	var money := 0
 	var mix: Array = (ctx.get("element_mix", []) as Array).duplicate()
+	var clock_pos := int(ctx.get("clock_pos", 0))
+	var clock_streak := int(ctx.get("clock_streak", 0))
 	var remaining: Array = (ctx.get("on_table", []) as Array).duplicate()
 	var solid_run := int(out.solid_run)
 	var stripe_run := int(out.stripe_run)
@@ -476,11 +478,14 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 					x *= 5.0
 					tags.append("The Last 8")
 			"elements":
-				var fused := _fuse(mix, Catalog.POCKET_ELEMENTS[k] if k < Catalog.POCKET_ELEMENTS.size() else "wild")
-				x *= fused.x
-				if fused.label != "":
-					tags.append(fused.label)
-				out.heat_gain += fused.heat
+				# Clockwork: the next pocket in clock order ticks the clock; ticks in a row climb.
+				if k == int(Catalog.CLOCK_ORDER[clock_pos]):
+					clock_streak += 1
+					x *= 1.0 + 0.5 * clock_streak
+					tags.append("Tick %d" % (clock_pos + 1))
+					clock_pos = (clock_pos + 1) % Catalog.CLOCK_ORDER.size()
+				elif k < 6:
+					clock_streak = 0
 		_step(steps, "Table rule", "table", snap, value, x, pre_chain)
 		snap = [value, x, pre_chain]
 		x *= float(ctx.get("boost", 1.0))
@@ -532,6 +537,8 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 	out.money = money
 	out.total = int(total)
 	out.element_mix = mix
+	out.clock_pos = clock_pos
+	out.clock_streak = clock_streak
 	out.scored = true
 	return out
 
@@ -550,34 +557,6 @@ static func _step(steps: Array, label: String, src: String, before: Array, value
 static func _long_pot(ctx: Dictionary, n: int, e: Dictionary) -> bool:
 	var starts: Dictionary = ctx.get("start_pos", {})
 	return starts.has(n) and (starts[n] as Vector2).distance_to(e.get("at", Vector2.ZERO)) >= 450.0
-
-
-## Element Table: the new element fuses with the last one or two in the mix.
-static func _fuse(mix: Array, el: String) -> Dictionary:
-	var out := {"x": 1.0, "label": "", "heat": 0}
-	var now := el
-	if now == "wild":
-		now = mix[mix.size() - 1] if not mix.is_empty() else ""
-	if now == "":
-		return out
-	if not mix.is_empty():
-		var last: String = mix[mix.size() - 1]
-		if last == now:
-			out.x = 2.0
-			out.label = "Pure " + Catalog.ELEMENTS[now].name
-		else:
-			var pair := [last, now]
-			pair.sort()
-			out.x = 3.0
-			out.heat = 1
-			out.label = Catalog.COMPOUNDS.get("%s+%s" % [pair[0], pair[1]], "Compound")
-			if mix.size() >= 2 and mix[mix.size() - 2] != last and mix[mix.size() - 2] != now:
-				out.x = 6.0
-				out.label = "Perfect Mix"
-	mix.append(now)
-	while mix.size() > 2:
-		mix.remove_at(0)
-	return out
 
 
 ## Quick estimate used by the aiming preview: "if this ball drops in that pocket".

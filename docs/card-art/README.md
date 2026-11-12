@@ -2,16 +2,16 @@
 
 The art for every Pro Shop card and side bet. Each card is drawn as a periodic-table tile: a big symbol, the card's name, its headline effect and what it acts on. Each symbol has its own lettering effect, and some cards add small moving particles. Side bets are different on purpose: portrait playing cards (`BetCard`) with a picture, the full wording with this table's real numbers, the stake and the payout.
 
-Perks that name ball numbers (Prime Cut, Lucky Numbers, Odd Balls, Even Money, Low Ball, High Roller) float those balls beside the symbol, and `TileArt.balls_for("perk", id)` lists the balls any Perk works on. Hovering a Perk you own rings those balls on the table.
+Elements that name ball numbers (Prime Cut, Lucky Numbers, Odd Balls, Even Money, Low Ball, High Roller) float those balls beside the symbol, and `TileArt.balls_for("perk", id)` lists the balls any Element works on. Hovering an Element you own rings those balls on the table.
 
-**Status:** all 189 tiles are done; see [NEEDED.md](NEEDED.md) for every symbol, the symbol rules, the particle effects and the one optional code job left (cue tiles). The Pro Shop already shows the Perk, Imbue, special ball and item tiles.
+**Status:** all 189 tiles are done; see [NEEDED.md](NEEDED.md) for every symbol, the symbol rules, the particle effects and the one optional code job left (cue tiles). The Pro Shop already shows the Element, Isotope, special ball and item tiles.
 
 ## In this folder
 
 | File | What it is |
 | --- | --- |
-| `perk-tiles-1.png` … `perk-tiles-5.png` | Every Perk tile at 2× size, 20 per sheet |
-| `imbue-tiles-1.png` | Every Imbue tile, on balls 0–15 in turn (0: before you choose the ball) |
+| `perk-tiles-1.png` … `perk-tiles-5.png` | Every Element tile at 2× size, 20 per sheet |
+| `imbue-tiles-1.png` | Every Isotope tile, on balls 0–15 in turn (0: before you choose the ball) |
 | `ball-tiles-1.png`, `ball-tiles-2.png` | Every special ball tile |
 | `item-tiles-1.png`, `item-tiles-2.png` | Every Hustler's Kit item tile |
 | `bet-cards-1.png`, `bet-cards-2.png` | Every side bet as a playing card (example numbers: stake $8, target 215), then the card back and the taken, won and passed states |
@@ -24,7 +24,7 @@ The files in `code/` are **copies made on 2026-11-12**. The game uses the origin
 
 ## What the code needs from the game
 
-- `Catalog` (`src/game/catalog.gd`): names, rarities, families, side bet tiers, ball colours, and the Imbue, ball and item lists
+- `Catalog` (`src/game/catalog.gd`): names, rarities, families, side bet tiers, ball colours, and the Isotope, ball and item lists
 - `IconArt` (`src/ui/icon_art.gd`): the small top-right icons and the family colours
 - `Fx` (`src/ui/fx.gd`): `Fx.minimal_particles` turns the particles off
 - Fonts: `assets/fonts/ChakraPetch-SemiBold.ttf` and `ChakraPetch-Regular.ttf`

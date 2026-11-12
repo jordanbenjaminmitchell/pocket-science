@@ -36,7 +36,9 @@ var bounty := ""
 var bounty_done := false
 var bet_state := "offer"         # offer, taken, passed, won (the stake is lost if a taken bet is never won)
 var bet_peeked := false
-var element_mix: Array = []   # Element Table: the last elements potted
+var element_mix: Array = []   # (old Element Table; kept so old saves load)
+var clock_pos := 0            # Clockwork Table: which pocket is next (index into CLOCK_ORDER)
+var clock_streak := 0         # Clockwork Table: ticks in a row
 var forgiven := false         # The Local: the free miss has been used
 var pockets_used: Array = []
 var shrink_steps := 0
@@ -163,6 +165,8 @@ func begin_table() -> void:
 	shots_taken = 0
 	racks_cleared = 0
 	element_mix = []
+	clock_pos = 0
+	clock_streak = 0
 	forgiven = false
 	chalk = max_chalk()
 	pockets_used = []
@@ -427,7 +431,7 @@ func buy_imbue(i: int, n: int) -> String:
 	if money < item.cost:
 		return "Not enough money"
 	if not imbue_targets().has(n):
-		return "That ball can't take an Imbue"
+		return "That ball can't take an Isotope"
 	imbues[n] = item.id
 	money -= item.cost
 	item.sold = true
@@ -808,11 +812,11 @@ func buy(i: int) -> String:
 	match item.type:
 		"perk":
 			if perks.size() >= MAX_PERKS:
-				return "Perk slots full - sell one first"
+				return "Element slots full - sell one first"
 			perks.append(item.id)
 		"imbue":
 			if not item.has("ball"):
-				return "Choose a ball for this Imbue"
+				return "Choose a ball for this Isotope"
 			if item.get("adds", false):
 				if set_full():
 					return "Choose a ball for it to replace"
@@ -821,7 +825,7 @@ func buy(i: int) -> String:
 				item.sold = true
 				return ""
 			if imbues.has(int(item.ball)):
-				return "That ball already has an Imbue"
+				return "That ball already has an Isotope"
 			imbues[int(item.ball)] = item.id
 		"ball":
 			if set_full():
@@ -894,6 +898,8 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		out["imbue_moves"] = _imbues_after(res)
 		heat = maxi(0, heat - int(res.get("bounty_cash", 0)))   # Bounty cashes Heat out
 		element_mix = res.get("element_mix", [])
+		clock_pos = int(res.get("clock_pos", clock_pos))
+		clock_streak = int(res.get("clock_streak", clock_streak))
 		solid_run = int(res.get("solid_run", solid_run))
 		if res.get("frost", false):
 			frost_shield = true
@@ -1090,7 +1096,7 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 		"anomaly": current().anomaly, "heat": heat, "power": power, "shots_taken": shots_taken,
 		"catalyst": catalyst, "is_break": is_break, "chalk": chalk, "objects": s.object_balls_left(),
 		"money": money, "empty_slots": MAX_PERKS - perks.size(), "pockets_used": pockets_used,
-		"lowest": lowest, "highest": highest, "element_mix": element_mix,
+		"lowest": lowest, "highest": highest, "element_mix": element_mix, "clock_pos": clock_pos, "clock_streak": clock_streak,
 		"target": target(), "on_table": on_table, "total_pots": total_pots,
 		"solid_run": solid_run, "stripe_run": stripe_run,
 		"boost": next_boost, "all_hot": next_all_hot, "removed": removed_count(), "called": called,
@@ -1131,7 +1137,7 @@ func to_dict() -> Dictionary:
 	if phase == "table":
 		d["table"] = {
 			"score": score, "chalk": chalk, "heat": heat, "shots_taken": shots_taken,
-			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "element_mix": element_mix,
+			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "element_mix": element_mix, "clock_pos": clock_pos, "clock_streak": clock_streak,
 			"forgiven": forgiven, "bounty": bounty, "bounty_done": bounty_done, "bet_state": bet_state, "bet_peeked": bet_peeked,
 			"pockets_used": pockets_used, "shrink_steps": shrink_steps, "insured_used": insured_used,
 				"solid_run": solid_run, "stripe_run": stripe_run, "mods": table_mods,
@@ -1272,6 +1278,8 @@ func load_dict(d: Dictionary) -> bool:
 		hot_pocket = int(t.get("hot_pocket", hot_pocket))
 		racks_cleared = int(t.get("racks_cleared", 0))
 		element_mix = t.get("element_mix", [])
+		clock_pos = int(t.get("clock_pos", 0))
+		clock_streak = int(t.get("clock_streak", 0))
 		forgiven = bool(t.get("forgiven", false))
 		var b := str(t.get("bounty", bounty))
 		if Catalog.BOUNTIES.has(b):

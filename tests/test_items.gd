@@ -35,7 +35,7 @@ func _initialize() -> void:
 		check(m != "" and not motifs.has(m), "%s has its own icon" % id) if m == "" or motifs.has(m) else null
 		motifs[m] = true
 	var phys := Catalog.PERKS.keys().filter(func(k): return Catalog.PERKS[k].fam == "physics").size()
-	check(phys >= 8, "8 Physics Perks (%d)" % phys)
+	check(phys >= 8, "8 Physics Elements (%d)" % phys)
 	check(Catalog.CUES.size() >= 13, "13 starting cues (%d)" % Catalog.CUES.size())
 
 	print("perks")
@@ -44,7 +44,7 @@ func _initialize() -> void:
 	check(score(h5, {"perks": ["followthru"], "follow": 0.6}).total == 30, "Follow Through pays with follow")
 	check(score(h5, {"perks": ["drawartist"], "follow": -0.6}).total == 30, "Draw Artist pays with draw")
 	check(score(h5, {"perks": ["drawartist"], "follow": 0.0}).total == 20, "and only with draw")
-	check(score(h5, {"perks": ["secondcoat"], "imbues": {5: "heavy"}}).total == 37, "Second Coat ×1.5 on imbued balls")
+	check(score(h5, {"perks": ["secondcoat"], "imbues": {5: "heavy"}}).total == 37, "Second Coat ×1.5 on Isotope balls")
 	check(score(h5, {"boost": 2.0}).total == 40, "Double Down doubles the shot")
 	check(score(h5, {"all_hot": true, "hot_pocket": 3}).total == 40, "Spotlight makes every pocket hot")
 	var run := RunState.new()
@@ -146,7 +146,7 @@ func _initialize() -> void:
 	vs.apply_physics(vclone)
 	check(vclone.volatile.has(5), "and the prediction knows it will")
 
-	print("Imbues that move and grow")
+	print("Isotopes that move and grow")
 	var im := RunState.new()
 	im.start(5)
 	im.begin_table()
