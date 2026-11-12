@@ -1624,13 +1624,13 @@ func _update_aim(delta: float) -> void:
 		view.forecast_text = ""
 		view.sink_tags = []
 		fc_sim = null
-	elif forecast_dirty:
-		forecast_timer -= delta
-		if forecast_timer <= 0.0:
-			forecast_dirty = false
-			_compute_forecast()
 	elif fc_sim != null:
+		# Finish the prediction under way (restarting on every mouse move would mean
+		# it never finishes while you aim), then start the next from the latest aim.
 		_step_forecast()
+	elif forecast_dirty:
+		forecast_dirty = false
+		_compute_forecast()
 
 
 var coaching := false
@@ -1748,7 +1748,7 @@ func _step_forecast() -> void:
 		return
 	var t0 := Time.get_ticks_usec()
 	# Paused or planning, nothing else needs the frame, so the prediction gets most of it.
-	var budget := 14000 if state == S.HOLD or plan_lock else 10000
+	var budget := 14000 if state == S.HOLD or plan_lock else 12000
 	while fc_sim.moving() and fc_sim.time < fc_limit and Time.get_ticks_usec() - t0 < budget:
 		fc_sim.step(PoolSim.STEP)
 		for i in fc_sim.count():
