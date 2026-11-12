@@ -9,6 +9,16 @@
 - **Side bets are shown as cards in the game.** The side panel shows `BetCard.from_run(run)` at half size beside the Bet / Peek / Pass buttons; resting on it (or tapping it) shows it full size.
 - **Starting cues have no tiles** (optional in the brief). The cue-select screen draws its own 150-wide cards with the cue stick, so tiles would need that screen reworked first.
 
+## Art changes from the latest passes (2026-11-12)
+
+1. **New names: Perks are now Elements, Imbues are now Isotopes.** The tile code already prints the new words (the header says ELEMENT or ISOTOPE, and loose Isotopes read "Spark Isotope"), but every preview sheet (`perk-tiles-*.png`, `imbue-tiles-1.png`) still shows the old words. **Re-render all the sheets.**
+2. **Two tile stats changed with the rename:** Enchanter now reads "Isotopes −$2" and Second Coat "Isotope ×1.5". Check they still fit and read well.
+3. **Two Element names now sound like magic** next to the science names: **Enchanter** (Isotopes cost $2 less, lettering effect "enchant") and **Alchemy** (turns a plain ball special). Consider science names and lettering, for example **Enchanter → Isotope Lab** and **Alchemy → Transmutation**. (The game names would change to match; tell me which you pick.)
+4. **The Element Table is now the Clockwork Table.** No tile shows it, but if tables get art later, it's pockets numbered 1 to 6 like a clock face, not fire, water, earth and air.
+5. **Cues changed.** Seven plain cues are gone and five object cues are new (Post, Portal, Wall, Trapdoor, Gravity). The cue list above is current, for the optional cue tiles.
+6. **Coming next (don't draw yet):** the Hustler's Kit becomes **Catalysts** that recharge every table, with about 9 new science Catalysts (Pythagorean Triple, Newton's Cradle, Golden Ratio and others), and some item tiles get new names. A list follows once that's built.
+7. **Possible later:** if the table rework in `docs/TABLES_BRAINSTORM.md` goes ahead, Sharks (enemies) and moving objects will need art.
+
 ## Symbol rules
 
 The symbols follow the rules this file set out: a real element only where it genuinely fits (**Au** Gold ball, **Fe** Iron ball, **Pb** Leaded), otherwise the initials of the first two words (**FT** Follow Through), or a one-word name's first letter and then its first two (**B** Boomerang, **Bl** Blink). Later clashes take the first letter plus the next consonant.
