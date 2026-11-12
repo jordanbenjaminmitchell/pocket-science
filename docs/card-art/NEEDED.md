@@ -16,8 +16,51 @@
 3. **Two Element names now sound like magic** next to the science names: **Enchanter** (Isotopes cost $2 less, lettering effect "enchant") and **Alchemy** (turns a plain ball special). Consider science names and lettering, for example **Enchanter → Isotope Lab** and **Alchemy → Transmutation**. (The game names would change to match; tell me which you pick.)
 4. **The Element Table is now the Clockwork Table.** No tile shows it, but if tables get art later, it's pockets numbered 1 to 6 like a clock face, not fire, water, earth and air.
 5. **Cues changed.** Seven plain cues are gone and five object cues are new (Post, Portal, Wall, Trapdoor, Gravity). The cue list above is current, for the optional cue tiles.
-6. **Coming next (don't draw yet):** the Hustler's Kit becomes **Catalysts** that recharge every table, with about 9 new science Catalysts (Pythagorean Triple, Newton's Cradle, Golden Ratio and others), and some item tiles get new names. A list follows once that's built.
+6. **Catalysts:** see the section below. Every item becomes a Catalyst; most keep their tile with a new name, a few are new.
 7. **Possible later:** if the table rework in `docs/TABLES_BRAINSTORM.md` goes ahead, Sharks (enemies) and moving objects will need art.
+
+## Catalysts: the Hustler's Kit rework (art flags)
+
+Items become **Catalysts**: every one recharges each table (none are used up), you hold up to **5**, and you use them while a shot is paused. Every Catalyst changes the board: it moves balls, bends paths or adds or removes obstacles. None of them just add points.
+
+**Renamed: keep the tile, change the name and symbol** (the ID stays the same)
+
+| Old item | New Catalyst | Symbol | What it does now | Art note |
+|---|---|---|---|---|
+| Second Strike | **Impulse** | Im | Hit the cue ball again | Same picture works |
+| Blink | **Superposition** | Sp | Move the cue ball anywhere; it keeps its speed and direction | Same |
+| Ghost Chalk | **Quantum Tunnel** | QT | Pick a ball: it passes straight through other balls this shot | Same idea, new name |
+| Freeze Frame | **Inertia** | In | Stop a ball dead; it holds like a post | Same |
+| Polish | **Zero Friction** | ZF | Pick a ball: it glides with no cloth friction | Same |
+| Gravity Pebble | **Gravity Well** | GW | Drop a well that bends rolling balls | Same |
+| Portal Pair | **Wormhole** | Wh | Two linked portals for the rest of the shot | Same |
+| Pop-up Wall | **Force Field** | FF | Raise a short wall | Glowing barrier instead of a wall |
+| Post | **Fixed Point** | FP | Place a post (bumper) | Same |
+| English Dial | **Spin Transfer** | ST | Put your set spin onto the rolling cue ball | Same |
+| Swap | **Entanglement** | En | Two balls swap places, keeping their motion | Same, with an entangled-pair look |
+| Nudge | **Vector** | Vc | Push a ball a short way in any direction | Add an arrow |
+| Lead Weight | **Mass Shift** | MS | Pick a ball: four times as heavy for the shot | Same |
+| Pocket Cover | **Event Horizon** | EH | Pick a pocket: it swallows twice as wide this shot | **New picture:** a pocket with a dark halo |
+| Trapdoor | **Black Hole** | BH | Open a pocket anywhere along a cushion this shot | Hole in a cushion with a dark swirl |
+| Rewind | **Time Reversal** | TR | Undo this shot mid-roll and take it again | Same |
+| Spotter | **Conservation** | Cn | Bring back a ball sunk this shot to the foot spot | Same |
+
+**New Catalysts: new tiles needed**
+
+| Catalyst | Symbol | What it does | Picture idea |
+|---|---|---|---|
+| **Pythagorean Triple** | PT | Pick three balls: three force-field walls join them into a triangle for the rest of the shot | Right triangle (3-4-5) of glowing lines between three balls |
+| **Newton's Cradle** | NC | Pick a ball: the cue ball stops dead and that ball takes all its momentum | Hanging balls of a cradle |
+| **Reflection** | Rf | Pick a ball: it reverses direction | A ball and its mirror image with a U-turn arrow |
+| **Golden Ratio** | GR | Pick a ball: its speed ×1.618 | Golden spiral |
+| **Centre of Mass** | CM | Pick two to four balls: they all head towards the point between them | Balls with arrows meeting at a centre dot |
+| **Hooke's Law** | HL | Pick a cushion: anything that bounces off it keeps all its speed | A spring in a cushion |
+
+**Removed: their tiles are no longer needed:** Called Shot, Insurance Slip, Triangle, Ball in Hand. They only scored points, or did what another Catalyst now does.
+
+**Object cues keep their objects,** now under the new names: Post Cue → Fixed Point, Portal Cue → Wormhole, Wall Cue → Force Field, Trapdoor Cue → Black Hole, Gravity Cue → Gravity Well.
+
+**Elements that mention items** get new wording (no art change, but the tile stat may change): Pack Rat (+1 Catalyst slot), Quartermaster (Catalysts cost $1 less), Tinkerer (+1 charge on a random Catalyst each table), Quick Hands (the first Catalyst each table is free), Afterimage (Impulse and Superposition add Chain), Overclock (Catalysts get two charges).
 
 ## Symbol rules
 
