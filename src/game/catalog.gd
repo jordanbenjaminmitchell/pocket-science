@@ -292,6 +292,10 @@ const LAB_ART := {
 ## Every table is a boss. "tier" picks where it can appear; "lab" sets physics
 ## and art; "anomaly" names a special rule in RunState and Scorer.
 const BOSSES := {
+	"hypotenuse": {"name": "The Hypotenuse", "tier": 1, "lab": "standard", "anomaly": "", "shape": "hypotenuse", "desc": "A right-angled triangle: three corner pockets and one in the middle of each side. Every bank is a new angle."},
+	"benzene": {"name": "Benzene Ring", "tier": 1, "lab": "standard", "anomaly": "", "shape": "benzene", "desc": "A hexagon with a pocket in every corner. Six angled rails to bank off."},
+	"pentagon": {"name": "Golden Pentagon", "tier": 2, "lab": "standard", "anomaly": "", "shape": "pentagon", "desc": "A pentagon in golden-ratio proportions: five corner pockets and one in the long bottom rail."},
+	"lshell": {"name": "The L-Shell", "tier": 2, "lab": "standard", "anomaly": "", "shape": "lshell", "desc": "An L-shaped table. The inside corner turns every bank into a new puzzle."},
 	"local": {"name": "The Local", "tier": 0, "lab": "standard", "anomaly": "", "desc": "Your home table. The house forgives your first miss."},
 	"frozen": {"name": "Frozen Lake", "tier": 1, "lab": "cryo", "anomaly": "", "desc": "Slick cloth, long rolls. On this table, every cushion a ball touches adds +0.5 Chain."},
 	"spring_st": {"name": "Spring Street", "tier": 1, "lab": "spring", "anomaly": "sealed", "desc": "Lively rails, side pockets boarded up. On this table, bank sinks score ×2."},
@@ -314,6 +318,19 @@ const BOSSES := {
 	"hustler": {"name": "The Hustler", "tier": 3, "lab": "magnetlab", "anomaly": "heavycue", "desc": "A heavy cue ball, and the house skims 15% of every sink."},
 	"elements": {"name": "The Clockwork Table", "tier": 9, "lab": "element", "anomaly": "elements", "desc": "The pockets are numbered 1 to 6, clockwise. Sink into the next one in order to tick the clock: ticks in a row score ×1.5, ×2, ×2.5 and on. Any other pocket stops the clock."},
 	"final": {"name": "The Grand Final", "tier": 9, "lab": "final", "anomaly": "cursed8", "desc": "The 8 goes last. Sink it early and lose a Chalk; sink it last for ×5."},
+}
+
+## Shaped tables: polygon corners in the 1000 x 500 frame, the six pockets in
+## order ({"v": corner} or {"e": edge, "t": how far along}), and the rack's apex.
+const SHAPES := {
+	"hypotenuse": {"verts": [Vector2(0, 0), Vector2(1000, 500), Vector2(0, 500)],
+		"pockets": [{"v": 0}, {"e": 2, "t": 0.5}, {"v": 1}, {"v": 2}, {"e": 1, "t": 0.5}, {"e": 0, "t": 0.5}], "foot": Vector2(470, 400)},
+	"benzene": {"verts": [Vector2(150, 0), Vector2(850, 0), Vector2(1000, 250), Vector2(850, 500), Vector2(150, 500), Vector2(0, 250)],
+		"pockets": [{"v": 0}, {"v": 1}, {"v": 2}, {"v": 3}, {"v": 4}, {"v": 5}], "foot": Vector2(700, 250)},
+	"pentagon": {"verts": [Vector2(500, 0), Vector2(1000, 190), Vector2(810, 500), Vector2(190, 500), Vector2(0, 190)],
+		"pockets": [{"v": 0}, {"v": 1}, {"v": 2}, {"e": 2, "t": 0.5}, {"v": 3}, {"v": 4}], "foot": Vector2(640, 280)},
+	"lshell": {"verts": [Vector2(0, 0), Vector2(420, 0), Vector2(420, 170), Vector2(1000, 170), Vector2(1000, 500), Vector2(0, 500)],
+		"pockets": [{"v": 0}, {"v": 1}, {"v": 3}, {"v": 5}, {"e": 4, "t": 0.5}, {"v": 4}], "foot": Vector2(720, 330)},
 }
 
 ## Clockwork Table: the pockets in clock order (top-left, top, top-right, then round).

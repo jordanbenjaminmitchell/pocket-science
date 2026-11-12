@@ -4,11 +4,13 @@ extends RefCounted
 
 const FOOT := Vector2(TableLayout.W * 0.75, TableLayout.H * 0.5)
 const HEAD := Vector2(TableLayout.W * 0.25, TableLayout.H * 0.5)
+## Where this table's rack goes (shaped tables move it to fit).
+static var _foot := FOOT
 
 
 static func _slot(row: int, col: int) -> Vector2:
 	var gap := TableLayout.R * 2.0 + 0.35
-	return FOOT + Vector2(row * gap * 0.8660254, (col - row * 0.5) * gap)
+	return _foot + Vector2(row * gap * 0.8660254, (col - row * 0.5) * gap)
 
 
 const MAX_BALLS := 21   # six rows of triangle
@@ -17,6 +19,7 @@ const MAX_BALLS := 21   # six rows of triangle
 ## Racks a ball set in a triangle: the 1 at the apex when present, the 8 in the
 ## middle, the rest shuffled. Sets larger than 15 add a sixth row.
 static func build(sim: PoolSim, rng: RandomNumberGenerator, balls: Array = []) -> void:
+	_foot = sim.layout.foot if sim.layout != null else FOOT
 	var slots: Array[Vector2] = []
 	for r in 6:
 		for c in r + 1:

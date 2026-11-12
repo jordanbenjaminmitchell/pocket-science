@@ -26,7 +26,7 @@ const TRACKS := {
 	"hump": "boards/the-hump.ogg", "nineball": "boards/rotation-night.ogg", "magnet": "boards/the-magnet-room.ogg",
 	"smoke": "boards/the-smoke-room.ogg", "blackice": "boards/black-ice.ogg", "tilted": "boards/the-tilted-table.ogg",
 	"two": "boards/two-pockets.ogg", "closing": "boards/closing-time.ogg", "iron": "boards/the-iron-rack.ogg",
-	"lights": "boards/lights-out.ogg", "hustler": "boards/the-hustler.ogg", "elements": "boards/the-element-table.ogg",
+	"lights": "boards/lights-out.ogg", "hustler": "boards/the-hustler.ogg", "elements": "boards/the-element-table.ogg", "hypotenuse": "boards/the-hypotenuse.ogg", "benzene": "boards/benzene-ring.ogg", "pentagon": "boards/golden-pentagon.ogg", "lshell": "boards/the-l-shell.ogg",
 	"final": "boards/the-grand-final.ogg",
 }
 

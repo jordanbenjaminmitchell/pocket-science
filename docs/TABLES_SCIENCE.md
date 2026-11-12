@@ -1,4 +1,4 @@
-# The science tables: 30 boards
+# The science tables: 40 boards
 
 Every board is named for a real idea in maths, physics or chemistry, and **that idea is the physical twist**. Shapes are polygons with exactly **6 holes** (some may be boarded up). Nine boards make a run, drawn from early, middle and late pools. The Pro Shop already names the next table, so you can plan for it.
 
@@ -55,6 +55,70 @@ From the other AI's proposal, these ideas are adopted here under science names: 
 |---|---|---|
 | 29 | **The Clockwork Table** | Pockets in clock order, plus a Sweeper bar that turns one step per shot like a clock hand |
 | 30 | **Apex Predator** (final) | The 8 goes last, against the **Great White** (8 hits): it swallows a ball every 2 shots, and the **Loan Shark** and **Leech** join it at half health |
+
+## Ten more boards (31–40)
+
+| # | Board | Shape | The twist | Pool |
+|---|---|---|---|---|
+| 31 | **Galton Board** | Triangle, apex up | Rows of pegs in Pascal's-triangle order; balls clatter down through them like a bean machine | Early |
+| 32 | **Golden Spiral** | Rectangle | A spiral rail arm winds into a drain in the middle; a ball caught on the arm rides it in | Middle |
+| 33 | **Tesla Coil** | Hexagon | Every third shot, a pulse from the centre pushes every ball outwards; the line shows the coming pulse | Middle |
+| 34 | **Gulf Stream** | Rectangle | A conveyor current runs across the table and carries any ball in it sideways | Middle |
+| 35 | **Meissner Effect** | Rectangle | Magnetic posts repel balls before they touch, so balls curve round them | Middle |
+| 36 | **Tectonic Plates** | Rectangle split in two | The two halves of the table slide past each other one step after every shot, so the rails don't line up | Late |
+| 37 | **Crystal Lattice** | Rhombus | A grid of small posts like atoms in a crystal; shots weave through the gaps | Late |
+| 38 | **Stellated Star** | Six-pointed star (concave) | A pocket at every point; the inner corners make wild banks | Late |
+| 39 | **The Lever** | Trapezoid | A see-saw rail on a fulcrum in the middle tips towards whichever end a ball hits | Late |
+| 40 | **Escape Velocity** | 16-sided near-circle | Two gravity wells slingshot balls round them; get the speed right to escape or orbit in | Late |
+
+## How every board looks different
+
+Each board gets its own **felt colour**, **rail material** and a faint **decal** on the felt that shows the idea, so you know where you are at a glance.
+
+| # | Board | Felt | Rails | Decal |
+|---|---|---|---|---|
+| 1 | The Local | Classic green | Walnut | None |
+| 2 | Benzene Ring | Teal | Brushed chrome | Hexagon with a ring inside |
+| 3 | The Hypotenuse | Slate blue | Pale maple | a² + b² = c² |
+| 4 | Venturi | Steel grey | Copper pipe | Flow lines narrowing |
+| 5 | Einstein–Rosen Bridge | Deep violet | Black glass | Two linked funnels |
+| 6 | Pinball Parlor | Arcade red | Neon-lit chrome | Starburst |
+| 7 | Superfluid | Ice white-blue | Frosted glass | Snow crystal |
+| 8 | Parabolic Mirror | Silver-grey | Mirror chrome | Parabola and its focus |
+| 9 | Whispering Gallery | Plum | Carved stone | Ellipse with two foci |
+| 10 | Semipermeable Membrane | Sea green | Rubber | Cell wall with an arrow |
+| 11 | Capacitor | Navy | Gold-plated | Capacitor symbol ⊣⊢ |
+| 12 | Kepler Orbit | Midnight blue | Brass | Planet's orbit |
+| 13 | Coriolis | Storm grey | Weathered steel | Hurricane swirl |
+| 14 | Snell's Law | Aqua | Glass | Light ray bending |
+| 15 | Harmonic Oscillator | Lime | Spring steel | Sine wave |
+| 16 | Lotka–Volterra | Ocean blue | Driftwood | Fish and shark fins |
+| 17 | Faraday Cage | Charcoal | Copper mesh | Cage bars |
+| 18 | The L-Shell | Orange | Bakelite | Electron shells |
+| 19 | Golden Pentagon | Gold-brown | Gilded | Pentagram of golden ratios |
+| 20 | Sierpinski Triangle | Black | White marble | Sierpinski fractal |
+| 21 | Möbius Strip | Two-tone green and blue | Twisted chrome | Möbius loop |
+| 22 | Maxwell's Demon | Crimson | Iron | Little demon at a gate |
+| 23 | Chain Reaction | Toxic yellow-green | Lead grey | Radiation trefoil |
+| 24 | Radioactive Decay | Dark olive | Hazard stripes | Half-life curve |
+| 25 | Lorentz Field | Electric blue | Magnet red and grey | Field lines |
+| 26 | Quantum Pockets | Deep purple | Holographic | Ψ (psi) |
+| 27 | Foucault's Pendulum | Museum burgundy | Mahogany | Pendulum arcs |
+| 28 | Event Horizon | Pure black | Obsidian | Accretion disc |
+| 29 | The Clockwork Table | Ivory | Brass gears | Clock face |
+| 30 | Apex Predator | Blood red | Shark-skin grey | Jaws |
+| 31 | Galton Board | Cream | Pine | Bell curve |
+| 32 | Golden Spiral | Amber | Bronze | Fibonacci spiral |
+| 33 | Tesla Coil | Violet-black | Copper coil | Lightning |
+| 34 | Gulf Stream | Atlantic blue | Ship's teak | Current arrows |
+| 35 | Meissner Effect | Frost blue | Superconductor silver | Levitating magnet |
+| 36 | Tectonic Plates | Rock brown | Basalt | Fault lines |
+| 37 | Crystal Lattice | Pale pink quartz | Crystal | Lattice grid |
+| 38 | Stellated Star | Navy with gold flecks | Gold | Star outline |
+| 39 | The Lever | Sand | Oak beam | Fulcrum triangle |
+| 40 | Escape Velocity | Starfield black | Titanium | Rocket's path |
+
+**Music:** every board already has its own track; the new ones get tracks from the same score generator.
 
 ## What the existing 22 become
 

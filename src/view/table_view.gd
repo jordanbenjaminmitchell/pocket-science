@@ -399,12 +399,21 @@ func _draw_cushions() -> void:
 	# Cushion nose shading: a light lip right at the playfield edge.
 	var lip := felt_color.lightened(0.18)
 	var dark := felt_color.darkened(0.55)
+	var shaped := not layout.shape.is_empty()
+	if shaped:
+		# A shaped table: wood covers the frame outside the playfield.
+		var frame := PackedVector2Array([Vector2(-CUSHION, -CUSHION), Vector2(W + CUSHION, -CUSHION), Vector2(W + CUSHION, H + CUSHION), Vector2(-CUSHION, H + CUSHION)])
+		var grown: PackedVector2Array = Geometry2D.offset_polygon(layout.shape, CUSHION)[0]
+		for piece in Geometry2D.clip_polygons(frame, grown):
+			if not Geometry2D.is_polygon_clockwise(piece):
+				c.draw_colored_polygon(piece, rail_color.darkened(0.15))
+		c.draw_polyline(grown + PackedVector2Array([grown[0]]), rail_color.lightened(0.3), 3.0, true)
 	for seg in layout.segments:
 		var a: Vector2 = seg.a
 		var b: Vector2 = seg.b
 		var n: Vector2 = seg.n
 		var is_rail := absf(n.x) < 0.01 or absf(n.y) < 0.01
-		if is_rail and (a.x == b.x or a.y == b.y):
+		if (is_rail and (a.x == b.x or a.y == b.y)) or (shaped and a.distance_to(b) > 28.0):
 			var poly := PackedVector2Array([a, b, b - n * CUSHION, a - n * CUSHION])
 			c.draw_colored_polygon(poly, felt_color.darkened(0.22))
 			c.draw_line(a - n * CUSHION, b - n * CUSHION, dark, 2.0)

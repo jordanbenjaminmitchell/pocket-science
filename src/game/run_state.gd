@@ -975,7 +975,13 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 ## Single source of truth for how the current table plays, shared by the game,
 ## the bots and the tests.
 func build_layout() -> TableLayout:
-	var layout := TableLayout.new().build(pocket_scale(), closed_pockets())
+	var layout := TableLayout.new()
+	var sh_id: String = str(Catalog.BOSSES.get(current().get("id", ""), {}).get("shape", ""))
+	if sh_id != "" and Catalog.SHAPES.has(sh_id):
+		var sd: Dictionary = Catalog.SHAPES[sh_id]
+		layout.build_shape(sd.verts, sd.pockets, pocket_scale(), closed_pockets(), sd.foot)
+	else:
+		layout.build(pocket_scale(), closed_pockets())
 	for k in table_mods.get("covered", []):
 		layout.pockets[k].closed = true
 		var opp: int = 5 - int(k)

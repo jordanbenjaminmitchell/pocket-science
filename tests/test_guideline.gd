@@ -35,12 +35,14 @@ func _load_table(boss: String) -> void:
 
 func _aim_at(number: int) -> void:
 	var s: PoolSim = g.sim
-	s.pos[0] = Vector2(300, 250)
+	# On a shaped table, line the two balls up just ahead of its rack spot.
+	var base := Vector2(600, 250) if s.layout.shape.is_empty() else s.layout.foot + Vector2(-60, 0)
+	s.pos[0] = base + Vector2(-300, 0)
 	var i := s.index_of(number)
 	for k in s.count():
 		if k != 0 and k != i:
 			s.alive[k] = 0
-	s.pos[i] = Vector2(600, 250)
+	s.pos[i] = base
 	g.view.update_balls(s)
 	g.fine_aim = true
 	g.aim_dir = Vector2.RIGHT

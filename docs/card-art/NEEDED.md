@@ -62,6 +62,51 @@ Items become **Catalysts**: every one recharges each table (none are used up), y
 
 **Elements that mention items** get new wording (no art change, but the tile stat may change): Pack Rat (+1 Catalyst slot), Quartermaster (Catalysts cost $1 less), Tinkerer (+1 charge on a random Catalyst each table), Quick Hands (the first Catalyst each table is free), Afterimage (Impulse and Superposition add Chain), Overclock (Catalysts get two charges).
 
+## Tables: art and music needed (the 40 science boards)
+
+The full list of boards, with each one's felt, rails and decal, is in [docs/TABLES_SCIENCE.md](../TABLES_SCIENCE.md).
+
+**Built so far:** The Hypotenuse (triangle), Benzene Ring (hexagon), Golden Pentagon and The L-Shell. Each has its shape and its own track. The others are still to come.
+
+### Art
+
+1. **A decal for every board:** 40 faint line drawings that sit on the felt (a hexagon ring, a² + b² = c², a parabola and its focus, a Möbius loop and so on; see the "Decal" column). Keep them simple, single-colour and low contrast, because the game draws them at about 6% opacity.
+2. **Sharks**, as sprites seen from above, with a "hit" flash and a knocked-out state:
+   - **Pool Shark:** grey, circles a ball.
+   - **Card Sharp:** wears a visor and holds cards; sits in a pocket mouth.
+   - **Loan Shark:** pinstripe suit, with a $ on its fin.
+   - **Hammerhead:** charges in a line.
+   - **Leech:** small; clamps onto a ball.
+   - **Great White:** final boss, with a health bar.
+3. **Moving parts:** the Clockwork **Sweeper** (a clock hand), the **pendulum bob** (Foucault), sliding **shuttle posts**, a **turntable** (Coriolis), a **conveyor** strip (Gulf Stream), **Maxwell's Demon** at its gate, a **see-saw rail** (The Lever) and a **charged rail** glow (Capacitor).
+4. **Rail materials:** most boards change only their colours, but a few want a texture: brushed chrome, copper pipe, black glass, marble, gilded and obsidian.
+
+### Music: tracks still to make
+
+Every board has its own loop, made by `tools/compose_score.py` (no samples; melodies come from maths sequences). There are 26 tracks now.
+
+- **Already have a track:** The Local, Pinball Parlor, The Clockwork Table (was the Element Table), The Hypotenuse, Benzene Ring, Golden Pentagon, The L-Shell.
+- **Reworked boards keep their old track** (rename the file and title): Superfluid ← Black Ice, Harmonic Oscillator ← Twin Posts, Event Horizon ← The Sinkhole, Kepler Orbit ← The Magnet Room, Lotka–Volterra ← The Smoke Room, Faraday Cage ← The Back Room, Capacitor ← Spring Street, Coriolis ← The Drift, Snell's Law ← The Tilted Table, Quantum Pockets ← Two Pockets, Radioactive Decay ← Closing Time, Apex Predator ← The Grand Final.
+- **New tracks needed (21):** Venturi, Einstein–Rosen Bridge, Parabolic Mirror, Whispering Gallery, Semipermeable Membrane, Sierpinski Triangle, Möbius Strip, Maxwell's Demon, Chain Reaction, Lorentz Field, Foucault's Pendulum, Galton Board, Golden Spiral, Tesla Coil, Gulf Stream, Meissner Effect, Tectonic Plates, Crystal Lattice, Stellated Star, The Lever, Escape Velocity.
+- **Retired tracks** (their boards are going), which can be deleted or reused: Frozen Lake, Old Slate, The Hump, Rotation Night, The Iron Rack, Lights Out, The Hustler.
+
+To add one, copy an entry in `BOARDS` in `tools/compose_score.py`, give it a new title, sequence, key, mode and tempo, then run `py -3.12 tools/compose_score.py <board id>`. Then add the file to `TRACKS` in `src/audio/sfx.gd`.
+
+### Music: making the tracks smaller
+
+The tracks are the biggest part of the app: about 67 MB now, and about 100 MB at 40 boards. Each is a 3–4 minute stereo Ogg Vorbis at quality 2.5 (about 2.6 MB).
+
+1. **Lower the quality** (biggest win, hardly audible on a phone): render at quality 0 instead of 2.5, about 64 kbps and roughly 40% smaller.
+   `py -3.12 tools/compose_score.py --quality 0`
+2. **Re-encode the existing files without re-rendering** (needs ffmpeg). This makes `-small.ogg` copies; check them, then replace the originals.
+   ```bash
+   for f in assets/music/boards/*.ogg; do ffmpeg -y -i "$f" -c:a libvorbis -q:a 0 "${f%.ogg}-small.ogg"; done
+   ```
+3. **Shorter loops:** 32 bars instead of 64 halves every file. The song form is in the script's header (intro, groove, build, drop and so on); drop the second groove, build and drop.
+4. **Mono** (`-ac 1` in the ffmpeg line) halves it again, at the cost of stereo width. Only worth it if the size is still too big after steps 1–3.
+
+Quality 0 plus 32-bar loops would bring 40 tracks to about 30 MB in all.
+
 ## Symbol rules
 
 The symbols follow the rules this file set out: a real element only where it genuinely fits (**Au** Gold ball, **Fe** Iron ball, **Pb** Leaded), otherwise the initials of the first two words (**FT** Follow Through), or a one-word name's first letter and then its first two (**B** Boomerang, **Bl** Blink). Later clashes take the first letter plus the next consonant.

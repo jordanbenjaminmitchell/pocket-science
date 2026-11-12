@@ -63,6 +63,13 @@ func _go() -> void:
 			var res: Dictionary = Scorer.score(ctx)
 			game._apply_tally_line(res.lines[0], 1)
 			await _frames(int(OS.get_environment("PS_EQ_FRAMES")) if OS.get_environment("PS_EQ_FRAMES") != "" else 75)
+		"board":
+			# Any board as the first table: PS_BOARD=hypotenuse and so on.
+			game._new_run()
+			game.run.plan[0] = game.run._table_entry(OS.get_environment("PS_BOARD"), 50)
+			game._setup_table()
+			game._enter_aim()
+			await _frames(40)
 		"settings":
 			game._show_settings(game._show_title)
 			await _frames(4)

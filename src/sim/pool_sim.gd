@@ -632,7 +632,7 @@ func cast(p: Vector2, d: Vector2, ignore: int, max_len: float = 3000.0, ignore2:
 
 
 func is_clear_spot(p: Vector2, ignore: int = -1) -> bool:
-	if p.x < R or p.y < R or p.x > TableLayout.W - R or p.y > TableLayout.H - R:
+	if not layout.contains(p, R):
 		return false
 	for j in pos.size():
 		if j != ignore and alive[j] == 1 and pos[j].distance_to(p) < R * 2.05:
