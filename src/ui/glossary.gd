@@ -28,7 +28,7 @@ const TERMS := {
 	"stripe": {"title": "Stripes", "text": "Balls 9 to 15, with a coloured band around the middle."},
 	"eight": {"title": "The 8-ball", "text": "Avoid it: sinking the 8 while other balls remain costs 15% of the table's target."},
 	"perk": {"title": "Perk", "text": "A passive item that sits in one of your six slots."},
-	"imbue": {"title": "Imbue", "text": "A lasting upgrade on one numbered ball for the rest of the run."},
+	"imbue": {"title": "Imbue", "text": "An upgrade that stays on one ball all run; each ball holds one, and a loose Imbue lets you pick which."},
 	"side_bet": {"title": "Side bet", "text": "An optional goal on each table that pays extra money."},
 	"english": {"title": "English", "text": "Spin from hitting the cue ball left or right of centre."},
 	"target": {"title": "Target", "text": "The score you must reach to clear this table."},

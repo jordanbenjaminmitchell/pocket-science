@@ -1010,7 +1010,7 @@ func _show_imbue_picker(i: int) -> void:
 	v.add_theme_constant_override("separation", 10)
 	p.add_child(v)
 	v.add_child(_label("%s - CHOOSE A BALL  ($%d)" % [str(iso.name).to_upper(), item.cost], 24, iso.color, F_PIXB))
-	var why := _label(iso.desc + " High balls are worth more; low balls sink sooner. Each ball holds one Imbue.", 14, Color(0.8, 0.82, 0.85), F_REG)
+	var why := _label(iso.desc + " High balls are worth more; low balls sink sooner.", 14, Color(0.8, 0.82, 0.85), F_REG)
 	why.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	why.custom_minimum_size = Vector2(520, 0)
 	v.add_child(why)
@@ -3721,11 +3721,11 @@ func _offer_card(i: int) -> Control:
 			accent = iso.color
 			if item.has("ball"):
 				title = "%s %d-ball" % [iso.name, item.ball]
-				desc = iso.desc + " Already on this ball, for the whole run."
+				desc = iso.desc
 				kind = "Imbued ball"
 			else:
 				title = "%s Imbue" % iso.name
-				desc = iso.desc + " You choose the ball. Each ball holds one Imbue."
+				desc = iso.desc
 				kind = "Imbue · choose a ball"
 		"ball":
 			var bt: Dictionary = Catalog.BALL_TYPES[item.id]
@@ -3767,6 +3767,8 @@ func _offer_card(i: int) -> Control:
 		kind_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		kind_l.custom_minimum_size = Vector2(172, 0)
 		v.add_child(kind_l)
+		if item.type == "imbue":
+			_make_term(kind_l, "imbue")   # the Imbue rules live in this tooltip, not on every card
 	if not syn.is_empty():
 		var sl := _label("+ Synergy: " + ", ".join(syn), 12, Color(0.5, 1.0, 0.6))
 		sl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
