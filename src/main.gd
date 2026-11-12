@@ -3153,10 +3153,8 @@ func _perk_card(id: String, slot: int) -> Control:
 	name_l.custom_minimum_size = Vector2(card.x - 66.0, 0)
 	hb.add_child(name_l)
 	var d := _term_text(Glossary.link(f.desc), 13 if settings.touch_mode else 11, Color(0.78, 0.8, 0.82), card.x - 24.0)
-	if state != S.SHOP:
-		v.add_child(d)
-	else:
-		v.add_child(_label(Catalog.rarity_name(f.r), 11, accent))
+	# What it does is always on the card, in the shop too (the border colour shows rarity).
+	v.add_child(d)
 	var now := _perk_now(id)
 	if now != "":
 		v.add_child(_label("Now: " + now, 12, TermTip.NEON))
@@ -3733,12 +3731,8 @@ func _offer_card(i: int) -> Control:
 			var bt: Dictionary = Catalog.BALL_TYPES[item.id]
 			accent = bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent
 			title = "%s ball" % bt.name
-			if run.set_full():
-				desc = bt.desc + " Your set is full (15): you also pay $%d to remove the ball it replaces." % run.removal_cost()
-				kind = "New ball · + $%d removal" % run.removal_cost()
-			else:
-				desc = bt.desc + " Joins your set for the rest of the run."
-				kind = "New ball · set %d / %d" % [run.ball_set.size(), RunState.MAX_SET]
+			desc = bt.desc
+			kind = "New ball"
 		"item":
 			var itd: Dictionary = Catalog.ITEMS[item.id]
 			accent = Color(0.45, 0.85, 1.0)
