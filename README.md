@@ -2,7 +2,7 @@
 
 **A real-pool roguelike. Sink balls, avoid the 8, stack multipliers, beat the target.**
 
-Pocket Science plays like real pool: a 2:1 table with six pockets, all 15 numbered balls, a cue stick and an exact prediction line. On top of that sits a roguelike run of nine boss tables, a Pro Shop of Elements and ball upgrades, and Chain and Heat scoring. Built in Godot 4.7.
+Pocket Science plays like real pool: six pockets, all 15 numbered balls, a cue stick and an exact prediction line. Most boards use a 2:1 table; four playable boards use triangle, hexagon, pentagon and L-shaped layouts. On top of that sits a roguelike run of nine boss tables, drawn from 26 boards, a Pro Shop of Elements and ball upgrades, and Chain and Heat scoring. Built in Godot 4.7.
 
 ## Download and play
 
@@ -21,10 +21,10 @@ The APK is signed with a personal key from the build PC, so it is for your own d
 4. **The Pro Shop** opens between tables:
    - **Elements:** 100 passive rules for your six slots.
    - **Isotopes:** 16 lasting upgrades for one ball.
-   - **The Hustler's Kit:** 21 items. **Tools** stay all run with one charge per table; **Consumables** are used once. Each works at one moment: while aiming, while a shot is paused, or after a shot. Set-up items show their effect on the prediction first, and are spent only when you shoot.
+   - **Catalysts:** 23 reusable board-changing tools. Each normally has one charge per table and works while aiming or during a paused shot. Set-up effects appear in the prediction before you shoot.
    - **Special balls:** 24 types to add to your set.
    - **Removal:** take a ball out of your set, never the 8.
-5. **Nine tables** make a run, including the Element Table at table 5 and the Grand Final at table 9. After that, endless mode.
+5. **Nine tables** make a run, including the Clockwork Table at table 5 and the Grand Final at table 9. After that, endless mode.
 
 ### Scoring
 
@@ -51,7 +51,7 @@ No table ever hides or bends the line. Tables that curve a ball's path draw the 
 Press **P** (or the Pause button on a phone) while the balls roll and the shot freezes. While it's paused:
 
 - The prediction shows exactly where every ball will go from that moment.
-- Pause items such as **Second Strike**, **Pop-up Wall** and **Blink** change the shot, and bumpers and portals can be placed too.
+- Catalysts such as **Impulse**, **Force Field** and **Superposition** change the shot, and posts and portals can be placed too.
 - Press **L** (Plan a pause) to lock the prediction, then slide along any ball's predicted line and click to make the shot pause itself when that ball gets there. This works while aiming as well.
 
 Settings can also pause every shot automatically the moment the cue ball first hits a ball.
@@ -77,7 +77,7 @@ You need Godot 4.7.2 with export templates (bundled in `runtime/` on the build P
 
 ```bash
 ./run_tests.sh          # every headless test suite
-./tools/ci.sh           # tests, six simulated players, then both builds
+./tools/ci.sh           # tests, an expert simulated player, then both builds (FULL=1 runs all six)
 ./build_windows.sh      # export/windows/
 ./build_android.sh      # export/android/PocketScience.apk
 ./tools/release.sh "What changed"   # bump version, check, build, push and publish a release

@@ -1,6 +1,8 @@
 # The science tables: 40 boards
 
-Every board is named for a real idea in maths, physics or chemistry, and **that idea is the physical twist**. Shapes are polygons with exactly **6 holes** (some may be boarded up). Nine boards make a run, drawn from early, middle and late pools. The Pro Shop already names the next table, so you can plan for it.
+**Design plan, not the current playable roster.** The game currently has 26 boards: the original 22 plus the four shaped boards (Benzene Ring, The Hypotenuse, Golden Pentagon and The L-Shell). The remaining science boards below have concepts, art or music in progress, but their gameplay rules are not yet implemented. The current roster is defined in `src/game/catalog.gd`.
+
+In this plan, every board is named for a real idea in maths, physics or chemistry, and **that idea is the physical twist**. Shapes are polygons with exactly **6 holes** (some may be boarded up). Nine boards make a run, drawn from early, middle and late pools. The Pro Shop already names the next table, so you can plan for it.
 
 **Rules kept from the brainstorm:** the prediction line tells the truth (movers follow fixed patterns in shot time, Sharks are solid), and pausing freezes everything.
 
@@ -118,7 +120,7 @@ Each board gets its own **felt colour**, **rail material** and a faint **decal**
 | 39 | The Lever | Sand | Oak beam | Fulcrum triangle |
 | 40 | Escape Velocity | Starfield black | Titanium | Rocket's path |
 
-**Music:** every board already has its own track; the new ones get tracks from the same score generator.
+**Music:** tracks for the planned boards exist as assets. Only implemented boards play in the current game.
 
 ## What the existing 22 become
 

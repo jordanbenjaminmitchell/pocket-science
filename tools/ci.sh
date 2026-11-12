@@ -4,10 +4,13 @@
 # and the Windows and Android builds.
 set -u
 GODOT="${GODOT:-/c/Users/JordanMitchell/Documents/Codex/2026-09-08/can/work/godot/Godot_v4.7.2-stable_win64_console.exe}"
+GODOT_TIMEOUT_BIN="${GODOT_TIMEOUT_BIN:-/usr/bin/timeout}"
 cd "$(dirname "$0")/.."
 fail=0
-./run_tests.sh | grep -E "tests: |FAILED" || true
-./run_tests.sh >/dev/null 2>&1 || fail=1
+test_out="$(./run_tests.sh 2>&1)"
+test_code=$?
+echo "$test_out" | grep -E "tests: |FAILED" || true
+[ $test_code -eq 0 ] || fail=1
 REAL_APPDATA="$APPDATA"
 export APPDATA="$(cygpath -w "$(mktemp -d)")"
 OUT="$(mktemp -d)"
@@ -16,7 +19,7 @@ OUT="$(mktemp -d)"
 PERSONAS="expert"
 [ "${FULL:-0}" = "1" ] && PERSONAS="novice casual builder saver gambler expert"
 for p in $PERSONAS; do
-  if ! timeout 200 "$GODOT" --headless --path . --script res://tools/playtest.gd -- "$p" 2 7000 "$(cygpath -w "$OUT")\$p.jsonl" 2>&1 | grep -q "PLAYTEST DONE"; then
+  if ! "$GODOT_TIMEOUT_BIN" 200 "$GODOT" --headless --path . --script res://tools/playtest.gd -- "$p" 2 7000 "$(cygpath -w "$OUT")\$p.jsonl" 2>&1 | grep -q "PLAYTEST DONE"; then
     echo "### persona $p failed"; fail=1
   fi
 done
