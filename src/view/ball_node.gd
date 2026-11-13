@@ -38,7 +38,7 @@ var fade := 1.0
 var vel := Vector2.ZERO
 var shown_settled := 1.0
 var rest_tween: Tween
-var emblem := ""          # special balls show this motif instead of a number
+var emblem := ""          # Exotic balls show this motif instead of a number
 var emblem_ink := Color.BLACK
 var aura: Node2D               # Imbued balls: ring and orbiting spark, drawn over the ball
 var aura_t := 0.0
@@ -55,7 +55,7 @@ const IMBUE_FX := {
 	"prismatic": "rainbow", "hollow": "hollow", "leaded": "sink", "bounty": "glint", "starry": "stars", "twin": "echo",
 	"volatile": "spark", "jinxed": "void", "pawned": "glint", "mirror": "echo",
 }
-## Special ball type -> particle style.
+## Exotic ball type -> particle style.
 const FX_SIZE := 1.6
 const BALL_FX := {
 	"void": "void", "frost": "frost", "ember": "ember", "star": "stars", "sun": "rays", "gold": "glint",

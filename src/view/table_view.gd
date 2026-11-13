@@ -219,6 +219,145 @@ func _draw_board_fields(c: CanvasItem) -> void:
 			BoardArt.draw_charged_rail(c, Vector2(40, 0), Vector2(W - 40, 0), 0.35, time)
 			if BoardFeatures.charged(board):
 				BoardArt.draw_charged_rail(c, Vector2(40, H), Vector2(W - 40, H), 1.0, time)
+		"venturi":
+			BoardArt.draw_conveyor(c, Rect2(560, 205, 90, 90), Vector2.RIGHT, time * 1.6)
+		"lorentz":
+			_draw_lorentz(c)
+		"meissner":
+			for p: Vector2 in BoardFeatures.MEISSNER_POSTS:
+				for k in 3:
+					var rr := 24.0 + fmod(time * 30.0 + k * 16.0, 48.0)
+					c.draw_arc(p, rr, 0, TAU, 40, Color(0.6, 0.85, 1.0, 0.28 * (1.0 - (rr - 24.0) / 48.0)), 2.0, true)
+		"escape":
+			for p: Vector2 in BoardFeatures.ESCAPE_WELLS:
+				_draw_well(c, p, 1.0)
+		"tesla":
+			_draw_coil(c, Vector2(W * 0.5, H * 0.5), BoardFeatures.coil_on(board))
+		"parabolic", "whisper", "spiral":
+			var fk := 4 if board_id == "spiral" else 5
+			if fk < layout.pockets.size():
+				var fp: Vector2 = layout.pockets[fk].pos
+				var pulse := 0.5 + 0.5 * sin(time * 3.0)
+				c.draw_arc(fp, 38.0 + pulse * 4.0, 0, TAU, 48, Color(1.0, 0.85, 0.4, 0.55), 2.5, true)
+				if board_id == "whisper":
+					# The other focus, which every shot through it is aimed from.
+					var other := Vector2(W - fp.x, fp.y)
+					c.draw_arc(other, 10.0, 0, TAU, 24, Color(1.0, 0.85, 0.4, 0.7), 2.0, true)
+					c.draw_line(other + Vector2(-6, 0), other + Vector2(6, 0), Color(1.0, 0.85, 0.4, 0.7), 1.5)
+					c.draw_line(other + Vector2(0, -6), other + Vector2(0, 6), Color(1.0, 0.85, 0.4, 0.7), 1.5)
+	_draw_board_walls(c)
+
+
+## The board's own walls: rails, ridges, islands and the spiral arm as raised
+## wooden rails; the membrane as a living wall; the Demon at his gate.
+func _draw_board_walls(c: CanvasItem) -> void:
+	if layout == null:
+		return
+	var rail := Color(0.42, 0.3, 0.2)
+	match board_id:
+		"tectonic":
+			rail = Color(0.36, 0.3, 0.27)
+		"sierpinski":
+			rail = Color(0.88, 0.88, 0.86)
+		"spiral":
+			rail = Color(0.72, 0.52, 0.22)
+		"venturi":
+			rail = Color(0.72, 0.42, 0.24)
+	var done := {}
+	for seg in layout.segments:
+		if not seg.has("board"):
+			continue
+		var a: Vector2 = seg.a
+		var b: Vector2 = seg.b
+		var key := "%d,%d,%d,%d" % [mini(int(a.x), int(b.x)), mini(int(a.y), int(b.y)), maxi(int(a.x), int(b.x)), maxi(int(a.y), int(b.y))]
+		if seg.has("membrane"):
+			_draw_membrane(c, a, b)
+			continue
+		if seg.has("fast") or seg.has("slow"):
+			if not done.has("gate"):
+				done["gate"] = true
+				var mid := (a + b) * 0.5
+				c.draw_line(a, b, Color(0.9, 0.85, 0.35, 0.35), 3.0)
+				BoardArt.draw_demon(c, mid, 0.5 + 0.5 * sin(time * 2.0), time)
+			continue
+		if done.has(key) or board_id == "elements" or board_id == "lever":
+			continue   # the Sweeper and the Lever have their own drawings
+		done[key] = true
+		c.draw_line(a + Vector2(3, 5), b + Vector2(3, 5), Color(0, 0, 0, 0.3), 10.0, true)
+		c.draw_line(a, b, rail, 9.0, true)
+		c.draw_line(a, b, rail.lightened(0.35), 3.0, true)
+		c.draw_circle(a, 4.5, rail.lightened(0.15), true, -1.0, true)
+		c.draw_circle(b, 4.5, rail.lightened(0.15), true, -1.0, true)
+	if board_id == "lever":
+		var ends := BoardFeatures.lever_ends(board)
+		var mid: Vector2 = ((ends[0] as Vector2) + (ends[1] as Vector2)) * 0.5
+		BoardArt.draw_seesaw(c, mid, BoardFeatures.LEVER_HALF * 2.0, ((ends[1] as Vector2) - (ends[0] as Vector2)).angle())
+
+
+## Semipermeable Membrane: a soft, rippling cell wall with arrows showing the
+## way balls may pass.
+func _draw_membrane(c: CanvasItem, a: Vector2, b: Vector2) -> void:
+	var col := Color(0.45, 0.95, 0.75)
+	var pts := PackedVector2Array()
+	var n := (b - a).orthogonal().normalized()
+	for i in 41:
+		var f := i / 40.0
+		pts.append(a.lerp(b, f) + n * sin(f * 30.0 + time * 3.0) * 3.0)
+	c.draw_polyline(pts, Color(col, 0.25), 9.0, true)
+	c.draw_polyline(pts, Color(col, 0.85), 2.0, true)
+	for k in 5:
+		var p := a.lerp(b, (k + 0.5) / 5.0) + Vector2(fmod(time * 20.0, 24.0) - 12.0, 0)
+		c.draw_colored_polygon(PackedVector2Array([p + Vector2(8, 0), p + Vector2(-4, -6), p + Vector2(-4, 6)]), Color(col, 0.7))
+
+
+## Lorentz Field: a marked zone of field lines coming out of the cloth.
+func _draw_lorentz(c: CanvasItem) -> void:
+	var r: Rect2 = BoardFeatures.LORENTZ_RECT
+	var col := Color(0.35, 0.65, 1.0)
+	c.draw_rect(r, Color(col, 0.06))
+	c.draw_rect(r, Color(col, 0.5), false, 2.0)
+	var y := r.position.y + 28.0
+	var row := 0
+	while y < r.end.y - 10.0:
+		var x := r.position.x + (28.0 if row % 2 == 0 else 52.0)
+		while x < r.end.x - 10.0:
+			var a := 0.35 + 0.25 * sin(time * 2.0 + x * 0.05 + y * 0.03)
+			c.draw_arc(Vector2(x, y), 5.0, 0, TAU, 14, Color(col, a), 1.5, true)
+			c.draw_circle(Vector2(x, y), 1.6, Color(col, a + 0.2), true, -1.0, true)
+			x += 48.0
+		y += 42.0
+		row += 1
+
+
+## A gravity well: rings spiralling in.
+func _draw_well(c: CanvasItem, p: Vector2, strength: float) -> void:
+	for k in 5:
+		var rr := 14.0 + fmod(80.0 - time * 24.0 + k * 16.0, 80.0)
+		c.draw_arc(p, rr, time * 0.8 + k, time * 0.8 + k + PI * 1.5, 32, Color(0.75, 0.6, 1.0, 0.3 * strength * (1.0 - rr / 94.0)), 2.0, true)
+	c.draw_circle(p, 9.0, Color(0.05, 0.02, 0.1, 0.85), true, -1.0, true)
+	c.draw_arc(p, 11.0, 0, TAU, 24, Color(0.85, 0.7, 1.0, 0.7), 1.5, true)
+
+
+## Tesla Coil: copper windings in the middle; lightning when it will fire this shot.
+func _draw_coil(c: CanvasItem, p: Vector2, live: bool) -> void:
+	for k in 4:
+		c.draw_arc(p, 10.0 + k * 6.0, 0, TAU, 32, Color(0.8, 0.5, 0.25, 0.75), 2.5, true)
+	c.draw_circle(p, 7.0, Color(0.9, 0.9, 1.0) if live else Color(0.4, 0.4, 0.45), true, -1.0, true)
+	if not live:
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(time * 12.0)
+	for k in 6:
+		var a := TAU * k / 6.0 + rng.randf() * 0.4
+		var pts := PackedVector2Array([p])
+		var q := p
+		for s in 6:
+			q += Vector2.from_angle(a + rng.randf_range(-0.6, 0.6)) * 18.0
+			pts.append(q)
+		c.draw_polyline(pts, Color(0.7, 0.8, 1.0, 0.8), 2.0, true)
+	for k in 3:
+		var rr := 40.0 + fmod(time * 120.0 + k * 60.0, 180.0)
+		c.draw_arc(p, rr, 0, TAU, 64, Color(0.6, 0.75, 1.0, 0.35 * (1.0 - rr / 220.0)), 2.0, true)
 
 
 ## The board's Sharks, the pendulum bob, the Sweeper and the Leech, over the balls.
@@ -239,7 +378,7 @@ func _draw_board_pieces(c: CanvasItem) -> void:
 			continue
 		var state := "ko" if sh.ko else ("hit" if float(shark_flash.get(i, 0.0)) > 0.0 else "normal")
 		var r := float(BoardFeatures.SHARKS[kind].r)
-		BoardArt.draw_shark(c, kind, BoardFeatures.shark_pos(sh), float(sh.heading), r * 4.2, state, time, float(sh.hp) / maxf(1.0, float(sh.max)))
+		BoardArt.draw_shark(c, kind, BoardFeatures.shark_pos(sh), float(sh.heading), r * 4.2, state, time, float(sh.hp) / maxf(1.0, float(sh.max)), int(sh.max))
 	match board_id:
 		"elements":
 			BoardArt.draw_sweeper(c, Vector2(W * 0.5, H * 0.5), BoardFeatures.sweep_angle(board), BoardFeatures.SWEEP_LEN, time)
@@ -477,6 +616,8 @@ func _draw_cushions() -> void:
 		var a: Vector2 = seg.a
 		var b: Vector2 = seg.b
 		var n: Vector2 = seg.n
+		if seg.has("board"):
+			continue   # the board's own walls, gates and membranes: _draw_board_walls
 		var is_rail := absf(n.x) < 0.01 or absf(n.y) < 0.01
 		if (is_rail and (a.x == b.x or a.y == b.y)) or (shaped and a.distance_to(b) > 28.0):
 			var poly := PackedVector2Array([a, b, b - n * CUSHION, a - n * CUSHION])
@@ -556,8 +697,8 @@ func _draw_cushions() -> void:
 	for bp in layout.bumpers:
 		var p: Vector2 = bp.pos
 		var r: float = bp.r
-		if bp.has("shark") or bp.has("bob"):
-			continue   # drawn by _draw_board_pieces
+		if bp.has("shark") or bp.has("bob") or bp.has("fulcrum"):
+			continue   # drawn by _draw_board_pieces / _draw_board_fields
 		c.draw_circle(p + Vector2(3, 5), r + 2, Color(0, 0, 0, 0.3))
 		c.draw_circle(p, r, Color(0.65, 0.5, 0.2))
 		c.draw_circle(p, r - 4, Color(0.25, 0.85, 0.85))

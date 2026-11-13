@@ -50,7 +50,7 @@ func show_term(term: String, at: Vector2) -> void:
 	show_text(Glossary.title(term), Glossary.sentence(term), at)
 
 
-## Any heading and text, for things that are not glossary terms (a special ball).
+## Any heading and text, for things that are not glossary terms (an Exotic ball).
 func show_text(title: String, text: String, at: Vector2, seconds: float = SHOW_TIME, extra: String = "") -> void:
 	heading.text = title
 	body.text = text

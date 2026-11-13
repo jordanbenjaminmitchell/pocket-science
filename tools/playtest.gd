@@ -306,7 +306,7 @@ func shop(run: RunState, rec: Dictionary) -> void:
 			bought = true
 		if not bought:
 			var can_reroll: bool = P.reroll and rerolls < 2 and run.money >= run.reroll_cost + 5
-			if persona == "saver" and run.perks.has("interest"):
+			if persona == "saver" and run.has_perk("interest"):
 				can_reroll = can_reroll and run.money - run.reroll_cost >= 15
 			if can_reroll and run.perks.size() < RunState.MAX_PERKS:
 				run.reroll()

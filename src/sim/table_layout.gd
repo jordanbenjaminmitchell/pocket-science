@@ -120,6 +120,11 @@ func build_shape(verts: Array, spots: Array, scale: float = 1.0, closed: Array[i
 	for k in spots.size():
 		var sp: Dictionary = spots[k]
 		var open := not closed_pockets.has(k)
+		if sp.has("p"):
+			# A pocket out on the cloth, away from any cushion (a focus, a drain).
+			_add_pocket(sp.p, 27.5 * scale, false, Vector2.ZERO)
+			pockets[k]["closed"] = not open
+			continue
 		if sp.has("v"):
 			var vi: int = sp.v
 			var v: Vector2 = verts[vi]

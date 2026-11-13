@@ -26,7 +26,7 @@ const MILESTONES := {
 	"pots100": {"name": "Old Hand", "hint": "Sink 100 balls in total", "perks": ["masse"], "cue": ""},
 	"items5": {"name": "Handy", "hint": "Use 5 items in total", "perks": [], "cue": "gearhead"},
 	"table4": {"name": "Halfway There", "hint": "Clear table 4", "perks": [], "cue": "lean"},
-	"collector3": {"name": "Odd Collection", "hint": "Clear a table with 3 special balls in your set", "perks": [], "cue": "alchemist"},
+	"collector3": {"name": "Odd Collection", "hint": "Clear a table with 3 Exotic balls in your set", "perks": [], "cue": "alchemist"},
 	"rich": {"name": "Well Funded", "hint": "Hold $30 at once", "perks": ["gold"], "cue": ""},
 }
 

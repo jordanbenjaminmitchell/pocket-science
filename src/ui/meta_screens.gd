@@ -70,7 +70,7 @@ func _rows() -> Array:
 		"Balls":
 			for id in Catalog.BALL_TYPES:
 				var bt: Dictionary = Catalog.BALL_TYPES[id]
-				rows.append({"icon": "ball_" + id, "title": bt.name + " ball", "sub": "Special ball · $%d" % bt.cost, "desc": bt.desc, "color": bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent, "hint": ""})
+				rows.append({"icon": "ball_" + id, "title": bt.name + " ball", "sub": "Exotic ball · $%d" % bt.cost, "desc": bt.desc, "color": bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent, "hint": ""})
 		"Isotopes":
 			for id in Catalog.IMBUES:
 				var r: Dictionary = Catalog.IMBUES[id]

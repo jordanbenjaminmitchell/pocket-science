@@ -177,7 +177,7 @@ const FAMILY_COLORS := {
 var motif := ""
 
 
-## Perks and items use MOTIFS; special balls ("ball_<type>") use their own emblem.
+## Perks and items use MOTIFS; Exotic balls ("ball_<type>") use their own emblem.
 static func motif_for(id: String) -> String:
 	if id.begins_with("ball_") and Catalog.BALL_TYPES.has(id.substr(5)):
 		return Catalog.BALL_TYPES[id.substr(5)].motif

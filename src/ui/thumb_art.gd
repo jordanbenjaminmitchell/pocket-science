@@ -5,7 +5,7 @@ extends Control
 ##   perk   the Element's tile in miniature: atomic number, its symbol in the
 ##          element's own colour, framed in its periodic-table group colour
 ##   imbue  a ball glowing in the Isotope's colour, with its symbol
-##   ball   the special ball itself
+##   ball   the Exotic ball itself
 ##   cue    the starting cue, lying across, with the object it carries
 ##   table  the board seen from above: its shape, felt, rails, pockets and decal
 ##

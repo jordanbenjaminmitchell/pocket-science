@@ -80,7 +80,7 @@ func make_sim(run: RunState, layout: TableLayout) -> PoolSim:
 		"gravity":
 			s.well_pos = Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5)
 			s.well_strength = 1.0
-	if run.perks.has("magnet"):
+	if run.has_perk("magnet"):
 		s.pocket_pull = 1.0
 	return s
 

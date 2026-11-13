@@ -21,22 +21,22 @@ const EIGHT_PENALTY := 0.15
 ## and pays "money". "r": rarity 0 common, 1 uncommon, 2 rare.
 const PERKS := {
 	"elastic": {"name": "Neodymium Magnet", "z": 60, "r": 1, "cost": 6, "fam": "combo", "desc": "The cue ball is magnetic: as it rolls past, it tugs nearby balls towards it."},
-	"odd": {"name": "Fluorine Flare", "z": 9, "r": 0, "cost": 4, "fam": "number", "desc": "Odd-numbered balls are worth +20.", "fx": {"when": "odd", "value": 20}},
+	"odd": {"name": "Fluorine Flare", "z": 9, "r": 0, "cost": 4, "fam": "number", "desc": "Odd-numbered balls are worth +2× their number (the 1 gets +2, the 9 gets +18).", "fx": {"when": "odd", "per_num": 2}},
 	"even": {"name": "Erbium Laser", "z": 68, "r": 0, "cost": 4, "fam": "number", "desc": "Even-numbered balls add +0.75 Chain as they sink.", "fx": {"when": "even", "chain": 0.75}},
 	"stripes": {"name": "Chromium Stripes", "z": 24, "r": 0, "cost": 5, "fam": "stripe", "desc": "Striped balls score ×1.5.", "fx": {"when": "stripe", "x": 1.5}},
-	"solids": {"name": "Silicon Wafer", "z": 14, "r": 0, "cost": 5, "fam": "solid", "desc": "Solid balls are worth +35.", "fx": {"when": "solid", "value": 35}},
+	"solids": {"name": "Silicon Wafer", "z": 14, "r": 0, "cost": 5, "fam": "solid", "desc": "Solid balls are worth +3× their number (the 1 gets +3, the 7 gets +21).", "fx": {"when": "solid", "per_num": 3}},
 	"corner": {"name": "Curium Corner", "z": 96, "r": 0, "cost": 4, "fam": "pocket", "desc": "Corner pockets add +0.5 Chain as the ball sinks.", "fx": {"when": "corner", "chain": 0.5}},
 	"side": {"name": "Strontium Firework", "z": 38, "r": 0, "cost": 5, "fam": "pocket", "desc": "Side pockets score ×2.", "fx": {"when": "side", "x": 2.0}},
 	"lever": {"name": "Tungsten Core", "z": 74, "r": 0, "cost": 5, "fam": "stripe", "desc": "Stripes weigh 140% and lose no speed off cushions: they plough on through other balls."},
-	"chalk": {"name": "Calcium Chalk", "z": 20, "r": 0, "cost": 5, "fam": "utility", "desc": "Clearing a table gives +1 extra Chalk."},
-	"jaws": {"name": "Titanium Jaws", "z": 22, "r": 0, "cost": 6, "fam": "pocket", "desc": "Pockets are 12% wider."},
+	"chalk": {"name": "Calcium Chalk", "z": 20, "r": 0, "cost": 5, "fam": "utility", "min_table": 3, "desc": "Clearing a table gives +1 extra Chalk."},
+	"jaws": {"name": "Titanium Jaws", "z": 22, "r": 0, "cost": 6, "fam": "pocket", "desc": "Pockets are 20% wider."},
 	"lens": {"name": "Selenium Lens", "z": 34, "r": 0, "cost": 4, "fam": "utility", "desc": "Long sinks (the ball travels 450+) add +1 Chain.", "fx": {"when": "long", "chain": 1.0}},
 	"bank": {"name": "Platinum Rail", "z": 78, "r": 1, "cost": 6, "fam": "bank", "desc": "Bank sinks add +1 Chain per cushion."},
-	"kick": {"name": "Potassium Kick", "z": 19, "r": 1, "cost": 6, "fam": "cue", "desc": "Kick shots (cue hits a cushion first) score ×2 on every sink.", "fx": {"when": "kick", "x": 2.0}},
-	"chain": {"name": "Sulfur Chain", "z": 16, "r": 1, "cost": 7, "fam": "combo", "desc": "Combination sinks score ×2.", "fx": {"when": "combo", "x": 2.0}},
+	"kick": {"name": "Potassium Kick", "z": 19, "r": 1, "cost": 6, "fam": "cue", "desc": "Once per table: the first kick shot (cue hits a cushion first) that sinks scores ×2 on every sink.", "fx": {"when": "kick", "x": 2.0, "once": true}},
+	"chain": {"name": "Sulfur Reagent", "z": 16, "r": 1, "cost": 7, "fam": "gear", "desc": "On a shot where you used a Catalyst, every sink is worth +10, and clearing the table on that shot pays $1 per table number.", "fx": {"when": "item_shot", "value": 10}},
 	"multi": {"name": "Boron Cluster", "z": 5, "r": 1, "cost": 6, "fam": "combo", "desc": "Every ball after the first in a shot adds +1 Chain as it sinks.", "fx": {"when": "extra", "chain": 1.0}},
 	"streak": {"name": "Phosphorus Match", "z": 15, "r": 1, "cost": 7, "fam": "streak", "desc": "Shots that sink 2+ balls add +1 extra Heat."},
-	"heat": {"name": "Magnesium Torch", "z": 12, "r": 1, "cost": 6, "fam": "pocket", "desc": "The hot pocket scores ×3 instead of ×2, and balls there are worth +30.", "fx": {"when": "hot", "value": 30}},
+	"heat": {"name": "Magnesium Torch", "z": 12, "r": 1, "cost": 6, "fam": "pocket", "desc": "The hot pocket scores ×3 instead of ×2."},
 	"power": {"name": "Uranium Reactor", "z": 92, "r": 1, "cost": 5, "fam": "cue", "desc": "At 85%+ power, the first ball the cue ball hits flies off 20% faster: a chain reaction."},
 	"finesse": {"name": "Indium Touch", "z": 49, "r": 1, "cost": 6, "fam": "cue", "desc": "Shots at 35% power or less score ×2.", "fx": {"when": "soft", "x": 2.0}},
 	"prime": {"name": "Promethium Prime", "z": 61, "r": 1, "cost": 6, "fam": "number", "desc": "Balls 2, 3, 5, 7, 11 and 13 score ×2.", "fx": {"when": "prime", "x": 2.0}},
@@ -44,12 +44,12 @@ const PERKS := {
 	"darkhorse": {"name": "Oxygen Octet", "z": 8, "r": 2, "cost": 9, "fam": "eight", "desc": "The 8 scores ×8 when it sinks. You still lose points if it sinks early.", "fx": {"when": "eight", "x": 8.0}},
 	"hushmoney": {"name": "Silver Tongue", "z": 47, "r": 0, "cost": 4, "fam": "money", "desc": "Sinking the 8 early costs $3 instead of points."},
 	"kissblack": {"name": "Antimony Kohl", "z": 51, "r": 1, "cost": 6, "fam": "eight", "desc": "Every time a ball touches the 8, add +0.75 Chain."},
-	"steerclear": {"name": "Neon Sign", "z": 10, "r": 0, "cost": 5, "fam": "eight", "desc": "If no ball touches the 8 during a shot, each sink adds +0.75 Chain.", "fx": {"when": "no_eight_touch", "chain": 0.75}},
+	"steerclear": {"name": "Neon Sign", "z": 10, "r": 0, "cost": 5, "fam": "eight", "desc": "If no ball touches the 8 during a shot, each sink adds +0.5 Chain.", "fx": {"when": "no_eight_touch", "chain": 0.5}},
 	"lastcall": {"name": "Polonium Halo", "z": 84, "r": 1, "cost": 6, "fam": "eight", "desc": "If the 8 is the only ball left, the pockets pull it in, and sinking it scores ×5 and pays $5.", "fx": {"when": "last_eight", "x": 5.0, "money": 5}},
 	"eightcount": {"name": "Krypton Tally", "z": 36, "r": 1, "cost": 6, "fam": "eight", "desc": "Every 8th ball you sink in a run scores ×3.", "fx": {"when": "eight_count", "x": 3.0}},
 	"trouble": {"name": "Plutonium Pit", "z": 94, "r": 2, "cost": 7, "fam": "eight", "desc": "When the 8 sinks early, gain +3 Heat. You still lose the points."},
 	"solidgold": {"name": "Gold Bar", "z": 79, "r": 1, "cost": 6, "fam": "solid", "desc": "Each solid you sink pays $1.", "fx": {"when": "solid", "money": 1}},
-	"bedrock": {"name": "Aluminium Ore", "z": 13, "r": 1, "cost": 8, "fam": "solid", "desc": "Shots that sink only solids add +1 Heat."},
+	"bedrock": {"name": "Aluminium Ore", "z": 13, "r": 1, "cost": 8, "fam": "solid", "desc": "Shots that sink only solids add +1 Heat for each solid sunk."},
 	"steadyrun": {"name": "Yttrium Ladder", "z": 39, "r": 1, "cost": 6, "fam": "solid", "desc": "Each solid sunk in a row on this table makes solids worth +12 more (max +96). A stripe resets it."},
 	"solidsonly": {"name": "Tantalum Plate", "z": 73, "r": 2, "cost": 9, "fam": "solid", "desc": "Solids score ×3, but stripes score ×0.5."},
 	"lastsolid": {"name": "Bismuth Crystal", "z": 83, "r": 2, "cost": 8, "fam": "solid", "desc": "When you sink the only solid left on the table, it scores ×8.", "fx": {"when": "last_solid", "x": 8.0}},
@@ -60,8 +60,8 @@ const PERKS := {
 	"laststripe": {"name": "Lead Anchor", "z": 82, "r": 1, "cost": 6, "fam": "eight", "desc": "The 8 weighs 300%, and it rattles out of the pockets until it is the last ball: no more early 8s."},
 	"gold": {"name": "Copper Penny", "z": 29, "r": 1, "cost": 7, "fam": "money", "desc": "Each sink pays $1 (max $3 per shot)."},
 	"entropy": {"name": "Samarium Simmer", "z": 62, "r": 1, "cost": 6, "fam": "heat", "desc": "Below Heat 3, shots start with +1 Chain."},
-	"catalyst": {"name": "Beryllium Avalanche", "z": 4, "r": 2, "cost": 8, "fam": "risk", "desc": "Every ball you sink makes all balls worth +0.75 for the rest of the run."},
-	"golden": {"name": "Iron Fist", "z": 26, "r": 2, "cost": 8, "fam": "risk", "desc": "The first sink of every shot scores ×2.", "fx": {"when": "first", "x": 2.0}},
+	"catalyst": {"name": "Beryllium Avalanche", "z": 4, "r": 2, "cost": 8, "fam": "risk", "desc": "Every ball you sink gives 2 random balls in your set +4 for the rest of the run. Hover a ball to see its bonus."},
+	"golden": {"name": "Iron Fist", "z": 26, "r": 2, "cost": 8, "fam": "risk", "desc": "Once per table: your first sink scores ×3.", "fx": {"when": "first", "x": 3.0, "once": true}},
 	"supernova": {"name": "Nickel Supernova", "z": 28, "r": 2, "cost": 9, "fam": "combo", "desc": "Shots that sink 3 or more balls score ×2 on every sink.", "fx": {"when": "triple", "x": 2.0}},
 	"fusion": {"name": "Helium Fusion", "z": 2, "r": 1, "cost": 6, "fam": "combo", "desc": "Sink a ball into the same pocket as your last sink (this shot or your last one) and it scores ×2.", "fx": {"when": "repeat_pocket", "x": 2.0}},
 	"magnet": {"name": "Gadolinium Pull", "z": 64, "r": 2, "cost": 9, "fam": "pocket", "desc": "Pockets gently pull nearby moving balls in."},
@@ -69,7 +69,7 @@ const PERKS := {
 	"oracle": {"name": "Tellurium Eye", "z": 52, "r": 2, "cost": 10, "fam": "utility", "desc": "Before each shot, see exactly what it will score, counting every ball it knocks in."},
 	"ricochet": {"name": "Rhenium Ricochet", "z": 75, "r": 1, "cost": 6, "fam": "bank", "desc": "Every cushion a ball touches adds +0.25 extra Chain."},
 	"cushion": {"name": "Sodium Cushion", "z": 11, "r": 0, "cost": 4, "fam": "bank", "desc": "Bank sinks are worth +30.", "fx": {"when": "bank", "value": 30}},
-	"geometry": {"name": "Germanium Angles", "z": 32, "r": 2, "cost": 8, "fam": "bank", "desc": "Bank sinks score ×1.5 for every cushion the ball touched (×2.25 off two)."},
+	"geometry": {"name": "Germanium Angles", "z": 32, "r": 2, "cost": 8, "fam": "bank", "desc": "Once per table: your first bank sink scores ×1.5 for every cushion it touched (×2.25 off two)."},
 	"tracer": {"name": "Radium Trail", "z": 88, "r": 0, "cost": 4, "fam": "bank", "desc": "Every cushion the cue ball touches after contact adds +0.25 Chain."},
 	"boomerang": {"name": "Bromine Boomerang", "z": 35, "r": 1, "cost": 6, "fam": "cue", "desc": "If the cue ball finishes within 120 of where it started, every sink scores ×2.", "fx": {"when": "boomerang", "x": 2.0}},
 	"precision": {"name": "Chlorine Clean", "z": 17, "r": 1, "cost": 6, "fam": "cue", "desc": "Clean sinks (straight from the cue ball, no cushions) add +1 Chain.", "fx": {"when": "clean", "chain": 1.0}},
@@ -79,7 +79,7 @@ const PERKS := {
 	"rhythm": {"name": "Rhodium Rhythm", "z": 45, "r": 0, "cost": 5, "fam": "streak", "desc": "Every third shot on a table scores ×2.", "fx": {"when": "third", "x": 2.0}},
 	"hothand": {"name": "Holmium Magnet", "z": 67, "r": 1, "cost": 6, "fam": "heat", "desc": "At Heat 3 or more, pockets pull nearby rolling balls in."},
 	"comeback": {"name": "Lanthanum Lantern", "z": 57, "r": 1, "cost": 6, "fam": "streak", "desc": "On your last Chalk, every sink scores ×2.", "fx": {"when": "last_chalk", "x": 2.0}},
-	"collector": {"name": "Gallium Glide", "z": 31, "r": 1, "cost": 6, "fam": "cue", "desc": "The cue ball rolls 30% further on the cloth."},
+	"collector": {"name": "Gallium Glide", "z": 31, "r": 1, "cost": 6, "fam": "cue", "desc": "The cue ball rolls 50% further on the cloth."},
 	"migration": {"name": "Hafnium Rod", "z": 72, "r": 1, "cost": 6, "fam": "heat", "desc": "While On fire (Heat 5+), a miss only costs 1 Heat instead of half."},
 	"lowball": {"name": "Lithium Cell", "z": 3, "r": 0, "cost": 4, "fam": "solid", "desc": "Your 3 lowest-value balls are charged: they lose no speed off cushions, and each pays $1 when it sinks."},
 	"highball": {"name": "Actinium Ray", "z": 89, "r": 0, "cost": 4, "fam": "stripe", "desc": "Balls 13, 14 and 15 score ×2.5.", "fx": {"when": "high3", "x": 2.5}},
@@ -96,25 +96,25 @@ const PERKS := {
 	"echo": {"name": "Europium Double", "z": 63, "r": 2, "cost": 9, "fam": "risk", "desc": "The first sink of every shot scores twice."},
 	"featherweight": {"name": "Hydrogen Balloon", "z": 1, "r": 2, "cost": 8, "fam": "physics", "desc": "The cue ball floats: if it would drop into a pocket, it bobs back out instead. No more pocket scratches."},
 	"heavyhit": {"name": "Osmium Cue", "z": 76, "r": 1, "cost": 6, "fam": "physics", "desc": "The cue ball is 30% heavier, so it drives balls further."},
-	"liverails": {"name": "Nitrogen Tyres", "z": 7, "r": 0, "cost": 5, "fam": "physics", "desc": "Cushions are 10% livelier."},
+	"liverails": {"name": "Nitrogen Tyres", "z": 7, "r": 0, "cost": 5, "fam": "physics", "desc": "The cue ball comes off every cushion 15% faster than it hit it."},
 	"slowcloth": {"name": "Thallium Felt", "z": 81, "r": 0, "cost": 4, "fam": "physics", "desc": "Thicker cloth: balls stop 25% sooner, for tighter position."},
 	"backspin": {"name": "Barium Spin", "z": 56, "r": 1, "cost": 6, "fam": "physics", "desc": "Draw and follow are 50% stronger."},
 	"bigbreak": {"name": "Radon Burst", "z": 86, "r": 0, "cost": 5, "fam": "physics", "desc": "Break shots hit 25% harder."},
 	"longarm": {"name": "Molybdenum Shaft", "z": 42, "r": 1, "cost": 6, "fam": "physics", "desc": "Full power hits 15% harder."},
-	"masse": {"name": "Manganese Swerve", "z": 25, "r": 1, "cost": 6, "fam": "cue", "desc": "English bends the cue ball twice as much off cushions."},
+	"masse": {"name": "Manganese Swerve", "z": 25, "r": 1, "cost": 6, "fam": "cue", "desc": "Side spin bends the cue ball twice as much off cushions."},
 	"followthru": {"name": "Francium Fizz", "z": 87, "r": 1, "cost": 6, "fam": "risk", "desc": "Scratch while sinking 2 or more balls and the shot still scores, with no Chalk lost."},
 	"drawartist": {"name": "Ytterbium Draw", "z": 70, "r": 1, "cost": 6, "fam": "cue", "desc": "Shots hit with draw score ×1.5.", "fx": {"when": "draw_shot", "x": 1.5}},
 	"thinrack": {"name": "Thulium Thinning", "z": 69, "r": 1, "cost": 6, "fam": "clear", "desc": "Every ball removed from your set makes all balls worth +12."},
 	"missing": {"name": "Technetium Gap", "z": 43, "r": 1, "cost": 7, "fam": "clear", "desc": "Shots start with +0.5 Chain for each ball removed from your set (max +3)."},
 	"cleanhouse": {"name": "Iodine Swab", "z": 53, "r": 0, "cost": 3, "fam": "clear", "desc": "Removing a ball in the Pro Shop is free."},
 	"packrat": {"name": "Protactinium Pack", "z": 91, "r": 0, "cost": 4, "fam": "gear", "desc": "+1 Catalyst slot."},
-	"quartermaster": {"name": "Zinc Coupon", "z": 30, "r": 0, "cost": 4, "fam": "gear", "desc": "Catalysts cost $1 less."},
+	"quartermaster": {"name": "Zinc Coupon", "z": 30, "r": 0, "cost": 4, "fam": "gear", "desc": "Catalysts cost $2 less."},
 	"tinkerer": {"name": "Tin Toolbox", "z": 50, "r": 1, "cost": 6, "fam": "gear", "desc": "Every table, a random Catalyst you hold gets one extra use."},
 	"enchanter": {"name": "Einsteinium Lab", "z": 99, "r": 0, "cost": 4, "fam": "imbue", "desc": "Isotopes cost $2 less."},
 	"secondcoat": {"name": "Cobalt Glaze", "z": 27, "r": 1, "cost": 7, "fam": "imbue", "desc": "Isotope balls score ×1.5."},
-	"goldrush": {"name": "Ruthenium Nugget", "z": 44, "r": 1, "cost": 6, "fam": "special", "desc": "Special balls score ×2."},
-	"menagerie": {"name": "Niobium Menagerie", "z": 41, "r": 1, "cost": 6, "fam": "special", "desc": "Shots start with +0.25 Chain for each special ball in your set."},
-	"alchemy": {"name": "Arsenic Mutation", "z": 33, "r": 2, "cost": 8, "fam": "special", "desc": "After each table, one plain ball in your set (never the 8) turns into a random special ball."},
+	"goldrush": {"name": "Ruthenium Nugget", "z": 44, "r": 1, "cost": 6, "fam": "special", "desc": "Exotic balls score ×2."},
+	"menagerie": {"name": "Niobium Menagerie", "z": 41, "r": 1, "cost": 6, "fam": "special", "desc": "Shots start with +0.25 Chain for each Exotic ball in your set."},
+	"alchemy": {"name": "Arsenic Mutation", "z": 33, "r": 2, "cost": 8, "fam": "special", "desc": "After each table, one plain ball in your set (never the 8) turns into a random Exotic ball."},
 	"stillness": {"name": "Xenon Flash", "z": 54, "r": 1, "cost": 6, "fam": "pause", "desc": "Once a table, the first time you pause a shot, every rolling ball speeds up by 30%."},
 	"quickhands": {"name": "Mercury Messenger", "z": 80, "r": 0, "cost": 4, "fam": "pause", "desc": "The first Catalyst you use on each table doesn't spend a use."},
 	"afterimage": {"name": "Americium Beacon", "z": 95, "r": 1, "cost": 6, "fam": "pause", "desc": "Impulse and Superposition each add +1 Chain to the shot."},
@@ -182,7 +182,7 @@ const IMBUES := {
 	"twin": {"name": "Twin", "cost": 4, "color": Color(0.5, 0.65, 1.0), "desc": "Its value counts twice. Then it hops to its colour twin (the 3 and the 11, the 1 and the 9...), if that one is free."},
 }
 
-## Special balls you can add to your set. They rack with the numbered balls and
+## Exotic balls you can add to your set. They rack with the numbered balls and
 ## count as neither solids nor stripes unless they say so. Each has its own
 ## finish ("pattern" in the ball shader), colours and emblem.
 const BALL_TYPES := {
@@ -213,7 +213,7 @@ const BALL_TYPES := {
 }
 
 ## Which special type each ball number above 15 is, for this run. RunState keeps
-## it in step, so every view and rule can look a special ball up by number.
+## it in step, so every view and rule can look an Exotic ball up by number.
 static var kinds := {}
 ## Dice and Wild balls: the number each one currently shows.
 static var faces := {}
@@ -246,7 +246,7 @@ const CUES := {
 		"shaft": Color(0.9, 0.86, 0.78), "butt": Color(0.36, 0.3, 0.24), "accent": Color(0.95, 0.95, 0.9)},
 	"black": {"name": "Black Cue", "desc": "Starts with Carbon Core: the 8 costs nothing and pays $3. $3.", "money": 3, "perks": ["eight"], "chalk": 0,
 		"shaft": Color(0.3, 0.3, 0.32), "butt": Color(0.05, 0.05, 0.06), "accent": Color(0.82, 0.8, 0.98)},
-	"alchemist": {"name": "Alchemist's Cue", "desc": "Starts with a Gold ball in your set, and Ruthenium Nugget: special balls score ×2. $3.", "money": 3, "perks": ["goldrush"], "chalk": 0, "add": ["gold"],
+	"alchemist": {"name": "Alchemist's Cue", "desc": "Starts with a Gold ball in your set, and Ruthenium Nugget: Exotic balls score ×2. $3.", "money": 3, "perks": ["goldrush"], "chalk": 0, "add": ["gold"],
 		"shaft": Color(0.95, 0.86, 0.6), "butt": Color(0.4, 0.2, 0.5), "accent": Color(1.0, 0.8, 0.3)},
 	"glass": {"name": "Glass Cue", "desc": "Starts with Astatine Edge (every sink ×2, fouls cost 1 more Chalk). Start with 1 less Chalk. $4.", "money": 4, "perks": ["glasscannon"], "chalk": -1,
 		"shaft": Color(0.85, 0.92, 1.0), "butt": Color(0.55, 0.7, 0.9), "accent": Color(1.0, 0.35, 0.65)},
@@ -311,6 +311,25 @@ const BOSSES := {
 	"closing": {"name": "Radioactive Decay", "tier": 3, "lab": "standard", "anomaly": "shrink", "desc": "The pockets decay: every pocket narrows after each shot. Heat builds twice as fast."},
 	"gulf": {"name": "Gulf Stream", "tier": 2, "lab": "standard", "anomaly": "", "desc": "A current runs across the middle of the table and carries rolling balls to the right. Every sink adds +0.5 Chain."},
 	"foucault": {"name": "Foucault's Pendulum", "tier": 3, "lab": "standard", "anomaly": "", "desc": "A heavy bob swings across the middle, and its swing turns a little every shot. A Hammerhead charges across the table between shots. Hitting the bob adds +1 Chain; knock the Hammerhead out with 3 hits."},
+	"venturi": {"name": "Venturi", "tier": 1, "lab": "standard", "anomaly": "", "desc": "Two angled rails squeeze the middle into a narrow throat, and a ball rushed through it comes out faster. Long sinks score ×2."},
+	"erbridge": {"name": "Einstein–Rosen Bridge", "tier": 1, "lab": "standard", "anomaly": "", "desc": "Two linked portals: a ball rolling into one comes out of the other at the same speed. Every portal trip adds +1 Chain."},
+	"membrane": {"name": "Semipermeable Membrane", "tier": 1, "lab": "standard", "anomaly": "", "desc": "A membrane across the table lets balls through left to right only; from the right it bounces them back. Every sink scores ×1.5."},
+	"galton": {"name": "Galton Board", "tier": 1, "lab": "standard", "anomaly": "", "shape": "galton", "desc": "Rows of pegs, set like a bean machine, scatter balls as they pass. Every peg hit adds +0.5 Chain."},
+	"parabolic": {"name": "Parabolic Mirror", "tier": 2, "lab": "standard", "anomaly": "", "shape": "parabolic", "desc": "The right end is a parabola: a ball rolling straight at it bounces to the focus, where a pocket sits. Sinks in the focus pocket score ×2."},
+	"whisper": {"name": "Whispering Gallery", "tier": 2, "lab": "standard", "anomaly": "", "shape": "whisper", "desc": "An elliptical table. A ball sent through one focus always rolls to the other, where a pocket sits. Sinks in the focus pocket score ×3."},
+	"sierpinski": {"name": "Sierpinski Triangle", "tier": 2, "lab": "standard", "anomaly": "", "shape": "sierpinski", "desc": "A triangular table with three triangular islands to bank around. Bank sinks score ×2."},
+	"mobius": {"name": "Möbius Strip", "tier": 2, "lab": "standard", "anomaly": "", "desc": "Gaps in the left rail lead out of gaps in the right rail, upside down. Every trip through adds +1 Chain."},
+	"maxwell": {"name": "Maxwell's Demon", "tier": 2, "lab": "standard", "anomaly": "", "desc": "A wall splits the table. At its gate the Demon lets fast balls through left to right and slow balls back right to left. Every sink scores ×1.5."},
+	"lorentz": {"name": "Lorentz Field", "tier": 2, "lab": "standard", "anomaly": "", "desc": "Inside the marked field, rolling balls curve sideways; fast balls curve less. Every sink adds +0.5 Chain."},
+	"spiral": {"name": "Golden Spiral", "tier": 2, "lab": "standard", "anomaly": "", "shape": "spiral", "desc": "A spiral rail winds into a drain on the cloth; a ball caught on the arm rides it in. Sinks in the drain score ×2."},
+	"meissner": {"name": "Meissner Effect", "tier": 2, "lab": "standard", "anomaly": "", "desc": "Four superconducting posts push balls away before they touch, so balls curve round them. Clean sinks score ×2."},
+	"chain": {"name": "Chain Reaction", "tier": 3, "lab": "standard", "anomaly": "", "shape": "benzene", "desc": "Every sink sends a shock ring out of its pocket that shoves nearby balls away. Set off chains. Every sink adds +0.5 Chain."},
+	"tesla": {"name": "Tesla Coil", "tier": 3, "lab": "standard", "anomaly": "", "shape": "benzene", "desc": "Every third shot the coil fires and pushes every ball outwards; the aiming line shows the pulse. Sinks on a coil shot score ×2."},
+	"tectonic": {"name": "Tectonic Plates", "tier": 3, "lab": "standard", "anomaly": "", "desc": "Two fault ridges slide past each other one step after every shot. Bank sinks score ×1.5."},
+	"lattice": {"name": "Crystal Lattice", "tier": 3, "lab": "standard", "anomaly": "", "shape": "lattice", "desc": "A rhombus table with a grid of small posts, like atoms in a crystal. Every post hit adds +0.25 Chain."},
+	"stellated": {"name": "Stellated Star", "tier": 3, "lab": "standard", "anomaly": "", "shape": "stellated", "desc": "A six-pointed star with a pocket at every point. The inner corners make wild banks. Bank sinks score ×2."},
+	"lever": {"name": "The Lever", "tier": 3, "lab": "standard", "anomaly": "", "shape": "lever", "desc": "A see-saw rail on a fulcrum tips towards whichever end a ball hit last shot. Every sink scores ×1.5."},
+	"escape": {"name": "Escape Velocity", "tier": 3, "lab": "standard", "anomaly": "", "shape": "escape", "desc": "Two gravity wells slingshot balls round them; get the speed right to escape or orbit in. Every sink adds +1 Chain."},
 	"elements": {"name": "The Clockwork Table", "tier": 9, "lab": "element", "anomaly": "elements", "desc": "The pockets are numbered 1 to 6, clockwise. Sink into the next one in order to tick the clock: ticks in a row score ×1.5, ×2, ×2.5 and on. Any other pocket stops the clock. A Sweeper wall turns one hour round the middle after every shot."},
 	"final": {"name": "Apex Predator", "tier": 9, "lab": "final", "anomaly": "cursed8", "desc": "The Great White swallows a ball every 2 shots; hit it 8 times to knock it out. At half health the Loan Shark (takes 15% of every sink) and the Leech (clamps onto a ball) join. The 8 goes last: early costs 2 Chalk, last scores ×5."},
 }
@@ -326,6 +345,24 @@ const SHAPES := {
 		"pockets": [{"v": 0}, {"v": 1}, {"v": 2}, {"e": 2, "t": 0.5}, {"v": 3}, {"v": 4}], "foot": Vector2(640, 280)},
 	"lshell": {"verts": [Vector2(0, 0), Vector2(420, 0), Vector2(420, 170), Vector2(1000, 170), Vector2(1000, 500), Vector2(0, 500)],
 		"pockets": [{"v": 0}, {"v": 1}, {"v": 3}, {"v": 5}, {"e": 4, "t": 0.5}, {"v": 4}], "foot": Vector2(720, 330)},
+	"parabolic": {"verts": [Vector2(0, 0), Vector2(760, 0), Vector2(816, 31), Vector2(865, 62), Vector2(906, 94), Vector2(940, 125), Vector2(966, 156), Vector2(985, 188), Vector2(996, 219), Vector2(1000, 250), Vector2(996, 281), Vector2(985, 312), Vector2(966, 344), Vector2(940, 375), Vector2(906, 406), Vector2(865, 438), Vector2(816, 469), Vector2(760, 500), Vector2(0, 500)],
+		"pockets": [{"v": 0}, {"e": 0, "t": 0.5}, {"v": 1}, {"v": 18}, {"e": 17, "t": 0.5}, {"p": Vector2(935, 250)}], "foot": Vector2(560, 250)},
+	"whisper": {"verts": [Vector2(1000, 250), Vector2(983, 315), Vector2(933, 375), Vector2(854, 427), Vector2(750, 467), Vector2(629, 491), Vector2(500, 500), Vector2(371, 491), Vector2(250, 467), Vector2(146, 427), Vector2(67, 375), Vector2(17, 315), Vector2(0, 250), Vector2(17, 185), Vector2(67, 125), Vector2(146, 73), Vector2(250, 33), Vector2(371, 9), Vector2(500, 0), Vector2(629, 9), Vector2(750, 33), Vector2(854, 73), Vector2(933, 125), Vector2(983, 185)],
+		"pockets": [{"v": 15}, {"v": 18}, {"v": 21}, {"v": 9}, {"v": 6}, {"p": Vector2(933, 250)}], "foot": Vector2(640, 250)},
+	"sierpinski": {"verts": [Vector2(0, 0), Vector2(1000, 250), Vector2(0, 500)],
+		"pockets": [{"v": 0}, {"e": 0, "t": 0.5}, {"v": 1}, {"v": 2}, {"e": 1, "t": 0.5}, {"e": 2, "t": 0.5}], "foot": Vector2(560, 250)},
+	"galton": {"verts": [Vector2(300, 0), Vector2(700, 0), Vector2(1000, 500), Vector2(0, 500)],
+		"pockets": [{"v": 0}, {"e": 0, "t": 0.5}, {"v": 1}, {"v": 3}, {"e": 2, "t": 0.5}, {"v": 2}], "foot": Vector2(690, 340)},
+	"spiral": {"verts": [Vector2(0, 0), Vector2(1000, 0), Vector2(1000, 500), Vector2(0, 500)],
+		"pockets": [{"v": 0}, {"e": 0, "t": 0.5}, {"v": 1}, {"v": 3}, {"p": Vector2(500, 385)}, {"v": 2}], "foot": Vector2(750, 250)},
+	"lattice": {"verts": [Vector2(150, 0), Vector2(1000, 0), Vector2(850, 500), Vector2(0, 500)],
+		"pockets": [{"v": 0}, {"e": 0, "t": 0.5}, {"v": 1}, {"v": 3}, {"e": 2, "t": 0.5}, {"v": 2}], "foot": Vector2(760, 250)},
+	"stellated": {"verts": [Vector2(1000, 250), Vector2(749, 322), Vector2(750, 451), Vector2(500, 394), Vector2(250, 451), Vector2(251, 322), Vector2(0, 250), Vector2(251, 178), Vector2(250, 49), Vector2(500, 106), Vector2(750, 49), Vector2(749, 178)],
+		"pockets": [{"v": 8}, {"v": 10}, {"v": 0}, {"v": 6}, {"v": 4}, {"v": 2}], "foot": Vector2(600, 250)},
+	"lever": {"verts": [Vector2(0, 0), Vector2(1000, 0), Vector2(850, 500), Vector2(150, 500)],
+		"pockets": [{"v": 0}, {"e": 0, "t": 0.5}, {"v": 1}, {"v": 3}, {"e": 2, "t": 0.5}, {"v": 2}], "foot": Vector2(740, 230)},
+	"escape": {"verts": [Vector2(1000, 250), Vector2(962, 346), Vector2(854, 427), Vector2(691, 481), Vector2(500, 500), Vector2(309, 481), Vector2(146, 427), Vector2(38, 346), Vector2(0, 250), Vector2(38, 154), Vector2(146, 73), Vector2(309, 19), Vector2(500, 0), Vector2(691, 19), Vector2(854, 73), Vector2(962, 154)],
+		"pockets": [{"v": 10}, {"v": 12}, {"v": 14}, {"v": 6}, {"v": 4}, {"v": 2}], "foot": Vector2(660, 250)},
 }
 
 ## Clockwork Table: the pockets in clock order (top-left, top, top-right, then round).
@@ -391,7 +428,7 @@ const TABLES := [
 
 const FAMILY_NAMES := {
 	"bank": "Banks & cushions", "cue": "Cue control", "combo": "Combos & clusters", "streak": "Streaks", "heat": "Heat",
-	"pocket": "Pockets", "number": "Ball numbers", "solid": "Solids", "stripe": "Stripes", "eight": "The 8-ball", "clear": "Clearing your set", "gear": "Gear", "imbue": "Isotopes", "special": "Special balls", "pause": "Pausing", "money": "Economy", "risk": "Risk & scaling",
+	"pocket": "Pockets", "number": "Ball numbers", "solid": "Solids", "stripe": "Stripes", "eight": "The 8-ball", "clear": "Clearing your set", "gear": "Gear", "imbue": "Isotopes", "special": "Exotic balls", "pause": "Pausing", "money": "Economy", "risk": "Risk & scaling",
 	"physics": "Physics", "utility": "Utility",
 }
 
@@ -409,7 +446,7 @@ static func synergies(id: String, owned: Array) -> Array:
 
 
 ## A ball's value: 10 plus its number times the weight (2, raised by Big Numbers
-## and the Weighted Imbue). Special balls have their own value.
+## and the Weighted Imbue). Exotic balls have their own value.
 const NUMBER_WEIGHT := 2
 
 

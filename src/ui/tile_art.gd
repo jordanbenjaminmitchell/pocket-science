@@ -128,21 +128,21 @@ const TILES := {
 	"perk:thinrack": {"sym": "Tm", "stat": "Removed balls: all +12", "letter": "thin"},
 	"perk:missing": {"sym": "Tc", "stat": "Removed balls: +Chain", "letter": "missing"},
 	"perk:cleanhouse": {"sym": "I", "stat": "Free ball removal", "letter": "clean"},
-	# Gear, imbues, special balls
+	# Gear, imbues, Exotic balls
 	"perk:packrat": {"sym": "Pa", "stat": "+1 Catalyst slot", "letter": "slots"},
 	"perk:quartermaster": {"sym": "Zn", "stat": "Catalysts $1 cheaper", "letter": "stencil"},
 	"perk:tinkerer": {"sym": "Sn", "stat": "+1 Catalyst use", "letter": "cog"},
 	"perk:enchanter": {"sym": "Es", "stat": "Isotopes $2 cheaper", "letter": "enchant"},
 	"perk:secondcoat": {"sym": "Co", "stat": "Isotope balls ×1.5", "letter": "coat"},
-	"perk:goldrush": {"sym": "Ru", "stat": "Special balls ×2", "letter": "nuggets"},
-	"perk:menagerie": {"sym": "Nb", "stat": "Specials owned: +Chain", "letter": "menagerie"},
+	"perk:goldrush": {"sym": "Ru", "stat": "Exotic balls ×2", "letter": "nuggets"},
+	"perk:menagerie": {"sym": "Nb", "stat": "Exotics owned: +Chain", "letter": "menagerie"},
 	"perk:alchemy": {"sym": "As", "stat": "Plain balls mutate", "letter": "transmute"},
 	# Pausing
 	"perk:stillness": {"sym": "Xe", "stat": "First pause: balls +30%", "letter": "still"},
 	"perk:quickhands": {"sym": "Hg", "stat": "First Catalyst free", "letter": "blur"},
 	"perk:afterimage": {"sym": "Am", "stat": "Cue Catalysts +Chain", "letter": "chroma"},
 	"perk:overclock": {"sym": "Cs", "stat": "Catalysts used twice", "letter": "chip"},
-	# Imbues, special balls and items made with the first five samples
+	# Imbues, Exotic balls and items made with the first five samples
 	"imbue:vein": {"sym": "Ve", "stat": "+20, spreads", "letter": "veins"},
 	"ball:gold": {"sym": "", "stat": "45 pts", "on": "Cushions", "letter": "gold"},
 	"item:secondstrike": {"sym": "Im", "stat": "Hit again", "on": "Cue ball", "letter": "echo"},
@@ -167,7 +167,7 @@ const TILES := {
 	"imbue:bounty": {"sym": "Bo", "stat": "$1 per Heat", "letter": "wanted"},
 	"imbue:starry": {"sym": "Sy", "stat": "+0.5 to the rest", "letter": "starry"},
 	"imbue:twin": {"sym": "Tw", "stat": "Counts twice", "letter": "twin"},
-	# Special balls
+	# Exotic balls
 	"ball:void": {"sym": "", "stat": "Others ×2", "on": "Same shot", "letter": "void"},
 	"ball:glass": {"sym": "", "stat": "×3, shatters", "on": "Hard hits", "letter": "glass"},
 	"ball:iron": {"sym": "", "stat": "Worth 70", "on": "200% weight", "letter": "iron"},
@@ -391,7 +391,7 @@ static func element_group(z: int) -> String:
 const FAMILY_SHORT := {
 	"bank": "Banks", "cue": "Cue control", "combo": "Combos", "streak": "Streaks", "heat": "Heat", "pocket": "Pockets",
 	"number": "Numbers", "solid": "Solids", "stripe": "Stripes", "eight": "The 8-ball", "clear": "Clearing", "gear": "Gear",
-	"imbue": "Isotopes", "special": "Specials", "pause": "Pausing", "money": "Economy", "risk": "Risk", "physics": "Physics",
+	"imbue": "Isotopes", "special": "Exotics", "pause": "Pausing", "money": "Economy", "risk": "Risk", "physics": "Physics",
 	"utility": "Utility",
 }
 
@@ -552,7 +552,7 @@ func _kind_name() -> String:
 	match kind:
 		"perk": return "Element"
 		"imbue": return "Isotope"
-		"ball": return "Special ball"
+		"ball": return "Exotic ball"
 		"item": return "Catalyst"
 		"bet": return "Side bet"
 		"cue": return "Starting cue"
@@ -1051,7 +1051,7 @@ class Lettering extends Control:
 			"lead": return [0, Color(0.82, 0.84, 0.88), Color(0.5, 0.53, 0.6)]
 			"starry": return [17, Color(0.16, 0.18, 0.42), Color(1, 0.95, 0.78)]
 			"twin": return [15, colour, tint.lerp(colour, 0.2)]
-			# Special balls
+			# Exotic balls
 			"glass": return [13, Color(0.6, 0.82, 0.95, 0.45), Color(1, 1, 1, 0.95), colour, 0.0, 0.42]
 			"iron": return [2, Color(0.88, 0.9, 0.93), Color(0.68, 0.7, 0.75), colour, 2.0 * u, 0.5]
 			"coal": return [0, Color(0.42, 0.24, 0.16), Color(0.95, 0.38, 0.1)]
@@ -2178,7 +2178,7 @@ void fragment() {
 		_star(Vector2(x1 + 5 * u, top + 9 * u), 3.4 * u, SPARK)
 		_star(Vector2(x1 + 1 * u, baseline - 1 * u), 2.4 * u, SPARK)
 
-	# --- Perks: Gear, Imbues, Special balls ----------------------------------------------
+	# --- Perks: Gear, Imbues, Exotic balls ----------------------------------------------
 
 	## Pack Rat: a slot for every letter and a spare one.
 	func _r_slots() -> void:
@@ -2704,7 +2704,7 @@ void fragment() {
 		_ballpic(a, 6 * u, 3)
 		_ballpic(b + Vector2(0, 2) * u, 6 * u, 11)
 
-	# --- Special balls -----------------------------------------------------------------
+	# --- Exotic balls -----------------------------------------------------------------
 
 	## Void: a black hole pulling everything round into it.
 	func _r_void() -> void:
@@ -3799,7 +3799,7 @@ void fragment() {
 		return m
 
 
-## A special ball as it looks on the table: its colour, its band, the white
+## An Exotic ball as it looks on the table: its colour, its band, the white
 ## disc with its emblem, a shine and a shadow on the cloth. It turns slowly,
 ## and holds still while Fx.minimal_particles is on.
 class BallPic extends Control:

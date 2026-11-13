@@ -125,7 +125,7 @@ func _go() -> void:
 	for id in Catalog.BALL_TYPES:
 		var bt: Dictionary = Catalog.BALL_TYPES[id]
 		srows.append([bt.name + " ball", "`%s`" % id, "$%d" % bt.cost, bt.value, bt.desc])
-	_table("Special balls", "", ["Ball", "Id", "Cost", "Value", "What it does"], srows)
+	_table("Exotic balls", "", ["Ball", "Id", "Cost", "Value", "What it does"], srows)
 	var qrows: Array = []
 	for id in Catalog.CUES:
 		var c: Dictionary = Catalog.CUES[id]

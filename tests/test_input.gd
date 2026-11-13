@@ -332,7 +332,7 @@ func _go() -> void:
 	g.touch_shoot.pressed.emit()
 	await _frames(1)
 	check(g.state == g.S.AIM, "and CANCEL backs out")
-	# A long press on a special ball explains it; a passing finger does not.
+	# A long press on an Exotic ball explains it; a passing finger does not.
 	var kb: int = -1
 	for k in g.sim.count():
 		if g.sim.alive[k] == 1 and g.sim.num[k] != 0 and g.sim.num[k] != 8:

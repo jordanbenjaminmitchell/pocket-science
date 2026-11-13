@@ -22,7 +22,7 @@ The APK is signed with a personal key from the build PC, so it is for your own d
    - **Elements:** 100 passive rules for your six slots.
    - **Isotopes:** 16 lasting upgrades for one ball.
    - **Catalysts:** 23 reusable board-changing tools. Each normally has one charge per table and works while aiming or during a paused shot. Set-up effects appear in the prediction before you shoot.
-   - **Special balls:** 24 types to add to your set.
+   - **Exotic balls:** 24 types to add to your set.
    - **Removal:** take a ball out of your set, never the 8.
 5. **Nine tables** make a run, including the Clockwork Table at table 5 and the Grand Final at table 9. After that, endless mode.
 

@@ -76,7 +76,7 @@ func _go() -> void:
 			for c in 3:
 				var o := Vector2(40 + c * 260, 30 + r * 170)
 				ci.draw_rect(Rect2(o, Vector2(240, 150)), Color(0.06, 0.38, 0.26))
-				BoardArt.draw_shark(ci, kind, o + Vector2(115, 82), -0.25, 150.0 if kind == "white" else 110.0, states[c], 0.6 + c, 0.62)
+				BoardArt.draw_shark(ci, kind, o + Vector2(115, 82), -0.25, 150.0 if kind == "white" else 110.0, states[c], 0.6 + c, 0.62, int(BoardFeatures.SHARKS[kind].hp))
 				_label(ci, "%s, %s" % [BoardArt.SHARK_NAMES[kind], ["swimming", "hit", "knocked out"][c]], o + Vector2(120, 146), 13))
 	await _save(vp2, out.path_join("sharks.png"))
 	# Moving parts.

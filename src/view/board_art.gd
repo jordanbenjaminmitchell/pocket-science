@@ -163,76 +163,159 @@ const SHARKS := ["pool", "sharp", "loan", "hammer", "leech", "white"]
 const SHARK_NAMES := {"pool": "Pool Shark", "sharp": "Card Sharp", "loan": "Loan Shark", "hammer": "Hammerhead", "leech": "Leech", "white": "Great White"}
 
 
-static func draw_shark(ci: CanvasItem, kind: String, pos: Vector2, heading: float, size: float, state := "normal", t := 0.0, health := 1.0) -> void:
+static func draw_shark(ci: CanvasItem, kind: String, pos: Vector2, heading: float, size: float, state := "normal", t := 0.0, health := 1.0, pips := 0) -> void:
 	var s := size / 100.0
 	var ko := state == "ko"
-	var flash := 1.0 if state == "hit" else 0.0
-	var skin := {"pool": Color(0.5, 0.56, 0.62), "sharp": Color(0.36, 0.44, 0.5), "loan": Color(0.16, 0.18, 0.28),
-		"hammer": Color(0.46, 0.5, 0.42), "leech": Color(0.3, 0.12, 0.16), "white": Color(0.56, 0.6, 0.66)}.get(kind, Color.GRAY) as Color
-	var belly := skin.lerp(Color(0.95, 0.95, 0.92), 0.7)
+	var hit := state == "hit"
+	var skin := {"pool": Color(0.38, 0.47, 0.56), "sharp": Color(0.27, 0.42, 0.45), "loan": Color(0.13, 0.15, 0.26),
+		"hammer": Color(0.42, 0.46, 0.33), "leech": Color(0.42, 0.13, 0.2), "white": Color(0.46, 0.52, 0.6)}.get(kind, Color.GRAY) as Color
+	var accent := {"pool": Color(0.35, 0.7, 1.0), "sharp": Color(0.25, 0.9, 0.45), "loan": Color(1.0, 0.8, 0.25),
+		"hammer": Color(0.95, 0.65, 0.25), "leech": Color(1.0, 0.35, 0.45), "white": Color(1.0, 0.3, 0.28)}.get(kind, Color.WHITE) as Color
+	var belly := skin.lerp(Color(0.96, 0.95, 0.9), 0.78)
 	if ko:
-		skin = skin.lerp(Color(0.8, 0.8, 0.8), 0.45)
-	skin = skin.lerp(Color.WHITE, flash * 0.75)
+		skin = skin.lerp(Color(0.78, 0.8, 0.8), 0.5)
+		accent = accent.lerp(Color(0.6, 0.6, 0.6), 0.7)
 	var swish := 0.0 if ko else sin(t * 6.0) * 0.22
-	# Shadow on the cloth.
+	# Danger ring on the cloth: the solid part a ball bounces off.
+	if not ko and kind != "leech":
+		var rr := 24.0 * s
+		var pulse := 0.5 + 0.5 * sin(t * 3.0)
+		ci.draw_circle(pos, rr, Color(accent, 0.06 + 0.04 * pulse), true, -1.0, true)
+		ci.draw_arc(pos, rr, 0, TAU, 48, Color(accent, 0.3 + 0.15 * pulse), maxf(1.0, 1.6 * s), true)
+	ci.draw_set_transform(pos, heading, Vector2(s, s))
+	# Wake: ripples trailing off the tail.
+	if not ko:
+		for k in 3:
+			var f := fmod(t * 0.9 + k / 3.0, 1.0)
+			var c := Vector2(-60.0 - f * 30.0, 0)
+			ci.draw_arc(c, 8.0 + f * 20.0, PI * 0.6, PI * 1.4, 16, Color(0.8, 1.0, 0.95, 0.16 * (1.0 - f)), 1.4, true)
+	# Soft shadow, two layers for a blurred edge.
+	var shadow := _shark_body(kind, 0.0)
+	ci.draw_set_transform(pos + Vector2(5, 8) * s, heading, Vector2(s, s) * 1.04)
+	ci.draw_colored_polygon(shadow, Color(0, 0, 0, 0.16))
 	ci.draw_set_transform(pos + Vector2(4, 6) * s, heading, Vector2(s, s))
-	ci.draw_colored_polygon(_shark_body(kind, 0.0), Color(0, 0, 0, 0.3))
+	ci.draw_colored_polygon(shadow, Color(0, 0, 0, 0.22))
 	ci.draw_set_transform(pos, heading, Vector2(s, s))
 	if kind == "leech":
 		_draw_leech(ci, skin, belly, ko, t)
 	else:
-		# Tail, swishing.
-		var tail := PackedVector2Array([Vector2(-44, 0), Vector2(-66, -16), Vector2(-58, 0), Vector2(-66, 14)])
+		var back := skin.darkened(0.28)
+		# Tail: a tall upper lobe and a short lower one, swishing from the root.
+		var root := Vector2(-42, 0)
+		var tail := PackedVector2Array([Vector2(-38, -4), Vector2(-60, -10), Vector2(-74, -24), Vector2(-66, -3), Vector2(-64, 2), Vector2(-68, 14), Vector2(-56, 6), Vector2(-38, 4)])
 		var tl := PackedVector2Array()
 		for p in tail:
-			tl.append(Vector2(-44, 0) + (p - Vector2(-44, 0)).rotated(swish))
-		ci.draw_colored_polygon(tl, skin.darkened(0.15))
-		# Pectoral fins.
+			tl.append(root + (p - root).rotated(swish))
+		ci.draw_colored_polygon(tl, back)
+		ci.draw_polyline(_closed(tl), Color(0, 0, 0, 0.5), 1.4, true)
+		ci.draw_line(root + (Vector2(-44, -2) - root).rotated(swish), root + (Vector2(-70, -20) - root).rotated(swish), skin.lightened(0.1), 1.2, true)
+		# Pectoral fins, swept back; pelvic fins small, further back.
 		for side in [-1.0, 1.0]:
-			ci.draw_colored_polygon(PackedVector2Array([Vector2(14, side * 9), Vector2(-6, side * 30), Vector2(-2, side * 10)]), skin.darkened(0.1))
+			var fl := 1.0 if not ko else 0.8
+			var pec := PackedVector2Array([Vector2(20, side * 10), Vector2(8, side * 30 * fl), Vector2(-8, side * 38 * fl), Vector2(-4, side * 26 * fl), Vector2(4, side * 11)])
+			ci.draw_colored_polygon(pec, back if not ko else belly.darkened(0.1))
+			ci.draw_polyline(_closed(pec), Color(0, 0, 0, 0.45), 1.2, true)
+			ci.draw_line(Vector2(18, side * 11), Vector2(-6, side * 36 * fl), skin.lightened(0.18), 1.2, true)
+			var pel := PackedVector2Array([Vector2(-20, side * 7), Vector2(-30, side * 15), Vector2(-33, side * 13), Vector2(-28, side * 6)])
+			ci.draw_colored_polygon(pel, back)
+		# Body, countershaded: a dark back down the middle, paler flanks, and a
+		# highlight along the lit side.
 		var body := _shark_body(kind, swish * 0.3)
 		ci.draw_colored_polygon(body, belly if ko else skin)
 		if not ko:
-			# Back stripe and dorsal fin, seen from above.
-			ci.draw_polyline(PackedVector2Array([Vector2(36, 0), Vector2(-40, 0)]), skin.darkened(0.25), 3.0, true)
-			ci.draw_colored_polygon(PackedVector2Array([Vector2(6, 0), Vector2(-10, -3), Vector2(-14, 0), Vector2(-10, 3)]), skin.darkened(0.35))
+			ci.draw_colored_polygon(_shark_band(kind, swish * 0.3, 0.5), back)
+			ci.draw_colored_polygon(_shark_band(kind, swish * 0.3, 0.22), back.darkened(0.25))
+			var hl := PackedVector2Array()
+			for i in 12:
+				var f := 0.15 + 0.7 * i / 11.0
+				var x := lerpf(-44.0, 56.0, f)
+				hl.append(Vector2(x, -_half_w(kind, f) * 0.62 + sin(f * PI) * swish * 6.0 * (1.0 - f)))
+			ci.draw_polyline(hl, Color(1, 1, 1, 0.28), 2.2, true)
+			# Dorsal fin from above: a raised ridge with its shadow on the far side.
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(8, 0), Vector2(-16, 6), Vector2(-20, 1)]), Color(0, 0, 0, 0.35))
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(8, 0), Vector2(-14, -5), Vector2(-20, 1)]), back.darkened(0.15))
+			ci.draw_line(Vector2(8, 0), Vector2(-14, -5), skin.lightened(0.25), 1.2, true)
+		else:
+			# Belly up: a pale underside and a seam down the middle.
+			ci.draw_line(Vector2(-40, 0), Vector2(44, 0), skin.darkened(0.1), 1.2, true)
+		# Gill slits.
+		for side in [-1.0, 1.0]:
+			for k in 4:
+				var gx := 24.0 - k * 3.6
+				var gw := _half_w(kind, (gx + 44.0) / 100.0)
+				ci.draw_line(Vector2(gx, side * gw * 0.74), Vector2(gx - 1.6, side * gw * 0.94), Color(0, 0, 0, 0.32), 1.0, true)
 		body.append(body[0])
-		ci.draw_polyline(body, Color(0, 0, 0, 0.45), 1.5, true)
+		ci.draw_polyline(body, Color(0, 0, 0, 0.55), 1.6, true)
 		_shark_extras(ci, kind, skin, ko, t)
-		# Eyes.
-		var eyes: Array = [Vector2(38, -8), Vector2(38, 8)] if kind != "hammer" else [Vector2(48, -24), Vector2(48, 24)]
+		# Eyes: small, dark and mean, with a glint and a hard brow.
+		var ew := _half_w(kind, (36.0 + 44.0) / 100.0) * 0.62
+		var eyes: Array = [Vector2(36, -ew), Vector2(36, ew)] if kind != "hammer" else [Vector2(51, -27), Vector2(51, 27)]
 		for e: Vector2 in eyes:
+			var sd := signf(e.y)
 			if ko:
-				ci.draw_line(e + Vector2(-3, -3), e + Vector2(3, 3), Color(0.1, 0.1, 0.1), 1.6, true)
-				ci.draw_line(e + Vector2(-3, 3), e + Vector2(3, -3), Color(0.1, 0.1, 0.1), 1.6, true)
+				ci.draw_line(e + Vector2(-3, -3), e + Vector2(3, 3), Color(0.1, 0.1, 0.1), 1.8, true)
+				ci.draw_line(e + Vector2(-3, 3), e + Vector2(3, -3), Color(0.1, 0.1, 0.1), 1.8, true)
 			else:
-				ci.draw_circle(e, 2.8, Color(0.05, 0.05, 0.06), true, -1.0, true)
-				ci.draw_circle(e + Vector2(0.8, -0.8), 0.9, Color(1, 1, 1, 0.9), true, -1.0, true)
-	if state == "hit":
+				ci.draw_circle(e, 3.4, Color(0.02, 0.02, 0.03), true, -1.0, true)
+				ci.draw_circle(e + Vector2(1.0, -1.0), 1.1, Color(1, 1, 1, 0.95), true, -1.0, true)
+				ci.draw_line(e + Vector2(-5, -sd * 1.5), e + Vector2(4, -sd * 4.5), skin.darkened(0.5), 1.8, true)
+	if hit:
+		# A white flash, a shock ring and sparks where it was struck.
+		var flash := _shark_body(kind, 0.0) if kind != "leech" else PackedVector2Array()
+		if not flash.is_empty():
+			ci.draw_colored_polygon(flash, Color(1, 1, 1, 0.55))
 		for k in 3:
-			ci.draw_arc(Vector2(4, 0), 44.0 + k * 5.0, 0, TAU, 40, Color(1, 1, 1, 0.5 - 0.15 * k), 2.0, true)
-	if ko:
-		for k in 3:
-			var a := t * 2.0 + TAU * k / 3.0
-			_star(ci, Vector2(cos(a) * 26 + 20, sin(a) * 12 - 34), 5.0, Color(1, 0.9, 0.4))
+			ci.draw_arc(Vector2(4, 0), 46.0 + k * 7.0, 0, TAU, 48, Color(1, 1, 1, 0.55 - 0.16 * k), 2.4, true)
+		for k in 8:
+			var a := TAU * k / 8.0 + 0.2
+			ci.draw_line(Vector2.from_angle(a) * 34.0, Vector2.from_angle(a) * (44.0 + (k % 2) * 8.0), Color(1.0, 0.95, 0.6, 0.9), 2.0, true)
 	ci.draw_set_transform(Vector2.ZERO)
+	if ko:
+		# Dizzy: stars circling over the head, in screen space so they stay upright.
+		for k in 3:
+			var a := t * 2.2 + TAU * k / 3.0
+			_star(ci, pos + Vector2(cos(a) * 24.0, sin(a) * 8.0 - 22.0) * s, 5.5 * s, Color(1, 0.88, 0.35))
 	if kind == "white":
-		_health_bar(ci, pos + Vector2(0, -46) * s, s, health, ko)
+		_health_bar(ci, pos + Vector2(0, -50) * s, s, health, ko)
+	elif pips > 0:
+		_hp_pips(ci, pos + Vector2(0, -44) * s, s, pips, int(round(health * pips)), accent, ko)
+
+
+## Hit points left, as a row of pips above a Shark.
+static func _hp_pips(ci: CanvasItem, c: Vector2, s: float, total: int, left: int, col: Color, ko: bool) -> void:
+	var gap := 11.0 * maxf(s, 0.7)
+	var x0 := c.x - gap * (total - 1) * 0.5
+	for i in total:
+		var p := Vector2(x0 + gap * i, c.y)
+		ci.draw_circle(p, 4.2 * maxf(s, 0.7), Color(0, 0, 0, 0.6), true, -1.0, true)
+		if i < left and not ko:
+			ci.draw_circle(p, 3.0 * maxf(s, 0.7), col, true, -1.0, true)
+			ci.draw_circle(p + Vector2(-0.8, -0.8), 1.0 * maxf(s, 0.7), Color(1, 1, 1, 0.7), true, -1.0, true)
+		else:
+			ci.draw_arc(p, 3.0 * maxf(s, 0.7), 0, TAU, 12, Color(0.6, 0.6, 0.6, 0.6), 1.0, true)
+
+
+## Half the body's width at f (0 = tail root, 1 = snout).
+static func _half_w(kind: String, f: float) -> float:
+	var width := {"white": 38.0, "loan": 32.0, "hammer": 27.0}.get(kind, 30.0) as float
+	# Full shoulders about two-thirds along, a blunt rounded snout, a slim tail stock.
+	return width * 0.5 * pow(sin(PI * pow(clampf(f, 0.0, 1.0), 0.66)), 0.55) * (0.5 + 0.5 * smoothstep(0.0, 0.4, f))
 
 
 static func _shark_body(kind: String, bend: float) -> PackedVector2Array:
+	return _shark_band(kind, bend, 1.0)
+
+
+## The body outline scaled across its width by k (1 = the whole body), for the
+## countershading bands down the back.
+static func _shark_band(kind: String, bend: float, k: float) -> PackedVector2Array:
 	var pts := PackedVector2Array()
-	var length := 96.0
-	var width := 26.0 if kind != "white" else 32.0
-	if kind == "loan":
-		width = 28.0
 	for side in [-1.0, 1.0]:
 		var half := PackedVector2Array()
-		for i in 19:
-			var f := i / 18.0
-			var x := lerpf(-44.0, 52.0, f)
-			var w := width * 0.5 * pow(sin(PI * pow(f, 0.8)), 0.9)
-			half.append(Vector2(x, side * w + sin(f * PI) * bend * 20.0 * (1.0 - f)))
+		for i in 25:
+			var f := i / 24.0
+			var x := lerpf(-44.0, 56.0, f)
+			half.append(Vector2(x, side * _half_w(kind, f) * k + sin(f * PI) * bend * 20.0 * (1.0 - f)))
 		if side < 0:
 			pts.append_array(half)
 		else:
@@ -244,59 +327,82 @@ static func _shark_body(kind: String, bend: float) -> PackedVector2Array:
 static func _shark_extras(ci: CanvasItem, kind: String, skin: Color, ko: bool, t: float) -> void:
 	match kind:
 		"hammer":
-			# The hammer: a wide bar across the head.
-			var head := PackedVector2Array([Vector2(30, -8), Vector2(42, -28), Vector2(52, -28), Vector2(56, 0), Vector2(52, 28), Vector2(42, 28), Vector2(30, 8)])
-			ci.draw_colored_polygon(head, skin)
-			ci.draw_polyline(_closed(head), Color(0, 0, 0, 0.45), 1.5, true)
+			# The cephalofoil: a broad, rounded hammer across the head.
+			var head := PackedVector2Array([Vector2(36, -9), Vector2(46, -24), Vector2(50, -31), Vector2(56, -32), Vector2(60, -22), Vector2(61, 0),
+				Vector2(60, 22), Vector2(56, 32), Vector2(50, 31), Vector2(46, 24), Vector2(36, 9)])
+			ci.draw_colored_polygon(head, skin.darkened(0.12) if not ko else skin)
+			ci.draw_polyline(_closed(head), Color(0, 0, 0, 0.55), 1.6, true)
+			ci.draw_line(Vector2(58, -26), Vector2(59, 26), Color(1, 1, 1, 0.22), 1.6, true)
 		"pool":
-			# A cue tucked under a fin, and chalk on the nose.
-			ci.draw_line(Vector2(-30, 26), Vector2(40, 34), Color(0.85, 0.7, 0.45), 3.0, true)
-			ci.draw_line(Vector2(36, 33.5), Vector2(40, 34), Color(0.3, 0.55, 0.95), 3.0, true)
-			ci.draw_circle(Vector2(50, 0), 2.5, Color(0.4, 0.65, 1.0, 0.8), true, -1.0, true)
+			# A cue tucked under a fin, its tip chalked blue, and chalk dust on the nose.
+			ci.draw_line(Vector2(-34, 30), Vector2(44, 38), Color(0.12, 0.08, 0.05), 4.2, true)
+			ci.draw_line(Vector2(-34, 30), Vector2(44, 38), Color(0.86, 0.68, 0.42), 2.8, true)
+			ci.draw_line(Vector2(-34, 30), Vector2(-14, 32), Color(0.25, 0.12, 0.08), 2.8, true)
+			ci.draw_line(Vector2(40, 37.6), Vector2(44, 38), Color(0.3, 0.6, 1.0), 3.0, true)
+			for k in 4:
+				ci.draw_circle(Vector2(54 + (k % 2) * 3, -3 + k * 2), 1.4, Color(0.45, 0.7, 1.0, 0.75), true, -1.0, true)
 		"sharp":
-			# Green eyeshade across the head, and a fan of cards in a fin.
-			ci.draw_arc(Vector2(30, 0), 16, -1.2, 1.2, 16, Color(0.2, 0.75, 0.35, 0.95), 6.0, true)
-			for k in 3:
-				var c := Vector2(-8 + k * 5, -34 - k * 1.5)
-				var card := PackedVector2Array([c, c + Vector2(9, -2), c + Vector2(11, 10), c + Vector2(2, 12)])
-				ci.draw_colored_polygon(card, Color(0.98, 0.97, 0.94))
-				ci.draw_polyline(PackedVector2Array([card[0], card[1], card[2], card[3], card[0]]), Color(0.2, 0.2, 0.2), 0.8, true)
-				ci.draw_circle(c + Vector2(5.5, 5), 1.6, Color(0.85, 0.15, 0.2) if k % 2 == 0 else Color(0.1, 0.1, 0.12), true, -1.0, true)
+			# Green dealer's eyeshade, and a fan of cards held in a fin.
+			ci.draw_arc(Vector2(32, 0), 15, -1.25, 1.25, 18, Color(0.05, 0.25, 0.1, 0.6), 8.0, true)
+			ci.draw_arc(Vector2(32, 0), 15, -1.2, 1.2, 18, Color(0.2, 0.8, 0.4, 0.95), 5.0, true)
+			for k in 4:
+				var c := Vector2(-12 + k * 5, -34 - k * 1.2)
+				var rot := -0.35 + k * 0.22
+				var card := PackedVector2Array()
+				for q in [Vector2(0, 0), Vector2(9, 0), Vector2(9, 13), Vector2(0, 13)]:
+					card.append(c + (q as Vector2).rotated(rot))
+				ci.draw_colored_polygon(card, Color(0.98, 0.97, 0.93))
+				ci.draw_polyline(_closed(card), Color(0.15, 0.15, 0.15), 0.9, true)
+				ci.draw_circle(c + Vector2(4.5, 6.5).rotated(rot), 1.8, Color(0.85, 0.12, 0.18) if k % 2 == 0 else Color(0.08, 0.08, 0.1), true, -1.0, true)
 		"loan":
-			# Pinstripes, a lapel and a $ on the dorsal fin.
+			# A pinstripe suit, a white collar, a gold watch chain and a $ on the back.
 			for k in range(-3, 4):
-				ci.draw_line(Vector2(-36, k * 3.4), Vector2(40, k * 3.4 * 0.7), Color(0.85, 0.85, 0.9, 0.35), 0.8, true)
-			ci.draw_colored_polygon(PackedVector2Array([Vector2(26, -2), Vector2(12, -10), Vector2(18, 0), Vector2(12, 10), Vector2(26, 2)]), Color(0.95, 0.95, 0.95))
-			ci.draw_circle(Vector2(-8, 0), 7.0, Color(0.95, 0.8, 0.25), true, -1.0, true)
-			ci.draw_string(TileArt.F_SEMI, Vector2(-11.5, 4.5), "$", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.2, 0.15, 0.05))
+				ci.draw_line(Vector2(-36, k * 3.4), Vector2(40, k * 3.4 * 0.7), Color(0.85, 0.85, 0.95, 0.28), 0.8, true)
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(28, -3), Vector2(14, -11), Vector2(19, 0), Vector2(14, 11), Vector2(28, 3)]), Color(0.96, 0.96, 0.96))
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(22, 0), Vector2(17, -3), Vector2(17, 3)]), Color(0.75, 0.12, 0.15))
+			var chain := PackedVector2Array()
+			for k in 9:
+				chain.append(Vector2(10 - k * 3.0, 6 + sin(k * 0.6) * 4.0))
+			ci.draw_polyline(chain, Color(1.0, 0.82, 0.3), 1.2, true)
+			ci.draw_circle(Vector2(-8, 0), 7.5, Color(0.55, 0.42, 0.08), true, -1.0, true)
+			ci.draw_circle(Vector2(-8, 0), 6.5, Color(1.0, 0.82, 0.28), true, -1.0, true)
+			ci.draw_string(TileArt.F_SEMI, Vector2(-11.5, 4.5), "$", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.25, 0.17, 0.03))
 		"white":
-			# Open jaws full of teeth at the nose.
+			# Gaping jaws full of teeth, and old scars along the back.
 			if not ko:
-				var mouth := PackedVector2Array([Vector2(52, 0), Vector2(36, -11), Vector2(30, 0), Vector2(36, 11)])
-				ci.draw_colored_polygon(mouth, Color(0.45, 0.06, 0.08))
-				for k in 5:
-					var a := Vector2(36, -11).lerp(Vector2(52, 0), k / 4.0)
-					var b := Vector2(36, 11).lerp(Vector2(52, 0), k / 4.0)
-					ci.draw_colored_polygon(PackedVector2Array([a, a + Vector2(2.5, 0), a + Vector2(0.5, 4)]), Color(1, 1, 0.96))
-					ci.draw_colored_polygon(PackedVector2Array([b, b + Vector2(2.5, 0), b + Vector2(0.5, -4)]), Color(1, 1, 0.96))
-			# Scars.
-			ci.draw_line(Vector2(-6, -10), Vector2(4, -4), Color(0.9, 0.9, 0.9, 0.7), 1.2, true)
-			ci.draw_line(Vector2(-10, -6), Vector2(0, 0), Color(0.9, 0.9, 0.9, 0.7), 1.2, true)
+				var open := 0.8 + 0.2 * sin(t * 4.0)
+				var mouth := PackedVector2Array([Vector2(57, 0), Vector2(38, -12 * open), Vector2(31, 0), Vector2(38, 12 * open)])
+				ci.draw_colored_polygon(mouth, Color(0.35, 0.03, 0.05))
+				ci.draw_colored_polygon(PackedVector2Array([Vector2(50, 0), Vector2(38, -7 * open), Vector2(34, 0), Vector2(38, 7 * open)]), Color(0.6, 0.08, 0.1))
+				for k in 6:
+					var a := Vector2(38, -12 * open).lerp(Vector2(57, 0), k / 5.0)
+					var b := Vector2(38, 12 * open).lerp(Vector2(57, 0), k / 5.0)
+					ci.draw_colored_polygon(PackedVector2Array([a, a + Vector2(2.6, 0.4), a + Vector2(0.8, 4.2)]), Color(1, 1, 0.95))
+					ci.draw_colored_polygon(PackedVector2Array([b, b + Vector2(2.6, -0.4), b + Vector2(0.8, -4.2)]), Color(1, 1, 0.95))
+			for sc in [[Vector2(-6, -12), Vector2(6, -5)], [Vector2(-11, -8), Vector2(1, -1)], [Vector2(14, 6), Vector2(24, 12)]]:
+				ci.draw_line(sc[0], sc[1], Color(0.92, 0.9, 0.88, 0.75), 1.4, true)
 
 
 static func _draw_leech(ci: CanvasItem, skin: Color, belly: Color, ko: bool, t: float) -> void:
-	# A short, segmented body with a round sucker at the front.
+	# A glossy, ringed body that inches along, with a round toothed sucker at the front.
 	var pts := PackedVector2Array()
-	for i in 9:
-		var x := lerpf(-30.0, 30.0, i / 8.0)
-		pts.append(Vector2(x, sin(i * 0.9 + t * (0.0 if ko else 5.0)) * 4.0))
+	for i in 11:
+		var x := lerpf(-32.0, 32.0, i / 10.0)
+		pts.append(Vector2(x, sin(i * 0.8 + t * (0.0 if ko else 5.0)) * 4.0))
 	for i in pts.size():
-		var r := 9.0 - absf(i - 4.0) * 0.8
-		ci.draw_circle(pts[i], r, skin if i % 2 == 0 else skin.lightened(0.12), true, -1.0, true)
-	ci.draw_circle(pts[8] + Vector2(6, 0), 6.0, belly if not ko else skin, true, -1.0, true)
-	ci.draw_arc(pts[8] + Vector2(6, 0), 4.0, 0, TAU, 16, Color(0.5, 0.1, 0.15), 1.6, true)
+		var r := 10.0 - absf(i - 5.0) * 0.8
+		ci.draw_circle(pts[i] + Vector2(0, 1.5), r, skin.darkened(0.35), true, -1.0, true)
+	for i in pts.size():
+		var r := 10.0 - absf(i - 5.0) * 0.8
+		ci.draw_circle(pts[i], r, skin if i % 2 == 0 else skin.lightened(0.1), true, -1.0, true)
+		ci.draw_arc(pts[i], r, PI * 1.1, PI * 1.6, 8, Color(1, 1, 1, 0.3), 1.4, true)
+	for i in range(1, pts.size() - 1, 2):
+		ci.draw_circle(pts[i] + Vector2(0, -2), 1.4, Color(1.0, 0.75, 0.3, 0.8), true, -1.0, true)
+	var head := pts[10] + Vector2(7, 0)
+	ci.draw_circle(head, 7.0, belly if not ko else skin, true, -1.0, true)
+	ci.draw_arc(head, 5.0, 0, TAU, 18, Color(0.5, 0.08, 0.14), 1.8, true)
 	for k in 3:
-		ci.draw_line(pts[8] + Vector2(6, 0), pts[8] + Vector2(6, 0) + Vector2.from_angle(TAU * k / 3.0) * 3.0, Color(1, 1, 1, 0.8), 1.0, true)
+		ci.draw_line(head, head + Vector2.from_angle(TAU * k / 3.0 + t * (0.0 if ko else 2.0)) * 3.6, Color(1, 1, 1, 0.9), 1.2, true)
 
 
 static func _health_bar(ci: CanvasItem, c: Vector2, s: float, health: float, ko: bool) -> void:

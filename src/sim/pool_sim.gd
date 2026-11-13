@@ -56,6 +56,10 @@ var ghost := -1                         # Ghost Chalk: nothing collides with thi
 var glide := PackedByteArray()          # Polish: no cloth friction until the first hit
 var pinned := PackedByteArray()         # Freeze Frame: held still like a post
 var extra_wells: Array = []             # Gravity Pebbles: [position, strength]
+var board_wells: Array = []             # the board's own gravity wells: [position, strength] (Escape Velocity, Tesla Coil)
+var lorentz: Array = []                 # Lorentz Field: [Rect2, strength]: balls inside curve sideways, faster ones less
+var repel: Array = []                   # Meissner Effect: [[position, reach, strength]]: posts push balls away before contact
+var pot_pulse := 0.0                    # Chain Reaction: every sink shoves nearby balls away from its pocket
 var seg_e := {}                         # Hooke's Law: cushion segment -> bounce for this shot
 var volatile := {}                      # Volatile Imbue: ball number -> true; explodes when first touched
 const MAGNET_REACH := 150.0
@@ -106,6 +110,10 @@ func clone() -> PoolSim:
 	s.glide = glide.duplicate()
 	s.pinned = pinned.duplicate()
 	s.extra_wells = extra_wells.duplicate(true)
+	s.board_wells = board_wells.duplicate(true)
+	s.lorentz = lorentz.duplicate()
+	s.repel = repel.duplicate(true)
+	s.pot_pulse = pot_pulse
 	s.volatile = volatile.duplicate()
 	s.seg_e = seg_e.duplicate()
 	return s
@@ -171,7 +179,7 @@ func strike(dir: Vector2, speed: float, follow_amount: float, side_amount: float
 ## How far ball i will still roll on the cloth if nothing interferes, or -1 if
 ## that cannot be told. Exact integral of the deceleration in _forces.
 func stop_distance(i: int) -> float:
-	if frictionless or roll_decel <= 0.0 or spin[i] != Vector2.ZERO or (_kind(i) == "comet" and rails[i] == 0) or glide[i] == 1 or not extra_wells.is_empty():
+	if frictionless or roll_decel <= 0.0 or spin[i] != Vector2.ZERO or (_kind(i) == "comet" and rails[i] == 0) or glide[i] == 1 or not extra_wells.is_empty() or not board_wells.is_empty() or not lorentz.is_empty() or not repel.is_empty():
 		return -1.0
 	var v := vel[i].length()
 	var g: float = grip[i] if i < grip.size() else 1.0
@@ -213,6 +221,7 @@ func step(dt: float) -> void:
 		var bi := -1
 		var bj := -1
 		var bn := Vector2.ZERO
+		var bs := -1       # the segment a face hit belongs to
 		var n := pos.size()
 		for i in n:
 			if alive[i] == 0:
@@ -238,6 +247,8 @@ func step(dt: float) -> void:
 				var a: Vector2 = seg.a
 				var b: Vector2 = seg.b
 				var vn := vi.dot(nrm)
+				if vn < 0.0 and _gate_open(seg, vi):
+					vn = 0.0   # Maxwell's Demon: this ball is let through
 				if vn < 0.0:
 					var d0 := (pos[i] - a).dot(nrm)
 					if d0 > R * 0.25:
@@ -253,6 +264,7 @@ func step(dt: float) -> void:
 								kind = 2
 								bi = i
 								bn = nrm
+								bs = s
 				for e in [a, b]:
 					var t := _toi_circle(e - pos[i], -vi, R)
 					if t < best_t:
@@ -287,7 +299,7 @@ func step(dt: float) -> void:
 			1:
 				_resolve_balls(bi, bj)
 			2:
-				_resolve_wall(bi, bn, -1)
+				_resolve_wall(bi, bn, bs)
 			3:
 				var nn := (pos[bi] - bn).normalized()
 				_resolve_wall(bi, nn, bj)
@@ -415,7 +427,7 @@ func _resolve_wall(i: int, nrm: Vector2, _seg: int) -> void:
 	# Follow/draw that has not yet been transferred bends off the cushion too.
 	spin[i] *= 0.5
 	rails[i] += 1
-	events.append({"t": time, "type": "rail", "a": num[i], "speed": -vn, "at": pos[i]})
+	events.append({"t": time, "type": "rail", "a": num[i], "speed": -vn, "at": pos[i], "seg": _seg})
 
 
 func _resolve_bumper(i: int, k: int) -> void:
@@ -486,6 +498,18 @@ func _forces(dt: float) -> void:
 				var dl := d.length()
 				if dl < 110.0:
 					v += d / dl * pp * (110.0 - dl) * 9.0 * dt
+		for w in board_wells:
+			var bd: Vector2 = w[0] - pos[i]
+			var bl := maxf(bd.length(), 40.0)
+			v += bd / bl * (float(w[1]) * 9000.0 / bl) * dt
+		if not lorentz.is_empty() and (lorentz[0] as Rect2).has_point(pos[i]):
+			# A sideways push of fixed size: a slow ball turns tightly, a fast one barely bends.
+			v += v.orthogonal().normalized() * float(lorentz[1]) * dt
+		for rp in repel:
+			var rd: Vector2 = pos[i] - (rp[0] as Vector2)
+			var rl := rd.length()
+			if rl < float(rp[1]) and rl > 1.0:
+				v += rd / rl * float(rp[2]) * (1.0 - rl / float(rp[1])) * dt
 		for w in extra_wells:
 			var wd: Vector2 = w[0] - pos[i]
 			var wl := maxf(wd.length(), 30.0)
@@ -606,6 +630,16 @@ func _pot(i: int, k: int) -> void:
 	vel[i] = Vector2.ZERO
 	spin[i] = Vector2.ZERO
 	events.append({"t": time, "type": "pocket", "a": num[i], "pocket": k, "rails": rails[i], "speed": speed, "at": pos[i]})
+	if pot_pulse > 0.0 and num[i] != 0:
+		# Chain Reaction: a shock ring from the pocket shoves nearby balls away.
+		var c: Vector2 = layout.pockets[k].pos
+		for j in pos.size():
+			if alive[j] == 1 and pinned[j] == 0:
+				var d := pos[j] - c
+				var dl := d.length()
+				if dl < 230.0 and dl > 1.0:
+					vel[j] += d / dl * pot_pulse * 520.0 * (1.0 - dl / 230.0)
+		events.append({"t": time, "type": "pulse", "pocket": k})
 	if Catalog.kind_of(num[i]) == "bomb":
 		# The nearest ball goes down with it, never the cue ball or the 8.
 		var best := -1
@@ -693,3 +727,13 @@ func is_clear_spot(p: Vector2, ignore: int = -1) -> bool:
 		if bp.pos.distance_to(p) < bp.r + R * 1.05:
 			return false
 	return true
+
+
+## Maxwell's Demon: a gate segment lets a ball through instead of bouncing it.
+## "fast": balls at or above this speed pass; "slow": balls below it pass.
+static func _gate_open(seg: Dictionary, v: Vector2) -> bool:
+	if seg.has("fast"):
+		return v.length() >= float(seg.fast)
+	if seg.has("slow"):
+		return v.length() < float(seg.slow)
+	return false

@@ -7,6 +7,7 @@ const LINK_COLOR := "#8fd8ff"
 
 const TERMS := {
 	"sink": {"title": "Sink", "text": "To knock a numbered ball into a pocket."},
+	"exotic": {"title": "Exotic ball", "text": "A ball made of strange matter, such as Gold, Glass or Magnet, that joins your set. Each has its own value and its own trick."},
 	"score": {"title": "Score", "text": "The points a ball earns as it sinks: value × Chain × Heat, times any other multipliers."},
 	"pay": {"title": "Pay", "text": "Money you earn, always shown with a $ sign."},
 	"value": {"title": "Value", "text": "What a ball is worth before multipliers: 10 plus twice its number."},
@@ -47,6 +48,7 @@ const WORDS := {
 	"solid": "solid", "solids": "solid", "stripe": "stripe", "stripes": "stripe", "striped": "stripe",
 	"the 8": "eight", "8-ball": "eight",
 	"perk": "perk", "perks": "perk", "element": "perk", "elements": "perk", "imbue": "imbue", "imbues": "imbue", "isotope": "imbue", "isotopes": "imbue",
+	"exotic ball": "exotic", "exotic balls": "exotic", "exotics": "exotic",
 	"side bet": "side_bet", "side bets": "side_bet", "english": "english", "target": "target",
 }
 

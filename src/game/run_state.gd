@@ -13,6 +13,15 @@ var seed_value := 0
 var cue := "maple"
 var rng := RandomNumberGenerator.new()
 var table_index := 0
+## Elements the player has switched off: they stay owned but do nothing until
+## switched back on (useful for once-per-table cards).
+var perks_off: Array = []
+## Beryllium Avalanche: extra points per ball number for the rest of the run.
+var ball_bonus := {}
+## Once-per-table Elements already spent this table (id -> true).
+var perk_used := {}
+## Catalysts spent since the last shot (Sulfur Reagent).
+var items_this_shot := 0
 var money := 4
 var perks: Array[String] = []
 var imbues := {}         # ball number -> imbue id
@@ -58,7 +67,7 @@ var last_chalk_lost := false    # the last shot cost Chalk (Insurance Slip)
 var ball_set: Array = []        # the balls this run racks; starts as 1-15
 var table_mods := {}            # this table only: placed bumpers and portals, wider pockets
 var board := {}                 # this table's Sharks and moving parts (BoardFeatures)
-var ball_kinds := {}            # special ball number (16+) -> type
+var ball_kinds := {}            # Exotic ball number (16+) -> type
 var seed_growth := {}           # Seed balls: times sunk, keyed by number as a string
 var lucky_mult := {}            # Lucky Imbue: ball number -> what its next win pays (2, 3, 4...)
 var imbue_level := {}           # Weighted level, Hairline cracks, Gilded streak: ball number -> count
@@ -71,13 +80,13 @@ var quick_used := false         # this table: Quick Hands has saved an item
 var faces := {}                 # Dice and Wild balls: the number each shows
 var last_sunk := 0              # Wild copies this
 var echo_used := {}             # Echo balls that have already come back this table
-var intro := false              # a new player: items from the 2nd shop, special balls from the 3rd
+var intro := false              # a new player: items from the 2nd shop, Exotic balls from the 3rd
 var next_boost := 1.0           # Double Down
 var next_all_hot := false       # Spotlight
 var next_magnet := false        # Magnet Charm
 const ITEM_SLOTS := 0            # consumables
 const PAR_SHOTS := 10
-## A set never holds more than 15 balls: a new special ball takes the place of one
+## A set never holds more than 15 balls: a new Exotic ball takes the place of one
 ## you choose, so every slot is a trade between a cheap ball and a better one.
 const MAX_SET := 15
 const START_BALLS := 10
@@ -121,7 +130,7 @@ func start(s: int, cue_id: String = "maple", handicap_level: int = 0) -> void:
 	Catalog.kinds = ball_kinds
 	for t in c.get("add", []):
 		add_special(t)
-	# A cue that starts with a special ball gives up the lowest plain ball for it.
+	# A cue that starts with an Exotic ball gives up the lowest plain ball for it.
 	while ball_set.size() > MAX_SET:
 		var low: Array = ball_set.filter(func(n): return n >= 1 and n <= 15 and n != 8)
 		low.sort()
@@ -178,6 +187,7 @@ func begin_table() -> void:
 	if table_index == 0:
 		chalk = start_chalk()   # Chalk carries over; only a new run starts fresh
 	pockets_used = []
+	perk_used = {}
 	shrink_steps = 0
 	insured_used = 0
 	flash_used = false
@@ -194,7 +204,7 @@ func begin_table() -> void:
 	last_chalk_lost = false
 	tool_charges = {}
 	for t in tools:
-		tool_charges[t] = 2 if perks.has("overclock") else 1
+		tool_charges[t] = 2 if has_perk("overclock") else 1
 	if cue_kit() != "":
 		tool_charges[cue_kit()] = CUE_KIT_USES   # the cue's own object, 4 uses every table
 	next_boost = 1.0
@@ -218,7 +228,7 @@ func begin_table() -> void:
 		bounty = ""   # bet_open() is false with no bounty
 	bet_state = "offer"
 	bet_peeked = false
-	if perks.has("tinkerer") and not tools.is_empty():
+	if has_perk("tinkerer") and not tools.is_empty():
 		var lucky: String = tools[rng.randi_range(0, tools.size() - 1)]
 		tool_charges[lucky] = int(tool_charges.get(lucky, 0)) + 1   # one extra use this table
 
@@ -254,7 +264,7 @@ func bet_multiple() -> float:
 ## What a winning bet pays back: the stake plus its winnings (doubled by Side Hustle).
 func bounty_reward() -> int:
 	var win := int(round(bet_stake() * bet_multiple()))
-	return bet_stake() + win * (2 if perks.has("hunter") else 1)
+	return bet_stake() + win * (2 if has_perk("hunter") else 1)
 
 
 func bet_open() -> bool:
@@ -360,8 +370,8 @@ func target() -> int:
 
 func pocket_scale() -> float:
 	var s := 1.08
-	if perks.has("jaws"):
-		s *= 1.12
+	if has_perk("jaws"):
+		s *= 1.2
 	if handicap >= 4:
 		s *= 0.95
 	if table_mods.get("wide", false):
@@ -388,7 +398,7 @@ func table_name() -> String:
 	return Catalog.BOSSES[t.id].name
 
 
-## Adds a special ball to the set and returns its number (16 and up).
+## Adds an Exotic ball to the set and returns its number (16 and up).
 func add_special(type: String) -> int:
 	var num := 16
 	while ball_kinds.has(num) or ball_set.has(num):
@@ -537,7 +547,7 @@ func set_full() -> bool:
 	return ball_set.size() >= MAX_SET
 
 
-## Balls a new special ball may replace: anything but the 8.
+## Balls a new Exotic ball may replace: anything but the 8.
 func replace_targets() -> Array:
 	return ball_set.filter(func(n): return n != 8)
 
@@ -550,7 +560,7 @@ func _add_numbered(n: int, iso: String) -> void:
 	imbues[n] = iso
 
 
-## Shop entries that put a new ball in your set: special balls, and balls 11 to 15.
+## Shop entries that put a new ball in your set: Exotic balls, and balls 11 to 15.
 func adds_ball(i: int) -> bool:
 	return shop[i].type == "ball" or bool(shop[i].get("adds", false))
 
@@ -561,7 +571,7 @@ func special_cost(i: int) -> int:
 	return int(shop[i].cost) + (removal_cost() if set_full() else 0)
 
 
-## Buys a special ball. With a full set you also pay to remove ball `replace`
+## Buys an Exotic ball. With a full set you also pay to remove ball `replace`
 ## (it leaves with any Imbue on it, and counts as a removal); with room it just joins.
 func buy_special(i: int, replace: int = -1) -> String:
 	var item: Dictionary = shop[i]
@@ -585,7 +595,7 @@ func buy_special(i: int, replace: int = -1) -> String:
 
 
 func removal_cost() -> int:
-	return 0 if perks.has("cleanhouse") else 3 + removals
+	return 0 if has_perk("cleanhouse") else 3 + removals
 
 
 ## The Pro Shop service: pay to take a ball out of your set.
@@ -608,11 +618,11 @@ func _kinds_out() -> Dictionary:
 
 
 func item_slots() -> int:
-	return ITEM_SLOTS + (1 if perks.has("packrat") else 0)
+	return ITEM_SLOTS + (1 if has_perk("packrat") else 0)
 
 
 func tool_slots() -> int:
-	return TOOL_SLOTS + (1 if perks.has("packrat") else 0)
+	return TOOL_SLOTS + (1 if has_perk("packrat") else 0)
 
 
 func consumable_ids() -> Array:
@@ -622,7 +632,8 @@ func consumable_ids() -> Array:
 ## Tools spend a charge, consumables leave the bag (Quick Hands may save one).
 ## Returns false if there was nothing to spend.
 func spend(id: String) -> bool:
-	if perks.has("quickhands") and not quick_used and (tools.has(id) or id == cue_kit()) and int(tool_charges.get(id, 0)) > 0:
+	items_this_shot += 1
+	if has_perk("quickhands") and not quick_used and (tools.has(id) or id == cue_kit()) and int(tool_charges.get(id, 0)) > 0:
 		quick_used = true   # Quick Hands: the first Catalyst each table is free
 		return true
 	if id == cue_kit() and int(tool_charges.get(id, 0)) > 0:
@@ -635,7 +646,7 @@ func spend(id: String) -> bool:
 		return true
 	if not items.has(id):
 		return false
-	if Catalog.ITEMS[id].when == "pause" and perks.has("quickhands") and not quick_used:
+	if Catalog.ITEMS[id].when == "pause" and has_perk("quickhands") and not quick_used:
 		quick_used = true
 		return true
 	items.erase(id)
@@ -643,11 +654,11 @@ func spend(id: String) -> bool:
 
 
 func item_cost(id: String) -> int:
-	return maxi(1, int(Catalog.ITEMS[id].cost) - (1 if perks.has("quartermaster") else 0))
+	return maxi(1, int(Catalog.ITEMS[id].cost) - (2 if has_perk("quartermaster") else 0))
 
 
 func imbue_cost(id: String) -> int:
-	return maxi(1, int(Catalog.IMBUES[id].cost) - (2 if perks.has("enchanter") else 0))
+	return maxi(1, int(Catalog.IMBUES[id].cost) - (2 if has_perk("enchanter") else 0))
 
 
 ## Numbered balls (1-15) no longer in your set.
@@ -662,8 +673,8 @@ func cue_kit() -> String:
 
 ## How hard a shot hits relative to its power setting.
 func power_mult(is_break: bool) -> float:
-	var m := 1.15 if perks.has("longarm") else 1.0
-	if is_break and perks.has("bigbreak"):
+	var m := 1.15 if has_perk("longarm") else 1.0
+	if is_break and has_perk("bigbreak"):
 		m *= 1.25
 	return m
 
@@ -683,7 +694,7 @@ func use_state_item(id: String) -> bool:
 
 ## True if this build is happy to see the 8 go down early.
 func wants_eight() -> bool:
-	return perks.has("eight") or perks.has("darkhorse") or perks.has("trouble")
+	return has_perk("eight") or has_perk("darkhorse") or has_perk("trouble")
 
 
 ## Called after a table is cleared. Returns a breakdown of the payout.
@@ -699,13 +710,13 @@ func payout() -> Array:
 	var quick := PAR_SHOTS - shots_taken
 	if quick > 0:
 		rows.append(["Quick clear: %d shot%s" % [shots_taken, "" if shots_taken == 1 else "s"], mini(quick, QUICK_MAX)])
-	if perks.has("thrift") and chalk >= 2:
+	if has_perk("thrift") and chalk >= 2:
 		rows.append(["Thrift", 5])
-	if perks.has("overflow"):
+	if has_perk("overflow"):
 		var nxt := table_index + 1
 		var next_target: int = plan[nxt].target if nxt < plan.size() else int(target() * 1.6)
 		carry = mini(maxi(score - target(), 0), int(next_target * 0.25))
-	if perks.has("alchemy"):
+	if has_perk("alchemy"):
 		var plain: Array = ball_set.filter(func(n): return n >= 1 and n <= 15 and n != 8)
 		if not plain.is_empty():
 			var turned: int = plain[rng.randi_range(0, plain.size() - 1)]
@@ -724,7 +735,7 @@ func payout() -> Array:
 
 func advance_table() -> void:
 	# Each cleared table adds a Chalk (Calcium Chalk adds one more).
-	chalk = mini(MAX_CHALK, chalk + 1 + (1 if perks.has("chalk") else 0))
+	chalk = mini(MAX_CHALK, chalk + 1 + (1 if has_perk("chalk") else 0))
 	table_index += 1
 	if table_index >= plan.size():
 		endless = true
@@ -795,6 +806,8 @@ func _random_perk() -> String:
 	for id in Catalog.PERKS:
 		if perks.has(id) or locked.has(id):
 			continue
+		if table_index < int(Catalog.PERKS[id].get("min_table", 0)):
+			continue   # e.g. Calcium Chalk only after table 3
 		var already := false
 		for s in shop:
 			if s.type == "perk" and s.id == id:
@@ -872,7 +885,7 @@ func buy(i: int) -> String:
 				if tools.size() >= tool_slots():
 					return "Tool slots full"
 				tools.append(item.id)
-				tool_charges[item.id] = 2 if perks.has("overclock") else 1
+				tool_charges[item.id] = 2 if has_perk("overclock") else 1
 			else:
 				if items.size() >= item_slots():
 					return "Consumable slots full - use one first"
@@ -882,10 +895,37 @@ func buy(i: int) -> String:
 	return ""
 
 
+## True when the Element is owned and switched on.
+func has_perk(id: String) -> bool:
+	return perks.has(id) and not perks_off.has(id)
+
+
+## The owned Elements that are switched on, in slot order.
+func live_perks() -> Array:
+	return perks.filter(func(p): return not perks_off.has(p))
+
+
+## Switches an owned Element off, or back on. Returns true if it is now on.
+func toggle_perk(id: String) -> bool:
+	if not perks.has(id):
+		return false
+	if perks_off.has(id):
+		perks_off.erase(id)
+		return true
+	perks_off.append(id)
+	return false
+
+
+## A once-per-table Element that has already fired this table.
+func perk_spent(id: String) -> bool:
+	return perk_used.has(id)
+
+
 func sell_perk(i: int) -> int:
 	if i < 0 or i >= perks.size():
 		return 0
 	var id := perks[i]
+	perks_off.erase(id)
 	var v := maxi(1, int(Catalog.PERKS[id].cost / 2))
 	perks.remove_at(i)
 	money += v
@@ -949,6 +989,9 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		stripe_run = int(res.get("stripe_run", stripe_run))
 		money += res.money
 		catalyst += res.catalyst_gain
+		_avalanche(res.potted.size())
+		for id in res.get("perk_used", []):
+			perk_used[id] = true
 		total_pots += res.potted.size()
 		best_shot = maxi(best_shot, res.total)
 		for n in res.shattered:
@@ -963,7 +1006,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		var free_break: bool = was_break and res.foul == "Miss"
 		# Boss "soft fouls": the shot scores nothing and the heat resets, but no chalk is lost.
 		var soft: bool = res.foul == "Wrong pocket" or res.foul == "Wrong ball first" or res.foul == Scorer.EIGHT_FOUL
-		var insured: bool = perks.has("insurance") and insured_used < 2
+		var insured: bool = has_perk("insurance") and insured_used < 2
 		var excused: bool = current().id == "local" and not forgiven and not free_break and not soft and not insured
 		if excused:
 			forgiven = true
@@ -973,12 +1016,12 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		if not free_break and not soft and not insured and not excused:
 			# A miss costs 1 Chalk; a scratch, or the 8 going in early, costs 2.
 			chalk_cost = 2 if res.foul == "Scratch" or res.foul == "The 8 went early" else 1
-			if perks.has("glasscannon"):
+			if has_perk("glasscannon"):
 				chalk_cost += 1   # Astatine Edge: every foul costs one more
 		if frost_shield:
 			frost_shield = false   # Frost: this miss keeps the Heat
 		else:
-			if perks.has("migration") and heat >= 5:
+			if has_perk("migration") and heat >= 5:
 				heat -= 1   # Stay Hot: on fire, a miss only costs 1
 			else:
 				heat = 0 if res.get("kindled_live", false) else int(heat / 2.0)   # a miss halves Heat; Kindled on the table wipes it
@@ -987,7 +1030,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 				imbue_level.erase(n)   # Weighted drops back to ×3
 		element_mix = []
 	# The 8 going in early costs 2 Chalk even when the shot scored (Carbon Core makes it safe).
-	if res.get("eight_early", false) and not perks.has("eight"):
+	if res.get("eight_early", false) and not has_perk("eight"):
 		chalk_cost = maxi(chalk_cost, 2)
 	if chalk_cost > 0 and not res.get("safe", false):
 		chalk -= chalk_cost
@@ -999,8 +1042,13 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 	if current().anomaly == "shrink":
 		shrink_steps += 1
 		out["layout_changed"] = true
+	var item_shot := items_this_shot > 0
+	items_this_shot = 0
 	if score >= target():
 		out.cleared = true
+		if item_shot and has_perk("chain"):
+			money += table_index + 1   # Sulfur Reagent: the clearing shot used a Catalyst
+			out["reagent_pay"] = table_index + 1
 		return out
 	if chalk <= 0:
 		out.over = true
@@ -1041,8 +1089,14 @@ func build_layout() -> TableLayout:
 		var a: Vector2 = w[0]
 		var b: Vector2 = w[1]
 		var n := (b - a).orthogonal().normalized()
-		layout.segments.append({"a": a, "b": b, "n": n})
-		layout.segments.append({"a": b, "b": a, "n": -n})
+		layout.segments.append({"a": a, "b": b, "n": n, "board": true})
+		layout.segments.append({"a": b, "b": a, "n": -n, "board": true})
+	for sg: Dictionary in BoardFeatures.segments(board):
+		var d := sg.duplicate()
+		d["board"] = true
+		layout.segments.append(d)
+	for pt: Array in BoardFeatures.portals(board):
+		layout.portals.append({"a": pt[0], "b": pt[1]})
 	if current().lab == "cyclotron" and board.is_empty():
 		layout.add_bumper(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.27), 20.0)
 		layout.add_bumper(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.73), 20.0)
@@ -1067,8 +1121,8 @@ func apply_physics(s: PoolSim) -> void:
 	s.well_strength = 0.0
 	s.pocket_pull = 0.0
 	s.cue_damp = 1.0
-	s.spin_power = 1.5 if perks.has("backspin") else 1.0
-	s.side_power = 2.0 if perks.has("masse") else 1.0
+	s.spin_power = 1.5 if has_perk("backspin") else 1.0
+	s.side_power = 2.0 if has_perk("masse") else 1.0
 	match t.lab:
 		"cryo":
 			s.roll_decel = 90.0
@@ -1088,29 +1142,46 @@ func apply_physics(s: PoolSim) -> void:
 		"dense":
 			s.roll_decel = 290.0
 			s.drag = 0.17
-	if perks.has("velvet"):
+	if has_perk("velvet"):
 		s.roll_decel *= 0.7
 		s.drag *= 0.7
-	if perks.has("magnet"):
+	if has_perk("magnet"):
 		s.pocket_pull = 1.0
-	if perks.has("stun"):
+	if has_perk("stun"):
 		s.cue_damp = 0.4
-	if perks.has("slowcloth"):
+	if has_perk("slowcloth"):
 		s.roll_decel *= 1.3
 		s.drag *= 1.3
-	if perks.has("liverails"):
-		s.rail_e = minf(0.95, s.rail_e * 1.1)
-	if perks.has("hothand") and heat >= 3:
+	if has_perk("hothand") and heat >= 3:
 		s.pocket_pull = maxf(s.pocket_pull, 0.7)   # Holmium Magnet
-	s.anchor8 = perks.has("laststripe")   # Lead Anchor
-	s.cue_float = perks.has("featherweight")   # Hydrogen Balloon
+	s.anchor8 = has_perk("laststripe")   # Lead Anchor
+	s.cue_float = has_perk("featherweight")   # Hydrogen Balloon
 	# The board's own fields: Coriolis's turning disc, the Gulf Stream's current,
 	# the Capacitor's charged rail and the Leech's victim.
 	s.spin_zone = []
 	s.flow_zone = []
 	s.charged_y = -1.0
 	s.no_drop = {}
+	s.board_wells = []
+	s.lorentz = []
+	s.repel = []
+	s.pot_pulse = 0.0
 	match String(t.id):
+		"venturi":
+			s.flow_zone = [Rect2(560, 205, 90, 90), Vector2(420.0, 0.0)]   # the throat speeds balls up
+		"lorentz":
+			s.lorentz = [BoardFeatures.LORENTZ_RECT, 520.0]
+		"meissner":
+			for p: Vector2 in BoardFeatures.MEISSNER_POSTS:
+				s.repel.append([p, 72.0, 2600.0])
+		"escape":
+			for p: Vector2 in BoardFeatures.ESCAPE_WELLS:
+				s.board_wells.append([p, 0.9])
+		"chain":
+			s.pot_pulse = 1.0
+		"tesla":
+			if BoardFeatures.coil_on(board):
+				s.board_wells = [[Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), -1.8]]
 		"drift":
 			s.spin_zone = [Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), 130.0, 900.0]
 		"gulf":
@@ -1121,9 +1192,9 @@ func apply_physics(s: PoolSim) -> void:
 	var leech := BoardFeatures.leech_ball(board)
 	if leech > 0:
 		s.no_drop[leech] = true
-	s.cue_magnet = 1.0 if perks.has("elastic") else 0.0   # Neodymium Magnet
+	s.cue_magnet = 1.0 if has_perk("elastic") else 0.0   # Neodymium Magnet
 	s.first_boost = 1.0   # Uranium Reactor sets this per shot, when the shot is struck
-	if perks.has("domino"):
+	if has_perk("domino"):
 		s.ball_e = 1.0   # Dysprosium Domino: hits lose no speed
 	else:
 		s.ball_e = 0.97
@@ -1141,18 +1212,18 @@ func apply_physics(s: PoolSim) -> void:
 		if s.num[i] == 0:
 			if t.anomaly == "heavycue":
 				m = 2.0
-			if perks.has("heavyhit"):
+			if has_perk("heavyhit"):
 				m *= 1.3
 		else:
 			if t.anomaly == "lead":
 				m = 1.6
-			if perks.has("laststripe") and s.num[i] == 8:
+			if has_perk("laststripe") and s.num[i] == 8:
 				m *= 3.0   # Lead Anchor
 			if s.num[i] == BoardFeatures.leech_ball(board):
 				m *= 3.0   # the Leech weighs its ball down
-			if perks.has("lever") and Catalog.is_stripe(s.num[i]):
+			if has_perk("lever") and Catalog.is_stripe(s.num[i]):
 				m *= 1.4   # Tungsten Core
-			if perks.has("racing") and Catalog.is_stripe(s.num[i]):
+			if has_perk("racing") and Catalog.is_stripe(s.num[i]):
 				m *= 0.7   # Rubidium Rush
 			match Catalog.kind_of(s.num[i]):
 				"iron":
@@ -1167,16 +1238,18 @@ func apply_physics(s: PoolSim) -> void:
 				"leaded":
 					m *= 2.0
 		if i < s.pull.size():
-			var halo: bool = perks.has("lastcall") and s.num[i] == 8 and s.object_balls_left() == 1   # Polonium Halo
+			var halo: bool = has_perk("lastcall") and s.num[i] == 8 and s.object_balls_left() == 1   # Polonium Halo
 			s.pull[i] = 1.0 if imbues.get(s.num[i], "") == "magnetic" or halo else 0.0
-			var charged: bool = perks.has("lowball") and lithium_balls().has(s.num[i])   # Lithium Cell
-			s.bounce[i] = 1.0 if Catalog.kind_of(s.num[i]) == "star" or (perks.has("lever") and Catalog.is_stripe(s.num[i])) or charged else 0.0
+			var charged: bool = has_perk("lowball") and lithium_balls().has(s.num[i])   # Lithium Cell
+			s.bounce[i] = 1.0 if Catalog.kind_of(s.num[i]) == "star" or (has_perk("lever") and Catalog.is_stripe(s.num[i])) or charged else 0.0
+			if s.num[i] == 0 and has_perk("liverails"):
+				s.bounce[i] = 1.15   # Nitrogen Tyres: the cue ball kicks off cushions
 		s.mass[i] = m
 		if i < s.grip.size():
 			var g := 1.0
-			if s.num[i] == 0 and perks.has("collector"):
-				g = 0.7   # Gallium Glide
-			elif s.num[i] != 0 and perks.has("racing") and Catalog.is_stripe(s.num[i]):
+			if s.num[i] == 0 and has_perk("collector"):
+				g = 0.6   # Gallium Glide: rolls about 50% further
+			elif s.num[i] != 0 and has_perk("racing") and Catalog.is_stripe(s.num[i]):
 				g = 0.8   # Rubidium Rush: rolls 25% further
 			s.grip[i] = g
 
@@ -1202,7 +1275,7 @@ func board_turn(s: PoolSim, events: Array) -> Dictionary:
 
 
 func first_boost(power: float) -> float:
-	return 1.2 if perks.has("power") and power >= 0.85 else 1.0
+	return 1.2 if has_perk("power") and power >= 0.85 else 1.0
 
 
 ## Everything the scorer needs to know about the shot about to be taken.
@@ -1220,8 +1293,8 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 				highest = n
 	var ci := s.index_of(0)
 	return {
-		"perks": perks, "imbues": imbues, "hot_pocket": hot_pocket, "boss": current().id, "lab": current().lab,
-		"anomaly": current().anomaly, "loan": BoardFeatures.loan_alive(board), "last_pocket": last_pocket, "lithium": lithium_balls() if perks.has("lowball") else [], "heat": heat, "power": power, "shots_taken": shots_taken,
+		"perks": live_perks(), "imbues": imbues, "hot_pocket": hot_pocket, "coil": BoardFeatures.coil_on(board), "focus": _focus_pocket(), "ball_bonus": ball_bonus, "perk_used": perk_used, "item_shot": items_this_shot > 0, "boss": current().id, "lab": current().lab,
+		"anomaly": current().anomaly, "loan": BoardFeatures.loan_alive(board), "last_pocket": last_pocket, "lithium": lithium_balls() if has_perk("lowball") else [], "heat": heat, "power": power, "shots_taken": shots_taken,
 		"catalyst": catalyst, "is_break": is_break, "chalk": chalk, "objects": s.object_balls_left(),
 		"money": money, "empty_slots": MAX_PERKS - perks.size(), "pockets_used": pockets_used,
 		"lowest": lowest, "highest": highest, "element_mix": element_mix, "clock_pos": clock_pos, "clock_streak": clock_streak,
@@ -1255,7 +1328,7 @@ func to_dict() -> Dictionary:
 		iso[str(k)] = imbues[k]
 	var d := {
 		"v": SAVE_VERSION, "seed": seed_value, "cue": cue, "rng_state": str(rng.state), "table_index": table_index,
-		"money": money, "perks": perks, "imbues": iso,
+		"money": money, "perks": perks, "imbues": iso, "perks_off": perks_off, "ball_bonus": _str_keys(ball_bonus),
 		"catalyst": catalyst, "plan": plan, "endless": endless, "total_pots": total_pots,
 		"best_shot": best_shot, "tables_cleared": tables_cleared, "best_heat": best_heat,
 		"phase": phase, "carry": carry, "record_id": record_id, "daily_key": daily_key,
@@ -1267,7 +1340,7 @@ func to_dict() -> Dictionary:
 			"score": score, "chalk": chalk, "heat": heat, "shots_taken": shots_taken,
 			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "element_mix": element_mix, "clock_pos": clock_pos, "clock_streak": clock_streak,
 			"forgiven": forgiven, "bounty": bounty, "bounty_done": bounty_done, "bet_cap": bet_cap, "bet_state": bet_state, "bet_peeked": bet_peeked,
-			"pockets_used": pockets_used, "last_pocket": last_pocket, "shrink_steps": shrink_steps, "insured_used": insured_used,
+			"pockets_used": pockets_used, "last_pocket": last_pocket, "perk_used": perk_used.keys(), "shrink_steps": shrink_steps, "insured_used": insured_used,
 				"solid_run": solid_run, "stripe_run": stripe_run, "mods": table_mods, "board": board,
 				"frost": frost_shield, "heart_used": heart_used, "tool_charges": tool_charges, "chalk_lost": last_chalk_lost,
 				"boost": next_boost, "all_hot": next_all_hot, "magnet": next_magnet,
@@ -1356,6 +1429,11 @@ func load_dict(d: Dictionary) -> bool:
 		if Catalog.IMBUES.has(d.imbues[k]):
 			imbues[int(k)] = d.imbues[k]
 	catalyst = float(d.get("catalyst", 0.0))
+	perks_off.assign((d.get("perks_off", []) as Array).filter(func(x): return perks.has(x)))
+	ball_bonus.clear()
+	var bb: Dictionary = d.get("ball_bonus", {})
+	for k in bb:
+		ball_bonus[int(k)] = int(bb[k])
 	plan.clear()
 	for t in d.plan:
 		var td: Dictionary = t
@@ -1422,6 +1500,9 @@ func load_dict(d: Dictionary) -> bool:
 		bet_peeked = bool(t.get("bet_peeked", false))
 		pockets_used = (t.get("pockets_used", []) as Array).map(func(x): return int(x))
 		last_pocket = int(t.get("last_pocket", -1))
+		perk_used = {}
+		for id in t.get("perk_used", []):
+			perk_used[String(id)] = true
 		shrink_steps = int(t.get("shrink_steps", 0))
 		insured_used = int(t.get("insured_used", 0))
 		solid_run = int(t.get("solid_run", 0))
@@ -1454,3 +1535,33 @@ func load_dict(d: Dictionary) -> bool:
 		phase = "table"
 		begin_table()
 	return true
+
+
+## Beryllium Avalanche: every sink gives 2 random balls in your set +4 for the run.
+func _avalanche(sinks: int) -> void:
+	if not has_perk("catalyst") or sinks <= 0:
+		return
+	var pool: Array = ball_set.filter(func(n): return int(n) >= 1 and int(n) <= 15)
+	if pool.is_empty():
+		return
+	for i in sinks * 2:
+		var n := int(pool[rng.randi_range(0, pool.size() - 1)])
+		ball_bonus[n] = int(ball_bonus.get(n, 0)) + 4
+
+
+static func _str_keys(d: Dictionary) -> Dictionary:
+	var o := {}
+	for k in d:
+		o[str(k)] = d[k]
+	return o
+
+
+## The pocket out on the cloth on Parabolic Mirror, Whispering Gallery and Golden
+## Spiral (index 5, or 4 for the spiral's drain); -1 on other boards.
+func _focus_pocket() -> int:
+	match String(current().id):
+		"parabolic", "whisper":
+			return 5
+		"spiral":
+			return 4
+	return -1

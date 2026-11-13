@@ -176,7 +176,7 @@ func _setup_table() -> void:
 		log_label.text = ""
 	if state != S.TITLE:
 		sfx.play_music("endless" if run.endless else str(t.id))
-	view.hot_mult = 3 if run.perks.has("heat") else 2
+	view.hot_mult = 3 if run.has_perk("heat") else 2
 	_sync_hot()
 	_refresh_hud()
 
@@ -373,6 +373,8 @@ func _ball_info(n: int) -> Array:
 		parts.append("Isotope with %s: %s" % [Catalog.IMBUES[iso].name, Catalog.IMBUES[iso].desc])
 	if n == 8:
 		parts.append(Glossary.sentence("eight"))
+	if run != null and int(run.ball_bonus.get(n, 0)) > 0:
+		parts.append("Beryllium Avalanche: +%d for the rest of the run%s." % [int(run.ball_bonus[n]), "" if run.has_perk("catalyst") else " (switched off)"])
 	var pay := _ball_pay(n)
 	parts.push_front(pay[0])
 	return [Catalog.ball_label(n), " ".join(parts), pay[1]]
@@ -1078,7 +1080,7 @@ func _shop_intro_tip(v: VBoxContainer) -> void:
 	if run.shop.any(func(it): return it.type == "item") and meta.first_time("items"):
 		tip = "NEW: Items. Tools keep a charge every table; Consumables are used once. Blue ones work while aiming, green ones while a shot is paused (press P), amber ones after a shot."
 	elif run.shop.any(func(it): return it.type == "ball") and meta.first_time("balls"):
-		tip = "NEW: Special balls join your set and rack with the rest. You can also pay to remove a ball from your set (never the 8)."
+		tip = "NEW: Exotic balls join your set and rack with the rest. You can also pay to remove a ball from your set (never the 8)."
 	if tip != "":
 		var l := _label(tip, 15, Color(0.6, 0.95, 0.8), F_REG)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1087,7 +1089,7 @@ func _shop_intro_tip(v: VBoxContainer) -> void:
 
 
 ## Choosing which ball gets a loose Imbue. Balls already imbued, and the 8, can't.
-## A special ball for a full set: choose which ball it replaces (never the 8).
+## An Exotic ball for a full set: choose which ball it replaces (never the 8).
 func _show_replace_picker(i: int) -> void:
 	var item: Dictionary = run.shop[i]
 	var bt: Dictionary
@@ -1240,7 +1242,7 @@ func _hold(count: bool = true) -> void:
 		sfx.play("pause", 0.6)
 		pause_at = -1.0
 		view.plan_marker = Vector2.INF
-		if run.perks.has("stillness") and not run.flash_used:
+		if run.has_perk("stillness") and not run.flash_used:
 			run.flash_used = true   # Xenon Flash: once a table, every rolling ball speeds up
 			for i in sim.count():
 				if sim.alive[i] == 1:
@@ -1373,7 +1375,7 @@ func _add_wall(a: Vector2, b: Vector2) -> void:
 
 
 func _after_hold_action(cue_move: bool) -> void:
-	if cue_move and run.perks.has("afterimage"):
+	if cue_move and run.has_perk("afterimage"):
 		sim.events.append({"t": sim.time, "type": "boost", "chain": 1.0})
 	_spend(hold_slot)
 	hold_action = ""
@@ -1839,7 +1841,7 @@ func _compute_forecast() -> void:
 	fc_sim.first_boost = run.first_boost(_current_power())
 	fc_sim.strike(aim_dir, _speed(_current_power()) * run.power_mult(is_break), _shot_follow(), _shot_side())
 	# Bent tables only need the opening curve; the full picture is the option or Perk.
-	fc_limit = 30.0 if settings.guide_lines == 1 or plan_lock or run.perks.has("oracle") else 2.5
+	fc_limit = 30.0 if settings.guide_lines == 1 or plan_lock or run.has_perk("oracle") else 2.5
 	fc_paths = {}
 	fc_times = {}
 	view.forecast_text = ""
@@ -1881,7 +1883,7 @@ func _step_forecast() -> void:
 	if done:
 		fc_complete = true
 	if done:
-		if run.perks.has("oracle"):
+		if run.has_perk("oracle"):
 			_show_shot_forecast()
 		_show_sink_tags()
 		fc_sim = null
@@ -2125,6 +2127,12 @@ func _consume_events() -> void:
 							view.add_shake(1.5)
 							view.popup(e.at, "rattle", Color(0.8, 0.85, 0.9), 15, 0.7)
 							break
+			"pulse":
+				# Chain Reaction: a shock ring out of the pocket.
+				var pp: Vector2 = layout.pockets[int(e.pocket)].pos
+				view.burst(pp, Color(0.75, 1.0, 0.3), 22, 260)
+				view.add_shake(2.5)
+				sfx.play("bumper", 0.5, 0.6)
 			"bumper":
 				sfx.play("bumper", 0.7)
 				var bi := sim.index_of(e.a)
@@ -2196,11 +2204,11 @@ func _settled() -> void:
 	_hint("Click to skip the count.")
 	if not result.scored:
 		var free_break: bool = is_break and result.foul == "Miss"
-		var insured: bool = run.perks.has("insurance") and run.insured_used < 2
+		var insured: bool = run.has_perk("insurance") and run.insured_used < 2
 		var msg: String = result.foul
 		if result.foul == Scorer.EIGHT_FOUL:
 			msg += " - lose %d points" % result.penalty if result.penalty > 0 else (" - pay $%d" % result.eight_fine if result.eight_fine > 0 else "")
-			if not run.perks.has("eight"):
+			if not run.has_perk("eight"):
 				msg += " and 2 chalk"
 		elif free_break:
 			msg = "Dry break - no penalty"
@@ -2209,7 +2217,7 @@ func _settled() -> void:
 		elif run.current().id == "local" and not run.forgiven and result.foul != "Wrong pocket" and result.foul != "Wrong ball first":
 			msg += " - the house lets this one go"
 		else:
-			var cost := (2 if result.foul == "Scratch" or result.foul == "The 8 went early" else 1) + (1 if run.perks.has("glasscannon") else 0)
+			var cost := (2 if result.foul == "Scratch" or result.foul == "The 8 went early" else 1) + (1 if run.has_perk("glasscannon") else 0)
 			msg += " - lose %d chalk" % cost
 		if result.foul != Scorer.EIGHT_FOUL and result.penalty > 0:
 			msg += ", and %d points for the 8" % result.penalty
@@ -2389,7 +2397,7 @@ func _after_shot() -> void:
 		_new_rack()
 		_enter_aim()
 	elif out.ball_in_hand:
-		_begin_place(was_break and not run.perks.has("afterburner"))   # scratch on the break: behind the head string (Berkelium: anywhere)
+		_begin_place(was_break and not run.has_perk("afterburner"))   # scratch on the break: behind the head string (Berkelium: anywhere)
 	else:
 		_enter_aim()
 	_refresh_hud()
@@ -2581,7 +2589,7 @@ func _key(k: int) -> void:
 					spin_w.set_spin(follow, side + 0.25)
 				"place":
 					if is_break:
-						_begin_place(not run.perks.has("afterburner"))
+						_begin_place(not run.has_perk("afterburner"))
 				"fine":
 					fine_aim = not fine_aim
 					_hint("Fine aim ON: use your aim keys (Shift = finer). Toggle again to release." if fine_aim else "Fine aim off.")
@@ -2640,7 +2648,7 @@ func _joy_button(b: int) -> void:
 					spin_w.set_spin(0.0, 0.0)
 				JOY_BUTTON_BACK:
 					if is_break:
-						_begin_place(not run.perks.has("afterburner"))
+						_begin_place(not run.has_perk("afterburner"))
 		S.PLACE:
 			if b == JOY_BUTTON_A:
 				_place_cue()
@@ -2963,7 +2971,7 @@ func _build_touch_controls(parent: Control) -> void:
 	_sync_aim_btn()
 	touch_place = _button("MOVE CUE BALL", func():
 		if state == S.AIM and is_break:
-			_begin_place(not run.perks.has("afterburner")), Color(0.9, 0.85, 0.5))
+			_begin_place(not run.has_perk("afterburner")), Color(0.9, 0.85, 0.5))
 	touch_place.custom_minimum_size = Vector2(0, 46)
 	touch_place.focus_mode = Control.FOCUS_NONE
 	touch_place.visible = false
@@ -3337,8 +3345,8 @@ func _refresh_hud() -> void:
 	var flags: Array[String] = []
 	if run.current().id == "elements":
 		flags.append("Clock: pocket %d next, %d in a row" % [run.clock_pos + 1, run.clock_streak])
-	if run.perks.has("catalyst"):
-		flags.append("Snowball: balls worth +%s" % _fmt(run.catalyst))
+	if run.has_perk("catalyst") and not run.ball_bonus.is_empty():
+		flags.append("Avalanche: %d balls boosted" % run.ball_bonus.size())
 	flags_label.text = "\n".join(flags)
 	_refresh_tray()
 	if score_t >= 1.0:
@@ -3417,11 +3425,40 @@ func _perk_card(id: String, slot: int) -> Control:
 	p.tree_exiting.connect(func():
 		if view != null and view.spotlight == TileArt.balls_for("perk", id):
 			view.spotlight = [])
+	if run.perk_spent(id):
+		v.add_child(_label("Used this table", 12, Color(0.95, 0.75, 0.4)))
 	if state == S.SHOP:
 		var b := _button(("Really sell? $%d" if sell_armed == id else "Sell $%d") % run.sell_value(id), func(): _sell_click(id), Color(1.0, 0.75, 0.3) if sell_armed == id else Color(0.9, 0.4, 0.3))
 		b.add_theme_font_size_override("font_size", 13)
 		v.add_child(b)
+	else:
+		# Any Element can be switched off and back on, between shots. Handy for
+		# saving a once-per-table card for a better shot.
+		var on := not run.perks_off.has(id)
+		var tb := _button("ON" if on else "OFF", func(): _toggle_perk(id), Color(0.45, 0.9, 0.6) if on else Color(0.6, 0.6, 0.65))
+		tb.add_theme_font_size_override("font_size", 12)
+		tb.tooltip_text = "Switch this Element off for now. It does nothing while off; switch it back on whenever you like." if on else "Switch this Element back on."
+		tb.disabled = state == S.ROLL or state == S.TALLY
+		v.add_child(tb)
+		if not on:
+			p.modulate = Color(1, 1, 1, 0.45)
 	return p
+
+
+## Switches an Element off or back on between shots, and refreshes the physics,
+## the aiming line and the cards to match.
+func _toggle_perk(id: String) -> void:
+	if state == S.ROLL or state == S.TALLY:
+		return
+	var on := run.toggle_perk(id)
+	sfx.play("click", 0.6, 1.2 if on else 0.8)
+	if sim != null:
+		run.apply_physics(sim)
+	guide_dirty = true
+	forecast_dirty = true
+	view.hot_mult = 3 if run.has_perk("heat") else 2
+	_save_progress()
+	_rebuild_cards()
 
 
 ## What a Perk whose effect grows, or switches on and off, is doing right now ("" if fixed).
@@ -3431,7 +3468,10 @@ func _perk_now(id: String) -> String:
 	var heat := int(c.get("heat", 0))
 	match id:
 		"catalyst":
-			return "+%s to every ball" % _fmt(run.catalyst)
+			var tot := 0
+			for v in run.ball_bonus.values():
+				tot += int(v)
+			return "+%d spread over %d balls" % [tot, run.ball_bonus.size()] if tot > 0 else ""
 		"steadyrun":
 			return "+%d to solids" % (12 * mini(int(c.get("solid_run", 0)), 8))
 		"tiger":
@@ -4597,8 +4637,13 @@ func _show_run_info() -> void:
 	for id in run.perks:
 		var fd: Dictionary = Catalog.PERKS[id]
 		c1.add_child(_term_text("%s  (%s)  -  %s" % [fd.name, Catalog.rarity_name(fd.r), Glossary.link(fd.desc)], 15, Catalog.rarity_color(fd.r).lerp(Color.WHITE, 0.5), 560.0))
-	if run.perks.has("catalyst"):
-		c1.add_child(_label("Snowball: every ball is worth +%s." % _fmt(run.catalyst), 14, Color(1.0, 0.6, 0.3), F_REG))
+	if run.has_perk("catalyst") and not run.ball_bonus.is_empty():
+		var bits: Array = []
+		var ks := run.ball_bonus.keys()
+		ks.sort()
+		for k in ks:
+			bits.append("%d +%d" % [int(k), int(run.ball_bonus[k])])
+		c1.add_child(_label("Avalanche bonuses: " + ", ".join(bits) + ".", 14, Color(1.0, 0.6, 0.3), F_REG))
 	c1.add_child(_label("ISOTOPE BALLS", 16, Color(0.6, 0.8, 1.0)))
 	if run.imbues.is_empty():
 		c1.add_child(_label("None.", 15, Color(0.6, 0.6, 0.65), F_REG))
@@ -4639,14 +4684,14 @@ func _show_run_info() -> void:
 	c3.add_theme_constant_override("separation", 6)
 	cols.add_child(c3)
 	c3.add_child(_label("SCORING", 16, Color(0.6, 0.8, 1.0)))
-	var hot_x := 3 if run.perks.has("heat") else 2
+	var hot_x := 3 if run.has_perk("heat") else 2
 	var rules := [
 		"Each sink = value × Chain × Heat",
 		"Value: 10 + ball number",
 		"Chain: starts at 1, +0.5 per ball sunk this shot",
 		"Heat: +1 per scoring shot, each point adds ×0.5, a miss halves it",
 		"Bounces score nothing unless an Element, Isotope or table says so",
-		"Value: 10 + 2 × the ball's number (special balls have their own)",
+		"Value: 10 + 2 × the ball's number (Exotic balls have their own)",
 		"Hot pocket ×%d, then Elements; the 8 costs 15%% of the target if it sinks early" % hot_x,
 		"Miss or no contact: -1 chalk (dry break free). Scratch or early 8: -2",
 		"Clear the rack or the table: +1 chalk (up to 12). Chalk carries over",

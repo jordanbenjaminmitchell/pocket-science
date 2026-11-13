@@ -1,5 +1,5 @@
 extends SceneTree
-## Your ball set: removing balls (never the 8), special ball types with their own
+## Your ball set: removing balls (never the 8), Exotic ball types with their own
 ## rules and looks, the new Imbues, and the Perks built on them.
 
 var failures := 0
@@ -36,7 +36,7 @@ func _sim(layout: TableLayout, balls: Array) -> PoolSim:
 
 func _initialize() -> void:
 	print("content")
-	check(Catalog.BALL_TYPES.size() >= 24, "24 special ball types (%d)" % Catalog.BALL_TYPES.size())
+	check(Catalog.BALL_TYPES.size() >= 24, "24 Exotic ball types (%d)" % Catalog.BALL_TYPES.size())
 	check(Catalog.IMBUES.size() >= 16, "16 Isotopes (%d)" % Catalog.IMBUES.size())
 	check(Catalog.PERKS.size() >= 96, "96 Elements before the pause set (%d)" % Catalog.PERKS.size())
 	var looks := {}
@@ -66,11 +66,11 @@ func _initialize() -> void:
 	run.perks.assign(["cleanhouse"])
 	check(run.removal_cost() == 0, "Clean House makes it free")
 	var g := run.add_special("gold")
-	check(g == 16 and run.ball_set.has(16) and Catalog.kind_of(16) == "gold", "a special ball joins the set as 16")
-	check(Catalog.ball_points(16) == 45 and Catalog.ball_label(16) == "Gold ball", "special balls have their own value and name")
-	check(not Catalog.is_stripe(16) and not Catalog.is_solid(16), "special balls are neither solids nor stripes")
+	check(g == 16 and run.ball_set.has(16) and Catalog.kind_of(16) == "gold", "an Exotic ball joins the set as 16")
+	check(Catalog.ball_points(16) == 45 and Catalog.ball_label(16) == "Gold ball", "Exotic balls have their own value and name")
+	check(not Catalog.is_stripe(16) and not Catalog.is_solid(16), "Exotic balls are neither solids nor stripes")
 	var saved: Dictionary = run.to_dict()
-	check(saved.ball_kinds.has("16") and (saved.ball_set as Array).has(16), "special balls are saved with the run")
+	check(saved.ball_kinds.has("16") and (saved.ball_set as Array).has(16), "Exotic balls are saved with the run")
 	for hb in [11, 12, 13, 14, 15]:
 		run.ball_set.append(hb)   # fill the set to its 15-ball limit
 	run.shop = [{"type": "ball", "id": "star", "cost": 5, "sold": false}]
@@ -80,7 +80,7 @@ func _initialize() -> void:
 	check(run.buy(0) != "" and run.buy_special(0, 8) != "", "a full set needs a ball to replace, and never the 8")
 	var fee := run.removal_cost()
 	var before := run.money
-	check(run.buy_special(0, 1) == "" and run.ball_kinds.values().has("star") and not run.ball_set.has(1) and run.ball_set.size() == 15, "a special ball replaces the ball you choose")
+	check(run.buy_special(0, 1) == "" and run.ball_kinds.values().has("star") and not run.ball_set.has(1) and run.ball_set.size() == 15, "an Exotic ball replaces the ball you choose")
 	check(run.money == before - 5 - fee, "and you pay the removal fee on top of the ball ($%d)" % (before - run.money))
 	run.money = 20
 	run.buy_removal(2)
@@ -98,7 +98,7 @@ func _initialize() -> void:
 	hi.roll_shop()
 	check(not hi.shop.any(func(it): return it.get("adds", false) and int(it.ball) == 13), "and is never offered twice")
 
-	print("special balls score")
+	print("Exotic balls score")
 	Catalog.kinds = {16: "gold", 17: "void", 18: "echo", 19: "star", 20: "moon", 21: "wild", 22: "eraser", 23: "dice", 24: "ember", 25: "clover", 26: "heart"}
 	Catalog.faces = {21: 7, 23: 12}
 	var gp := pot(16)
@@ -118,15 +118,15 @@ func _initialize() -> void:
 	r = score([hit(0, 25)])
 	check(not r.scored and r.safe, "a shot Clover is part of cannot cost Chalk")
 	check(score([hit(0, 26), pot(26)], {"objects": 1}).heart and not score([hit(0, 26), pot(26)]).heart, "Heart gives Chalk only as the last ball")
-	check(score([hit(0, 16), gp], {"perks": ["goldrush"]}).total == 90, "Gold Rush doubles special balls")
-	check(score([hit(0, 5), pot(5)], {"perks": ["menagerie"], "specials": 4}).total == 40, "Menagerie: Chain per special ball")
+	check(score([hit(0, 16), gp], {"perks": ["goldrush"]}).total == 90, "Gold Rush doubles Exotic balls")
+	check(score([hit(0, 5), pot(5)], {"perks": ["menagerie"], "specials": 4}).total == 40, "Menagerie: Chain per Exotic ball")
 	check(score([hit(0, 5), pot(5), pot(3, 2)], {"imbues": {5: "starry"}}).total == 52, "Starry lifts the balls after it")
 	check(score([hit(0, 5), pot(5)], {"imbues": {5: "prismatic"}}).total == 25, "Resonant adds Chain for each ball it touches")
 	check(score([hit(0, 5), pot(5)], {"imbues": {5: "bounty"}, "heat": 3}).money == 3, "Bounty pays $1 per Heat")
 	check(score([hit(0, 5), {"type": "rail", "a": 5}, pot(5)], {"imbues": {5: "charged"}}).total == 30, "Charged adds Chain off cushions")
 	Catalog.faces = {}
 
-	print("special balls in the physics")
+	print("Exotic balls in the physics")
 	var phys := RunState.new()
 	phys.start(2)
 	phys.begin_table()

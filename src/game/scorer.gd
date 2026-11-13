@@ -61,6 +61,13 @@ static func chain_step(e: Dictionary, ctx: Dictionary, contacted: bool) -> float
 		"bumper":
 			if boss == "parlor" or boss == "posts" or boss == "foucault":
 				add += 1.0
+			elif boss == "galton":
+				add += 0.5
+			elif boss == "lattice":
+				add += 0.25
+		"portal":
+			if boss == "erbridge" or boss == "mobius":
+				add += 1.0
 	return add
 
 
@@ -116,7 +123,7 @@ static func score(ctx: Dictionary) -> Dictionary:
 	var out := {
 		"lines": [], "total": 0, "money": 0, "chain": 1.0, "heat_gain": 0,
 		"potted": pots.map(func(p): return p.a), "scratch": scratch, "foul": "", "scored": false,
-		"first_contact": first_contact, "shattered": [], "catalyst_gain": 0.0,
+		"first_contact": first_contact, "shattered": [], "catalyst_gain": 0.0, "perk_used": [],
 		"power": ctx.get("power", 0.5), "is_break": ctx.get("is_break", false),
 		"banks": 0, "max_rails": 0, "combos": 0, "kick": kick, "hot_pots": 0, "pocket_list": [],
 		"element_mix": ctx.get("element_mix", []),
@@ -209,6 +216,8 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 	var void_shot: bool = pots.any(func(p): return Catalog.kind_of(p.a) == "void")
 	var coin_hits := {}
 	var last_touch := {}
+	var used_before: Dictionary = ctx.get("perk_used", {})
+	out.perk_used = []
 	var boomerang: bool = ctx.has("cue_start") and ctx.has("cue_end") and (ctx.cue_start as Vector2).distance_to(ctx.cue_end) <= 120.0
 	for e in events:
 		if e.type == "ball":
@@ -253,7 +262,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			"lowest": n == int(ctx.get("lowest", -1)), "highest": n == int(ctx.get("highest", -1)),
 			"heat3": heat >= 3, "on_fire": heat >= 5, "cold": heat == 0,
 			"low3": (n >= 1 and n <= 3) or (face >= 1 and face <= 3), "high3": (n >= 13 and n <= 15) or (face >= 13 and face <= 15), "last_chalk": int(ctx.get("chalk", 99)) == 1, "third": int(ctx.get("shots_taken", 0)) % 3 == 2,
-			"boomerang": boomerang, "long": _long_pot(ctx, n, e),
+			"boomerang": boomerang, "long": _long_pot(ctx, n, e), "item_shot": ctx.get("item_shot", false),
 			"follow_shot": float(ctx.get("follow", 0.0)) > 0.2, "draw_shot": float(ctx.get("follow", 0.0)) < -0.2,
 			"last_eight": n == 8 and left_after == 0, "no_eight_touch": not toucher.has(8),
 			"eight_count": (int(ctx.get("total_pots", 0)) + idx + 1) % 8 == 0,
@@ -268,10 +277,14 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		if imbues.get(n, "") == "heavy":
 			weight = int(imbue_level.get(n, imbue_level.get(str(n), 3)))   # Weighted climbs with every sink
 		var value := float(Catalog.ball_points(n, weight)) + float(ctx.get("catalyst", 0.0))
+		var avalanche := int((ctx.get("ball_bonus", {}) as Dictionary).get(n, 0))
+		value += float(avalanche)
 		# Every step of this ball's score, with where it came from, for the on-screen sum.
 		var steps: Array = [{"op": "=", "v": float(Catalog.ball_points(n, weight)), "src": "ball", "label": Catalog.ball_label(n)}]
 		if float(ctx.get("catalyst", 0.0)) > 0.0:
 			steps.append({"op": "+", "v": float(ctx.catalyst), "src": "perk:catalyst", "label": "Snowball"})
+		if avalanche > 0:
+			steps.append({"op": "+", "v": float(avalanche), "src": "perk:catalyst", "label": "Avalanche"})
 		# Rotation: the lowest ball on the table pays like the highest one.
 		if perks.has("rotation") and facts.lowest and int(ctx.get("highest", -1)) > n:
 			value += float(Catalog.ball_points(int(ctx.highest), weight) - Catalog.ball_points(n, weight))
@@ -286,6 +299,16 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			var fx: Dictionary = Catalog.PERKS[id].get("fx", {})
 			if fx.is_empty() or not facts.get(fx.when, false):
 				continue
+			if fx.get("once", false):
+				# Once per table, but every sink of the shot that spends it counts.
+				if used_before.has(id):
+					continue
+				if not out.perk_used.has(id):
+					out.perk_used.append(id)
+			var per_num := float(fx.get("per_num", 0)) * float(face if face > 0 else n)
+			value += per_num
+			if per_num > 0.0:
+				_step(steps, Catalog.PERKS[id].name, "perk:" + id, [0.0, 1.0, 0.0], per_num, 1.0, 0.0)
 			value += float(fx.get("value", 0))
 			pre_chain += float(fx.get("chain", 0.0))
 			x *= float(fx.get("x", 1.0))
@@ -298,9 +321,11 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			if perks.has("bank"):
 				pre_chain += float(rails)
 				tags.append("Bank")
-			if perks.has("geometry"):
+			if perks.has("geometry") and (not used_before.has("geometry") or out.perk_used.has("geometry")):
 				x *= pow(1.5, rails)
 				tags.append("Geometry")
+				if not out.perk_used.has("geometry"):
+					out.perk_used.append("geometry")
 			out.banks += 1
 			out.max_rails = maxi(out.max_rails, rails)
 			_step(steps, "Bank", "perk:" + ("geometry" if perks.has("geometry") else "bank"), snap, value, x, pre_chain)
@@ -400,7 +425,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		if imbues.has(n):
 			_step(steps, Catalog.IMBUES[imbues[n]].name, "ball", snap, value, x, pre_chain)
 		snap = [value, x, pre_chain]
-		# Special balls.
+		# Exotic balls.
 		match kind:
 			"gold":
 				money += int(e.get("rails", 0))
@@ -452,8 +477,36 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		match boss:
 			"drift":
 				pre_chain += 1.0
-			"gulf":
+			"gulf", "lorentz", "chain":
 				pre_chain += 0.5
+			"escape":
+				pre_chain += 1.0
+			"venturi":
+				if facts.long:
+					x *= 2.0
+			"membrane", "maxwell", "lever":
+				x *= 1.5
+			"parabolic", "spiral":
+				if k == int(ctx.get("focus", -1)):
+					x *= 2.0
+					tags.append("Focus" if boss == "parabolic" else "Drain")
+			"whisper":
+				if k == int(ctx.get("focus", -1)):
+					x *= 3.0
+					tags.append("Focus")
+			"sierpinski", "stellated":
+				if rails > 0:
+					x *= 2.0
+			"tectonic":
+				if rails > 0:
+					x *= 1.5
+			"meissner":
+				if facts.clean:
+					x *= 2.0
+			"tesla":
+				if ctx.get("coil", false):
+					x *= 2.0
+					tags.append("Coil")
 			"blackice":
 				pre_chain += 0.5
 			"magnet":
@@ -518,13 +571,11 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 	out.solid_run = solid_run
 	out.stripe_run = stripe_run
 	if perks.has("bedrock") and idx > 0 and pots.all(func(p): return Catalog.is_solid(p.a)):
-		out.heat_gain += 1
+		out.heat_gain += pots.size()   # Aluminium Ore: +1 Heat per solid
 	if perks.has("streak") and pots.size() >= 2:
 		out.heat_gain += 1
 	if boss == "closing":
 		out.heat_gain += 1
-	if perks.has("catalyst"):
-		out.catalyst_gain = 0.75 * pots.size()
 	out.chain = chain
 	# Lithium Cell: each charged ball pays $1.
 	var lith: Array = ctx.get("lithium", [])

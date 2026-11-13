@@ -5,7 +5,9 @@ extends RefCounted
 ##
 ##   start(id, rng)          the board's opening state
 ##   bumpers(state)          solid circles for TableLayout: live Sharks, posts, the pendulum bob
-##   walls(state)            free-standing walls: the Clockwork Sweeper
+##   walls(state)            free-standing two-sided walls: the Sweeper, ridges, islands, the Lever
+##   segments(state)         one-way walls and the Demon's gates, as layout segments
+##   portals(state)          linked portal pairs (Einstein–Rosen Bridge, Möbius Strip)
 ##   closed(state)           pockets a Card Sharp is sitting in
 ##   after_shot(...)         Sharks take hits, move, swallow balls and join; parts step on
 ##
@@ -34,10 +36,19 @@ const SWEEP_LEN := 170.0
 const SHUTTLE_STEPS := 6     # Harmonic Oscillator: a full swing takes six shots
 const BOB_R := 22.0
 const HAMMER_ROUTE := [Vector2(220, 130), Vector2(780, 370), Vector2(780, 130), Vector2(220, 370)]
+const DEMON_SPEED := 520.0   # Maxwell's Demon: the speed that splits fast from slow
+const MEISSNER_POSTS := [Vector2(430, 140), Vector2(430, 360), Vector2(600, 110), Vector2(600, 390)]
+const ESCAPE_WELLS := [Vector2(370, 170), Vector2(650, 330)]
+const LORENTZ_RECT := Rect2(330, 110, 340, 280)
+const LEVER_PIVOT := Vector2(500, 405)
+const LEVER_HALF := 120.0
+const SPIRAL_DRAIN := Vector2(500, 385)
+const RIDGE_SLIDE := 180.0
 
 
 static func has_features(id: String) -> bool:
-	return id in ["smoke", "cramped", "final", "foucault", "elements", "posts", "spring_st"]
+	return id in ["smoke", "cramped", "final", "foucault", "elements", "posts", "spring_st", "venturi", "erbridge",
+		"membrane", "galton", "sierpinski", "mobius", "maxwell", "spiral", "meissner", "tesla", "tectonic", "lattice", "lever"]
 
 
 static func start(id: String, rng: RandomNumberGenerator, hot: int) -> Dictionary:
@@ -67,6 +78,10 @@ static func start(id: String, rng: RandomNumberGenerator, hot: int) -> Dictionar
 			s["shuttle"] = 0
 		"spring_st":
 			s["charged"] = false  # Capacitor: the bottom rail holds a charge
+		"tectonic":
+			s["slide"] = 0
+		"lever":
+			s["tilt"] = 1.0 if rng.randf() < 0.5 else -1.0
 	return s
 
 
@@ -110,6 +125,23 @@ static func bumpers(s: Dictionary) -> Array:
 			out.append({"pos": Vector2(W * 0.5 - f * 150.0, H * 0.73), "r": 20.0, "post": true})
 		"foucault":
 			out.append({"pos": bob_pos(s), "r": BOB_R, "bob": true})
+		"galton":
+			# Pegs in Pascal's-triangle rows above the break line, and a row below.
+			for row in 3:
+				for k in row + 1:
+					out.append({"pos": Vector2(500.0 + (k - row * 0.5) * 64.0, 80.0 + row * 55.0), "r": 9.0, "post": true, "peg": true})
+			for k in 3:
+				out.append({"pos": Vector2(436.0 + k * 64.0, 400.0), "r": 9.0, "post": true, "peg": true})
+		"meissner":
+			for p: Vector2 in MEISSNER_POSTS:
+				out.append({"pos": p, "r": 16.0, "post": true, "magnet": true})
+		"lattice":
+			for row in 4:
+				var y: float = [120.0, 185.0, 315.0, 380.0][row]
+				for col in 5:
+					out.append({"pos": Vector2(380.0 + col * 70.0 + (35.0 if row % 2 == 1 else 0.0), y), "r": 8.0, "post": true, "atom": true})
+		"lever":
+			out.append({"pos": LEVER_PIVOT, "r": 9.0, "post": true, "fulcrum": true})
 	return out
 
 
@@ -124,11 +156,102 @@ static func bob_pos(s: Dictionary) -> Vector2:
 
 ## Free-standing walls as [a, b]: the Sweeper, a clock hand from the centre.
 static func walls(s: Dictionary) -> Array:
-	if String(s.get("id", "")) == "elements":
-		var c := Vector2(W * 0.5, H * 0.5)
-		var a := -PI * 0.5 + SWEEP_STEP * float(s.get("sweep", 0))
-		return [[c + Vector2.from_angle(a) * 30.0, c + Vector2.from_angle(a) * SWEEP_LEN]]
+	match String(s.get("id", "")):
+		"elements":
+			var c := Vector2(W * 0.5, H * 0.5)
+			var a := -PI * 0.5 + SWEEP_STEP * float(s.get("sweep", 0))
+			return [[c + Vector2.from_angle(a) * 30.0, c + Vector2.from_angle(a) * SWEEP_LEN]]
+		"venturi":
+			# Two angled rails form the funnel's throat.
+			return [[Vector2(420, 70), Vector2(565, 205)], [Vector2(420, 430), Vector2(565, 295)]]
+		"sierpinski":
+			var out: Array = []
+			for tri: Array in sierpinski_islands():
+				for i in 3:
+					out.append([tri[i], tri[(i + 1) % 3]])
+			return out
+		"spiral":
+			var pts := spiral_points()
+			var out: Array = []
+			for i in pts.size() - 1:
+				out.append([pts[i], pts[i + 1]])
+			return out
+		"tectonic":
+			var out: Array = []
+			for r: Array in ridges(s):
+				out.append(r)
+			return out
+		"maxwell":
+			return [[Vector2(500, 55), Vector2(500, 195)], [Vector2(500, 305), Vector2(500, 445)]]
+		"lever":
+			return [lever_ends(s)]
 	return []
+
+
+## One-way walls: a layout segment with its play-side normal. A ball meets it only
+## from the front. Maxwell's gates also carry "fast" or "slow" (see PoolSim._gate_open).
+static func segments(s: Dictionary) -> Array:
+	match String(s.get("id", "")):
+		"membrane":
+			return [{"a": Vector2(600, 40), "b": Vector2(600, 460), "n": Vector2(1, 0), "membrane": true}]
+		"maxwell":
+			return [{"a": Vector2(500, 195), "b": Vector2(500, 305), "n": Vector2(-1, 0), "fast": DEMON_SPEED},
+				{"a": Vector2(500, 305), "b": Vector2(500, 195), "n": Vector2(1, 0), "slow": DEMON_SPEED}]
+	return []
+
+
+## Linked portal pairs as [a, b].
+static func portals(s: Dictionary) -> Array:
+	match String(s.get("id", "")):
+		"erbridge":
+			return [[Vector2(330, 110), Vector2(700, 390)]]
+		"mobius":
+			# Out of the left rail, in through the right one, upside down.
+			return [[Vector2(18, 150), Vector2(982, 350)], [Vector2(18, 350), Vector2(982, 150)]]
+	return []
+
+
+## Sierpinski Triangle: three triangular islands.
+static func sierpinski_islands() -> Array:
+	var holes := [
+		[Vector2(250, 62.5), Vector2(250, 187.5), Vector2(0, 125)],
+		[Vector2(250, 437.5), Vector2(250, 312.5), Vector2(0, 375)],
+		[Vector2(875, 218.75), Vector2(875, 281.25), Vector2(750, 250)],
+	]
+	var out: Array = []
+	for h: Array in holes:
+		var c: Vector2 = (h[0] + h[1] + h[2]) / 3.0
+		var k := 0.55 if c.x < 500.0 else 0.75
+		out.append([c + (h[0] - c) * k, c + (h[1] - c) * k, c + (h[2] - c) * k])
+	return out
+
+
+## Golden Spiral: the arm's points, from the outside in towards the drain.
+static func spiral_points() -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	var b := log(2.0) / TAU   # the gap between turns halves every turn
+	for i in 17:
+		var th := TAU * i / 16.0
+		pts.append(SPIRAL_DRAIN + Vector2.from_angle(PI + th) * 92.0 * exp(-b * th))
+	return pts
+
+
+## Tectonic Plates: two fault ridges sliding opposite ways.
+static func ridges(s: Dictionary) -> Array:
+	var off := sin(TAU * float(s.get("slide", 0)) / 6.0) * RIDGE_SLIDE
+	return [[Vector2(420 + off, 170), Vector2(580 + off, 170)], [Vector2(420 - off, 330), Vector2(580 - off, 330)]]
+
+
+## The Lever's see-saw rail, tipped down towards the end hit last.
+static func lever_ends(s: Dictionary) -> Array:
+	var a := float(s.get("tilt", 1.0)) * 0.3
+	var d := Vector2.from_angle(a) * LEVER_HALF
+	return [LEVER_PIVOT - d - Vector2(0, 12), LEVER_PIVOT + d - Vector2(0, 12)]
+
+
+## Tesla Coil: does the coil fire on this shot? Every third shot.
+static func coil_on(s: Dictionary) -> bool:
+	return String(s.get("id", "")) == "tesla" and int(s.get("shots", 0)) % 3 == 2
 
 
 static func sweep_angle(s: Dictionary) -> float:
@@ -259,7 +382,36 @@ static func after_shot(s: Dictionary, sim: PoolSim, events: Array, rng: RandomNu
 			out.moved = true
 		"spring_st":
 			out.moved = true   # the charged rail's glow may change
+		"tectonic":
+			var was: Array = ridges(s)
+			s.slide = (int(s.get("slide", 0)) + 1) % 6
+			for r: Array in ridges(s):
+				if not _wall_clear(sim, r[0], r[1]):
+					s.slide = (int(s.slide) + 5) % 6   # a ball is in the way: hold still this time
+					break
+			out.moved = true
+		"lever":
+			var ends := lever_ends(s)
+			for e: Dictionary in events:
+				if e.type == "rail" and e.has("at"):
+					var at: Vector2 = e.at
+					var q := Geometry2D.get_closest_point_to_segment(at, ends[0], ends[1])
+					if q.distance_to(at) < R + 6.0:
+						s.tilt = 1.0 if at.x > LEVER_PIVOT.x else -1.0
+			if not _wall_clear(sim, lever_ends(s)[0], lever_ends(s)[1]):
+				s.tilt = -float(s.tilt)   # never tip onto a ball
+			out.moved = true
+		"tesla":
+			out.moved = true   # the coil's charge glow changes
 	return out
+
+
+## No ball sits on the wall a-b.
+static func _wall_clear(sim: PoolSim, a: Vector2, b: Vector2) -> bool:
+	for i in sim.count():
+		if sim.alive[i] == 1 and Geometry2D.get_closest_point_to_segment(sim.pos[i], a, b).distance_to(sim.pos[i]) < R + 3.0:
+			return false
+	return true
 
 
 static func _hurt(sharks: Array, i: int, out: Dictionary) -> void:
