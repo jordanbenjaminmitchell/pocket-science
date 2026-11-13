@@ -111,6 +111,7 @@ func _layer(cb: Callable) -> Node2D:
 var rail_color := Color(0.30, 0.15, 0.07)
 var trim_color := Color(0.92, 0.9, 0.82)
 var decal := ""
+var rail_material := ""   # a textured rail from BoardArt (chrome, gilded...), or "" for wood
 var flash_col := Color(0, 0, 0, 0)
 var flash_t := 0.0
 
@@ -121,7 +122,13 @@ func set_lab(id: String, board := "") -> void:
 	var art: Dictionary = Catalog.LAB_ART.get(id, Catalog.LAB_ART.standard)
 	rail_color = art.rail
 	trim_color = art.trim
-	decal = BoardArt.DECALS.get(board, art.decal) if board != "" and BoardArt.DECALS.get(board, "") != "" else art.decal
+	var own := BoardArt.same_board(board)
+	decal = BoardArt.DECALS[board] if own and BoardArt.DECALS.get(board, "") != "" else art.decal
+	rail_material = BoardArt.RAILS.get(board, "") if own else ""
+	if rail_material != "":
+		rail_color = BoardArt.RAIL_BASE[rail_material]
+	if own:
+		set_felt(BoardArt.felt_for(board, felt_color))
 	queue_redraw()
 	cushions.queue_redraw()
 
@@ -368,8 +375,14 @@ func _draw() -> void:
 				continue
 			var y0 := rng.randf_range(outer.position.y, outer.end.y - 150)
 			draw_line(Vector2(x, y0), Vector2(x + rng.randf_range(-1.5, 1.5), y0 + rng.randf_range(100, 400)), c, rng.randf_range(0.6, 2.0))
-	# Highlight lip on the inner edge of the wood.
 	var inner := Rect2(-CUSHION, -CUSHION, W + 2 * CUSHION, H + 2 * CUSHION)
+	if rail_material != "":
+		# A textured rail: four strips over the wood, between the edge and the lip.
+		var t := inner.position.y - 6.0 - outer.position.y
+		for r in [Rect2(outer.position, Vector2(outer.size.x, t)), Rect2(Vector2(outer.position.x, inner.end.y + 6.0), Vector2(outer.size.x, t)),
+				Rect2(Vector2(outer.position.x, outer.position.y + t), Vector2(t, outer.size.y - 2.0 * t)), Rect2(Vector2(inner.end.x + 6.0, outer.position.y + t), Vector2(t, outer.size.y - 2.0 * t))]:
+			BoardArt.draw_rail(self, r, rail_material)
+	# Highlight lip on the inner edge of the wood.
 	draw_rect(inner.grow(6), rail_color.lightened(0.3), false, 3.0)
 	draw_rect(inner.grow(2), Color(0.08, 0.04, 0.02), false, 3.0)
 	# Cushion rubber base.

@@ -110,5 +110,20 @@ func _go() -> void:
 		for n in nums:
 			check(str(n) in str(Catalog.PERKS[id].desc) or id in ["odd", "even"], "%s: ball %d is named in its card text" % [id, n])
 	print("  %d tiles, %d symbols" % [TileArt.TILES.size(), syms.size()])
+	# Thumbnails for the HUD and the Collection: every card, cue and board draws.
+	var holder := Control.new()
+	root.add_child(holder)
+	var thumbs := 0
+	for k in ["perk", "imbue", "ball", "cue", "table"]:
+		var src: Dictionary = {"perk": Catalog.PERKS, "imbue": Catalog.IMBUES, "ball": Catalog.BALL_TYPES, "cue": Catalog.CUES, "table": Catalog.BOSSES}[k]
+		for id in src:
+			holder.add_child(ThumbArt.new().setup(k, id, 48))
+			thumbs += 1
+	await process_frame
+	await process_frame
+	check(holder.get_child_count() == thumbs, "%d thumbnails drawn" % thumbs)
+	check(ThumbArt.split("ball_gold") == ["ball", "gold"] and ThumbArt.split("table:benzene") == ["table", "benzene"] and ThumbArt.split("bank")[0] == "", "Collection icons pick the right picture")
+	check(BoardArt.same_board("benzene") and not BoardArt.same_board("smoke"), "boards use their own art only when the game's board is the one it was drawn for")
+	holder.queue_free()
 	print("tile tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

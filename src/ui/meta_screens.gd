@@ -61,12 +61,12 @@ func _rows() -> Array:
 			for id in Catalog.PERKS:
 				var f: Dictionary = Catalog.PERKS[id]
 				var locked: bool = g.meta.locked_perks().has(id)
-				rows.append({"icon": id, "title": f.name, "sub": "%s · %s · $%d" % [Catalog.rarity_name(f.r), Catalog.family_name(id), f.cost],
+				rows.append({"icon": "perk:" + id, "title": f.name, "sub": "%s · %s · $%d" % [Catalog.rarity_name(f.r), Catalog.family_name(id), f.cost],
 					"desc": f.desc, "color": Catalog.rarity_color(f.r), "hint": g.meta.perk_hint(id) if locked else ""})
 		"Items":
 			for id in Catalog.ITEMS:
 				var it: Dictionary = Catalog.ITEMS[id]
-				rows.append({"icon": id, "title": it.name, "sub": "%s · %s · $%d" % ["Tool" if it.kind == "tool" else "Consumable", Catalog.WHEN_NAMES[it.when], it.cost], "desc": it.desc, "color": Catalog.WHEN_COLORS[it.when], "hint": ""})
+				rows.append({"icon": id, "title": it.name, "sub": "Catalyst · %s · $%d" % [Catalog.WHEN_NAMES[it.when], it.cost], "desc": it.desc, "color": Catalog.WHEN_COLORS[it.when], "hint": ""})
 		"Balls":
 			for id in Catalog.BALL_TYPES:
 				var bt: Dictionary = Catalog.BALL_TYPES[id]
@@ -74,15 +74,15 @@ func _rows() -> Array:
 		"Isotopes":
 			for id in Catalog.IMBUES:
 				var r: Dictionary = Catalog.IMBUES[id]
-				rows.append({"icon": "", "title": r.name, "sub": "Ball Isotope · $%d" % r.cost, "desc": r.desc, "color": r.color, "hint": ""})
+				rows.append({"icon": "imbue:" + id, "title": r.name, "sub": "Ball Isotope · $%d" % r.cost, "desc": r.desc, "color": r.color, "hint": ""})
 		"Cues":
 			for id in Catalog.CUES:
 				var r: Dictionary = Catalog.CUES[id]
-				rows.append({"icon": "", "title": r.name, "sub": "Starting cue", "desc": r.desc, "color": r.accent, "hint": g.meta.cue_hint(id) if not g.meta.cue_unlocked(id) else ""})
+				rows.append({"icon": "cue:" + id, "title": r.name, "sub": "Starting cue", "desc": r.desc, "color": r.accent, "hint": g.meta.cue_hint(id) if not g.meta.cue_unlocked(id) else ""})
 		"Tables":
 			for id in Catalog.BOSSES:
 				var r: Dictionary = Catalog.BOSSES[id]
-				rows.append({"icon": "", "title": r.name, "sub": "Boss table", "desc": r.desc, "color": Color(1.0, 0.7, 0.5), "hint": ""})
+				rows.append({"icon": "table:" + id, "title": r.name, "sub": "Boss table", "desc": r.desc, "color": Color(1.0, 0.7, 0.5), "hint": ""})
 	return rows
 
 
@@ -96,7 +96,8 @@ func _entry(r: Dictionary) -> Control:
 	hb.add_theme_constant_override("separation", 10)
 	p.add_child(hb)
 	if r.icon != "":
-		var ic := IconArt.new().setup(r.icon, g.F_SEMI, 60)
+		var parts := ThumbArt.split(r.icon)
+		var ic: Control = ThumbArt.new().setup(parts[0], parts[1], 37.0 if parts[0] == "table" else 60.0) if parts[0] != "" else IconArt.new().setup(r.icon, g.F_SEMI, 60)
 		if locked:
 			ic.modulate = Color(0.45, 0.45, 0.5)
 		hb.add_child(ic)

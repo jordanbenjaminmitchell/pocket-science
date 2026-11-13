@@ -71,6 +71,19 @@ All 100 Elements were also renamed "element + noun" (for example Hydrogen Balloo
   - Does Lead Anchor's rattle-out look right in the table view? It uses the Moon and Sun ball reject path.
 - **Flaky test:** `test_input` "ball is rolling" failed once on its own, even without these changes. It passes in full runs.
 
+### Art wired in for 1.40
+
+- **`ThumbArt`** (`src/ui/thumb_art.gd`): small pictures that match the cards.
+  - Element badges: atomic number and symbol in the element's colour, framed in its group colour.
+  - Isotope balls, special balls, starting cues, and boards seen from above (shape, felt, pockets, decal).
+- **HUD:** your Element cards show the Element badge instead of the old icon.
+- **Pro Shop:** the next table's board appears beside its description.
+- **Collection:** every tab now has pictures. Isotopes, Cues and Tables had none before. The Items tab says Catalyst.
+- **Table:** a board uses its own decal, felt and textured rail only when it is the board the art was drawn for (`BoardArt.same_board`: the names must match). The old boards that share an id with a planned science board keep their lab art until they are renamed.
+  - Light felts are skipped, so the cue ball stays visible.
+  - Shaped boards fill their frame in the rail material's flat colour (`BoardArt.RAIL_BASE`).
+  - Benzene Ring has chrome rails and Golden Pentagon has gilded ones.
+
 ### Wiring still open (optional)
 
 - `BoardArt` Sharks, moving parts, felts and rail materials, for when those boards exist.

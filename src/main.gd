@@ -3333,7 +3333,7 @@ func _perk_card(id: String, slot: int) -> Control:
 	var hb := HBoxContainer.new()
 	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(hb)
-	hb.add_child(IconArt.new().setup(id, F_SEMI, 34))
+	hb.add_child(ThumbArt.new().setup("perk", id, 34))
 	var name_l := _label(f.name, 14, Color.WHITE)
 	name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_l.custom_minimum_size = Vector2(card.x - 66.0, 0)
@@ -3852,7 +3852,13 @@ func _refresh_shop() -> void:
 		s += "\n" + Catalog.BOSSES[np.id].desc
 		var next_l := _label(s, 15, Color(1.0, 0.7, 0.5), F_REG)
 		next_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		v.add_child(next_l)
+		next_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		next_l.custom_minimum_size = Vector2(900, 0)   # wrap at the panel's width, not word by word
+		var next_row := HBoxContainer.new()
+		next_row.add_theme_constant_override("separation", 12)
+		next_row.add_child(ThumbArt.new().setup("table", np.id, 46))   # the next board, seen from above
+		next_row.add_child(next_l)
+		v.add_child(next_row)
 	var row := GridContainer.new()
 	row.columns = 5
 	row.add_theme_constant_override("h_separation", 12)

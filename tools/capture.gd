@@ -123,6 +123,8 @@ func _go() -> void:
 				game.root.add_child(ic)
 			await _frames(4)
 		"collection":
+			if OS.get_environment("PS_TAB") != "":
+				game.screens.tab = OS.get_environment("PS_TAB")   # Elements, Items, Balls, Isotopes, Cues or Tables
 			game.screens.show_collection()
 			await _frames(4)
 		"records":

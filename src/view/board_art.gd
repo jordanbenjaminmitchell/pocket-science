@@ -127,6 +127,26 @@ const RAILS := {
 	"meissner": "chrome", "cramped": "copper", "tesla": "copper", "escape": "chrome",
 }
 const RAIL_MATERIALS := ["chrome", "copper", "black_glass", "marble", "gilded", "obsidian"]
+## A plain colour for each material, for the parts of a rail that are filled flat
+## (a shaped table's frame).
+const RAIL_BASE := {"chrome": Color(0.56, 0.59, 0.64), "copper": Color(0.62, 0.32, 0.17), "black_glass": Color(0.06, 0.06, 0.09),
+	"marble": Color(0.84, 0.83, 0.79), "gilded": Color(0.7, 0.52, 0.17), "obsidian": Color(0.07, 0.05, 0.09)}
+
+
+## True when the game's board with this id is the board this art was drawn
+## for. Several old boards keep an id that a planned science board will take
+## over (the Smoke Room's id is "smoke", the future Lotka–Volterra), so their
+## art waits until the board is renamed.
+static func same_board(id: String) -> bool:
+	return BOARD_NAMES.has(id) and Catalog.BOSSES.has(id) and String(BOARD_NAMES[id]) == String(Catalog.BOSSES[id].name)
+
+
+## The felt to use for a board: its own colour when it has one and balls stay
+## easy to see on it (a light felt such as ivory would hide the cue ball).
+static func felt_for(id: String, fallback: Color) -> Color:
+	if same_board(id) and FELTS.has(id) and (FELTS[id] as Color).get_luminance() < 0.45:
+		return FELTS[id]
+	return fallback
 
 
 static func _h(i: int, k: int) -> float:
