@@ -1078,7 +1078,7 @@ func _end_pick() -> void:
 		_enter_aim()
 
 
-## The Pro Shop's removal service: pick a ball to take out of your set.
+## The Pro Shop's removal service: pick a ball to take out of your rack.
 func _show_remove_picker() -> void:
 	var p := PanelContainer.new()
 	p.add_theme_stylebox_override("panel", _style(Color(0.08, 0.075, 0.08, 0.99), Color(1.0, 0.55, 0.55), 2, 14))
@@ -1087,7 +1087,7 @@ func _show_remove_picker() -> void:
 	v.add_theme_constant_override("separation", 10)
 	p.add_child(v)
 	v.add_child(_label("REMOVE A BALL  ($%d)" % run.removal_cost(), 26, Color(1.0, 0.62, 0.55), F_PIXB))
-	v.add_child(_label("It leaves your set for the rest of the run. The 8 always stays.", 14, Color(0.8, 0.82, 0.85), F_REG))
+	v.add_child(_label("It leaves your rack for the rest of the run. The 8 always stays.", 14, Color(0.8, 0.82, 0.85), F_REG))
 	var grid := GridContainer.new()
 	grid.columns = 8
 	grid.add_theme_constant_override("h_separation", 8)
@@ -1128,7 +1128,7 @@ func _shop_intro_tip(v: VBoxContainer) -> void:
 	if run.shop.any(func(it): return it.type == "item") and meta.first_time("items"):
 		tip = "NEW: Items. Tools keep a charge every table; Consumables are used once. Blue ones work while aiming, green ones while a shot is paused (press P), amber ones after a shot."
 	elif run.shop.any(func(it): return it.type == "ball") and meta.first_time("balls"):
-		tip = "NEW: Exotic balls join your set and rack with the rest. You can also pay to remove a ball from your set (never the 8)."
+		tip = "NEW: Exotic balls join your rack and rack with the rest. You can also pay to remove a ball from your rack (never the 8)."
 	if tip != "":
 		var l := _label(tip, 15, Color(0.6, 0.95, 0.8), F_REG)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1154,7 +1154,7 @@ func _show_replace_picker(i: int) -> void:
 	v.add_theme_constant_override("separation", 10)
 	p.add_child(v)
 	v.add_child(_label("%s BALL - REPLACE WHICH?  ($%d + $%d)" % [str(bt.name).to_upper(), item.cost, run.removal_cost()], 24, col, F_PIXB))
-	var why := _label("Your set holds 15 balls, so making room costs the removal fee ($%d) on top of the ball ($%d). The %s ball (worth %d) takes the place of the one you pick, and any Isotope on that ball goes with it. Low balls are worth least; high balls are worth most." % [run.removal_cost(), item.cost, bt.name, int(bt.value)], 14, Color(0.8, 0.82, 0.85), F_REG)
+	var why := _label("Your rack holds 15 balls, so making room costs the removal fee ($%d) on top of the ball ($%d). The %s ball (worth %d) takes the place of the one you pick, and any Isotope on that ball goes with it. Low balls are worth least; high balls are worth most." % [run.removal_cost(), item.cost, bt.name, int(bt.value)], 14, Color(0.8, 0.82, 0.85), F_REG)
 	why.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	why.custom_minimum_size = Vector2(520, 0)
 	v.add_child(why)
@@ -1312,6 +1312,7 @@ func _compute_forecast_from_here() -> void:
 	fc_limit = 30.0
 	fc_paths = {}
 	fc_times = {}
+	fc_dirs = {}
 	view.forecast_text = ""
 	view.sink_tags = []
 	_step_forecast()
@@ -1910,7 +1911,8 @@ func _update_preview() -> void:
 
 var fc_sim: PoolSim
 var fc_paths := {}
-const FORECAST_DOT_GAP := 7.0
+var fc_dirs := {}               # each ball's last direction in the forecast, to catch bounces
+const FORECAST_DOT_GAP := 3.0   # a point every 3 units, plus one at every bounce, so curves are smooth and corners exact
 var fc_complete := false       # a finished prediction is on screen
 var fc_limit := 12.0
 
@@ -1934,6 +1936,7 @@ func _compute_forecast() -> void:
 	fc_limit = 30.0 if settings.guide_lines == 1 or plan_lock or settings.score_preview else 2.5
 	fc_paths = {}
 	fc_times = {}
+	fc_dirs = {}
 	view.forecast_text = ""
 	view.sink_tags = []
 	_step_forecast()
@@ -1953,7 +1956,11 @@ func _step_forecast() -> void:
 					fc_paths[i] = PackedVector2Array([sim.pos[i]])
 					fc_times[i] = PackedFloat32Array([0.0])
 				var last: Vector2 = fc_paths[i][fc_paths[i].size() - 1]
-				if last.distance_squared_to(fc_sim.pos[i]) >= FORECAST_DOT_GAP * FORECAST_DOT_GAP:
+				# A sharp turn is a bounce or a hit: mark the exact spot so the corner is not cut.
+				var dir: Vector2 = fc_sim.vel[i].normalized()
+				var turned: bool = fc_dirs.has(i) and (fc_dirs[i] as Vector2).dot(dir) < 0.985
+				fc_dirs[i] = dir
+				if turned or last.distance_squared_to(fc_sim.pos[i]) >= FORECAST_DOT_GAP * FORECAST_DOT_GAP:
 					fc_paths[i].append(fc_sim.pos[i])
 					fc_times[i].append(fc_sim.time)
 	var done := not fc_sim.moving() or fc_sim.time >= fc_limit
@@ -2133,7 +2140,7 @@ func _update_roll(delta: float) -> void:
 		view.update_balls(sim)
 		_hold()
 		return
-	view.update_balls(sim)
+	view.update_balls(sim, sim_accum if sim.moving() else 0.0)
 	if run.heat >= 3 and sim.alive[_cue_index()] == 1:
 		var cv := sim.vel[_cue_index()]
 		if cv.length() > 120.0:
@@ -2463,7 +2470,7 @@ func _after_shot() -> void:
 	if not out.get("lucky_moves", []).is_empty() or not said.is_empty():
 		view.refresh_glows(sim, run.imbues)
 	for n in result.get("lost_balls", []):
-		view.popup(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.66), "%s left your set" % Catalog.ball_label(n), Color(1.0, 0.6, 0.6), 20, 1.5)
+		view.popup(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.66), "%s left your rack" % Catalog.ball_label(n), Color(1.0, 0.6, 0.6), 20, 1.5)
 	if out.has("heart"):
 		_flash_banner("+1 CHALK FROM THE HEART", Color(1.0, 0.5, 0.65), 1.2)
 	for n in result.shattered:
@@ -3313,7 +3320,7 @@ func _build_ui() -> void:
 	bottom.add_child(fpanel)
 	var fv := VBoxContainer.new()
 	fpanel.add_child(fv)
-	fv.add_child(_label("ELEMENTS  (always active)", 12, Color(0.6, 0.6, 0.6)))
+	fv.add_child(_label("ELEMENTS  (switch any off with ON / OFF)", 12, Color(0.6, 0.6, 0.6)))
 	perk_row = BoxContainer.new()
 	perk_row.add_theme_constant_override("separation", 8)
 	fv.add_child(perk_row)
@@ -3502,8 +3509,21 @@ func _perk_card(id: String, slot: int) -> Control:
 	hb.add_child(ThumbArt.new().setup("perk", id, 34))
 	var name_l := _label(f.name, 14, Color.WHITE)
 	name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	name_l.custom_minimum_size = Vector2(card.x - 66.0, 0)
+	name_l.custom_minimum_size = Vector2(card.x - (106.0 if state != S.SHOP else 66.0), 0)
 	hb.add_child(name_l)
+	if state != S.SHOP:
+		# Any Element can be switched off and back on, between shots. Handy for
+		# saving a once-per-table card for a better shot.
+		var on := not run.perks_off.has(id)
+		var tb := _button("ON" if on else "OFF", func(): _toggle_perk(id), Color(0.45, 0.9, 0.6) if on else Color(0.6, 0.6, 0.65))
+		tb.add_theme_font_size_override("font_size", 11)
+		tb.custom_minimum_size = Vector2(36, 22)
+		tb.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		tb.tooltip_text = "Switch this Element off for now. It does nothing while off; switch it back on whenever you like." if on else "Switch this Element back on."
+		tb.disabled = state == S.ROLL or state == S.TALLY
+		hb.add_child(tb)
+		if not on:
+			p.modulate = Color(1, 1, 1, 0.45)
 	var d := _term_text(Glossary.link(f.desc), 13 if settings.touch_mode else 11, Color(0.78, 0.8, 0.82), card.x - 24.0)
 	# What it does is always on the card, in the shop too (the border colour shows rarity).
 	v.add_child(d)
@@ -3513,8 +3533,13 @@ func _perk_card(id: String, slot: int) -> Control:
 	p.mouse_filter = Control.MOUSE_FILTER_STOP
 	p.set_meta("perk_id", id)
 	# Resting on a Perk rings the balls it works on with light.
-	p.mouse_entered.connect(func(): view.spotlight = run.lithium_balls() if id == "lowball" else TileArt.balls_for("perk", id))
-	p.mouse_exited.connect(func(): view.spotlight = [])
+	p.mouse_entered.connect(func():
+		hover_perk = id
+		view.spotlight = run.lithium_balls() if id == "lowball" else TileArt.balls_for("perk", id))
+	p.mouse_exited.connect(func():
+		if hover_perk == id:
+			hover_perk = ""
+		view.spotlight = [])
 	p.tree_exiting.connect(func():
 		if view != null and view.spotlight == TileArt.balls_for("perk", id):
 			view.spotlight = [])
@@ -3525,17 +3550,6 @@ func _perk_card(id: String, slot: int) -> Control:
 		var b := _button(("Really sell? $%d" if sell_armed == id else "Sell $%d") % run.sell_value(id), func(): _sell_click(id), Color(1.0, 0.75, 0.3) if sell_armed == id else Color(0.9, 0.4, 0.3))
 		b.add_theme_font_size_override("font_size", 13)
 		v.add_child(b)
-	else:
-		# Any Element can be switched off and back on, between shots. Handy for
-		# saving a once-per-table card for a better shot.
-		var on := not run.perks_off.has(id)
-		var tb := _button("ON" if on else "OFF", func(): _toggle_perk(id), Color(0.45, 0.9, 0.6) if on else Color(0.6, 0.6, 0.65))
-		tb.add_theme_font_size_override("font_size", 12)
-		tb.tooltip_text = "Switch this Element off for now. It does nothing while off; switch it back on whenever you like." if on else "Switch this Element back on."
-		tb.disabled = state == S.ROLL or state == S.TALLY
-		v.add_child(tb)
-		if not on:
-			p.modulate = Color(1, 1, 1, 0.45)
 	return p
 
 
@@ -3555,8 +3569,75 @@ func _perk_live(id: String) -> bool:
 	return false
 
 
+var hover_perk := ""   # the Element card under the pointer
+
+
+## The colour an Element's range is drawn in: its group colour on the periodic table.
+func _perk_color(id: String) -> Color:
+	return TileArt.GROUP_COLORS[TileArt.element_group(int(Catalog.PERKS[id].z))]
+
+
+## Every frame: rings on the table that tie your Elements to it. Hover the cue
+## ball for the cue ball's Elements, a ball for that ball's, or an Element card
+## for everything that card reaches.
+func _update_table_marks() -> void:
+	var out: Array = []
+	if view == null:
+		return
+	if sim == null or run == null or layout == null or not (state == S.AIM or state == S.PLACE or state == S.HOLD) or overlay.get_child_count() > 0:
+		view.marks = out
+		return
+	var m := _mouse_table()
+	var ci := _cue_index()
+	var on_cue: bool = sim.alive[ci] == 1 and sim.pos[ci].distance_to(m) < sim.rad[ci] + 8.0 and not dragging and not settings.touch_mode
+	var ball := hover_ball
+	var card := hover_perk if run.perks.has(hover_perk) else ""
+	var cue_pos := sim.pos[ci]
+	var add := func(id: String, pos: Vector2, r: float, label: String, alpha := 1.0, fill := true):
+		out.append({"pos": pos, "r": r, "color": _perk_color(id), "label": label, "alpha": alpha, "fill": fill})
+	# Bromine Boomerang: the cue ball must stop within 30 cm of where it started.
+	if run.has_perk("boomerang") and (on_cue or card == "boomerang"):
+		add.call("boomerang", cue_pos, 120.0, "Bromine: stop inside for ×2")
+	# Antimony Kohl: the 8 is the ball to hit first.
+	if run.has_perk("kissblack") and (on_cue or card == "kissblack"):
+		var e8 := sim.index_of(8)
+		if e8 >= 0 and sim.alive[e8] == 1:
+			add.call("kissblack", sim.pos[e8], TableLayout.R + 9.0, "Antimony: hit this first", 1.0, false)
+	# Selenium Lens: a ball that sinks outside this ring rolled far enough.
+	if run.has_perk("lens"):
+		if ball >= 0 and sim.num[ball] != 0:
+			add.call("lens", sim.pos[ball], 450.0, "Selenium: sink beyond this for +1 Chain")
+		elif card == "lens":
+			for i in sim.count():
+				if sim.alive[i] == 1 and sim.num[i] != 0:
+					add.call("lens", sim.pos[i], 450.0, "", 0.3, false)
+	# Pocket Elements: which pockets they mean.
+	var pocket_marks := {"side": [1, 4], "heat": [run.hot_pocket], "fusion": [run.last_pocket]}
+	var pocket_text := {"side": "Strontium ×2", "heat": "Magnesium ×3", "fusion": "Helium ×2"}
+	for id: String in pocket_marks:
+		if run.has_perk(id) and (card == id or (id == "fusion" and (on_cue or ball >= 0))):
+			for k: int in pocket_marks[id]:
+				if k >= 0 and k < layout.pockets.size() and not layout.pockets[k].closed:
+					add.call(id, layout.pockets[k].pos, float(layout.pockets[k].r) + 12.0, pocket_text[id], 1.0, false)
+	# Pocket pull: how far each pocket reaches (Gadolinium Pull, Holmium Magnet, Polonium Halo).
+	var pull_id := ""
+	if run.has_perk("magnet") and (card == "magnet" or ball >= 0):
+		pull_id = "magnet"
+	elif run.has_perk("hothand") and run.heat >= 3 and (card == "hothand" or ball >= 0):
+		pull_id = "hothand"
+	elif run.has_perk("lastcall") and card == "lastcall":
+		pull_id = "lastcall"
+	if pull_id != "":
+		for pk in layout.pockets:
+			if not pk.closed:
+				add.call(pull_id, pk.pos, 110.0, "", 0.55)
+	# Lithium Cell and Europium Echo are about balls: the cards' spotlight covers those.
+	view.marks = out
+
+
 ## Called every frame: the glow on live Element cards.
 func _update_card_glow() -> void:
+	_update_table_marks()
 	if perk_row == null:
 		return
 	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.006)
@@ -3775,6 +3856,79 @@ func _show_title() -> void:
 var chosen_cue := "maple"
 
 
+## The cards a starting cue brings: [[kind, id, ball]] for its Elements,
+## Catalysts, carried object, Exotic balls and Isotopes.
+func _cue_cards(cue_id: String) -> Array:
+	var c: Dictionary = Catalog.CUES[cue_id]
+	var out: Array = []
+	for p in c.get("perks", []):
+		out.append(["perk", p])
+	if String(c.get("kit", "")) != "":
+		out.append(["item", c.kit])
+	for t in c.get("tools", []):
+		out.append(["item", t])
+	for b in c.get("add", []):
+		out.append(["ball", b])
+	for pair: Array in c.get("imbue", []):
+		out.append(["imbue", pair[1], pair[0]])
+	return out
+
+
+var card_tip: Control = null
+
+
+## A small picture of a card. Resting the pointer on it (or tapping it) brings
+## up the whole card with what it does.
+func _card_chip(kind: String, id: String, ball := 0) -> Control:
+	var chip := PanelContainer.new()
+	chip.add_theme_stylebox_override("panel", _style(Color(0.08, 0.09, 0.11), Color(1, 1, 1, 0.25), 1, 6))
+	chip.custom_minimum_size = Vector2(30, 30)
+	chip.mouse_filter = Control.MOUSE_FILTER_STOP
+	chip.mouse_default_cursor_shape = Control.CURSOR_HELP
+	var pic: Control = IconArt.new().setup(id, F_SEMI, 24.0) if kind == "item" else ThumbArt.new().setup(kind, id, 24.0)
+	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	chip.add_child(pic)
+	chip.mouse_entered.connect(func(): _show_card_tip(kind, id, ball, chip))
+	chip.mouse_exited.connect(_hide_card_tip)
+	chip.tree_exiting.connect(_hide_card_tip)
+	chip.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseButton and e.pressed:
+			_show_card_tip(kind, id, ball, chip))
+	return chip
+
+
+func _show_card_tip(kind: String, id: String, ball: int, near: Control) -> void:
+	_hide_card_tip()
+	var data: Dictionary = {"perk": Catalog.PERKS, "item": Catalog.ITEMS, "ball": Catalog.BALL_TYPES, "imbue": Catalog.IMBUES}[kind]
+	var d: Dictionary = data[id]
+	var p := PanelContainer.new()
+	p.add_theme_stylebox_override("panel", _style(Color(0.07, 0.08, 0.1, 0.98), Color(1.0, 0.85, 0.4), 2, 10))
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.z_index = 50
+	var v := VBoxContainer.new()
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_theme_constant_override("separation", 6)
+	p.add_child(v)
+	v.add_child(TileArt.new().setup(kind, id, ball))
+	var kind_name: String = {"perk": "Element", "item": "Catalyst", "ball": "Exotic ball", "imbue": "Isotope"}[kind]
+	v.add_child(_label(kind_name, 12, Color(1.0, 0.85, 0.4), F_SEMI))
+	var t := _label(String(d.desc), 13, Color(0.88, 0.9, 0.92), F_REG)
+	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	t.custom_minimum_size = Vector2(TileArt.SIZE.x, 0)
+	v.add_child(t)
+	add_child(p)
+	card_tip = p
+	p.reset_size()
+	var at := near.global_position + Vector2(near.size.x * 0.5 - 100.0, -p.size.y - 250.0)
+	var screen := get_viewport_rect().size
+	p.global_position = Vector2(clampf(at.x, 8.0, screen.x - 216.0), maxf(8.0, near.global_position.y - 270.0))
+
+
+func _hide_card_tip() -> void:
+	if card_tip != null and is_instance_valid(card_tip):
+		card_tip.queue_free()
+	card_tip = null
+
 func _show_cue_select() -> void:
 	_clear_overlay()
 	_dim(0.6)
@@ -3832,6 +3986,14 @@ func _show_cue_select() -> void:
 		d.custom_minimum_size = Vector2(126, 0)
 		d.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		cv.add_child(d)
+		# The cards this cue brings, as small pictures: rest the pointer on one to see the card.
+		var refs := _cue_cards(id)
+		if not refs.is_empty():
+			var rr := HBoxContainer.new()
+			rr.add_theme_constant_override("separation", 4)
+			for ref: Array in refs:
+				rr.add_child(_card_chip(ref[0], ref[1], int(ref[2]) if ref.size() > 2 else 0))
+			cv.add_child(rr)
 		var pick := _button("Choose", func():
 			chosen_cue = id
 			pending_seed = _parse_seed(seed_input.text)
@@ -3972,7 +4134,7 @@ The [color=#ff8a30]hot pocket[/color] scores ×2. The black 8 also scores ×2.
 
 [b]Chalk:[/b] Chalk lasts the whole run. As in real pool, you keep shooting while you sink. A miss or no contact costs 1 chalk; a scratch, or sinking the 8 while other balls are up, costs 2. A dry break is free. Clearing a rack or a table gives 1 back, up to 12. Run out of chalk and the run is over.
 
-[b]Between tables:[/b] Spend money in the Pro Shop on Elements (six slots, always active) and Isotopes (upgrade one ball for the rest of the run; you choose which, and each ball holds one). Clearing a table pays $4, plus $1 for every 10% you score over the target (up to $10) and $1 for every shot under 10 you needed (up to $5).
+[b]Between tables:[/b] Spend money in the Pro Shop on Elements (six slots; switch any off and on between shots) and Isotopes (upgrade one ball for the rest of the run; you choose which, and each ball holds one). Clearing a table pays $4, plus $1 for every 10% you score over the target (up to $10) and $1 for every shot under 10 you needed (up to $5).
 
 Every table is its own boss with its own rule, and some reward bounces or bumpers. Clear all 9 tables to win, then keep going in endless mode."""
 	var rt := RichTextLabel.new()

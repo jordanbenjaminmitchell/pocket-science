@@ -3,7 +3,7 @@ const CatalystBot = preload("res://tools/catalyst_bot.gd")
 ## Emulated playtests: simulated players with distinct skill and decision styles
 ## play complete runs through the real physics, scoring, shop and boss rules.
 ##
-##   Godot --headless --path . --script res://tools/playtest.gd -- <persona> <runs> <seed0> <out.jsonl> [catalysts 1/0]
+##   Godot --headless --path . --script res://tools/playtest.gd -- <persona> <runs> <seed0> <out.jsonl> [catalysts 1/0] [grant_id]
 ##
 ## Each run writes one JSON line: outcome, cue, purchases, per-table results,
 ## fouls and so on. tools/playtest_report.mjs aggregates them.
@@ -31,6 +31,7 @@ var persona := ""
 var rng := RandomNumberGenerator.new()
 var shop_rng := RandomNumberGenerator.new()
 var catalysts_on := true
+var grant_id := ""
 
 
 func _initialize() -> void:
@@ -40,6 +41,11 @@ func _initialize() -> void:
 	var seed0 := int(a[2]) if a.size() > 2 else 1
 	var out_path := a[3] if a.size() > 3 else "user://playtest.jsonl"
 	catalysts_on = a[4] != "0" if a.size() > 4 else true
+	grant_id = String(a[5]) if a.size() > 5 else ""
+	if grant_id != "" and (not Catalog.ITEMS.has(grant_id) or Catalog.ITEMS[grant_id].kind != "tool"):
+		push_error("Unknown Catalyst grant: " + grant_id)
+		quit(1)
+		return
 	P = PERSONAS[persona]
 	var f := FileAccess.open(out_path, FileAccess.WRITE)
 	var t0 := Time.get_ticks_msec()
@@ -61,18 +67,23 @@ func play_run(s: int) -> Dictionary:
 	var cue: String = cues[rng.randi_range(0, cues.size() - 1)]
 	var run := RunState.new()
 	run.start(s, cue)
+	if grant_id != "" and not run.tools.has(grant_id) and grant_id != run.cue_kit():
+		run.tools.append(grant_id)
 	var rec := {
-		"persona": persona, "seed": s, "cue": cue, "won": false, "cleared": 0, "died_at": -1, "died_anomaly": "",
+		"persona": persona, "seed": s, "cue": cue, "grant": grant_id, "won": false, "cleared": 0, "died_at": -1, "died_anomaly": "",
 		"tables": [], "purchases": [], "sold": [], "rerolls": 0, "fouls": {},
 		"shots": 0, "pots": 0, "final_perks": [], "money_end": 0, "best_shot": 0, "best_heat": 0, "bounties": 0,
-		"catalysts_used": {},
+		"catalysts_used": {}, "catalyst_trials": {},
 	}
 	while true:
 		run.begin_table()
 		var t := run.current()
+		var shots_before := int(rec.shots)
+		var pots_before := int(rec.pots)
 		var res := play_table(run, rec)
-		rec.tables.append({"i": run.table_index, "lab": t.lab, "anomaly": t.anomaly, "target": run.target(),
-			"score": run.score, "shots": run.shots_taken, "won": res, "chalk_left": run.chalk, "perks": run.perks.duplicate()})
+		rec.tables.append({"i": run.table_index, "id": t.id, "lab": t.lab, "anomaly": t.anomaly, "target": run.target(),
+			"score": run.score, "shots": int(rec.shots) - shots_before, "pots": int(rec.pots) - pots_before,
+			"won": res, "chalk_left": run.chalk, "perks": run.perks.duplicate()})
 		if not res:
 			rec.died_at = run.table_index
 			rec.died_anomaly = t.anomaly
@@ -114,7 +125,7 @@ func play_table(run: RunState, rec: Dictionary) -> bool:
 		var shot := choose_shot(sim, run, is_break)
 		var dir: Vector2 = (shot.dir as Vector2).rotated(deg_to_rad(rng.randfn(0.0, P.aim)))
 		var pw: float = clampf(shot.power * (1.0 + rng.randfn(0.0, P.pow_noise)), 0.05, 1.0)
-		var catalyst: Dictionary = CatalystBot.choose(sim, run, dir, pw, is_break) if catalysts_on else {}
+		var catalyst: Dictionary = CatalystBot.choose(sim, run, dir, pw, is_break, rec.catalyst_trials) if catalysts_on else {}
 		if not catalyst.is_empty():
 			CatalystBot.apply_setup(sim, run, catalyst, true)
 			if catalyst.id == "focal":

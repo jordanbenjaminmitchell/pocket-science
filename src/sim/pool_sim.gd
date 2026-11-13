@@ -689,6 +689,8 @@ func cast(p: Vector2, d: Vector2, ignore: int, max_len: float = 3000.0, ignore2:
 			best_t = t
 			res = {"kind": "ball", "hit": j, "normal": (pos[j] - (p + d * t)).normalized()}
 	for seg in layout.segments:
+		if seg.has("fast"):
+			continue
 		var nrm: Vector2 = seg.n
 		var sa: Vector2 = seg.a
 		var sb: Vector2 = seg.b

@@ -29,25 +29,25 @@ const TILES := {
 	"perk:velvet": {"sym": "V", "stat": "Balls roll 30% further", "letter": "velvet"},
 	"perk:featherweight": {"sym": "H", "stat": "Cue ball floats out", "letter": "feather"},
 	"perk:heavyhit": {"sym": "Os", "stat": "Cue ball 30% heavier", "letter": "heavy"},
-	"perk:liverails": {"sym": "N", "stat": "Bouncier cushions", "letter": "spring"},
+	"perk:liverails": {"sym": "N", "stat": "Cue kicks off cushions", "letter": "spring"},
 	"perk:slowcloth": {"sym": "Tl", "stat": "Cue stops, rest roll", "letter": "brake"},
 	"perk:backspin": {"sym": "Ba", "stat": "Spin twice as strong", "letter": "spin"},
 	"perk:bigbreak": {"sym": "Rn", "stat": "Breaks 25% harder", "letter": "shatter"},
 	"perk:longarm": {"sym": "Mo", "stat": "Full power +30%", "letter": "reach"},
 	# Cue control
-	"perk:kick": {"sym": "K", "stat": "Kick shots ×2", "letter": "kick"},
+	"perk:kick": {"sym": "K", "stat": "First kick shot ×2", "letter": "kick"},
 	"perk:power": {"sym": "U", "stat": "Power hits fly 20% faster", "letter": "power"},
 	"perk:finesse": {"sym": "In", "stat": "Soft shots ×2", "letter": "soft"},
 	"perk:boomerang": {"sym": "Br", "stat": "Cue home in 30 cm: ×2", "letter": "boomerang"},
 	"perk:precision": {"sym": "Cl", "stat": "Clean sinks +1 Chain", "letter": "crosshair"},
 	"perk:stun": {"sym": "Th", "stat": "Cue stops on contact", "letter": "stun"},
 	"perk:afterburner": {"sym": "Bk", "stat": "Break from anywhere", "letter": "breakup"},
-	"perk:masse": {"sym": "Mn", "stat": "Double english swerve", "letter": "swerve"},
+	"perk:masse": {"sym": "Mn", "stat": "Double side-spin swerve", "letter": "swerve"},
 	"perk:followthru": {"sym": "Fr", "stat": "2+ sinks save a scratch", "letter": "follow"},
-	"perk:drawartist": {"sym": "Yb", "stat": "Two cue balls", "letter": "sketch"},
+	"perk:drawartist": {"sym": "Yb", "stat": "Two cue balls", "letter": "twins"},
 	# Combos & clusters
 	"perk:elastic": {"sym": "Nd", "stat": "Giant cue ball", "letter": "boulder"},
-	"perk:chain": {"sym": "S", "stat": "Combinations ×2", "letter": "links"},
+	"perk:chain": {"sym": "S", "stat": "Catalyst shots: +10", "letter": "reagent"},
 	"perk:multi": {"sym": "B", "stat": "Extra sinks +1 Chain", "letter": "cluster"},
 	"perk:supernova": {"sym": "Ni", "stat": "3+ sinks: all ×2", "letter": "sweep"},
 	"perk:fusion": {"sym": "He", "stat": "Same pocket again: ×2", "letter": "merge"},
@@ -65,21 +65,21 @@ const TILES := {
 	# Pockets
 	"perk:corner": {"sym": "Cm", "stat": "Corners +0.5 Chain", "letter": "corner"},
 	"perk:side": {"sym": "Sr", "stat": "Side pockets ×2", "letter": "door"},
-	"perk:jaws": {"sym": "Ti", "stat": "Pockets 12% wider", "letter": "jaws"},
-	"perk:heat": {"sym": "Mg", "stat": "Hot pocket ×3, +30", "letter": "scorch"},
+	"perk:jaws": {"sym": "Ti", "stat": "Pockets 20% wider", "letter": "jaws"},
+	"perk:heat": {"sym": "Mg", "stat": "Hot pocket ×3", "letter": "scorch"},
 	"perk:magnet": {"sym": "Gd", "stat": "Pockets pull balls in", "letter": "magnet"},
-	"perk:collector": {"sym": "Ga", "stat": "Cue ball rolls further", "letter": "glide"},
+	"perk:collector": {"sym": "Ga", "stat": "Cue rolls 50% further", "letter": "glide"},
 	# Ball numbers
-	"perk:odd": {"sym": "F", "stat": "Odd balls +20", "letter": "odd"},
+	"perk:odd": {"sym": "F", "stat": "Odd balls +2× number", "letter": "odd"},
 	"perk:even": {"sym": "Er", "stat": "Even balls +0.75 Chain", "letter": "even"},
 	"perk:prime": {"sym": "Pm", "stat": "Primes ×2, more roll on", "letter": "cut"},
 	"perk:fibonacci": {"sym": "Fm", "stat": "Collect Fibonacci balls", "letter": "spiral"},
 	"perk:rotation": {"sym": "Pr", "stat": "Lowest scores highest", "letter": "rotate"},
 	"perk:moneyball": {"sym": "Cf", "stat": "Numbers count ×3", "letter": "tall"},
 	# Solids
-	"perk:solids": {"sym": "Si", "stat": "Solids +35", "letter": "plate"},
+	"perk:solids": {"sym": "Si", "stat": "Solids +3× number", "letter": "plate"},
 	"perk:solidgold": {"sym": "Au", "stat": "Solids pay $1", "letter": "ingot"},
-	"perk:bedrock": {"sym": "Al", "stat": "All-solid shots: +Heat", "letter": "strata"},
+	"perk:bedrock": {"sym": "Al", "stat": "+1 Heat per solid", "letter": "strata"},
 	"perk:steadyrun": {"sym": "Y", "stat": "Solid streaks add value", "letter": "steps"},
 	"perk:solidsonly": {"sym": "Ta", "stat": "Solids ×3, stripes ×0.5", "letter": "only"},
 	"perk:lastsolid": {"sym": "Bi", "stat": "Last solid ×8", "letter": "spotlight"},
@@ -105,14 +105,14 @@ const TILES := {
 	"perk:bank": {"sym": "Pt", "stat": "Banks +1 Chain a rail", "letter": "banknote"},
 	"perk:ricochet": {"sym": "Re", "stat": "Every rail +0.25 Chain", "letter": "ricochet"},
 	"perk:cushion": {"sym": "Na", "stat": "Bank sinks +30", "letter": "pillow"},
-	"perk:geometry": {"sym": "Ge", "stat": "Banks ×1.5 a rail", "letter": "angles"},
+	"perk:geometry": {"sym": "Ge", "stat": "First bank ×1.5 a rail", "letter": "angles"},
 	"perk:tracer": {"sym": "Ra", "stat": "Cue rails +0.25 Chain", "letter": "trace"},
 	# Utility
 	"perk:lever": {"sym": "W", "stat": "Stripes 140%, keep speed", "letter": "core"},
 	"perk:chalk": {"sym": "Ca", "stat": "+1 Chalk a clear", "letter": "chalky"},
 	"perk:lens": {"sym": "Se", "stat": "1.1 m sinks +1 Chain", "letter": "lens"},
 	"perk:insurance": {"sym": "Ar", "stat": "2 free misses a table", "letter": "shield"},
-	"perk:oracle": {"sym": "Te", "stat": "Free Catalyst each table", "letter": "eye"},
+	"perk:oracle": {"sym": "Te", "stat": "Free Catalyst each table", "letter": "supply"},
 	# Economy
 	"perk:gold": {"sym": "Cu", "stat": "$1 a sink, max $3", "letter": "rail"},
 	"perk:thrift": {"sym": "Ce", "stat": "3+ Chalk left: +$5", "letter": "tag"},
@@ -120,17 +120,17 @@ const TILES := {
 	"perk:hunter": {"sym": "Sc", "stat": "Side bets pay double", "letter": "hustle"},
 	"perk:overflow": {"sym": "Np", "stat": "Spare points carry on", "letter": "beaker"},
 	# Risk & scaling
-	"perk:catalyst": {"sym": "Be", "stat": "Every sink: all +0.75", "letter": "snowball"},
-	"perk:golden": {"sym": "Fe", "stat": "First sink ×2", "letter": "drip"},
+	"perk:catalyst": {"sym": "Be", "stat": "Sinks boost 2 balls +4", "letter": "snowball"},
+	"perk:golden": {"sym": "Fe", "stat": "First sink ×3, once", "letter": "drip"},
 	"perk:glasscannon": {"sym": "At", "stat": "Sinks ×2, fouls cost +1", "letter": "chips"},
-	"perk:echo": {"sym": "Eu", "stat": "Isotopes spread", "letter": "double"},
-	# Clearing your set
+	"perk:echo": {"sym": "Eu", "stat": "Isotopes spread", "letter": "echoes"},
+	# Clearing your rack
 	"perk:thinrack": {"sym": "Tm", "stat": "Removed balls: all +1", "letter": "thin"},
 	"perk:missing": {"sym": "Tc", "stat": "Removed balls: +Chain", "letter": "missing"},
 	"perk:cleanhouse": {"sym": "I", "stat": "Free ball removal", "letter": "clean"},
 	# Gear, imbues, Exotic balls
 	"perk:packrat": {"sym": "Pa", "stat": "+3 Catalyst slots", "letter": "slots"},
-	"perk:quartermaster": {"sym": "Zn", "stat": "Catalysts $1 cheaper", "letter": "stencil"},
+	"perk:quartermaster": {"sym": "Zn", "stat": "Catalysts $2 cheaper", "letter": "stencil"},
 	"perk:tinkerer": {"sym": "Sn", "stat": "+1 Catalyst use", "letter": "cog"},
 	"perk:enchanter": {"sym": "Es", "stat": "Isotopes $2 cheaper", "letter": "enchant"},
 	"perk:secondcoat": {"sym": "Co", "stat": "Isotope balls ×1.5", "letter": "coat"},
@@ -256,26 +256,26 @@ const TILES := {
 	"imbue:slick": {"sym": "Sl", "stat": "Rolls 65% further", "letter": "slick"},
 	"imbue:rubber": {"sym": "Rr", "stat": "+5 a cushion", "letter": "rubber"},
 	"imbue:tithed": {"sym": "Tt", "stat": "$1 a ball left", "letter": "tithe"},
-	"imbue:catalytic": {"sym": "Cy", "stat": "Recharges a Catalyst", "letter": "catalytic"},
+	"imbue:catalytic": {"sym": "Cy", "stat": "Recharges one", "letter": "catalytic"},
 	"imbue:chalked": {"sym": "Ck", "stat": "+1 Chalk a table", "letter": "chalked"},
-	"imbue:excited": {"sym": "Ex", "stat": "Hit first: +1 Heat", "letter": "excited"},
+	"imbue:excited": {"sym": "Ex", "stat": "+1 Heat if first", "letter": "excited"},
 	"imbue:radiant": {"sym": "Rd", "stat": "Others +5", "letter": "radiant"},
 	"imbue:polarized": {"sym": "Pz", "stat": "Hot ×3, else ×0.5", "letter": "polar"},
-	"imbue:isolated": {"sym": "Is", "stat": "Last of its suit ×2.5", "letter": "lone"},
+	"imbue:isolated": {"sym": "Is", "stat": "Last of suit ×2.5", "letter": "lone"},
 	"item:damping": {"sym": "Dp", "stat": "Half speed", "on": "One ball", "letter": "damp"},
 	"item:momentum": {"sym": "ME", "stat": "Swap with the cue", "on": "One ball", "letter": "swapv"},
-	"item:darkenergy": {"sym": "DE", "stat": "Pushes balls away", "on": "Rolling balls", "letter": "darkenergy"},
+	"item:darkenergy": {"sym": "DE", "stat": "Pushes away", "on": "Rolling balls", "letter": "darkenergy"},
 	"item:blast": {"sym": "SN", "stat": "Blast outwards", "on": "Nearby balls", "letter": "nova"},
-	"item:absolutezero": {"sym": "0K", "stat": "Everything stops", "on": "Every ball", "letter": "zero"},
+	"item:absolutezero": {"sym": "Az", "stat": "Everything stops", "on": "Every ball", "letter": "zero"},
 	"item:focal": {"sym": "Fc", "stat": "New hot pocket", "on": "One pocket", "letter": "focal"},
 	"item:tidal": {"sym": "TP", "stat": "Pocket pulls", "on": "One pocket", "letter": "tidal"},
 	"ball:phantom": {"sym": "", "stat": "40 pts", "on": "Only the cue hits it", "letter": "phantom"},
-	"ball:spring": {"sym": "", "stat": "Bounces 50% faster", "on": "Collisions", "letter": "springball"},
-	"ball:piggy": {"sym": "", "stat": "$1 a shot, up to $6", "on": "This table", "letter": "piggy"},
+	"ball:spring": {"sym": "", "stat": "Bounce +50%", "on": "Collisions", "letter": "springball"},
+	"ball:piggy": {"sym": "", "stat": "$1 a shot, max $6", "on": "This table", "letter": "piggy"},
 	"ball:jackpot": {"sym": "", "stat": "1 in 6: $10", "on": "Luck", "letter": "jackpot"},
 	"ball:pinball": {"sym": "", "stat": "+10 a cushion", "on": "Cushions", "letter": "pinball"},
-	"ball:fuse": {"sym": "", "stat": "+1 Heat a ball before", "on": "One shot", "letter": "fuse"},
-	"cue:numbers": {"sym": "", "stat": "Pm + Fm, 4 slots", "on": "$2"},
+	"ball:fuse": {"sym": "", "stat": "+Heat per sink", "on": "One shot", "letter": "fuse"},
+	"cue:numbers": {"sym": "", "stat": "Pm + Fm, 4 Elements", "on": "$2"},
 	"bet:clean": {"sym": "", "title": "Straight in", "stat": "Wins 1× stake", "on": "One ball", "letter": "b_clean"},
 	"bet:topthree": {"sym": "", "title": "13, 14 or 15", "stat": "Wins 1× stake", "on": "Balls", "letter": "b_topthree"},
 	"bet:mixed": {"sym": "", "title": "Solid and stripe", "stat": "Wins 2× stake", "on": "One shot", "letter": "b_mixed"},
@@ -604,7 +604,7 @@ func _sub() -> Array:
 			var kit: String = Catalog.CUES[id].get("kit", "")
 			return ["Object cue · " + Catalog.ITEMS[kit].name if kit != "" else "Plain cue", dim]
 		"ball":
-			return ["Joins your set", dim]
+			return ["Joins your rack", dim]
 		"item":
 			var it: Dictionary = Catalog.ITEMS[id]
 			var when: String = WHEN_SHORT[it.when]
@@ -2175,7 +2175,7 @@ void fragment() {
 		_text_at(Color(tint, 0.6), Vector2(3, -3) * u)
 		_text_at(_ink())
 
-	# --- Perks: Clearing your set --------------------------------------------------------
+	# --- Perks: Clearing your rack --------------------------------------------------------
 
 	## Thin Rack: drawn thin inside a narrow rack.
 	func _r_thin() -> void:
@@ -3078,6 +3078,47 @@ void fragment() {
 
 	## Comet: blazing across, its tail streaming behind.
 	# --- Added with the 30-of-each pass -------------------------------------------------
+
+	## Sulfur Reagent: a flask with a bolt of reaction in it.
+	func _r_reagent() -> void:
+		var c := Vector2(x1 + 11 * u, cy + 2 * u)
+		var fl := PackedVector2Array([c + Vector2(-3, -12) * u, c + Vector2(3, -12) * u, c + Vector2(3, -5) * u, c + Vector2(9, 8) * u, c + Vector2(-9, 8) * u, c + Vector2(-3, -5) * u])
+		_poly(fl, Color(tint, 0.18))
+		_poly(PackedVector2Array([c + Vector2(5.5, 1) * u, c + Vector2(9, 8) * u, c + Vector2(-9, 8) * u, c + Vector2(-5.5, 1) * u]), Color(1.0, 0.9, 0.3, 0.7))
+		var outline := fl.duplicate()
+		outline.append(fl[0])
+		draw_polyline(outline, Color(tint, 0.9), 1.3 * u, true)
+		draw_polyline(PackedVector2Array([c + Vector2(1, -3) * u, c + Vector2(-2, 2) * u, c + Vector2(1.5, 2) * u, c + Vector2(-1, 7) * u]), Color(1, 1, 1, 0.95), 1.2 * u, true)
+		_text_at(_ink())
+
+	## Tellurium Supply: a crate with a Catalyst's spark inside.
+	func _r_supply() -> void:
+		var r := Rect2(x1 + 3 * u, cy - 6 * u, 16 * u, 14 * u)
+		_rr(r, 1.5 * u, Color(0.45, 0.32, 0.18, 0.9))
+		_rr(r, 1.5 * u, Color(0.8, 0.62, 0.36), 1.2 * u)
+		draw_line(Vector2(r.position.x, r.position.y + 4.5 * u), Vector2(r.end.x, r.position.y + 4.5 * u), Color(0.8, 0.62, 0.36), 1 * u, true)
+		_star(r.get_center() + Vector2(0, 2.5) * u, 3.6 * u, Color(0.5, 0.95, 1.0))
+		_text_at(_ink())
+
+	## Europium Echo: rings spreading from one glowing ball onto the next.
+	func _r_echoes() -> void:
+		var a := Vector2(x0 - 12 * u, cy + 2 * u)
+		var b := Vector2(x1 + 12 * u, cy + 2 * u)
+		for k in 3:
+			draw_arc(a, (5 + k * 5) * u, -0.9, 0.9, 12, Color(tint, 0.75 - k * 0.2), 1.3 * u, true)
+		draw_circle(a, 3.5 * u, Color(tint, 0.95), true, -1.0, true)
+		draw_circle(b, 4.5 * u, Color(0.95, 0.94, 0.9), true, -1.0, true)
+		draw_arc(b, 6.5 * u, 0, TAU, 20, Color(tint, 0.9), 1.3 * u, true)
+		_text_at(_ink())
+
+	## Ytterbium Twin: two cue balls side by side.
+	func _r_twins() -> void:
+		for k in 2:
+			var c := Vector2(x1 + (7 + k * 10) * u, cy + (4 - k * 8) * u)
+			draw_circle(c + Vector2(1, 1.5) * u, 5 * u, Color(0, 0, 0, 0.35), true, -1.0, true)
+			draw_circle(c, 5 * u, Color(0.97, 0.96, 0.92), true, -1.0, true)
+			draw_circle(c + Vector2(-1.6, -1.8) * u, 1.4 * u, Color(1, 1, 1, 0.9), true, -1.0, true)
+		_text_at(_ink())
 
 	## Rubidium Rocket: a little rocket climbing past the letters on a flame.
 	func _r_rocket() -> void:

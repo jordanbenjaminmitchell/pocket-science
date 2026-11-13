@@ -23,10 +23,10 @@ const MILESTONES := {
 	"hot15": {"name": "Heat Seeker", "hint": "Sink 15 balls into hot pockets in total", "perks": [], "cue": "trapdoors"},
 	"eightlast": {"name": "Saved for Last", "hint": "Sink the 8 when it is the only ball left on the table", "perks": ["lastcall", "darkhorse", "trouble"], "cue": "black"},
 	"suited": {"name": "Suited Up", "hint": "Sink 2 or more solids, or 2 or more stripes, in one shot", "perks": ["solidsonly", "stripesonly", "lastsolid", "laststripe"], "cue": ""},
-	"pots100": {"name": "Old Hand", "hint": "Sink 100 balls in total", "perks": ["masse"], "cue": ""},
+	"pots100": {"name": "Old Hand", "hint": "Sink 100 balls in total", "perks": ["masse"], "cue": "numbers"},
 	"items5": {"name": "Handy", "hint": "Use 5 items in total", "perks": [], "cue": "gearhead"},
 	"table4": {"name": "Halfway There", "hint": "Clear table 4", "perks": [], "cue": "lean"},
-	"collector3": {"name": "Odd Collection", "hint": "Clear a table with 3 Exotic balls in your set", "perks": [], "cue": "alchemist"},
+	"collector3": {"name": "Odd Collection", "hint": "Clear a table with 3 Exotic balls in your rack", "perks": [], "cue": "alchemist"},
 	"rich": {"name": "Well Funded", "hint": "Hold $30 at once", "perks": ["gold"], "cue": ""},
 }
 

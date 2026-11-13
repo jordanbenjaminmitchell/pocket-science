@@ -26,6 +26,8 @@ func _go() -> void:
 	var every := {"perk": Catalog.PERKS, "imbue": Catalog.IMBUES, "ball": Catalog.BALL_TYPES, "item": Catalog.ITEMS, "bet": Catalog.BOUNTIES, "cue": Catalog.CUES}
 	for kind in every:
 		for id in every[kind]:
+			if kind == "ball" and Catalog.BALL_TYPES[id].get("hidden", false):
+				continue
 			check(TileArt.has_tile(kind, id), "%s:%s has a tile" % [kind, id])
 	check(TileArt.has_tile("bet", "back"), "face-down side bets have a card back")
 	var syms := {}
@@ -123,7 +125,7 @@ func _go() -> void:
 	await process_frame
 	check(holder.get_child_count() == thumbs, "%d thumbnails drawn" % thumbs)
 	check(ThumbArt.split("ball_gold") == ["ball", "gold"] and ThumbArt.split("table:benzene") == ["table", "benzene"] and ThumbArt.split("bank")[0] == "", "Collection icons pick the right picture")
-	check(BoardArt.same_board("benzene") and not BoardArt.same_board("smoke"), "boards use their own art only when the game's board is the one it was drawn for")
+	check(BoardArt.same_board("benzene") and not BoardArt.same_board("no_such_board"), "boards use their own art only when the game's board is the one it was drawn for")
 	holder.queue_free()
 	print("tile tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

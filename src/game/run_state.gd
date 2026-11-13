@@ -86,7 +86,7 @@ var lucky_mult := {}            # Lucky Imbue: ball number -> what its next win 
 var imbue_level := {}           # Weighted level, Hairline cracks, Gilded streak: ball number -> count
 var gilded_this_table := {}     # Gilded balls sunk on this table
 var removals := 0               # balls removed in the Pro Shop this run
-var removed_total := 0          # every ball that has left your set (Thin Rack, Missing Piece)
+var removed_total := 0          # every ball that has left your rack (Thin Rack, Missing Piece)
 var frost_shield := false       # this table: the next miss keeps Heat
 var heart_used := false         # this table: a Heart ball has already given Chalk
 var quick_used := false         # this table: Quick Hands has saved an item
@@ -594,7 +594,7 @@ func replace_targets() -> Array:
 	return ball_set.filter(func(n): return n != 8)
 
 
-## Adds a numbered ball (11 to 15) to your set with an Imbue already on it.
+## Adds a numbered ball (11 to 15) to your rack with an Imbue already on it.
 func _add_numbered(n: int, iso: String) -> void:
 	if not ball_set.has(n):
 		ball_set.append(n)
@@ -602,7 +602,7 @@ func _add_numbered(n: int, iso: String) -> void:
 	imbues[n] = iso
 
 
-## Shop entries that put a new ball in your set: Exotic balls, and balls 11 to 15.
+## Shop entries that put a new ball in your rack: Exotic balls, and balls 11 to 15.
 func adds_ball(i: int) -> bool:
 	return shop[i].type == "ball" or bool(shop[i].get("adds", false))
 
@@ -640,7 +640,7 @@ func removal_cost() -> int:
 	return 0 if has_perk("cleanhouse") else 3 + removals
 
 
-## The Pro Shop service: pay to take a ball out of your set.
+## The Pro Shop service: pay to take a ball out of your rack.
 func buy_removal(n: int) -> String:
 	var cost := removal_cost()
 	if money < cost:
@@ -706,7 +706,7 @@ func imbue_cost(id: String) -> int:
 	return maxi(1, int(Catalog.IMBUES[id].cost) - (2 if has_perk("enchanter") else 0))
 
 
-## Numbered balls (1-15) no longer in your set.
+## Numbered balls (1-15) no longer in your rack.
 func removed_count() -> int:
 	return removed_total
 
@@ -855,7 +855,7 @@ func _random_perk() -> String:
 			continue   # e.g. Calcium Chalk only after table 3
 		var needs: Array = Catalog.PERKS[id].get("needs_balls", [])
 		if not needs.is_empty() and not needs.any(func(b): return ball_set.has(b)):
-			continue   # e.g. Actinium Ray only with a 13, 14 or 15 in your set
+			continue   # e.g. Actinium Ray only with a 13, 14 or 15 in your rack
 		var already := false
 		for s in shop:
 			if s.type == "perk" and s.id == id:
@@ -1622,7 +1622,7 @@ func load_dict(d: Dictionary) -> bool:
 	return true
 
 
-## Beryllium Avalanche: every sink gives 2 random balls in your set +4 for the run.
+## Beryllium Avalanche: every sink gives 2 random balls in your rack +4 for the run.
 func _avalanche(sinks: int) -> void:
 	if not has_perk("catalyst") or sinks <= 0:
 		return
@@ -1783,7 +1783,7 @@ func next_fib() -> int:
 	return last + prev
 
 
-## Fermium Spiral: tick off Fibonacci balls; with all of them, the next one joins your set.
+## Fermium Spiral: tick off Fibonacci balls; with all of them, the next one joins your rack.
 var fib_reward := 0
 func _fib_track(potted: Array) -> void:
 	if not has_perk("fibonacci"):
@@ -1860,7 +1860,17 @@ func shot_extras(s: PoolSim) -> Dictionary:
 			var spot := _free_spot(s)
 			if spot != Vector2.INF:
 				prime_spawned.append(p)
-				var num := p if p <= 15 and not ball_set.has(p) and s.index_of(p) < 0 else add_numeral(p, false)
+				# It joins your rack for good, taking the lowest non-prime ball's place if the rack is full.
+				if ball_set.size() >= MAX_SET:
+					var low: Array = ball_set.filter(func(n): return n >= 1 and n <= 15 and n != 8 and not _is_prime(n))
+					low.sort()
+					if not low.is_empty():
+						remove_ball(low[0])
+				var num := p
+				if p <= 15 and not ball_set.has(p) and s.index_of(p) < 0:
+					ball_set.append(p)
+				else:
+					num = add_numeral(p, true)
 				s.add_ball(num, spot)
 				out.added.append(num)
 	# Ytterbium Twin: after the first shot, a second cue ball.

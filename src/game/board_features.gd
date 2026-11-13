@@ -69,9 +69,9 @@ static func start(id: String, rng: RandomNumberGenerator, hot: int) -> Dictionar
 		"foucault":
 			s.sharks.append(_shark("hammer", HAMMER_ROUTE[0]))
 			s["route"] = 0
-			s["swing"] = 0.0      # the pendulum's swing plane turns a little every shot
-			s["bob"] = 0.0        # where the bob is along its swing, -1 to 1
-			s["bob_dir"] = 1.0
+			s["swing"] = PI * 0.5 # the pendulum's swing plane turns a little every shot
+			s["bob"] = 1.0        # where the bob is along its swing, -1 to 1: it starts at the side, clear of the break
+			s["bob_dir"] = -1.0
 		"elements":
 			s["sweep"] = 0
 		"posts":

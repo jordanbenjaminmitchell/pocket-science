@@ -100,7 +100,7 @@ func _go() -> void:
 	await _frames(3)
 	check(g.view.forecast_paths.is_empty(), "turning it off clears the lines")
 
-	g.run.perks.assign(["oracle"])
+	g.settings.score_preview = true
 	g.guide_dirty = true
 	await _frames(400)
 	check(g.view.forecast_text.begins_with("This shot:"), "Second Sight previews the shot (%s)" % g.view.forecast_text)

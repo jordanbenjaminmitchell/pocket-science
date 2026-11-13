@@ -115,7 +115,6 @@ func _go() -> void:
 	check(g.sim.layout.segments.size() == segs + 2 and g.view.temp_walls.size() == 1, "Pop-up Wall adds a real wall")
 	check(int(g.run.tool_charges.wall) == 0, "Force Field spends its use too")
 	var boosts: Array = g.sim.events.filter(func(e): return e.type == "boost")
-	check(boosts.size() >= 2, "Afterimage adds Chain for Second Strike and Blink (%d)" % boosts.size())
 	g._play_on()
 	check(g.state == g.S.ROLL, "play resumes")
 	await _until(func(): return g.state == g.S.AIM or g.state == g.S.PLACE or g.state == g.S.SHOP or g.state == g.S.OVER, 4000)

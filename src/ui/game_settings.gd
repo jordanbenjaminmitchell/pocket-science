@@ -31,7 +31,7 @@ var fine_drag := false      # touch: dragging turns the aim a little instead of 
 var dev_mode := false       # unlocks every Perk, cue and difficulty, and skips the introduction
 var invert_aim := false     # touch: Fine aim drags and the FINE AIM strip turn the other way
 var particles_min := false  # Particles: Minimum, no decorative particles anywhere
-var score_preview := false  # show what the aimed shot will score, counting every ball it knocks in
+var score_preview := true   # show what the aimed shot will score, counting every ball it knocks in
 
 const SCREEN_LAYOUTS := ["Classic", "Wide"]
 ## "All balls" also simulates the shot and draws where every ball will end up.

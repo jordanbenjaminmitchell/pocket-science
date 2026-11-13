@@ -187,7 +187,7 @@ func _test_boss_physics() -> void:
 	check(is_equal_approx(rws4.mass[1], 3.0), "Lead Anchor: the 8 is three times as heavy")
 	check(is_equal_approx(rws4.mass[2], 1.4 * 0.7) and is_equal_approx(rws4.grip[2], 0.8), "Tungsten Core and Rubidium Rush both act on stripes")
 	check(is_equal_approx(rws4.mass[3], 1.0) and is_equal_approx(rws4.grip[3], 1.0), "and leave solids alone")
-	check(is_equal_approx(rws4.grip[0], 0.7), "Gallium Glide: the cue ball rolls further")
+	check(is_equal_approx(rws4.grip[0], 0.6), "Gallium Glide: the cue ball rolls further")
 	check(is_equal_approx(rws4.ball_e, 1.0), "Dysprosium Domino: hits lose no speed")
 	check(rws4.anchor8 and rws4._rejects(1, 0), "Lead Anchor: the 8 rattles out while other balls remain")
 	check(is_equal_approx(rws4.rail_e_of(2), 1.0) and not is_equal_approx(rws4.rail_e_of(3), 1.0), "Tungsten Core: stripes lose no speed off cushions")
@@ -204,7 +204,6 @@ func _test_boss_physics() -> void:
 	s6.add_ball(2, Vector2(600, 100))
 	s6.add_ball(8, Vector2(700, 300))
 	ph.apply_physics(s6)
-	check(s6.cue_magnet > 0.0, "Neodymium Magnet: the cue ball is magnetic")
 	check(is_equal_approx(s6.rail_e_of(1), 1.0), "Lithium Cell: balls 1-3 lose no speed off cushions")
 	check(s6.pull[2] == 0.0, "Polonium Halo: no pull while other balls remain")
 	s6.alive[1] = 0

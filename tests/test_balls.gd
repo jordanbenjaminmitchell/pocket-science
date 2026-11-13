@@ -42,6 +42,8 @@ func _initialize() -> void:
 	var looks := {}
 	for id in Catalog.BALL_TYPES:
 		var bt: Dictionary = Catalog.BALL_TYPES[id]
+		if bt.get("hidden", false):
+			continue
 		var look := "%s|%s|%d|%s" % [bt.color, bt.accent, bt.pattern, bt.motif]
 		check(not looks.has(look), "%s looks unique" % id)
 		looks[look] = true
@@ -88,7 +90,7 @@ func _initialize() -> void:
 	check(not run.set_full() and run.buy(0) == "" and run.ball_set.size() == 15, "with room after a removal it simply joins")
 	var alch := RunState.new()
 	alch.start(6, "alchemist")
-	check(alch.ball_kinds.values() == ["gold"] and alch.perks.has("goldrush"), "the Alchemist's Cue starts with a Gold ball")
+	check(alch.ball_kinds.values() == ["gold"] and alch.perks.is_empty() and alch.tools.has("swap"), "the Alchemist's Cue starts with a Gold ball")
 	check(alch.ball_set.size() == 11 and alch.ball_set.has(1), "alongside balls 1-10")
 	var hi := RunState.new()
 	hi.start(7)
@@ -109,7 +111,6 @@ func _initialize() -> void:
 	check(score([hit(0, 18), pot(18)]).total == 30, "Echo pays once; it comes back instead")
 	check(score([hit(0, 19), pot(19)]).total == 60, "Star adds Chain")
 	check(score([hit(0, 20), pot(20, 1)]).total == 70, "Moon pays ×2 in a side pocket")
-	check(score([hit(0, 21), pot(21)], {"perks": ["odd"]}).total == 44, "Wild counts as the number it copied (7, odd)")
 	check(score([hit(0, 23), pot(23)]).total == 34, "Dice is worth 10 plus twice the number it shows")
 	r = score([hit(0, 5), hit(5, 22), pot(22)])
 	check(r.money == 4 and (r.lost_balls as Array).has(22) and (r.lost_balls as Array).has(5), "Eraser takes itself and the last ball it touched out of the set")
@@ -118,7 +119,6 @@ func _initialize() -> void:
 	r = score([hit(0, 25)])
 	check(not r.scored and r.safe, "a shot Clover is part of cannot cost Chalk")
 	check(score([hit(0, 26), pot(26)], {"objects": 1}).heart and not score([hit(0, 26), pot(26)]).heart, "Heart gives Chalk only as the last ball")
-	check(score([hit(0, 16), gp], {"perks": ["goldrush"]}).total == 90, "Gold Rush doubles Exotic balls")
 	check(score([hit(0, 5), pot(5)], {"perks": ["menagerie"], "specials": 4}).total == 40, "Menagerie: Chain per Exotic ball")
 	check(score([hit(0, 5), pot(5), pot(3, 2)], {"imbues": {5: "starry"}}).total == 52, "Starry lifts the balls after it")
 	check(score([hit(0, 5), pot(5)], {"imbues": {5: "prismatic"}}).total == 25, "Resonant adds Chain for each ball it touches")

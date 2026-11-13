@@ -53,6 +53,8 @@ const IMBUE_FX := {
 	"spark": "spark", "gold": "glint", "heavy": "sink", "glass": "glint", "ember": "ember",
 	"vein": "rise", "lucky": "rise", "frosted": "frost", "magnetic": "field", "charged": "spark",
 	"prismatic": "rainbow", "hollow": "hollow", "leaded": "sink", "bounty": "glint", "starry": "stars", "twin": "echo",
+	"recurring": "echo", "slick": "glint", "rubber": "rainbow", "tithed": "glint", "catalytic": "stars", "chalked": "glint",
+	"excited": "stars", "radiant": "stars", "polarized": "rainbow", "isolated": "hollow",
 	"volatile": "spark", "jinxed": "void", "pawned": "glint", "mirror": "echo",
 }
 ## Exotic ball type -> particle style.
@@ -383,7 +385,7 @@ func _draw_number() -> void:
 		var a2 := fade * settled
 		var txt2 := str(shown)
 		var fs2 := _digit_size()
-		label_node.draw_circle(Vector2.ZERO, radius * (0.62 if number < 10 else 0.68), Color(0.97, 0.96, 0.9, a2))
+		label_node.draw_circle(Vector2.ZERO, radius * (0.62 if number < 10 else 0.68), Color(0.97, 0.96, 0.9, a2), true, -1.0, true)
 		if use_emblem:
 			IconArt.paint(label_node, emblem, Vector2.ZERO, radius * 0.5 / 34.0, Color(emblem_ink, a2), Color(0.97, 0.96, 0.9, a2), font, maxf(1.0, radius * 0.08))
 			if settled >= 1.0:

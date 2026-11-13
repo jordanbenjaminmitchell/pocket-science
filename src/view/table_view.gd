@@ -66,6 +66,9 @@ var head_only := false
 var time := 0.0
 ## Ball numbers to ring with light: the balls a hovered Perk works on.
 var spotlight: Array = []
+## Element ranges and targets shown on the table while you hover the cue ball, a
+## ball or an Element card: [{pos, r, color, label, fill}]. Set by main each frame.
+var marks: Array = []
 ## The board's Sharks and moving parts (RunState.board), drawn from BoardArt.
 var board := {}
 var board_id := ""
@@ -212,9 +215,12 @@ func refresh_glows(sim: PoolSim, imbues: Dictionary) -> void:
 var last_sim_time := 0.0
 
 
-func update_balls(sim: PoolSim) -> void:
-	var dt := clampf(sim.time - last_sim_time, 0.0, 0.1)
-	last_sim_time = sim.time
+## `lead` is the slice of frame time physics has not stepped through yet (under
+## one 1/240 s step). Drawing each ball that little bit ahead along its velocity
+## makes the roll even from frame to frame, whatever the screen's refresh rate.
+func update_balls(sim: PoolSim, lead := 0.0) -> void:
+	var dt := clampf(sim.time + lead - last_sim_time, 0.0, 0.1)
+	last_sim_time = sim.time + lead
 	for i in ball_nodes:
 		var b: BallNode = ball_nodes[i]
 		if b.sinking:
@@ -224,9 +230,10 @@ func update_balls(sim: PoolSim) -> void:
 				b.visible = true
 				b.set_fade(1.0)
 			var extra := sim.visual_extra_roll(i) * dt
-			if b.position != sim.pos[i] or extra != Vector2.ZERO:
-				var travelled: float = b.position.distance_to(sim.pos[i])
-				b.roll_to(sim.pos[i], sim.stop_distance(i), extra, sim.visual_twist(i) * travelled / b.radius)
+			var shown: Vector2 = sim.pos[i] + sim.vel[i] * lead
+			if b.position != shown or extra != Vector2.ZERO:
+				var travelled: float = b.position.distance_to(shown)
+				b.roll_to(shown, sim.stop_distance(i), extra, sim.visual_twist(i) * travelled / b.radius)
 			if b.vel != sim.vel[i]:
 				b.vel = sim.vel[i]
 				b.refresh_label()
@@ -748,6 +755,28 @@ func _draw_cushions() -> void:
 func _draw_overlay() -> void:
 	var o := overlay
 	_draw_board_pieces(o)
+	for mk: Dictionary in marks:
+		var mc: Color = mk.color
+		var mp: Vector2 = mk.pos
+		var mr: float = mk.r
+		var strong := float(mk.get("alpha", 1.0))
+		if mk.get("fill", true):
+			o.draw_circle(mp, mr, Color(mc, 0.07 * strong), true, -1.0, true)
+		# A dashed ring that slowly turns, so it reads as a range, not a rail.
+		var n := maxi(12, int(mr * 0.22))
+		for k in n:
+			var a0 := TAU * k / n + time * 0.25
+			o.draw_arc(mp, mr, a0, a0 + TAU / n * 0.6, 6, Color(mc, 0.85 * strong), 2.2, true)
+		var label := String(mk.get("label", ""))
+		if label != "" and strong > 0.5:
+			var fs := 13
+			var w := font_bold.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			var lp := mp + Vector2(-w * 0.5, -mr - 6.0)
+			if lp.y < 14.0:
+				lp.y = mp.y + mr + 16.0
+			lp.x = clampf(lp.x, 4.0, W - w - 4.0)
+			o.draw_string_outline(font_bold, lp, label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0, 0, 0, 0.75))
+			o.draw_string(font_bold, lp, label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, mc.lightened(0.25))
 	if not spotlight.is_empty():
 		var beat := 0.5 + 0.5 * sin(time * 5.0)
 		for i in ball_nodes:

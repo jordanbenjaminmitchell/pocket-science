@@ -72,7 +72,7 @@ func _go() -> void:
 		["Chain added by each ball that sinks", "+%.1f" % Scorer.AFTER_POT, "`Scorer.AFTER_POT`"],
 		["Ball value", "10 + %d × its number" % Catalog.NUMBER_WEIGHT, "`Catalog.NUMBER_WEIGHT`"],
 		["Balls at the start of a run", "1 to %d" % RunState.START_BALLS, "`RunState.START_BALLS`"],
-		["Most balls in your set", RunState.MAX_SET, "`RunState.MAX_SET`"],
+		["Most balls in your rack", RunState.MAX_SET, "`RunState.MAX_SET`"],
 		["Element slots", RunState.MAX_PERKS, "`RunState.MAX_PERKS`"],
 		["Catalyst slots", RunState.TOOL_SLOTS, "`RunState.TOOL_SLOTS`"],
 		["Uses of an object cue's object, each table", RunState.CUE_KIT_USES, "`RunState.CUE_KIT_USES`"],

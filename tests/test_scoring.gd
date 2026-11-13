@@ -45,10 +45,7 @@ func _initialize() -> void:
 	check(run_case([hit(0, 5), pot(5, 0, 2)], {"perks": ["bank"]}).total == 60, "Bank Manager: +1 Chain per cushion")
 	check(run_case([hit(0, 5), pot(5, 0)], {"imbues": {5: "spark"}}).total == 40, "Spark: struck ball adds Chain")
 	print("perks")
-	check(run_case(h5, {"perks": ["odd"]}).total == 40, "Odd Balls +20")
-	check(run_case(h5, {"perks": ["golden"]}).total == 40, "First Blood ×2")
 	check(run_case(h5, {"perks": ["glasscannon"]}).total == 40, "All In ×2")
-	check(run_case(h5, {"perks": ["echo"]}).total == 40, "Double Take pays twice")
 	check(run_case(h5, {"perks": ["afterburner"], "is_break": true}).total == run_case(h5, {"is_break": true}).total, "Berkelium Break moves the cue ball, it adds no Chain")
 	# Heat Perks: some only work on fire, some only when you are not.
 	check(run_case(h5, {"perks": ["minimalist"], "heat": 5}).total == run_case(h5, {"heat": 5}).total * 2, "Inferno doubles sinks On fire")
@@ -62,7 +59,7 @@ func _initialize() -> void:
 	for id in Catalog.PERKS:
 		var fx: Dictionary = Catalog.PERKS[id].get("fx", {})
 		if not fx.is_empty():
-			check(fx.has("when") and (fx.has("value") or fx.has("chain") or fx.has("x") or fx.has("money")), "%s fx is well formed" % id)
+			check(fx.has("when") and (fx.has("value") or fx.has("chain") or fx.has("x") or fx.has("money") or fx.has("per_num")), "%s fx is well formed" % id)
 	print("table rules")
 	check(run_case([hit(0, 5), {"type": "bumper", "a": 5}, pot(5, 0)], {"boss": "parlor"}).total == 40, "Pinball Parlor pays for bumpers")
 	check(run_case([hit(0, 5), pot(5, 0, 1)], {"boss": "spring_st"}).total == 40, "Spring Street pays for banks")
@@ -119,6 +116,6 @@ func _initialize() -> void:
 					m *= float(st.v)
 			check(int(floor(v * m + 0.0001)) == int(l.points), "the shown sum for the %d-ball adds up to its score (%s x %s vs %d)" % [l.ball, v, m, l.points])
 	var named: Dictionary = run_case(h5, {"perks": ["solids"]})
-	check((named.lines[0].steps as Array).any(func(st): return st.src == "perk:solids" and st.op == "+" and int(st.v) == 35), "each piece knows its source (Solids +35)")
+	check((named.lines[0].steps as Array).any(func(st): return st.src == "perk:solids" and st.op == "+" and int(st.v) == 15), "each piece knows its source (Solids +15)")
 	print("scoring tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

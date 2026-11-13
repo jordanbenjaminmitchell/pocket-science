@@ -7,7 +7,7 @@ const LINK_COLOR := "#8fd8ff"
 
 const TERMS := {
 	"sink": {"title": "Sink", "text": "To knock a numbered ball into a pocket."},
-	"exotic": {"title": "Exotic ball", "text": "A ball made of strange matter, such as Gold, Glass or Magnet, that joins your set. Each has its own value and its own trick."},
+	"exotic": {"title": "Exotic ball", "text": "A ball of strange matter, such as Gold or Glass, with its own value and its own trick."},
 	"score": {"title": "Score", "text": "The points a ball earns as it sinks: value × Chain × Heat, times any other multipliers."},
 	"pay": {"title": "Pay", "text": "Money you earn, always shown with a $ sign."},
 	"value": {"title": "Value", "text": "What a ball is worth before multipliers: 10 plus twice its number."},
@@ -24,7 +24,7 @@ const TERMS := {
 	"scratch": {"title": "Scratch", "text": "Knocking the cue ball into a pocket."},
 	"miss": {"title": "Miss", "text": "A shot that sinks nothing."},
 	"break": {"title": "Break", "text": "The first shot at a fresh rack."},
-	"rack": {"title": "Rack", "text": "The full set of 15 balls at the start of a table."},
+	"rack": {"title": "Rack", "text": "Your own collection of up to 15 balls, set up at the start of every table."},
 	"solid": {"title": "Solids", "text": "Balls 1 to 7, coloured all over."},
 	"stripe": {"title": "Stripes", "text": "Balls 9 to 15, with a coloured band around the middle."},
 	"eight": {"title": "The 8-ball", "text": "Avoid it: sinking the 8 while other balls remain costs 15% of the table's target."},

@@ -172,7 +172,9 @@ func _draw_table() -> void:
 	else:
 		var sv: Array = shape.verts
 		for pk: Dictionary in shape.pockets:
-			if pk.has("v"):
+			if pk.has("p"):
+				pockets.append(to_px.call(pk.p))
+			elif pk.has("v"):
 				pockets.append(to_px.call(sv[int(pk.v)]))
 			else:
 				var e := int(pk.e)

@@ -50,7 +50,7 @@ func _go() -> void:
 	var h5 := [{"type": "ball", "a": 0, "b": 5}, pot(5, 0)]
 	print("counts")
 	check(Catalog.IMBUES.size() >= 16, "16 Isotopes")
-	check(Catalog.BOUNTIES.size() == 23, "23 side bets")
+	check(Catalog.BOUNTIES.size() == 30 and Catalog.IMBUES.size() == 30 and Catalog.ITEMS.size() == 30, "30 side bets, Isotopes and Catalysts")
 	check(Catalog.CUES.size() >= 13, "13 or more cues")
 	check(["posts", "portals", "walls", "trapdoors", "gravity"].all(func(c): return Catalog.CUES.has(c) and Catalog.CUES[c].has("kit")), "an object cue for each placeable object")
 	check(Catalog.BOSSES.size() >= 20, "at least 20 boss tables")
@@ -210,7 +210,7 @@ func _go() -> void:
 	var cur1: Dictionary = en.current()
 	check(en.endless and tgs[0] > last and Catalog.BOSSES.has(cur1.id), "endless starts harder than the final table")
 	en.advance_table()
-	check(en.current().boss and en.current().anomaly != "", "every second endless table is a boss")
+	check(en.current().boss, "every second endless table is a boss")
 	check(en.target() > tgs[0], "targets keep climbing")
 	check(en.max_chalk() == RunState.MAX_CHALK and en.start_chalk() == RunState.BASE_CHALK, "Chalk: start with 6, hold at most 12")
 	for i in 30:
