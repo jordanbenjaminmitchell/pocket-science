@@ -1,8 +1,9 @@
 extends SceneTree
+const CatalystBot = preload("res://tools/catalyst_bot.gd")
 ## Emulated playtests: simulated players with distinct skill and decision styles
 ## play complete runs through the real physics, scoring, shop and boss rules.
 ##
-##   Godot --headless --path . --script res://tools/playtest.gd -- <persona> <runs> <seed0> <out.jsonl>
+##   Godot --headless --path . --script res://tools/playtest.gd -- <persona> <runs> <seed0> <out.jsonl> [catalysts 1/0]
 ##
 ## Each run writes one JSON line: outcome, cue, purchases, per-table results,
 ## fouls and so on. tools/playtest_report.mjs aggregates them.
@@ -28,6 +29,8 @@ const TIER := {
 var P: Dictionary
 var persona := ""
 var rng := RandomNumberGenerator.new()
+var shop_rng := RandomNumberGenerator.new()
+var catalysts_on := true
 
 
 func _initialize() -> void:
@@ -36,6 +39,7 @@ func _initialize() -> void:
 	var runs := int(a[1]) if a.size() > 1 else 5
 	var seed0 := int(a[2]) if a.size() > 2 else 1
 	var out_path := a[3] if a.size() > 3 else "user://playtest.jsonl"
+	catalysts_on = a[4] != "0" if a.size() > 4 else true
 	P = PERSONAS[persona]
 	var f := FileAccess.open(out_path, FileAccess.WRITE)
 	var t0 := Time.get_ticks_msec()
@@ -45,13 +49,14 @@ func _initialize() -> void:
 		f.flush()
 		print("%s run %d: cleared %d (%s) cue=%s perks=%s" % [persona, r + 1, rec.cleared, "WIN" if rec.won else "died T%d %s" % [rec.died_at + 1, rec.died_anomaly], rec.cue, rec.final_perks])
 	f.close()
-	print("PLAYTEST DONE %s %d runs in %ds" % [persona, runs, (Time.get_ticks_msec() - t0) / 1000])
+	print("PLAYTEST DONE %s %d runs in %ds catalysts=%s" % [persona, runs, (Time.get_ticks_msec() - t0) / 1000, str(catalysts_on)])
 	quit()
 
 
 ## ---------------------------------------------------------------- run loop
 func play_run(s: int) -> Dictionary:
 	rng.seed = s * 7919 + persona.hash()
+	shop_rng.seed = s * 1299721 + persona.hash()
 	var cues := Catalog.CUES.keys()
 	var cue: String = cues[rng.randi_range(0, cues.size() - 1)]
 	var run := RunState.new()
@@ -60,6 +65,7 @@ func play_run(s: int) -> Dictionary:
 		"persona": persona, "seed": s, "cue": cue, "won": false, "cleared": 0, "died_at": -1, "died_anomaly": "",
 		"tables": [], "purchases": [], "sold": [], "rerolls": 0, "fouls": {},
 		"shots": 0, "pots": 0, "final_perks": [], "money_end": 0, "best_shot": 0, "best_heat": 0, "bounties": 0,
+		"catalysts_used": {},
 	}
 	while true:
 		run.begin_table()
@@ -103,29 +109,63 @@ func play_table(run: RunState, rec: Dictionary) -> bool:
 		var ci := sim.index_of(0)
 		if sim.alive[ci] == 0:
 			place_cue(sim, run, false)
+		if catalysts_on and CatalystBot.maybe_spotter(sim, run):
+			rec.catalysts_used["spotter"] = int(rec.catalysts_used.get("spotter", 0)) + 1
 		var shot := choose_shot(sim, run, is_break)
 		var dir: Vector2 = (shot.dir as Vector2).rotated(deg_to_rad(rng.randfn(0.0, P.aim)))
 		var pw: float = clampf(shot.power * (1.0 + rng.randfn(0.0, P.pow_noise)), 0.05, 1.0)
+		var catalyst: Dictionary = CatalystBot.choose(sim, run, dir, pw, is_break) if catalysts_on else {}
+		if not catalyst.is_empty():
+			CatalystBot.apply_setup(sim, run, catalyst, true)
+			if catalyst.id == "focal":
+				run.hot_pocket = int(catalyst.pocket)
+			if run.spend(String(catalyst.id)):
+				rec.catalysts_used[catalyst.id] = int(rec.catalysts_used.get(catalyst.id, 0)) + 1
 		var ctx := run.shot_ctx(pw, sim, is_break)
 		var start := {}
 		for i in sim.count():
 			if sim.alive[i] == 1:
 				start[sim.num[i]] = sim.pos[i]
+		var before_shot := sim.clone()
 		sim.strike(dir, AutoPlayer.speed(pw) * run.power_mult(is_break), shot.get("follow", 0.0), 0.0)
+		if CatalystBot.is_pause(catalyst):
+			CatalystBot.advance_to_pause(sim)
+			CatalystBot.apply_pause(sim, catalyst)
 		sim.settle()
 		ctx["events"] = sim.events
 		ctx["start_pos"] = start
 		ctx["rng"] = run.rng
 		ctx["cue_end"] = sim.pos[ci]
+		var rng_before_score := run.rng.state
 		var res := Scorer.score(ctx)
+		if catalysts_on and catalyst.is_empty() and CatalystBot.should_rewind(res, run, is_break) and run.spend("rewind"):
+			rec.catalysts_used["rewind"] = int(rec.catalysts_used.get("rewind", 0)) + 1
+			run.rng.state = rng_before_score
+			sim = before_shot
+			dir = (shot.dir as Vector2).rotated(deg_to_rad(rng.randfn(0.0, P.aim)))
+			pw = clampf(shot.power * (1.0 + rng.randfn(0.0, P.pow_noise)), 0.05, 1.0)
+			ctx = run.shot_ctx(pw, sim, is_break)
+			sim.strike(dir, AutoPlayer.speed(pw) * run.power_mult(is_break), shot.get("follow", 0.0), 0.0)
+			sim.settle()
+			ctx["events"] = sim.events
+			ctx["start_pos"] = start
+			ctx["rng"] = run.rng
+			ctx["cue_end"] = sim.pos[ci]
+			res = Scorer.score(ctx)
 		rec.shots += 1
 		rec.pots += res.potted.size() if res.scored else 0
 		if not res.scored:
 			rec.fouls[res.foul] = rec.fouls.get(res.foul, 0) + 1
 		var out := run.apply_shot(res, is_break, sim.object_balls_left(), sim.alive[ci] == 1)
+		sim.clear_shot_flags()
+		if not catalyst.is_empty() and catalyst.id in ["pocketcover", "trapdoor", "wall", "pythagoras"]:
+			sim.layout = layout
+		elif not catalyst.is_empty() and catalyst.id in ["post", "portal"]:
+			layout = sim.layout
 		if not run.board.is_empty():
 			run.board_turn(sim, sim.events)
 			sim.layout = run.build_layout()
+		run.shot_extras(sim)
 		run.respot_echo(res, sim)
 		if out.has("bounty"):
 			rec.bounties += 1
@@ -321,6 +361,8 @@ func item_value(run: RunState, it: Dictionary) -> float:
 		"ball":
 			return 1.4 if ["gold", "star", "ember", "echo", "anchor", "iron", "sun", "moon", "heart"].has(it.id) and P.shop != "random" else 0.5
 		"item":
+			if catalysts_on and CatalystBot.SUPPORTED.has(it.id) and run.tools.size() < run.tool_slots():
+				return 3.3 if P.shop != "random" else shop_rng.randf() * 4.0
 			return 1.6 if RunState.STATE_ITEMS.has(it.id) and run.items.size() < run.item_slots() else 0.0
 		"perk":
 			if run.perks.size() >= RunState.MAX_PERKS and P.shop in ["random", "cheap"]:
@@ -329,7 +371,7 @@ func item_value(run: RunState, it: Dictionary) -> float:
 		"imbue":
 			match P.shop:
 				"random":
-					return rng.randf() * 2.5
+					return shop_rng.randf() * 2.5
 				"economy":
 					return 2.0 if it.id == "gold" else 0.5
 				"risk":
@@ -345,7 +387,7 @@ func perk_value(run: RunState, id: String) -> float:
 	var fam: String = f.get("fam", "utility")
 	match P.shop:
 		"random":
-			return rng.randf() * 4.0
+			return shop_rng.randf() * 4.0
 		"cheap":
 			return 6.0 - f.cost * 0.6 + tier * 0.5
 		"synergy":

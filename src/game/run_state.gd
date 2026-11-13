@@ -4,6 +4,7 @@ extends RefCounted
 ## the table sequence and the shop.
 
 const MAX_PERKS := 6
+const BOULDER_R := 26.5   # the biggest cue ball that still drops through a pocket mouth
 const BASE_CHALK := 6
 ## Chalk now travels with you from table to table: you start with BASE_CHALK,
 ## each cleared table adds one, and you can never hold more than MAX_CHALK.
@@ -22,6 +23,18 @@ var ball_bonus := {}
 var perk_used := {}
 ## Catalysts spent since the last shot (Sulfur Reagent).
 var items_this_shot := 0
+var beacon_used := false        # Americium Beacon: spent this table
+var beacon_shot := false        # ... and this shot gets its bonus
+var temp_tools: Array = []      # Tellurium Supply: Catalysts that leave when the table ends
+var echo_imbues := {}           # Europium Echo: ball -> Isotope, until the table ends
+var echo_pending: Array = []    # Isotopes that sank this shot, waiting to echo (ball numbers)
+var recur_pending: Array = []   # Recurring balls that sank this shot, waiting to come back
+var prime_spawned: Array = []   # Promethium Prime: primes brought on this table
+var temp_numerals: Array = []   # big-number balls that are on the table for this table only
+var fib_done: Array = []        # Fermium Spiral: Fibonacci numbers sunk since the last reward
+var numerals := {}              # ball number -> the number it shows (big plain balls past 15)
+var twin_spawned := false       # Ytterbium Twin: the second cue ball is out this table
+var chalked_used := false       # Chalked Isotope: its Chalk this table is spent
 var money := 4
 var perks: Array[String] = []
 var imbues := {}         # ball number -> imbue id
@@ -120,7 +133,7 @@ func start(s: int, cue_id: String = "maple", handicap_level: int = 0) -> void:
 	tools.assign(c.get("tools", []))
 	# A run starts with ten balls, 1 to 10 (one triangle); 11 to 15 come from the Pro Shop.
 	ball_set = range(1, START_BALLS + 1).filter(func(n): return not (c.get("remove", []) as Array).has(n))
-	removed_total = (c.get("remove", []) as Array).size()
+	removed_total = 0   # balls a cue starts without do not count as removed
 	ball_kinds = {}
 	seed_growth = {}
 	lucky_mult = {}
@@ -136,6 +149,9 @@ func start(s: int, cue_id: String = "maple", handicap_level: int = 0) -> void:
 		low.sort()
 		remove_ball(low[0])
 	imbues.clear()
+	for pair: Array in c.get("imbue", []):
+		if ball_set.has(int(pair[0])):
+			imbues[int(pair[0])] = String(pair[1])   # the cue's own Isotope
 	catalyst = 0.0
 	total_pots = 0
 	best_shot = 0
@@ -188,6 +204,11 @@ func begin_table() -> void:
 		chalk = start_chalk()   # Chalk carries over; only a new run starts fresh
 	pockets_used = []
 	perk_used = {}
+	beacon_used = false
+	beacon_shot = false
+	twin_spawned = false
+	_end_table_extras()
+	_table_start_extras()
 	shrink_steps = 0
 	insured_used = 0
 	flash_used = false
@@ -338,6 +359,23 @@ func bounty_met(res: Dictionary, _hot: int) -> bool:
 			return float(res.get("chain", 1.0)) >= 5.0
 		"chain7":
 			return float(res.get("chain", 1.0)) >= 7.0
+		"chain10":
+			return float(res.get("chain", 1.0)) >= 10.0
+		"clean":
+			return int(res.get("cleans", 0)) > 0
+		"topthree":
+			return pots.any(func(n): return n >= 13 and n <= 15)
+		"mixed":
+			return pots.any(func(n): return n >= 1 and n <= 7) and pots.any(func(n): return n >= 9 and n <= 15)
+		"twopockets":
+			var ks := {}
+			for k in res.get("pocket_list", []):
+				ks[k] = true
+			return ks.size() >= 2
+		"bank3":
+			return int(res.get("max_rails", 0)) >= 3
+		"money5":
+			return int(res.get("money", 0)) >= 5
 		"quarter":
 			return res.get("total", 0) >= target() * 0.25
 		"half":
@@ -355,6 +393,8 @@ func roll_hot_pocket(avoid: int) -> void:
 			continue
 		if current().anomaly == "sealed" and (k == 1 or k == 4):
 			continue
+		if has_perk("side") and (k == 1 or k == 4):
+			continue   # Strontium Firework: never a side pocket
 		choices.append(k)
 	hot_pocket = choices[rng.randi_range(0, choices.size() - 1)]
 
@@ -432,6 +472,8 @@ func _roll_faces() -> void:
 				faces[n] = rng.randi_range(1, 15)
 			"wild":
 				faces[n] = last_sunk
+			"numeral":
+				faces[n] = int(numerals.get(n, n))
 	Catalog.faces = faces
 
 
@@ -622,7 +664,7 @@ func item_slots() -> int:
 
 
 func tool_slots() -> int:
-	return TOOL_SLOTS + (1 if has_perk("packrat") else 0)
+	return TOOL_SLOTS + (3 if has_perk("packrat") else 0) + int(cue_rule("slots", 0))
 
 
 func consumable_ids() -> Array:
@@ -633,6 +675,9 @@ func consumable_ids() -> Array:
 ## Returns false if there was nothing to spend.
 func spend(id: String) -> bool:
 	items_this_shot += 1
+	if has_perk("afterimage") and not beacon_used:
+		beacon_used = true   # Americium Beacon: the first Catalyst each table
+		beacon_shot = true
 	if has_perk("quickhands") and not quick_used and (tools.has(id) or id == cue_kit()) and int(tool_charges.get(id, 0)) > 0:
 		quick_used = true   # Quick Hands: the first Catalyst each table is free
 		return true
@@ -673,7 +718,7 @@ func cue_kit() -> String:
 
 ## How hard a shot hits relative to its power setting.
 func power_mult(is_break: bool) -> float:
-	var m := 1.15 if has_perk("longarm") else 1.0
+	var m := 1.3 if has_perk("longarm") else 1.0
 	if is_break and has_perk("bigbreak"):
 		m *= 1.25
 	return m
@@ -710,7 +755,7 @@ func payout() -> Array:
 	var quick := PAR_SHOTS - shots_taken
 	if quick > 0:
 		rows.append(["Quick clear: %d shot%s" % [shots_taken, "" if shots_taken == 1 else "s"], mini(quick, QUICK_MAX)])
-	if has_perk("thrift") and chalk >= 2:
+	if has_perk("thrift") and chalk >= 3:
 		rows.append(["Thrift", 5])
 	if has_perk("overflow"):
 		var nxt := table_index + 1
@@ -720,7 +765,7 @@ func payout() -> Array:
 		var plain: Array = ball_set.filter(func(n): return n >= 1 and n <= 15 and n != 8)
 		if not plain.is_empty():
 			var turned: int = plain[rng.randi_range(0, plain.size() - 1)]
-			var types := Catalog.BALL_TYPES.keys()
+			var types := Catalog.BALL_TYPES.keys().filter(func(k): return not Catalog.BALL_TYPES[k].get("hidden", false))
 			var bt: String = types[rng.randi_range(0, types.size() - 1)]
 			remove_ball(turned)
 			add_special(bt)
@@ -788,7 +833,7 @@ func _roll_shop_items() -> void:
 		var iso: String = keys[rng.randi_range(0, keys.size() - 1)]
 		shop.append({"type": "imbue", "id": iso, "ball": high[rng.randi_range(0, high.size() - 1)], "adds": true, "cost": imbue_cost(iso) + 2, "sold": false})
 	if not (intro and table_index < 2):
-		var types := Catalog.BALL_TYPES.keys()
+		var types := Catalog.BALL_TYPES.keys().filter(func(k): return not Catalog.BALL_TYPES[k].get("hidden", false))
 		var bt: String = types[rng.randi_range(0, types.size() - 1)]
 		shop.append({"type": "ball", "id": bt, "cost": int(Catalog.BALL_TYPES[bt].cost), "sold": false})
 	# Two Catalysts you don't have yet.
@@ -808,6 +853,9 @@ func _random_perk() -> String:
 			continue
 		if table_index < int(Catalog.PERKS[id].get("min_table", 0)):
 			continue   # e.g. Calcium Chalk only after table 3
+		var needs: Array = Catalog.PERKS[id].get("needs_balls", [])
+		if not needs.is_empty() and not needs.any(func(b): return ball_set.has(b)):
+			continue   # e.g. Actinium Ray only with a 13, 14 or 15 in your set
 		var already := false
 		for s in shop:
 			if s.type == "perk" and s.id == id:
@@ -858,7 +906,7 @@ func buy(i: int) -> String:
 		return "Not enough money"
 	match item.type:
 		"perk":
-			if perks.size() >= MAX_PERKS:
+			if perks.size() >= perk_slots():
 				return "Element slots full - sell one first"
 			perks.append(item.id)
 		"imbue":
@@ -990,6 +1038,21 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		money += res.money
 		catalyst += res.catalyst_gain
 		_avalanche(res.potted.size())
+		_fib_track(res.potted)
+		for n in res.get("recur", []):
+			ball_bonus[int(n)] = int(ball_bonus.get(int(n), 0)) + 4   # Recurring: +4 for the run
+		for k in int(res.get("recharge", 0)):
+			for t in tools:
+				if int(tool_charges.get(t, 0)) <= 0:
+					tool_charges[t] = 1   # Catalytic: one spent Catalyst recharges
+					break
+		if int(res.get("chalk_gain", 0)) > 0 and not chalked_used:
+			chalked_used = true
+			chalk = mini(MAX_CHALK, chalk + 1)   # Chalked Isotope, once a table
+		if beacon_shot:
+			heat += 1   # Americium Beacon
+		recur_pending.append_array(res.get("recur", []))
+		echo_pending.append_array(res.get("echo_src", []))
 		for id in res.get("perk_used", []):
 			perk_used[id] = true
 		total_pots += res.potted.size()
@@ -1021,7 +1084,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		if frost_shield:
 			frost_shield = false   # Frost: this miss keeps the Heat
 		else:
-			if has_perk("migration") and heat >= 5:
+			if has_perk("migration") and heat >= 4:
 				heat -= 1   # Stay Hot: on fire, a miss only costs 1
 			else:
 				heat = 0 if res.get("kindled_live", false) else int(heat / 2.0)   # a miss halves Heat; Kindled on the table wipes it
@@ -1030,7 +1093,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 				imbue_level.erase(n)   # Weighted drops back to ×3
 		element_mix = []
 	# The 8 going in early costs 2 Chalk even when the shot scored (Carbon Core makes it safe).
-	if res.get("eight_early", false) and not has_perk("eight"):
+	if res.get("eight_early", false) and not eight_safe():
 		chalk_cost = maxi(chalk_cost, 2)
 	if chalk_cost > 0 and not res.get("safe", false):
 		chalk -= chalk_cost
@@ -1044,6 +1107,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		out["layout_changed"] = true
 	var item_shot := items_this_shot > 0
 	items_this_shot = 0
+	beacon_shot = false
 	if score >= target():
 		out.cleared = true
 		if item_shot and has_perk("chain"):
@@ -1054,7 +1118,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		out.over = true
 		return out
 	roll_hot_pocket(hot_pocket)
-	if int(res.get("new_hot", -1)) >= 0 and hot_pocket >= 0:
+	if int(res.get("new_hot", -1)) >= 0 and hot_pocket >= 0 and not (has_perk("side") and int(res.new_hot) in [1, 4]):
 		hot_pocket = int(res.new_hot)   # Ember chose it
 	if balls_left == 0:
 		racks_cleared += 1
@@ -1121,7 +1185,7 @@ func apply_physics(s: PoolSim) -> void:
 	s.well_strength = 0.0
 	s.pocket_pull = 0.0
 	s.cue_damp = 1.0
-	s.spin_power = 1.5 if has_perk("backspin") else 1.0
+	s.spin_power = 2.0 if has_perk("backspin") else 1.0
 	s.side_power = 2.0 if has_perk("masse") else 1.0
 	match t.lab:
 		"cryo":
@@ -1149,9 +1213,6 @@ func apply_physics(s: PoolSim) -> void:
 		s.pocket_pull = 1.0
 	if has_perk("stun"):
 		s.cue_damp = 0.4
-	if has_perk("slowcloth"):
-		s.roll_decel *= 1.3
-		s.drag *= 1.3
 	if has_perk("hothand") and heat >= 3:
 		s.pocket_pull = maxf(s.pocket_pull, 0.7)   # Holmium Magnet
 	s.anchor8 = has_perk("laststripe")   # Lead Anchor
@@ -1192,7 +1253,7 @@ func apply_physics(s: PoolSim) -> void:
 	var leech := BoardFeatures.leech_ball(board)
 	if leech > 0:
 		s.no_drop[leech] = true
-	s.cue_magnet = 1.0 if has_perk("elastic") else 0.0   # Neodymium Magnet
+	s.cue_magnet = 0.0
 	s.first_boost = 1.0   # Uranium Reactor sets this per shot, when the shot is struck
 	if has_perk("domino"):
 		s.ball_e = 1.0   # Dysprosium Domino: hits lose no speed
@@ -1241,14 +1302,23 @@ func apply_physics(s: PoolSim) -> void:
 			var halo: bool = has_perk("lastcall") and s.num[i] == 8 and s.object_balls_left() == 1   # Polonium Halo
 			s.pull[i] = 1.0 if imbues.get(s.num[i], "") == "magnetic" or halo else 0.0
 			var charged: bool = has_perk("lowball") and lithium_balls().has(s.num[i])   # Lithium Cell
-			s.bounce[i] = 1.0 if Catalog.kind_of(s.num[i]) == "star" or (has_perk("lever") and Catalog.is_stripe(s.num[i])) or charged else 0.0
+			s.bounce[i] = 1.0 if Catalog.kind_of(s.num[i]) == "star" or (has_perk("lever") and Catalog.is_stripe(s.num[i])) or charged or imbues.get(s.num[i], "") == "rubber" else 0.0
 			if s.num[i] == 0 and has_perk("liverails"):
 				s.bounce[i] = 1.15   # Nitrogen Tyres: the cue ball kicks off cushions
+		if i < s.rad.size():
+			s.rad[i] = TableLayout.R
+			if s.num[i] == 0 and has_perk("elastic"):
+				s.rad[i] = BOULDER_R   # Neodymium Boulder: as big as still fits a pocket
+				m *= 2.0
 		s.mass[i] = m
 		if i < s.grip.size():
 			var g := 1.0
 			if s.num[i] == 0 and has_perk("collector"):
 				g = 0.6   # Gallium Glide: rolls about 50% further
+			if has_perk("slowcloth"):
+				g *= 1.5 if s.num[i] == 0 else 0.8   # Thallium Felt: the cue stops sooner, the rest roll on
+			if imbues.get(s.num[i], "") == "slick":
+				g *= 0.6
 			elif s.num[i] != 0 and has_perk("racing") and Catalog.is_stripe(s.num[i]):
 				g = 0.8   # Rubidium Rush: rolls 25% further
 			s.grip[i] = g
@@ -1293,10 +1363,10 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 				highest = n
 	var ci := s.index_of(0)
 	return {
-		"perks": live_perks(), "imbues": imbues, "hot_pocket": hot_pocket, "coil": BoardFeatures.coil_on(board), "focus": _focus_pocket(), "ball_bonus": ball_bonus, "perk_used": perk_used, "item_shot": items_this_shot > 0, "boss": current().id, "lab": current().lab,
+		"perks": live_perks(), "imbues": imbues, "hot_pocket": hot_pocket, "beacon": beacon_shot, "safe8": eight_safe(), "portal_chain": bool(cue_rule("portal_chain", false)), "coil": BoardFeatures.coil_on(board), "focus": _focus_pocket(), "ball_bonus": ball_bonus, "perk_used": perk_used, "item_shot": items_this_shot > 0, "boss": current().id, "lab": current().lab,
 		"anomaly": current().anomaly, "loan": BoardFeatures.loan_alive(board), "last_pocket": last_pocket, "lithium": lithium_balls() if has_perk("lowball") else [], "heat": heat, "power": power, "shots_taken": shots_taken,
 		"catalyst": catalyst, "is_break": is_break, "chalk": chalk, "objects": s.object_balls_left(),
-		"money": money, "empty_slots": MAX_PERKS - perks.size(), "pockets_used": pockets_used,
+		"money": money, "empty_slots": perk_slots() - perks.size(), "pockets_used": pockets_used,
 		"lowest": lowest, "highest": highest, "element_mix": element_mix, "clock_pos": clock_pos, "clock_streak": clock_streak,
 		"target": target(), "on_table": on_table, "total_pots": total_pots,
 		"solid_run": solid_run, "stripe_run": stripe_run,
@@ -1328,7 +1398,7 @@ func to_dict() -> Dictionary:
 		iso[str(k)] = imbues[k]
 	var d := {
 		"v": SAVE_VERSION, "seed": seed_value, "cue": cue, "rng_state": str(rng.state), "table_index": table_index,
-		"money": money, "perks": perks, "imbues": iso, "perks_off": perks_off, "ball_bonus": _str_keys(ball_bonus),
+		"money": money, "perks": perks, "imbues": iso, "perks_off": perks_off, "ball_bonus": _str_keys(ball_bonus), "fib_done": fib_done, "numerals": _str_keys(numerals),
 		"catalyst": catalyst, "plan": plan, "endless": endless, "total_pots": total_pots,
 		"best_shot": best_shot, "tables_cleared": tables_cleared, "best_heat": best_heat,
 		"phase": phase, "carry": carry, "record_id": record_id, "daily_key": daily_key,
@@ -1340,7 +1410,7 @@ func to_dict() -> Dictionary:
 			"score": score, "chalk": chalk, "heat": heat, "shots_taken": shots_taken,
 			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "element_mix": element_mix, "clock_pos": clock_pos, "clock_streak": clock_streak,
 			"forgiven": forgiven, "bounty": bounty, "bounty_done": bounty_done, "bet_cap": bet_cap, "bet_state": bet_state, "bet_peeked": bet_peeked,
-			"pockets_used": pockets_used, "last_pocket": last_pocket, "perk_used": perk_used.keys(), "shrink_steps": shrink_steps, "insured_used": insured_used,
+			"pockets_used": pockets_used, "last_pocket": last_pocket, "perk_used": perk_used.keys(), "beacon_used": beacon_used, "temp_tools": temp_tools, "echo_imbues": _str_keys(echo_imbues), "prime_spawned": prime_spawned, "temp_numerals": temp_numerals, "twin_spawned": twin_spawned, "chalked_used": chalked_used, "shrink_steps": shrink_steps, "insured_used": insured_used,
 				"solid_run": solid_run, "stripe_run": stripe_run, "mods": table_mods, "board": board,
 				"frost": frost_shield, "heart_used": heart_used, "tool_charges": tool_charges, "chalk_lost": last_chalk_lost,
 				"boost": next_boost, "all_hot": next_all_hot, "magnet": next_magnet,
@@ -1434,6 +1504,11 @@ func load_dict(d: Dictionary) -> bool:
 	var bb: Dictionary = d.get("ball_bonus", {})
 	for k in bb:
 		ball_bonus[int(k)] = int(bb[k])
+	fib_done.assign(d.get("fib_done", []))
+	numerals.clear()
+	var nm: Dictionary = d.get("numerals", {})
+	for k in nm:
+		numerals[int(k)] = int(nm[k])
 	plan.clear()
 	for t in d.plan:
 		var td: Dictionary = t
@@ -1503,6 +1578,16 @@ func load_dict(d: Dictionary) -> bool:
 		perk_used = {}
 		for id in t.get("perk_used", []):
 			perk_used[String(id)] = true
+		beacon_used = bool(t.get("beacon_used", false))
+		temp_tools.assign(t.get("temp_tools", []))
+		echo_imbues.clear()
+		var ei: Dictionary = t.get("echo_imbues", {})
+		for k in ei:
+			echo_imbues[int(k)] = String(ei[k])
+		prime_spawned.assign(t.get("prime_spawned", []))
+		temp_numerals.assign(t.get("temp_numerals", []))
+		twin_spawned = bool(t.get("twin_spawned", false))
+		chalked_used = bool(t.get("chalked_used", false))
 		shrink_steps = int(t.get("shrink_steps", 0))
 		insured_used = int(t.get("insured_used", 0))
 		solid_run = int(t.get("solid_run", 0))
@@ -1565,3 +1650,237 @@ func _focus_pocket() -> int:
 		"spiral":
 			return 4
 	return -1
+
+
+## A rule the starting cue brings (Catalog.CUES[cue].rules), or `def`.
+func cue_rule(key: String, def: Variant) -> Variant:
+	return (Catalog.CUES.get(cue, {}).get("rules", {}) as Dictionary).get(key, def)
+
+
+## How many Elements you can hold: 6, or fewer on a cue that says so.
+func perk_slots() -> int:
+	return int(cue_rule("max_perks", MAX_PERKS))
+
+
+## The 8 going in early costs nothing: Carbon Core, or the Black Cue.
+func eight_safe() -> bool:
+	return has_perk("eight") or bool(cue_rule("safe8", false))
+
+
+## Tidies up what lasts only one table: Tellurium's Catalysts, echoed Isotopes,
+## and the big-number balls Promethium brought on.
+func _end_table_extras() -> void:
+	for t in temp_tools:
+		tools.erase(t)
+		tool_charges.erase(t)
+	temp_tools.clear()
+	for n in echo_imbues:
+		if imbues.get(n, "") == echo_imbues[n]:
+			imbues.erase(n)
+	echo_imbues.clear()
+	for n in temp_numerals:
+		ball_kinds.erase(n)
+		numerals.erase(n)
+	temp_numerals.clear()
+	Catalog.kinds = ball_kinds
+	prime_spawned.clear()
+	echo_pending.clear()
+	recur_pending.clear()
+	chalked_used = false
+	_roll_faces()
+
+
+## Tellurium Supply: a random Catalyst for this table, if there is room.
+func _table_start_extras() -> void:
+	if has_perk("oracle") and tools.size() < tool_slots():
+		var pool: Array = Catalog.ITEMS.keys().filter(func(k): return not tools.has(k) and k != cue_kit())
+		if not pool.is_empty():
+			var id: String = pool[rng.randi_range(0, pool.size() - 1)]
+			tools.append(id)
+			tool_charges[id] = 2 if has_perk("overclock") else 1
+			temp_tools.append(id)
+
+
+## A big plain ball showing number `face`, kept in the set (permanent) or for this table only.
+func add_numeral(face: int, permanent: bool) -> int:
+	var num := 100 if not permanent else 16
+	while ball_kinds.has(num) or ball_set.has(num):
+		num += 1
+	ball_kinds[num] = "numeral"
+	numerals[num] = face
+	if permanent:
+		ball_set.append(num)
+	else:
+		temp_numerals.append(num)
+	Catalog.kinds = ball_kinds
+	_roll_faces()
+	return num
+
+
+## The number a ball counts as: its own, or the one a Dice, Wild or numeral shows.
+func face_of(n: int) -> int:
+	if n > 15:
+		return int(Catalog.faces.get(n, 0))
+	return n
+
+
+static func _is_prime(n: int) -> bool:
+	if n < 2:
+		return false
+	for d in range(2, int(sqrt(float(n))) + 1):
+		if n % d == 0:
+			return false
+	return true
+
+
+## Promethium Prime: the next prime to roll on, above every prime this table has seen.
+func next_prime() -> int:
+	var top := 0
+	for n in ball_set:
+		var f := face_of(int(n))
+		if _is_prime(f):
+			top = maxi(top, f)
+	for f in prime_spawned:
+		top = maxi(top, int(f))
+	var p := top + 1
+	while not _is_prime(p):
+		p += 1
+	return p
+
+
+## Fermium Spiral: the Fibonacci numbers to sink before the next reward.
+func fib_needed() -> Array:
+	var fibs := [1, 2, 3, 5, 8]
+	var top := 8
+	for n in ball_set:
+		top = maxi(top, face_of(int(n)) if _is_fib(face_of(int(n))) else 0)
+	var a := 5
+	var b := 8
+	while b < top:
+		var c := a + b
+		a = b
+		b = c
+		fibs.append(b)
+	return fibs
+
+
+static func _is_fib(n: int) -> bool:
+	var a := 1
+	var b := 2
+	if n == 1:
+		return true
+	while b < n:
+		var c := a + b
+		a = b
+		b = c
+	return b == n
+
+
+func next_fib() -> int:
+	var need := fib_needed()
+	var last: int = need[need.size() - 1]
+	var prev: int = need[need.size() - 2] if need.size() > 1 else 5
+	return last + prev
+
+
+## Fermium Spiral: tick off Fibonacci balls; with all of them, the next one joins your set.
+var fib_reward := 0
+func _fib_track(potted: Array) -> void:
+	if not has_perk("fibonacci"):
+		return
+	for n in potted:
+		var f := face_of(int(n))
+		if _is_fib(f) and not fib_done.has(f):
+			fib_done.append(f)
+	var need := fib_needed()
+	if need.all(func(f): return fib_done.has(f)):
+		var nf := next_fib()
+		fib_done.clear()
+		fib_reward = nf
+		if nf <= 15 and not ball_set.has(nf):
+			if ball_set.size() >= MAX_SET:
+				_drop_lowest_plain()
+			ball_set.append(nf)
+		else:
+			if ball_set.size() >= MAX_SET:
+				_drop_lowest_plain()
+			add_numeral(nf, true)
+
+
+## Makes room in a full set: the lowest plain ball that is not a Fibonacci number goes.
+func _drop_lowest_plain() -> void:
+	var low: Array = ball_set.filter(func(n): return n >= 1 and n <= 15 and n != 8 and not _is_fib(n))
+	if low.is_empty():
+		low = ball_set.filter(func(n): return n >= 1 and n <= 15 and n != 8)
+	low.sort()
+	if not low.is_empty():
+		remove_ball(low[0])
+
+
+## Between shots, with the real table: Recurring balls come back, Isotopes echo,
+## Promethium brings on the next prime, and Ytterbium's twin cue ball appears.
+## Returns {added: [ball numbers put on the table], echoed: [n], back: [n], twin: bool}.
+func shot_extras(s: PoolSim) -> Dictionary:
+	var out := {"added": [], "echoed": [], "back": [], "twin": false}
+	var on_table: Array = []
+	for i in s.count():
+		if s.alive[i] == 1 and s.num[i] != 0:
+			on_table.append(i)
+	# Recurring: back on the table in place of a random other ball (never the 8).
+	for n in recur_pending:
+		var bi := s.index_of(int(n))
+		var others: Array = on_table.filter(func(i): return s.num[i] != 8 and s.num[i] != int(n))
+		if bi < 0 or others.is_empty():
+			continue
+		var vi: int = others[rng.randi_range(0, others.size() - 1)]
+		s.pos[bi] = s.pos[vi]
+		s.vel[bi] = Vector2.ZERO
+		s.alive[bi] = 1
+		s.alive[vi] = 0
+		on_table.erase(vi)
+		on_table.append(bi)
+		out.back.append(int(n))
+	recur_pending.clear()
+	# Europium Echo: each Isotope that sank jumps to a ball on the table with none.
+	if has_perk("echo"):
+		for n in echo_pending:
+			var iso: String = imbues.get(int(n), echo_imbues.get(int(n), ""))
+			var bare: Array = on_table.filter(func(i): return s.num[i] != 8 and not imbues.has(s.num[i]))
+			if iso == "" or bare.is_empty():
+				continue
+			var m: int = s.num[bare[rng.randi_range(0, bare.size() - 1)]]
+			imbues[m] = iso
+			echo_imbues[m] = iso
+			out.echoed.append(m)
+	echo_pending.clear()
+	# Promethium Prime: no prime left on the table brings on the next one.
+	if has_perk("prime") and s.object_balls_left() > 0:
+		if not on_table.any(func(i): return _is_prime(face_of(s.num[i]))):
+			var p := next_prime()
+			var spot := _free_spot(s)
+			if spot != Vector2.INF:
+				prime_spawned.append(p)
+				var num := p if p <= 15 and not ball_set.has(p) and s.index_of(p) < 0 else add_numeral(p, false)
+				s.add_ball(num, spot)
+				out.added.append(num)
+	# Ytterbium Twin: after the first shot, a second cue ball.
+	if has_perk("drawartist") and not twin_spawned and shots_taken >= 1:
+		var cues: Array = range(s.count()).filter(func(i): return s.num[i] == 0 and s.alive[i] == 1)
+		if cues.size() == 1:
+			var spot := _free_spot(s)
+			if spot != Vector2.INF:
+				s.add_ball(0, spot)
+				twin_spawned = true
+				out.twin = true
+	return out
+
+
+## A random clear spot on the table, or Vector2.INF.
+func _free_spot(s: PoolSim) -> Vector2:
+	for tries in 60:
+		var p := Vector2(rng.randf_range(120.0, TableLayout.W - 120.0), rng.randf_range(80.0, TableLayout.H - 80.0))
+		if s.layout != null and not s.layout.contains(p, 30.0):
+			continue
+		if s.is_clear_spot(p, -1):
+			return p
+	return Vector2.INF

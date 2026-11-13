@@ -157,6 +157,7 @@ func play_table(run: RunState) -> bool:
 		if not run.board.is_empty():
 			run.board_turn(sim, sim.events)
 			sim.layout = run.build_layout()
+		run.shot_extras(sim)
 		is_break = false
 		if out.cleared:
 			return true

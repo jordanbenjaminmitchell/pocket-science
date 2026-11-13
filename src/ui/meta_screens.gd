@@ -68,7 +68,7 @@ func _rows() -> Array:
 				var it: Dictionary = Catalog.ITEMS[id]
 				rows.append({"icon": id, "title": it.name, "sub": "Catalyst · %s · $%d" % [Catalog.WHEN_NAMES[it.when], it.cost], "desc": it.desc, "color": Catalog.WHEN_COLORS[it.when], "hint": ""})
 		"Balls":
-			for id in Catalog.BALL_TYPES:
+			for id in Catalog.BALL_TYPES.keys().filter(func(k): return not Catalog.BALL_TYPES[k].get("hidden", false)):
 				var bt: Dictionary = Catalog.BALL_TYPES[id]
 				rows.append({"icon": "ball_" + id, "title": bt.name + " ball", "sub": "Exotic ball · $%d" % bt.cost, "desc": bt.desc, "color": bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent, "hint": ""})
 		"Isotopes":

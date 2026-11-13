@@ -515,8 +515,19 @@ func _use(id: String) -> void:
 		_flash_banner(why, Color(0.6, 0.85, 1.0), 1.1)
 		return
 	match id:
-		"ghostchalk", "polish", "leadweight", "swap", "freezeframe", "nudge", "newton", "reflection", "goldenratio":
+		"ghostchalk", "polish", "leadweight", "swap", "freezeframe", "nudge", "newton", "reflection", "goldenratio", "damping", "momentum":
 			_begin_pick(id, "ball")
+		"focal", "tidal":
+			_begin_pick(id, "pocket")
+		"darkenergy", "blast":
+			_begin_pick(id, "spot")
+		"absolutezero":
+			for i in sim.count():
+				sim.vel[i] = Vector2.ZERO
+				sim.spin[i] = Vector2.ZERO
+			view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(0.7, 0.9, 1.0), 30, 300)
+			_spend(id)
+			_hold(false)
 		"centremass", "pythagoras":
 			_begin_pick(id, "ball")
 			_hint("Centre of Mass: pick two to four balls; click a picked ball again to go." if id == "centremass" else "Pythagorean Triple: pick three balls.")
@@ -849,6 +860,19 @@ func _pick_click() -> void:
 					view.call_ball = -1
 					view.call_pocket = -1)
 				return
+			if id == "focal":
+				run.hot_pocket = k   # Focal Point: this pocket is the hot one now
+				_sync_hot()
+				_end_pick()
+				_spend(id)
+				return
+			if id == "tidal":
+				sim.extra_wells.append([layout.pockets[k].pos, 1.4])   # Tidal Pull
+				view.pebbles.append(layout.pockets[k].pos)
+				_end_pick()
+				_spend(id)
+				guide_dirty = true
+				return
 			# Event Horizon: a twice-as-wide mouth over that pocket for this shot.
 			var wide: Dictionary = (layout.pockets[k] as Dictionary).duplicate(true)
 			wide.r = float(wide.r) * 2.0
@@ -900,13 +924,25 @@ func _pick_click() -> void:
 				"portal":
 					var a: Vector2 = pick_points[0]
 					run.table_mods.portals.append([a.x, a.y, p.x, p.y])
+				"darkenergy":
+					sim.extra_wells.append([p, -1.0])   # pushes away
+					view.pebbles.append(p)
+				"blast":
+					for i in sim.count():
+						if sim.alive[i] == 1:
+							var d := sim.pos[i] - p
+							var dl := d.length()
+							if dl < 200.0 and dl > 1.0:
+								sim.vel[i] += d / dl * 460.0 * (1.0 - dl / 200.0)
+					view.burst(p, Color(1.0, 0.75, 0.3), 30, 320)
+					view.add_shake(4.0)
 				"gravitypebble":
 					sim.extra_wells.append([p, 1.0])
 					view.temp_walls = view.temp_walls   # keeps the overlay drawing
 					view.pebbles.append(p)
 			_spend(id)
 			_end_pick()
-			if id != "gravitypebble":
+			if not (id in ["gravitypebble", "darkenergy", "blast"]):
 				_rebuild_layout()
 		"direction":
 			var d := (m - sim.pos[pick_ball]).normalized()
@@ -932,6 +968,18 @@ func _picked_ball(id: String, b: int) -> void:
 			_end_pick()
 		"goldenratio":
 			sim.vel[b] *= 1.618
+			_spend(id)
+			_end_pick()
+		"damping":
+			sim.vel[b] *= 0.5
+			sim.spin[b] *= 0.5
+			_spend(id)
+			_end_pick()
+		"momentum":
+			var mc := _cue_index()
+			var v := sim.vel[b]
+			sim.vel[b] = sim.vel[mc]
+			sim.vel[mc] = v
 			_spend(id)
 			_end_pick()
 		"centremass":
@@ -1375,8 +1423,6 @@ func _add_wall(a: Vector2, b: Vector2) -> void:
 
 
 func _after_hold_action(cue_move: bool) -> void:
-	if cue_move and run.has_perk("afterimage"):
-		sim.events.append({"t": sim.time, "type": "boost", "chain": 1.0})
 	_spend(hold_slot)
 	hold_action = ""
 	view.strike_line = []
@@ -1465,8 +1511,51 @@ func _set_pause_point() -> void:
 func _cue_index() -> int:
 	if sim == null:
 		return 0
+	if active_cue >= 0 and active_cue < sim.count() and sim.num[active_cue] == 0 and sim.alive[active_cue] == 1:
+		return active_cue
+	for i in sim.count():
+		if sim.num[i] == 0 and sim.alive[i] == 1:
+			return i
 	var i := sim.index_of(0)
 	return i if i >= 0 else 0
+
+
+var active_cue := -1   # Ytterbium Twin: which cue ball you are shooting
+
+
+## Ytterbium Twin: clicking the other cue ball picks it as the one to shoot.
+func _select_cue_at(m: Vector2) -> bool:
+	if sim == null:
+		return false
+	for i in sim.count():
+		if sim.num[i] == 0 and sim.alive[i] == 1 and i != _cue_index() and sim.pos[i].distance_to(m) < sim.rad[i] + 6.0:
+			active_cue = i
+			sim.cue_i = i
+			guide_dirty = true
+			forecast_dirty = true
+			sfx.play("click", 0.6, 1.3)
+			_hint("Shooting the other cue ball.")
+			return true
+	return false
+
+
+## Between shots: Recurring balls return, Isotopes echo, Promethium brings on the
+## next prime, Ytterbium's second cue ball appears (RunState.shot_extras).
+func _shot_extras() -> void:
+	var ex := run.shot_extras(sim)
+	for n in ex.get("added", []):
+		_flash_banner("THE %s ROLLS ON" % Catalog.ball_label(int(n)).to_upper(), Color(0.95, 0.8, 1.0), 1.2)
+	for n in ex.get("echoed", []):
+		_flash_banner("ISOTOPE ECHOES ONTO THE %s" % Catalog.ball_label(int(n)).to_upper(), Color(0.7, 0.9, 1.0), 1.1)
+	for n in ex.get("back", []):
+		_flash_banner("THE %s COMES BACK" % Catalog.ball_label(int(n)).to_upper(), Color(0.6, 1.0, 0.8), 1.1)
+	if ex.get("twin", false):
+		_flash_banner("A SECOND CUE BALL APPEARS - CLICK ONE TO CHOOSE", Color(0.9, 0.95, 1.0), 1.6)
+	if run.fib_reward > 0:
+		_flash_banner("FIBONACCI: THE %d JOINS YOUR SET" % run.fib_reward, Color(1.0, 0.85, 0.4), 1.6)
+		run.fib_reward = 0
+	view.add_new_balls(sim, vis_rng, run.imbues)
+	sim.cue_i = _cue_index()
 
 
 ## ================================================================ main loop
@@ -1474,6 +1563,7 @@ var paused := false
 
 
 func _process(delta: float) -> void:
+	_update_card_glow()
 	if paused:
 		return
 	match state:
@@ -1841,7 +1931,7 @@ func _compute_forecast() -> void:
 	fc_sim.first_boost = run.first_boost(_current_power())
 	fc_sim.strike(aim_dir, _speed(_current_power()) * run.power_mult(is_break), _shot_follow(), _shot_side())
 	# Bent tables only need the opening curve; the full picture is the option or Perk.
-	fc_limit = 30.0 if settings.guide_lines == 1 or plan_lock or run.has_perk("oracle") else 2.5
+	fc_limit = 30.0 if settings.guide_lines == 1 or plan_lock or settings.score_preview else 2.5
 	fc_paths = {}
 	fc_times = {}
 	view.forecast_text = ""
@@ -1883,7 +1973,7 @@ func _step_forecast() -> void:
 	if done:
 		fc_complete = true
 	if done:
-		if run.has_perk("oracle"):
+		if settings.score_preview:
 			_show_shot_forecast()
 		_show_sink_tags()
 		fc_sim = null
@@ -2207,8 +2297,8 @@ func _settled() -> void:
 		var insured: bool = run.has_perk("insurance") and run.insured_used < 2
 		var msg: String = result.foul
 		if result.foul == Scorer.EIGHT_FOUL:
-			msg += " - lose %d points" % result.penalty if result.penalty > 0 else (" - pay $%d" % result.eight_fine if result.eight_fine > 0 else "")
-			if not run.has_perk("eight"):
+			msg += " - lose %d points" % result.penalty if result.penalty > 0 else (" - pay $%d" % result.eight_fine if result.eight_fine > 0 else (" - but +$%d" % -int(result.eight_fine) if result.eight_fine < 0 else ""))
+			if not run.eight_safe():
 				msg += " and 2 chalk"
 		elif free_break:
 			msg = "Dry break - no penalty"
@@ -2340,6 +2430,7 @@ func _after_shot() -> void:
 	is_break = false
 	var out := run.apply_shot(result, was_break, sim.object_balls_left(), sim.alive[_cue_index()] == 1)
 	_board_turn()
+	_shot_extras()
 	run.apply_physics(sim)   # one-shot items such as Magnet Charm wear off
 	for n in run.respot_echo(result, sim):
 		view.popup(Rack.FOOT + Vector2(0, -40), "Echo returns", Color(0.75, 0.6, 1.0), 20, 1.3)
@@ -2690,6 +2781,8 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 		return
 	match state:
 		S.AIM:
+			if e.button_index == MOUSE_BUTTON_LEFT and e.pressed and _mouse_over_table() and _select_cue_at(_mouse_table()):
+				return
 			if e.button_index == MOUSE_BUTTON_LEFT and settings.touch_mode:
 				touch_aiming = e.pressed and _mouse_over_table()
 				# A quick tap can press and lift within one frame, before the aim
@@ -3375,7 +3468,7 @@ func _rebuild_cards() -> void:
 	for c in perk_row.get_children():
 		perk_row.remove_child(c)   # at once, so the old cards stop holding the row open
 		c.queue_free()
-	for i in RunState.MAX_PERKS:
+	for i in run.perk_slots():
 		if i < run.perks.size():
 			perk_row.add_child(_perk_card(run.perks[i], i))
 		else:
@@ -3427,6 +3520,7 @@ func _perk_card(id: String, slot: int) -> Control:
 			view.spotlight = [])
 	if run.perk_spent(id):
 		v.add_child(_label("Used this table", 12, Color(0.95, 0.75, 0.4)))
+	p.set_meta("accent", accent)
 	if state == S.SHOP:
 		var b := _button(("Really sell? $%d" if sell_armed == id else "Sell $%d") % run.sell_value(id), func(): _sell_click(id), Color(1.0, 0.75, 0.3) if sell_armed == id else Color(0.9, 0.4, 0.3))
 		b.add_theme_font_size_override("font_size", 13)
@@ -3444,6 +3538,39 @@ func _perk_card(id: String, slot: int) -> Control:
 			p.modulate = Color(1, 1, 1, 0.45)
 	return p
 
+
+## Is this Element's condition met right now? Its card glows while it is.
+func _perk_live(id: String) -> bool:
+	if not run.has_perk(id):
+		return false
+	match id:
+		"rhythm":
+			return run.shots_taken % 3 == 2
+		"finesse":
+			return power <= 0.35
+		"migration":
+			return run.heat >= 4
+		"hothand":
+			return run.heat >= 3
+	return false
+
+
+## Called every frame: the glow on live Element cards.
+func _update_card_glow() -> void:
+	if perk_row == null:
+		return
+	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.006)
+	for c in perk_row.get_children():
+		if not c.has_meta("perk_id"):
+			continue
+		var id: String = c.get_meta("perk_id")
+		if run.perks_off.has(id):
+			continue
+		var live := _perk_live(id)
+		var lit: Color = Color(1, 1, 1) if not live else Color(1, 1, 1).lerp(TermTip.NEON, 0.35 + 0.25 * pulse)
+		if not live and id in ["rhythm", "finesse"]:
+			lit = Color(0.62, 0.62, 0.66)   # dull until its moment comes
+		c.self_modulate = lit
 
 ## Switches an Element off or back on between shots, and refreshes the physics,
 ## the aiming line and the cards to match.
@@ -3477,7 +3604,17 @@ func _perk_now(id: String) -> String:
 		"tiger":
 			return "+%s Chain on the next stripe" % _fmt(0.25 * mini(int(c.get("stripe_run", 0)), 8))
 		"thinrack":
-			return "+%d to every ball" % (12 * int(c.get("removed", 0)))
+			return "+%d to every ball" % (1 * int(c.get("removed", 0)))
+		"eightcount":
+			var left := 8 - int(c.get("total_pots", run.total_pots)) % 8
+			return "%d more sink%s to the next ×3" % [left, "" if left == 1 else "s"]
+		"prime":
+			return "Next Number: %d" % run.next_prime()
+		"fibonacci":
+			var need := run.fib_needed()
+			var done: Array = need.filter(func(f): return run.fib_done.has(f))
+			var todo: Array = need.filter(func(f): return not run.fib_done.has(f))
+			return "Done %s · Need %s" % [" ".join(done.map(func(f): return str(f))) if not done.is_empty() else "-", " ".join(todo.map(func(f): return str(f)))]
 		"missing":
 			return "+%s Chain a shot" % _fmt(minf(3.0, 0.5 * int(c.get("removed", 0))))
 		"menagerie":
@@ -4317,6 +4454,7 @@ func _show_settings(back: Callable) -> void:
 	_setting_toggle(grid, "Click to shoot (power from wheel / Up / Down)", "click_shoot")
 	_setting_choice(grid, "Prediction lines", "guide_lines", GameSettings.GUIDE_LINES)
 	_setting_toggle(grid, "Pause when the cue ball first hits", "pause_on_hit")
+	_setting_toggle(grid, "Show each shot's score before you shoot", "score_preview")
 	_setting_toggle(grid, "Arrow keys sweep (no ¼° steps)", "smooth_arrows")
 	_setting_toggle(grid, "Colour-blind guideline palette", "colorblind")
 	_setting_toggle(grid, "Number tags on every ball", "number_tags")
@@ -4631,7 +4769,7 @@ func _show_run_info() -> void:
 	c1.custom_minimum_size = Vector2(560, 0)
 	c1.add_theme_constant_override("separation", 6)
 	cols.add_child(c1)
-	c1.add_child(_label("ELEMENTS  (%d / %d)" % [run.perks.size(), RunState.MAX_PERKS], 16, Color(0.6, 0.8, 1.0)))
+	c1.add_child(_label("ELEMENTS  (%d / %d)" % [run.perks.size(), run.perk_slots()], 16, Color(0.6, 0.8, 1.0)))
 	if run.perks.is_empty():
 		c1.add_child(_label("None yet - buy them in the Pro Shop between tables.", 15, Color(0.6, 0.6, 0.65), F_REG))
 	for id in run.perks:

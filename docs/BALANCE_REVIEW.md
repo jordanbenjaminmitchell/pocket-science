@@ -156,45 +156,45 @@ All 100, by atomic number. Rarity sets how often a card is offered.
 | 31 | Gallium Glide | `collector` | Uncommon | $6 | Cue control | The cue ball rolls 50% further on the cloth. |  |  |
 | 32 | Germanium Angles | `geometry` | Rare | $8 | Banks & cushions | Once per table: your first bank sink scores ×1.5 for every cushion it touched (×2.25 off two). |  |  |
 | 33 | Arsenic Mutation | `alchemy` | Rare | $8 | Exotic balls | After each table, one plain ball in your set (never the 8) turns into a random Exotic ball. |  |  |
-| 34 | Selenium Lens | `lens` | Common | $4 | Utility | Long sinks (the ball travels 450+) add +1 Chain. |  |  |
-| 35 | Bromine Boomerang | `boomerang` | Uncommon | $6 | Cue control | If the cue ball finishes within 120 of where it started, every sink scores ×2. |  |  |
-| 36 | Krypton Tally | `eightcount` | Uncommon | $6 | The 8-ball | Every 8th ball you sink in a run scores ×3. |  |  |
-| 37 | Rubidium Rush | `racing` | Uncommon | $6 | Stripes | Stripes are 30% lighter and roll 25% further. |  |  |
-| 38 | Strontium Firework | `side` | Common | $5 | Pockets | Side pockets score ×2. |  |  |
-| 39 | Yttrium Ladder | `steadyrun` | Uncommon | $6 | Solids | Each solid sunk in a row on this table makes solids worth +12 more (max +96). A stripe resets it. |  |  |
+| 34 | Selenium Lens | `lens` | Common | $4 | Utility | A sink where the sunk ball rolled at least 1.1 m (almost half the table) adds +1 Chain. |  |  |
+| 35 | Bromine Boomerang | `boomerang` | Uncommon | $6 | Cue control | If the cue ball stops within 30 cm of where you struck it, every sink scores ×2. |  |  |
+| 36 | Krypton Tally | `eightcount` | Uncommon | $6 | The 8-ball | Every 8th ball you sink in a run scores ×3. Hover the card to see how many to go. |  |  |
+| 37 | Rubidium Rocket | `racing` | Uncommon | $6 | Stripes | Stripes are 30% lighter and roll 25% further. |  |  |
+| 38 | Strontium Firework | `side` | Common | $5 | Pockets | Side pockets score ×2, and the hot pocket is never a side pocket. |  |  |
+| 39 | Yttrium Ladder | `steadyrun` | Uncommon | $6 | Solids | Each solid sunk in a row makes solids worth +12 more (max +96). A stripe, or a new table, resets it. |  |  |
 | 40 | Zirconium Gem | `stripesonly` | Rare | $9 | Stripes | Stripes score ×2, but solids score ×0.5. |  |  |
 | 41 | Niobium Menagerie | `menagerie` | Uncommon | $6 | Exotic balls | Shots start with +0.25 Chain for each Exotic ball in your set. |  |  |
-| 42 | Molybdenum Shaft | `longarm` | Uncommon | $6 | Physics | Full power hits 15% harder. |  |  |
-| 43 | Technetium Gap | `missing` | Uncommon | $7 | Clearing your set | Shots start with +0.5 Chain for each ball removed from your set (max +3). |  |  |
-| 44 | Ruthenium Nugget | `goldrush` | Uncommon | $6 | Exotic balls | Exotic balls score ×2. |  |  |
-| 45 | Rhodium Rhythm | `rhythm` | Common | $5 | Streaks | Every third shot on a table scores ×2. |  |  |
+| 42 | Molybdenum Shaft | `longarm` | Uncommon | $6 | Physics | Full power hits 30% harder. |  |  |
+| 43 | Technetium Gap | `missing` | Uncommon | $7 | Clearing your set | Shots start with +0.5 Chain for each ball you have removed from your set (max +3). |  |  |
+| 44 | Ruthenium Nugget | `goldrush` | Uncommon | $6 | Exotic balls | Exotic balls score ×1.5. |  |  |
+| 45 | Rhodium Rhythm | `rhythm` | Common | $5 | Streaks | Every third shot on a table scores ×2. The card glows when it is ready. |  |  |
 | 46 | Palladium Vault | `venture` | Uncommon | $6 | Economy | Shots start with +0.25 Chain for every $5 you hold (max +1.5). |  |  |
-| 47 | Silver Tongue | `hushmoney` | Common | $4 | Economy | Sinking the 8 early costs $3 instead of points. |  |  |
+| 47 | Silver Tongue | `hushmoney` | Common | $4 | Economy | Sinking the 8 early pays you $3 and costs no points. It is still a foul. |  |  |
 | 48 | Cadmium Chill | `coupon` | Common | $4 | Heat | At Heat 0, every sink scores ×2. |  |  |
-| 49 | Indium Touch | `finesse` | Uncommon | $6 | Cue control | Shots at 35% power or less score ×2. |  |  |
+| 49 | Indium Touch | `finesse` | Uncommon | $6 | Cue control | Shots at 35% power or less score ×2. The card glows when your power is low enough. |  |  |
 | 50 | Tin Toolbox | `tinkerer` | Uncommon | $6 | Gear | Every table, a random Catalyst you hold gets one extra use. |  |  |
-| 51 | Antimony Kohl | `kissblack` | Uncommon | $6 | The 8-ball | Every time a ball touches the 8, add +0.75 Chain. |  |  |
-| 52 | Tellurium Eye | `oracle` | Rare | $10 | Utility | Before each shot, see exactly what it will score, counting every ball it knocks in. |  |  |
+| 51 | Antimony Kohl | `kissblack` | Uncommon | $6 | The 8-ball | If the cue ball hits the 8 first (not on the break) and the shot sinks a ball, every sink scores ×2. |  |  |
+| 52 | Tellurium Supply | `oracle` | Rare | $10 | Gear | At the start of each table, get a random Catalyst for that table only, if you have a free Catalyst slot. |  |  |
 | 53 | Iodine Swab | `cleanhouse` | Common | $3 | Clearing your set | Removing a ball in the Pro Shop is free. |  |  |
 | 54 | Xenon Flash | `stillness` | Uncommon | $6 | Pausing | Once a table, the first time you pause a shot, every rolling ball speeds up by 30%. |  |  |
 | 55 | Caesium Clock | `overclock` | Rare | $8 | Pausing | Your Catalysts get two uses on every table. |  |  |
-| 56 | Barium Spin | `backspin` | Uncommon | $6 | Physics | Draw and follow are 50% stronger. |  |  |
+| 56 | Barium Spin | `backspin` | Uncommon | $6 | Physics | Draw and follow are twice as strong. |  |  |
 | 57 | Lanthanum Lantern | `comeback` | Uncommon | $6 | Streaks | On your last Chalk, every sink scores ×2. |  |  |
-| 58 | Cerium Flint | `thrift` | Common | $4 | Economy | Clear a table with 2+ Chalk left: +$5. |  |  |
+| 58 | Cerium Flint | `thrift` | Common | $4 | Economy | Clear a table with 3+ Chalk left: +$5. |  |  |
 | 59 | Praseodymium Twin | `rotation` | Uncommon | $6 | Ball numbers | The lowest-numbered ball on the table scores as if it were the highest-numbered one. |  |  |
-| 60 | Neodymium Magnet | `elastic` | Uncommon | $6 | Combos & clusters | The cue ball is magnetic: as it rolls past, it tugs nearby balls towards it. |  |  |
-| 61 | Promethium Prime | `prime` | Uncommon | $6 | Ball numbers | Balls 2, 3, 5, 7, 11 and 13 score ×2. |  |  |
+| 60 | Neodymium Boulder | `elastic` | Uncommon | $6 | Physics | The cue ball is 90% bigger, just small enough to fit a pocket, and twice as heavy. |  |  |
+| 61 | Promethium Prime | `prime` | Uncommon | $6 | Ball numbers | Prime balls score ×2. When no prime ball is left on the table, the next prime ball rolls on. |  |  |
 | 62 | Samarium Simmer | `entropy` | Uncommon | $6 | Heat | Below Heat 3, shots start with +1 Chain. |  |  |
-| 63 | Europium Double | `echo` | Rare | $9 | Risk & scaling | The first sink of every shot scores twice. |  |  |
+| 63 | Europium Echo | `echo` | Rare | $9 | Isotopes | When a ball with an Isotope sinks, its Isotope echoes onto a random ball on the table that has none, until the table ends. |  |  |
 | 64 | Gadolinium Pull | `magnet` | Rare | $9 | Pockets | Pockets gently pull nearby moving balls in. |  |  |
 | 65 | Terbium Tiger | `tiger` | Uncommon | $7 | Stripes | Each stripe sunk in a row on this table adds +0.25 Chain to the next (max +2). A solid resets it. |  |  |
-| 66 | Dysprosium Domino | `domino` | Uncommon | $6 | Physics | Balls lose no speed when they hit each other: every combination carries. |  |  |
+| 66 | Dysprosium Domino | `domino` | Uncommon | $6 | Physics | Balls lose no speed when they hit each other, so a hit passes its full speed down a line of balls. |  |  |
 | 67 | Holmium Magnet | `hothand` | Uncommon | $6 | Heat | At Heat 3 or more, pockets pull nearby rolling balls in. |  |  |
 | 68 | Erbium Laser | `even` | Common | $4 | Ball numbers | Even-numbered balls add +0.75 Chain as they sink. |  |  |
-| 69 | Thulium Thinning | `thinrack` | Uncommon | $6 | Clearing your set | Every ball removed from your set makes all balls worth +12. |  |  |
-| 70 | Ytterbium Draw | `drawartist` | Uncommon | $6 | Cue control | Shots hit with draw score ×1.5. |  |  |
+| 69 | Thulium Thinning | `thinrack` | Uncommon | $6 | Clearing your set | Every ball removed from your set makes all balls worth +1. |  |  |
+| 70 | Ytterbium Twin | `drawartist` | Uncommon | $6 | Cue control | After your first shot on each table, a second cue ball appears. Click a cue ball to choose which one you shoot. |  |  |
 | 71 | Lutetium Luck | `luckystripe` | Uncommon | $6 | Stripes | Each stripe you sink has a 1 in 3 chance to score ×3 and pay $2. |  |  |
-| 72 | Hafnium Rod | `migration` | Uncommon | $6 | Heat | While On fire (Heat 5+), a miss only costs 1 Heat instead of half. |  |  |
+| 72 | Hafnium Rod | `migration` | Uncommon | $6 | Heat | While Heat is 4 or more, a miss only costs 1 Heat instead of half. |  |  |
 | 73 | Tantalum Plate | `solidsonly` | Rare | $9 | Solids | Solids score ×3, but stripes score ×0.5. |  |  |
 | 74 | Tungsten Core | `lever` | Common | $5 | Stripes | Stripes weigh 140% and lose no speed off cushions: they plough on through other balls. |  |  |
 | 75 | Rhenium Ricochet | `ricochet` | Uncommon | $6 | Banks & cushions | Every cushion a ball touches adds +0.25 extra Chain. |  |  |
@@ -203,7 +203,7 @@ All 100, by atomic number. Rarity sets how often a card is offered.
 | 78 | Platinum Rail | `bank` | Uncommon | $6 | Banks & cushions | Bank sinks add +1 Chain per cushion. |  |  |
 | 79 | Gold Bar | `solidgold` | Uncommon | $6 | Solids | Each solid you sink pays $1. |  |  |
 | 80 | Mercury Messenger | `quickhands` | Common | $4 | Pausing | The first Catalyst you use on each table doesn't spend a use. |  |  |
-| 81 | Thallium Felt | `slowcloth` | Common | $4 | Physics | Thicker cloth: balls stop 25% sooner, for tighter position. |  |  |
+| 81 | Thallium Felt | `slowcloth` | Common | $4 | Physics | Thick nap: the cue ball stops 35% sooner for tight position, while object balls roll 25% further. |  |  |
 | 82 | Lead Anchor | `laststripe` | Uncommon | $6 | The 8-ball | The 8 weighs 300%, and it rattles out of the pockets until it is the last ball: no more early 8s. |  |  |
 | 83 | Bismuth Crystal | `lastsolid` | Rare | $8 | Solids | When you sink the only solid left on the table, it scores ×8. |  |  |
 | 84 | Polonium Halo | `lastcall` | Uncommon | $6 | The 8-ball | If the 8 is the only ball left, the pockets pull it in, and sinking it scores ×5 and pays $5. |  |  |
@@ -213,16 +213,16 @@ All 100, by atomic number. Rarity sets how often a card is offered.
 | 88 | Radium Trail | `tracer` | Common | $4 | Banks & cushions | Every cushion the cue ball touches after contact adds +0.25 Chain. |  |  |
 | 89 | Actinium Ray | `highball` | Common | $4 | Stripes | Balls 13, 14 and 15 score ×2.5. |  |  |
 | 90 | Thorium Stopper | `stun` | Uncommon | $6 | Cue control | The cue ball loses 60% of its speed when it first hits a ball. Far fewer scratches. |  |  |
-| 91 | Protactinium Pack | `packrat` | Common | $4 | Gear | +1 Catalyst slot. |  |  |
+| 91 | Protactinium Pack | `packrat` | Common | $4 | Gear | +3 Catalyst slots. |  |  |
 | 92 | Uranium Reactor | `power` | Uncommon | $5 | Cue control | At 85%+ power, the first ball the cue ball hits flies off 20% faster: a chain reaction. |  |  |
-| 93 | Neptunium Tide | `overflow` | Uncommon | $5 | Economy | Points over a table's target carry into the next table (up to 25% of its target). |  |  |
+| 93 | Neptunium Tide | `overflow` | Uncommon | $5 | Utility | Points you score over a table's target carry into the next table's score (up to 25% of the next target). |  |  |
 | 94 | Plutonium Pit | `trouble` | Rare | $7 | The 8-ball | When the 8 sinks early, gain +3 Heat. You still lose the points. |  |  |
-| 95 | Americium Beacon | `afterimage` | Uncommon | $6 | Pausing | Impulse and Superposition each add +1 Chain to the shot. |  |  |
+| 95 | Americium Beacon | `afterimage` | Uncommon | $6 | Gear | The first Catalyst you use on each table also gives that shot +2 Chain and +1 Heat. |  |  |
 | 96 | Curium Corner | `corner` | Common | $4 | Pockets | Corner pockets add +0.5 Chain as the ball sinks. |  |  |
 | 97 | Berkelium Break | `afterburner` | Common | $5 | Cue control | Place the cue ball anywhere on the table for the break. |  |  |
 | 98 | Californium Jackpot | `moneyball` | Uncommon | $6 | Ball numbers | Every ball's number counts ×3 instead of ×2. |  |  |
 | 99 | Einsteinium Lab | `enchanter` | Common | $4 | Isotopes | Isotopes cost $2 less. |  |  |
-| 100 | Fermium Spiral | `fibonacci` | Uncommon | $6 | Ball numbers | Fibonacci balls (1, 2, 3, 5, 8 and 13) are worth +35. |  |  |
+| 100 | Fermium Spiral | `fibonacci` | Uncommon | $6 | Ball numbers | Sink every Fibonacci ball in your set (1, 2, 3, 5, 8 and up) this run and the next Fibonacci ball joins your set; then start again. Hover to see which are done. |  |  |
 
 ## Isotopes
 
@@ -248,6 +248,16 @@ All 100, by atomic number. Rarity sets how often a card is offered.
 | Bounty | `bounty` | $4 | Pays $1 for every point of Heat when it sinks, then cashes out 2 Heat. |  |  |
 | Starry | `starry` | $5 | Every ball after it in the same shot gets +0.5 Chain. |  |  |
 | Twin | `twin` | $4 | Its value counts twice. Then it hops to its colour twin (the 3 and the 11, the 1 and the 9...), if that one is free. |  |  |
+| Recurring | `recurring` | $5 | Every time it sinks it is worth +4 more for the rest of the run, and it comes straight back: it takes the place of a random other ball on the table, which leaves unscored. |  |  |
+| Slick | `slick` | $3 | Rolls 65% further on the cloth, and is worth +10. |  |  |
+| Rubber | `rubber` | $4 | Loses no speed off cushions, and is worth +5 for every cushion it touched before it sank. |  |  |
+| Tithed | `tithed` | $4 | When it sinks, pays $1 for every other ball still on the table (up to $5). |  |  |
+| Catalytic | `catalytic` | $5 | When it sinks, one Catalyst you have used this table recharges. |  |  |
+| Chalked | `chalked` | $6 | The first time it sinks on a table, +1 Chalk. |  |  |
+| Excited | `excited` | $3 | If the cue ball hits it first and it sinks, +1 Heat. |  |  |
+| Radiant | `radiant` | $5 | While it is on the table at the start of a shot, every other ball that sinks is worth +5. |  |  |
+| Polarized | `polarized` | $3 | Scores ×3 in the hot pocket, but only ×0.5 anywhere else. |  |  |
+| Isolated | `isolated` | $4 | Scores ×2.5 if it is the last solid (or the last stripe) on the table when it sinks. |  |  |
 
 ## Catalysts
 
@@ -278,6 +288,13 @@ Each recharges every table.
 | Golden Ratio | `goldenratio` | While paused | $5 | Pick a rolling ball: its speed is multiplied by 1.618. |  |  |
 | Centre of Mass | `centremass` | While paused | $6 | Pick two to four balls: they all head for the point between them. |  |  |
 | Hooke's Law | `hookes` | Aiming or paused | $5 | Pick a cushion: for the rest of the shot, anything bouncing off it keeps all its speed. |  |  |
+| Damping | `damping` | While paused | $4 | Pick a rolling ball: it slows to half its speed. |  |  |
+| Momentum Exchange | `momentum` | While paused | $6 | Pick a ball: it and the cue ball swap speeds and directions. |  |  |
+| Dark Energy | `darkenergy` | While paused | $5 | Place a point that pushes rolling balls away for the rest of the shot. |  |  |
+| Supernova | `blast` | While paused | $6 | Place a blast: every ball near it is flung outwards. |  |  |
+| Absolute Zero | `absolutezero` | While paused | $5 | Every ball on the table stops dead, right where it is. |  |  |
+| Focal Point | `focal` | Aiming or paused | $5 | Pick a pocket: it becomes the hot pocket. |  |  |
+| Tidal Pull | `tidal` | While paused | $5 | Pick a pocket: for the rest of the shot it pulls rolling balls towards it. |  |  |
 
 ## Exotic balls
 
@@ -306,25 +323,32 @@ Each recharges every table.
 | Anchor ball | `anchor` | $6 | 105 | Only the cue ball can move it: other balls bounce off it like a post. Worth 105. |  |  |
 | Eraser ball | `eraser` | $3 | 15 | When it sinks it pays $4, and both it and the last ball it touched leave your set (never the 8). |  |  |
 | Echo ball | `echo` | $6 | 30 | The first time it sinks on a table, it comes back to the foot spot. |  |  |
+| Phantom ball | `phantom` | $5 | 40 | Other object balls pass straight through it: only the cue ball can hit it. Worth 40. |  |  |
+| Spring ball | `spring` | $5 | 30 | Balls bounce off it 50% faster than they hit it. |  |  |
+| Piggy Bank ball | `piggy` | $4 | 10 | Worth 10, and when it sinks it pays $1 for every shot already taken on this table (up to $6). |  |  |
+| Jackpot ball | `jackpot` | $5 | 20 | When it sinks, 1 in 6 chance to pay $10; otherwise it pays $1. |  |  |
+| Pinball ball | `pinball` | $5 | 20 | Worth 20, plus 10 for every cushion it touched before it sank. |  |  |
+| Fuse ball | `fuse` | $5 | 30 | When it sinks, +1 Heat for every ball that sank before it in the same shot. |  |  |
 | Comet ball | `comet` | $5 | 40 | Feels no cloth friction until it first hits a cushion. |  |  |
 
 ## Starting cues
 
 | Cue | Id | Money | Chalk | Starts with | Description | Your note | Done |
 |---|---|---|---|---|---|---|---|
-| Classic Maple | `maple` | $6 | 0 |  | The all-rounder. $6 to start. |  |  |
-| Hot Rod | `hotrod` | $4 | -1 | Magnesium Torch | Starts with Magnesium Torch (hot pocket ×3), but you start with 1 less Chalk. $4. |  |  |
-| Gilded Cue | `gilded` | $12 | 0 | Palladium Vault | Starts rich: $12 and Palladium Vault. |  |  |
-| Gear Cue | `gearhead` | $2 | 0 | Protactinium Pack, Impulse, Fixed Point | Starts with Protactinium Pack, Impulse and Fixed Point. $2. |  |  |
-| Lean Cue | `lean` | $3 | 0 | Thulium Thinning | Starts with Thulium Thinning, and the 1 and 2 are already out of your set. $3. |  |  |
-| Black Cue | `black` | $3 | 0 | Carbon Core | Starts with Carbon Core: the 8 costs nothing and pays $3. $3. |  |  |
-| Alchemist's Cue | `alchemist` | $3 | 0 | Ruthenium Nugget | Starts with a Gold ball in your set, and Ruthenium Nugget: Exotic balls score ×2. $3. |  |  |
-| Glass Cue | `glass` | $4 | -1 | Astatine Edge | Starts with Astatine Edge (every sink ×2, fouls cost 1 more Chalk). Start with 1 less Chalk. $4. |  |  |
-| Post Cue | `posts` | $2 | 0 | Potassium Kick | Carries 4 Fixed Points every table, and starts with Potassium Kick: bounce the cue off a post first for ×2. $2. |  |  |
-| Portal Cue | `portals` | $2 | 0 | Bromine Boomerang | Carries 4 Wormholes every table, and starts with Bromine Boomerang: send the cue ball home for ×2. $2. |  |  |
-| Wall Cue | `walls` | $2 | 0 | Platinum Rail | Carries 4 Force Fields every table, and starts with Platinum Rail: banks off your walls build Chain. $2. |  |  |
-| Trapdoor Cue | `trapdoors` | $2 | 0 | Sodium Cushion | Carries 4 Black Holes every table, and starts with Sodium Cushion: bank sinks are worth +30. $2. |  |  |
-| Gravity Cue | `gravity` | $2 | 0 | Gadolinium Pull | Carries 4 Gravity Wells every table, and starts with Gadolinium Pull: bend balls home. $2. |  |  |
+| Classic Maple | `maple` | $7 | 0 |  | No tricks: $7 and an open mind. |  |  |
+| Hot Rod | `hotrod` | $4 | -1 | Focal Point | Carries Focal Point to move the hot pocket, and your 1 is Kindled (+2 Heat when sunk). 1 less Chalk. $4. |  |  |
+| Gilded Cue | `gilded` | $6 | 0 | Conservation | Carries Conservation to bring a sunk ball back, and your 3 is Gilded (pays more every table you sink it). $6. |  |  |
+| Gear Cue | `gearhead` | $3 | 0 | Golden Ratio | Holds 2 more Catalysts than any other cue, and carries Golden Ratio. $3. |  |  |
+| Lean Cue | `lean` | $4 | 0 | Quantum Tunnel | The 1 and 2 are already out of your set, and you carry Quantum Tunnel to thread shots through the rack. $4. |  |  |
+| Black Cue | `black` | $3 | 0 | Reflection | The 8 going in early costs you nothing. Carries Reflection to turn a ball round mid-shot. $3. |  |  |
+| Alchemist's Cue | `alchemist` | $3 | 0 | Entanglement | Starts with a Gold ball in your set, and carries Entanglement to swap any two balls. $3. |  |  |
+| Glass Cue | `glass` | $4 | 0 | Inertia | Starts with a Glass ball (×3, but it shatters if hit hard) and carries Inertia to stop a ball dead. $4. |  |  |
+| Number Theory Cue | `numbers` | $2 | 0 | Promethium Prime, Fermium Spiral | The only cue that starts with Elements: Promethium Prime and Fermium Spiral. But it holds only 4 Elements. $2. |  |  |
+| Post Cue | `posts` | $2 | 0 |  | Carries 4 Fixed Points every table, and starts with a Spring ball that bounces balls off it 50% faster. $2. |  |  |
+| Portal Cue | `portals` | $2 | 0 |  | Carries 4 Wormholes every table, and every trip through a portal adds +1 Chain. $2. |  |  |
+| Wall Cue | `walls` | $2 | 0 |  | Carries 4 Force Fields every table, and your 4 is Rubber: no speed lost off cushions, +5 a cushion. $2. |  |  |
+| Trapdoor Cue | `trapdoors` | $2 | 0 |  | Carries 4 Black Holes every table, and your 6 is Magnetic: pockets pull it in. $2. |  |  |
+| Gravity Cue | `gravity` | $2 | 0 |  | Carries 4 Gravity Wells every table, and starts with a Comet ball that feels no friction until a cushion. $2. |  |  |
 
 ## Side bets
 
@@ -355,4 +379,11 @@ Stakes are in the tables section above. The stake is capped at your money when t
 | Score half of this table's target in one shot | `half` | Hard | 3× (+0.5× every 3 tables, up to +1×) |  |  |
 | Sink 2 balls into the hot pocket in one shot | `hot2` | Hard | 3× (+0.5× every 3 tables, up to +1×) |  |  |
 | Sink the 8 when it is the only ball left | `eight` | Hard | 3× (+0.5× every 3 tables, up to +1×) |  |  |
+| Sink a ball straight in, with no cushions or other balls | `clean` | Easy | 1× (+0.5× every 3 tables, up to +1×) |  |  |
+| Sink the 13, 14 or 15 | `topthree` | Easy | 1× (+0.5× every 3 tables, up to +1×) |  |  |
+| Sink a solid and a stripe in one shot | `mixed` | Medium | 2× (+0.5× every 3 tables, up to +1×) |  |  |
+| Sink balls into 2 different pockets in one shot | `twopockets` | Medium | 2× (+0.5× every 3 tables, up to +1×) |  |  |
+| Sink a ball off 3 cushions | `bank3` | Hard | 3× (+0.5× every 3 tables, up to +1×) |  |  |
+| Reach Chain 10 in one shot | `chain10` | Hard | 3× (+0.5× every 3 tables, up to +1×) |  |  |
+| Earn $5 or more in one shot | `money5` | Hard | 3× (+0.5× every 3 tables, up to +1×) |  |  |
 

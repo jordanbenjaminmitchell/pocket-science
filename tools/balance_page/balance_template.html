@@ -1,0 +1,151 @@
+<title>Pocket Science Balance</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: a sticky header with section chips and filters, then one table per section; each row ends in a note box and Claude's reply. */
+:root {
+  --bg: #f4f6f3; --panel: #ffffff; --fg: #18211d; --muted: #5d6a63; --line: #d9e0db;
+  --felt: #1d6b4f; --felt-soft: #e2efe8; --chalk: #2f6fd6; --chalk-soft: #e4ecfa; --amber: #a86a0b; --amber-soft: #f7ecd7;
+  --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif; --body: "Inter", system-ui, -apple-system, sans-serif; --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1513; --panel: #161e1b; --fg: #e4ece7; --muted: #93a39a; --line: #2a3631;
+  --felt: #49b386; --felt-soft: #173a2c; --chalk: #79a6f2; --chalk-soft: #18263d; --amber: #e3a54a; --amber-soft: #3a2c14; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1513; --panel: #161e1b; --fg: #e4ece7; --muted: #93a39a; --line: #2a3631;
+  --felt: #49b386; --felt-soft: #173a2c; --chalk: #79a6f2; --chalk-soft: #18263d; --amber: #e3a54a; --amber-soft: #3a2c14; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--body); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg) }
+header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 16px 10px; border-bottom: 1px solid var(--line); display: grid; gap: 10px }
+h1 { font: 600 22px/1.2 var(--display); letter-spacing: .02em; margin: 0; text-wrap: balance }
+.sub { color: var(--muted); margin: 0; max-width: 70ch }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.chip { font: 500 13px var(--body); border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 999px; padding: 4px 11px; cursor: pointer }
+.chip[aria-pressed="true"] { background: var(--felt); border-color: var(--felt); color: var(--bg) }
+.chip .n { font-variant-numeric: tabular-nums; opacity: .7; margin-left: 4px }
+input[type=search] { font: 14px var(--body); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--fg); min-width: 0; flex: 1 1 200px; max-width: 320px }
+label.tog { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; cursor: pointer }
+.status { font-size: 12px; color: var(--muted) }
+section { margin-top: 28px }
+h2 { font: 600 17px var(--display); letter-spacing: .03em; margin: 0 0 4px; text-transform: uppercase }
+.intro { color: var(--muted); margin: 0 0 10px; max-width: 70ch }
+.wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel) }
+table { border-collapse: collapse; width: 100%; min-width: 760px }
+th { text-align: left; font: 600 11px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap }
+td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top }
+tr:last-child td { border-bottom: 0 }
+td.id { font: 12px var(--mono); color: var(--muted); white-space: nowrap }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap }
+td.note { width: 30%; min-width: 220px }
+tr.has-note td { background: var(--amber-soft) }
+tr.has-note td.note, tr.has-note td.reply { background: transparent }
+textarea { width: 100%; min-height: 34px; resize: vertical; font: 13px/1.4 var(--body); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg) }
+textarea:focus-visible, .chip:focus-visible, input:focus-visible { outline: 2px solid var(--chalk); outline-offset: 1px }
+.saved { font-size: 11px; color: var(--muted); min-height: 14px }
+.reply { margin-top: 6px; font-size: 12.5px; padding: 6px 8px; border-radius: 6px; background: var(--chalk-soft); color: var(--fg) }
+.reply b { font-weight: 600; color: var(--chalk) }
+.pill { display: inline-block; font: 600 10.5px var(--body); letter-spacing: .05em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; margin-right: 6px }
+.pill.done { background: var(--felt-soft); color: var(--felt) }
+.pill.doing { background: var(--amber-soft); color: var(--amber) }
+.empty { color: var(--muted); padding: 24px 0 }
+@media (max-width: 640px) {
+  table, thead, tbody, tr, td { display: block; min-width: 0 } thead { display: none }
+  tr { border-bottom: 1px solid var(--line); padding: 8px 4px } td { border: 0; padding: 3px 8px } td.note { width: auto }
+  td[data-h]::before { content: attr(data-h) ": "; color: var(--muted); font-size: 12px }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<header>
+  <div>
+    <h1>Pocket Science Balance</h1>
+    <p class="sub">Every tunable number in the game. Type a note on any row: it saves as you go, and Claude reads your notes, makes the changes and replies under each one.</p>
+  </div>
+  <div class="bar" id="chips" aria-label="Sections"></div>
+  <div class="bar">
+    <input type="search" id="q" placeholder="Search: Hydrogen, Chalk, $6…" aria-label="Search rows">
+    <label class="tog"><input type="checkbox" id="onlyNotes"> Only rows with notes</label>
+    <span class="status" id="status">Connecting to saved notes…</span>
+  </div>
+</header>
+<main id="main"></main>
+
+<script>
+const DATA = __DATA__;
+const notes = {};          // key -> {note, reply, status}
+let db = null, canWrite = true, section = "all";
+const $ = (s) => document.querySelector(s);
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+
+function chips() {
+  const el = $("#chips");
+  const all = [{title: "All", key: "all", n: DATA.sections.reduce((a, s) => a + s.rows.length, 0)}].concat(DATA.sections.map((s) => ({title: s.title, key: s.title, n: s.rows.length})));
+  el.innerHTML = all.map((c) => `<button class="chip" type="button" data-k="${esc(c.key)}" aria-pressed="${c.key === section}">${esc(c.title)}<span class="n">${c.n}</span></button>`).join("");
+  el.querySelectorAll(".chip").forEach((b) => b.onclick = () => { section = b.dataset.k; chips(); render(); });
+}
+
+function render() {
+  const q = $("#q").value.trim().toLowerCase();
+  const only = $("#onlyNotes").checked;
+  let html = "";
+  for (const s of DATA.sections) {
+    if (section !== "all" && section !== s.title) continue;
+    const rows = s.rows.filter((r) => (!q || r.cells.join(" ").toLowerCase().includes(q) || (notes[r.key]?.note || "").toLowerCase().includes(q)) && (!only || notes[r.key]?.note || notes[r.key]?.reply));
+    if (!rows.length) continue;
+    html += `<section><h2>${esc(s.title)}</h2>${s.intro ? `<p class="intro">${esc(s.intro)}</p>` : ""}<div class="wrap"><table><thead><tr>${s.cols.map((c) => `<th>${esc(c)}</th>`).join("")}<th>Your note</th></tr></thead><tbody>`;
+    for (const r of rows) {
+      const n = notes[r.key] || {};
+      html += `<tr data-key="${r.key}" class="${n.note ? "has-note" : ""}">${r.cells.map((c, i) => `<td data-h="${esc(s.cols[i])}" class="${s.cols[i] === "Id" ? "id" : /^[$\d+−×%-]/.test(c) && c.length < 14 ? "num" : ""}">${esc(c)}</td>`).join("")}<td class="note"><textarea id="n-${r.key}" data-key="${r.key}" rows="1" placeholder="Your note" ${canWrite ? "" : "disabled"}>${esc(n.note || "")}</textarea><div class="saved" id="s-${r.key}"></div>${n.reply ? `<div class="reply">${n.status ? `<span class="pill ${n.status === "done" ? "done" : "doing"}">${esc(n.status)}</span>` : ""}<b>Claude:</b> ${esc(n.reply)}</div>` : ""}</td></tr>`;
+    }
+    html += `</tbody></table></div></section>`;
+  }
+  $("#main").innerHTML = html || `<p class="empty">No rows match. Clear the search or the notes filter.</p>`;
+  document.querySelectorAll("textarea").forEach((t) => {
+    t.oninput = () => queueSave(t.dataset.key, t.value);
+  });
+}
+
+const timers = {}, saving = {};
+function queueSave(key, text) {
+  if (!db) { $("#s-" + key).textContent = "Not saved: notes are unavailable here."; return; }
+  $("#s-" + key).textContent = "Saving…";
+  clearTimeout(timers[key]);
+  timers[key] = setTimeout(() => save(key, text), 700);
+}
+async function save(key, text) {
+  if (saving[key]) { timers[key] = setTimeout(() => save(key, text), 400); return; }
+  saving[key] = true;
+  try {
+    const prev = notes[key] || {};
+    notes[key] = Object.assign({}, prev, {note: text});
+    await db.collection("notes").doc(key).set({note: text, at: new Date().toISOString(), reply: prev.reply || "", status: prev.status || ""});
+    const s = $("#s-" + key); if (s) s.textContent = "Saved";
+    const tr = document.querySelector(`tr[data-key="${key}"]`); if (tr) tr.classList.toggle("has-note", !!text);
+  } catch (e) {
+    const s = $("#s-" + key); if (s) s.textContent = e && e.code === "invalid_argument" ? "You can view these notes but not edit them." : "Couldn't save. Try again in a moment.";
+  } finally { saving[key] = false; }
+}
+
+$("#q").oninput = render;
+$("#onlyNotes").onchange = render;
+chips(); render();
+
+(async () => {
+  if (!window.claude || !claude.use) { $("#status").textContent = "Notes save only on claude.ai."; return; }
+  db = await claude.use("db");
+  const user = await claude.use("user");
+  if (user) { const w = await user.can("data.write"); if (w === false) canWrite = false; }
+  if (!db) { $("#status").textContent = "Notes are unavailable in this view."; return; }
+  const timeout = setTimeout(() => { $("#status").textContent = "Saved notes can't be reached yet."; }, 10000);
+  db.collection("notes").onSnapshot((snap) => {
+    if (!snap.metadata.fromCache) clearTimeout(timeout);
+    const focused = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.key : null;
+    for (const d of snap.docs) { const v = d.data() || {}; notes[d.id] = {note: v.note || "", reply: v.reply || "", status: v.status || ""}; }
+    const count = Object.values(notes).filter((n) => n.note).length;
+    $("#status").textContent = `${count} note${count === 1 ? "" : "s"} saved`;
+    if (!focused) render();
+  }, (e) => { clearTimeout(timeout); $("#status").textContent = "Saved notes stopped updating. Reload to reconnect."; });
+})();
+</script>

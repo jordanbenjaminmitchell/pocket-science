@@ -166,7 +166,35 @@ func sync_balls(sim: PoolSim, rng: RandomNumberGenerator, imbues: Dictionary) ->
 		ball_nodes[i] = b
 		if sim.alive[i] == 0:
 			b.visible = false
+	size_balls(sim)
 	refresh_glows(sim, imbues)
+
+
+## Ball nodes for balls added mid-table (Promethium's primes, Ytterbium's twin cue),
+## and every ball drawn at its own size.
+func add_new_balls(sim: PoolSim, rng: RandomNumberGenerator, imbues: Dictionary) -> void:
+	for i in sim.count():
+		if not ball_nodes.has(i):
+			var b := BallNode.new()
+			balls_layer.add_child(b)
+			b.position = sim.pos[i]
+			b.setup(sim.num[i], font_bold, rng)
+			ball_nodes[i] = b
+		var bn: BallNode = ball_nodes[i]
+		if bn.number != sim.num[i]:
+			bn.setup(sim.num[i], font_bold, rng)
+		bn.position = sim.pos[i]
+		bn.visible = sim.alive[i] == 1
+		if bn.visible:
+			bn.set_fade(1.0)
+	size_balls(sim)
+	refresh_glows(sim, imbues)
+
+
+func size_balls(sim: PoolSim) -> void:
+	for i in ball_nodes:
+		if i < sim.rad.size():
+			(ball_nodes[i] as BallNode).scale = Vector2.ONE * (sim.rad[i] / TableLayout.R)
 
 
 func refresh_glows(sim: PoolSim, imbues: Dictionary) -> void:
@@ -521,6 +549,7 @@ func confetti() -> void:
 
 
 func popup(p: Vector2, text: String, c: Color, size: int = 22, life: float = 1.1) -> void:
+	life *= 1.5   # pop-ups stay up half as long again, so the scoring is easy to follow
 	popups.append({"pos": p, "text": text, "color": c, "size": size, "life": life, "max": life})
 
 

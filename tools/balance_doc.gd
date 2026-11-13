@@ -122,7 +122,7 @@ func _go() -> void:
 		crows.append([it.name, "`%s`" % id, Catalog.WHEN_NAMES.get(it.when, it.when), "$%d" % it.cost, it.desc])
 	_table("Catalysts", "Each recharges every table.", ["Catalyst", "Id", "When", "Cost", "What it does"], crows)
 	var srows: Array = []
-	for id in Catalog.BALL_TYPES:
+	for id in Catalog.BALL_TYPES.keys().filter(func(k): return not Catalog.BALL_TYPES[k].get("hidden", false)):
 		var bt: Dictionary = Catalog.BALL_TYPES[id]
 		srows.append([bt.name + " ball", "`%s`" % id, "$%d" % bt.cost, bt.value, bt.desc])
 	_table("Exotic balls", "", ["Ball", "Id", "Cost", "Value", "What it does"], srows)

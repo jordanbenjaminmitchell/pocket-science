@@ -9,10 +9,10 @@ extends Control
 signal piece_added(count: int)
 signal finished
 
-const STEP := 0.17          # seconds between pieces
-const FLY := 0.22           # seconds a piece takes to fly in
-const HOLD := 0.75          # how long the finished sum stays up
-const FADE := 0.35
+const STEP := 0.255         # seconds between pieces
+const FLY := 0.33           # seconds a piece takes to fly in
+const HOLD := 1.125         # how long the finished sum stays up
+const FADE := 0.5
 const GAP := 10.0
 const F_BIG := 26
 const F_CAP := 12

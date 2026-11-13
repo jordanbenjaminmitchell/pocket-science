@@ -31,6 +31,7 @@ var fine_drag := false      # touch: dragging turns the aim a little instead of 
 var dev_mode := false       # unlocks every Perk, cue and difficulty, and skips the introduction
 var invert_aim := false     # touch: Fine aim drags and the FINE AIM strip turn the other way
 var particles_min := false  # Particles: Minimum, no decorative particles anywhere
+var score_preview := false  # show what the aimed shot will score, counting every ball it knocks in
 
 const SCREEN_LAYOUTS := ["Classic", "Wide"]
 ## "All balls" also simulates the shot and draws where every ball will end up.
@@ -50,7 +51,7 @@ const ACTIONS := {
 
 var keys := {}
 
-const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout", "guide_lines", "pause_on_hit", "guide_rev", "smooth_arrows", "fine_drag", "dev_mode", "invert_aim", "particles_min"]
+const KEYS := ["master", "music", "sfx", "fullscreen", "vsync", "shake", "reduced_motion", "aim_speed", "pull", "invert_drag", "click_shoot", "colorblind", "number_tags", "large_text", "touch_mode", "frame_cap", "window_size", "screen_layout", "guide_lines", "pause_on_hit", "guide_rev", "smooth_arrows", "fine_drag", "dev_mode", "invert_aim", "particles_min", "score_preview"]
 
 
 func load_file() -> void:

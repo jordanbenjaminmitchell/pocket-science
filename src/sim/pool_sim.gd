@@ -56,6 +56,8 @@ var ghost := -1                         # Ghost Chalk: nothing collides with thi
 var glide := PackedByteArray()          # Polish: no cloth friction until the first hit
 var pinned := PackedByteArray()         # Freeze Frame: held still like a post
 var extra_wells: Array = []             # Gravity Pebbles: [position, strength]
+var rad := PackedFloat64Array()        # each ball's radius (Neodymium Boulder makes the cue ball bigger)
+var cue_i := -1                         # which cue ball a strike hits (Ytterbium Twin); -1 = the first
 var board_wells: Array = []             # the board's own gravity wells: [position, strength] (Escape Velocity, Tesla Coil)
 var lorentz: Array = []                 # Lorentz Field: [Rect2, strength]: balls inside curve sideways, faster ones less
 var repel: Array = []                   # Meissner Effect: [[position, reach, strength]]: posts push balls away before contact
@@ -111,6 +113,8 @@ func clone() -> PoolSim:
 	s.pinned = pinned.duplicate()
 	s.extra_wells = extra_wells.duplicate(true)
 	s.board_wells = board_wells.duplicate(true)
+	s.rad = rad.duplicate()
+	s.cue_i = cue_i
 	s.lorentz = lorentz.duplicate()
 	s.repel = repel.duplicate(true)
 	s.pot_pulse = pot_pulse
@@ -132,6 +136,7 @@ func add_ball(number: int, p: Vector2, m: float = 1.0) -> int:
 	pull.append(0.0)
 	bounce.append(0.0)
 	grip.append(1.0)
+	rad.append(R)
 	glide.append(0)
 	pinned.append(0)
 	return pos.size() - 1
@@ -164,7 +169,14 @@ func moving() -> bool:
 
 
 func strike(dir: Vector2, speed: float, follow_amount: float, side_amount: float) -> void:
-	var c := index_of(0)
+	var c := cue_i if cue_i >= 0 and cue_i < num.size() and num[cue_i] == 0 and alive[cue_i] == 1 else -1
+	if c < 0:
+		for k in num.size():
+			if num[k] == 0 and alive[k] == 1:
+				c = k
+				break
+	if c < 0:
+		c = index_of(0)
 	events.clear()
 	time = 0.0
 	for i in rails.size():
@@ -231,9 +243,11 @@ func step(dt: float) -> void:
 			for j in range(i + 1, n):
 				if alive[j] == 0 or i == ghost or j == ghost:
 					continue
+				if (_kind(i) == "phantom" and num[j] != 0) or (_kind(j) == "phantom" and num[i] != 0):
+					continue   # Phantom: only the cue ball can touch it
 				if not mv and vel[j] == Vector2.ZERO:
 					continue
-				var t := _toi_circle(pos[j] - pos[i], vel[j] - vi, R * 2.0)
+				var t := _toi_circle(pos[j] - pos[i], vel[j] - vi, rad[i] + rad[j])
 				if t < best_t:
 					best_t = t
 					kind = 1
@@ -251,8 +265,8 @@ func step(dt: float) -> void:
 					vn = 0.0   # Maxwell's Demon: this ball is let through
 				if vn < 0.0:
 					var d0 := (pos[i] - a).dot(nrm)
-					if d0 > R * 0.25:
-						var t := (d0 - R) / -vn
+					if d0 > rad[i] * 0.25:
+						var t := (d0 - rad[i]) / -vn
 						if t < 0.0:
 							t = 0.0
 						if t < best_t:
@@ -266,7 +280,7 @@ func step(dt: float) -> void:
 								bn = nrm
 								bs = s
 				for e in [a, b]:
-					var t := _toi_circle(e - pos[i], -vi, R)
+					var t := _toi_circle(e - pos[i], -vi, rad[i])
 					if t < best_t:
 						best_t = t
 						kind = 3
@@ -275,7 +289,7 @@ func step(dt: float) -> void:
 						bn = e
 			for k in layout.bumpers.size():
 				var bp: Dictionary = layout.bumpers[k]
-				var t := _toi_circle(bp.pos - pos[i], -vi, R + bp.r)
+				var t := _toi_circle(bp.pos - pos[i], -vi, rad[i] + bp.r)
 				if t < best_t:
 					best_t = t
 					kind = 4
@@ -371,7 +385,10 @@ func _resolve_balls(i: int, j: int) -> void:
 	glide[j] = 0
 	if _kind(j) == "anchor" and not cue_i:
 		mj = 1.0e6
-	var jimp := (1.0 + ball_e) * rel / (1.0 / mi + 1.0 / mj)
+	var be := ball_e
+	if _kind(i) == "spring" or _kind(j) == "spring":
+		be = 1.5   # Spring ball: hits come off it faster than they arrived
+	var jimp := (1.0 + be) * rel / (1.0 / mi + 1.0 / mj)
 	vel[i] -= nrm * (jimp / mi)
 	vel[j] += nrm * (jimp / mj)
 	if (cue_i or cue_j) and not cue_contacted:
@@ -497,7 +514,9 @@ func _forces(dt: float) -> void:
 				var d: Vector2 = p.pos - pos[i]
 				var dl := d.length()
 				if dl < 110.0:
-					v += d / dl * pp * (110.0 - dl) * 9.0 * dt
+					# Like poles repel: a Magnetic ball is pushed away by pockets that are magnets themselves.
+					var sgn := -1.0 if pocket_pull > 0.0 and pull[i] > 0.0 and num[i] != 8 else 1.0
+					v += d / dl * pp * sgn * (110.0 - dl) * 9.0 * dt
 		for w in board_wells:
 			var bd: Vector2 = w[0] - pos[i]
 			var bl := maxf(bd.length(), 40.0)
@@ -661,10 +680,11 @@ func _pot(i: int, k: int) -> void:
 func cast(p: Vector2, d: Vector2, ignore: int, max_len: float = 3000.0, ignore2: int = -1, use_portals: bool = true) -> Dictionary:
 	var best_t := max_len
 	var res := {"kind": "none", "hit": -1, "normal": Vector2.ZERO}
+	var cr := rad[ignore] if ignore >= 0 and ignore < rad.size() else R
 	for j in pos.size():
 		if j == ignore or j == ignore2 or alive[j] == 0 or j == ghost or (ignore >= 0 and ignore == ghost):
 			continue
-		var t := _toi_circle(pos[j] - p, -d, R * 2.0)
+		var t := _toi_circle(pos[j] - p, -d, cr + rad[j])
 		if t < best_t:
 			best_t = t
 			res = {"kind": "ball", "hit": j, "normal": (pos[j] - (p + d * t)).normalized()}
@@ -675,8 +695,8 @@ func cast(p: Vector2, d: Vector2, ignore: int, max_len: float = 3000.0, ignore2:
 		var vn := d.dot(nrm)
 		if vn < 0.0:
 			var d0 := (p - sa).dot(nrm)
-			if d0 > R * 0.25:
-				var t := maxf((d0 - R) / -vn, 0.0)
+			if d0 > cr * 0.25:
+				var t := maxf((d0 - cr) / -vn, 0.0)
 				if t < best_t:
 					var q := p + d * t
 					var u: Vector2 = sb - sa
@@ -685,13 +705,13 @@ func cast(p: Vector2, d: Vector2, ignore: int, max_len: float = 3000.0, ignore2:
 						best_t = t
 						res = {"kind": "rail", "hit": -1, "normal": nrm}
 		for e: Vector2 in [sa, sb]:
-			var t := _toi_circle(e - p, -d, R)
+			var t := _toi_circle(e - p, -d, cr)
 			if t < best_t:
 				best_t = t
 				res = {"kind": "rail", "hit": -1, "normal": (p + d * t - e).normalized()}
 	for bp in layout.bumpers:
 		var bpp: Vector2 = bp.pos
-		var t := _toi_circle(bpp - p, -d, R + float(bp.r))
+		var t := _toi_circle(bpp - p, -d, cr + float(bp.r))
 		if t < best_t:
 			best_t = t
 			res = {"kind": "bumper", "hit": -1, "normal": (p + d * t - bpp).normalized()}
@@ -718,13 +738,14 @@ func cast(p: Vector2, d: Vector2, ignore: int, max_len: float = 3000.0, ignore2:
 
 
 func is_clear_spot(p: Vector2, ignore: int = -1) -> bool:
-	if not layout.contains(p, R):
+	var cr := rad[ignore] if ignore >= 0 and ignore < rad.size() else R
+	if not layout.contains(p, cr):
 		return false
 	for j in pos.size():
-		if j != ignore and alive[j] == 1 and pos[j].distance_to(p) < R * 2.05:
+		if j != ignore and alive[j] == 1 and pos[j].distance_to(p) < (cr + rad[j]) * 1.025:
 			return false
 	for bp in layout.bumpers:
-		if bp.pos.distance_to(p) < bp.r + R * 1.05:
+		if bp.pos.distance_to(p) < bp.r + cr * 1.05:
 			return false
 	return true
 

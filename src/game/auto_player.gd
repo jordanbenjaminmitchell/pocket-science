@@ -16,7 +16,7 @@ static func ctx_for(run: RunState, pw: float, sim: PoolSim = null, is_break: boo
 		"boss": run.current().id, "element_mix": run.element_mix,
 		"anomaly": run.current().anomaly, "heat": run.heat, "power": pw, "shots_taken": run.shots_taken,
 		"catalyst": run.catalyst, "chalk": run.chalk, "money": run.money, "target": run.target(),
-		"empty_slots": RunState.MAX_PERKS - run.perks.size(), "pockets_used": run.pockets_used}
+		"empty_slots": run.perk_slots() - run.perks.size(), "pockets_used": run.pockets_used}
 
 
 static func candidates(sim: PoolSim, run: RunState) -> Array:

@@ -29,6 +29,8 @@ static func start_chain(ctx: Dictionary) -> float:
 		c += 0.25 * int(ctx.get("specials", 0))
 	if perks.has("missing"):
 		c += minf(3.0, 0.5 * int(ctx.get("removed", 0)))
+	if ctx.get("beacon", false):
+		c += 2.0   # Americium Beacon
 	return c
 
 
@@ -41,8 +43,6 @@ static func chain_step(e: Dictionary, ctx: Dictionary, contacted: bool) -> float
 	var add := 0.0
 	match e.type:
 		"ball":
-			if (e.a == 8 or e.b == 8) and perks.has("kissblack"):
-				add += 0.75
 			for n in [e.a, e.b]:
 				if imbues.get(n, "") == "spark":
 					add += 1.0
@@ -66,7 +66,7 @@ static func chain_step(e: Dictionary, ctx: Dictionary, contacted: bool) -> float
 			elif boss == "lattice":
 				add += 0.25
 		"portal":
-			if boss == "erbridge" or boss == "mobius":
+			if boss == "erbridge" or boss == "mobius" or ctx.get("portal_chain", false):
 				add += 1.0
 	return add
 
@@ -123,7 +123,7 @@ static func score(ctx: Dictionary) -> Dictionary:
 	var out := {
 		"lines": [], "total": 0, "money": 0, "chain": 1.0, "heat_gain": 0,
 		"potted": pots.map(func(p): return p.a), "scratch": scratch, "foul": "", "scored": false,
-		"first_contact": first_contact, "shattered": [], "catalyst_gain": 0.0, "perk_used": [],
+		"first_contact": first_contact, "shattered": [], "catalyst_gain": 0.0, "perk_used": [], "recur": [], "echo_src": [], "recharge": 0, "chalk_gain": 0, "cleans": 0,
 		"power": ctx.get("power", 0.5), "is_break": ctx.get("is_break", false),
 		"banks": 0, "max_rails": 0, "combos": 0, "kick": kick, "hot_pots": 0, "pocket_list": [],
 		"element_mix": ctx.get("element_mix", []),
@@ -177,10 +177,10 @@ static func score(ctx: Dictionary) -> Dictionary:
 
 static func _charge_eight(ctx: Dictionary, out: Dictionary) -> void:
 	var perks: Array = ctx.get("perks", [])
-	if perks.has("eight"):
+	if perks.has("eight") or ctx.get("safe8", false):
 		return
 	if perks.has("hushmoney"):
-		out.eight_fine = 3
+		out.eight_fine = -3   # Silver Tongue: it pays you instead
 	else:
 		out.penalty = int(ceil(float(ctx.get("target", 0)) * Catalog.EIGHT_PENALTY))
 
@@ -217,6 +217,10 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 	var coin_hits := {}
 	var last_touch := {}
 	var used_before: Dictionary = ctx.get("perk_used", {})
+	var radiant_on := false
+	for b in ctx.get("on_table", []):
+		if imbues.get(int(b), "") == "radiant":
+			radiant_on = true
 	out.perk_used = []
 	var boomerang: bool = ctx.has("cue_start") and ctx.has("cue_end") and (ctx.cue_start as Vector2).distance_to(ctx.cue_end) <= 120.0
 	for e in events:
@@ -242,7 +246,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 				out.heat_gain += 3
 				stirred = true
 			# An early 8 earns nothing unless a Perk says it does.
-			if not (perks.has("eight") or perks.has("darkhorse")):
+			if not (perks.has("eight") or perks.has("darkhorse") or ctx.get("safe8", false)):
 				continue
 		var kind := Catalog.kind_of(n)
 		var prism: bool = kind == "prism"
@@ -258,11 +262,11 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			"bank": rails > 0, "combo": by != 0, "clean": rails == 0 and by == 0 and not kick,
 			"first": idx == 0, "extra": idx >= 1, "kick": kick, "triple": pots.size() >= 3,
 			"repeat_pocket": seen_pocket.has(k) or (seen_pocket.is_empty() and k == int(ctx.get("last_pocket", -1))), "soft": float(ctx.get("power", 0.5)) <= 0.35,
-			"prime": Catalog.PRIMES.has(n) or Catalog.PRIMES.has(face), "fib": [1, 2, 3, 5, 8, 13].has(n) or [1, 2, 3, 5, 8, 13].has(face),
+			"prime": Catalog.PRIMES.has(n) or RunState._is_prime(face), "fib": [1, 2, 3, 5, 8, 13].has(n) or [1, 2, 3, 5, 8, 13].has(face),
 			"lowest": n == int(ctx.get("lowest", -1)), "highest": n == int(ctx.get("highest", -1)),
 			"heat3": heat >= 3, "on_fire": heat >= 5, "cold": heat == 0,
 			"low3": (n >= 1 and n <= 3) or (face >= 1 and face <= 3), "high3": (n >= 13 and n <= 15) or (face >= 13 and face <= 15), "last_chalk": int(ctx.get("chalk", 99)) == 1, "third": int(ctx.get("shots_taken", 0)) % 3 == 2,
-			"boomerang": boomerang, "long": _long_pot(ctx, n, e), "item_shot": ctx.get("item_shot", false),
+			"boomerang": boomerang, "long": _long_pot(ctx, n, e), "item_shot": ctx.get("item_shot", false), "kiss8": int(out.get("first_contact", -1)) == 8 and not ctx.get("is_break", false),
 			"follow_shot": float(ctx.get("follow", 0.0)) > 0.2, "draw_shot": float(ctx.get("follow", 0.0)) < -0.2,
 			"last_eight": n == 8 and left_after == 0, "no_eight_touch": not toucher.has(8),
 			"eight_count": (int(ctx.get("total_pots", 0)) + idx + 1) % 8 == 0,
@@ -291,8 +295,8 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			tags.append("Rotation")
 			steps.append({"op": "+", "v": float(Catalog.ball_points(int(ctx.highest), weight) - Catalog.ball_points(n, weight)), "src": "perk:rotation", "label": "Rotation"})
 		if perks.has("thinrack") and int(ctx.get("removed", 0)) > 0:
-			value += 12.0 * int(ctx.get("removed", 0))
-			steps.append({"op": "+", "v": 12.0 * int(ctx.get("removed", 0)), "src": "perk:thinrack", "label": "Thin Rack"})
+			value += 1.0 * int(ctx.get("removed", 0))
+			steps.append({"op": "+", "v": 1.0 * int(ctx.get("removed", 0)), "src": "perk:thinrack", "label": "Thinning"})
 		var pre_chain := 0.0
 		var x := 1.0
 		for id in perks:
@@ -332,6 +336,8 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			snap = [value, x, pre_chain]
 		if by != 0:
 			out.combos += 1
+		if facts.clean:
+			out.cleans += 1
 		if k == hot or all_hot:
 			x *= 3.0 if perks.has("heat") else 2.0
 			tags.append("Hot pocket")
@@ -370,7 +376,31 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		_step(steps, Catalog.PERKS[suit_src].name if suit_src != "" else "Suits", "perk:" + suit_src, snap, value, x, pre_chain)
 		snap = [value, x, pre_chain]
 		# Imbues.
+		if imbues.has(n):
+			out.echo_src.append(n)   # Europium Echo spreads it
+		if radiant_on and imbues.get(n, "") != "radiant":
+			value += 5.0   # a Radiant ball on the table
 		match imbues.get(n, ""):
+			"recurring":
+				out.recur.append(n)
+			"slick":
+				value += 10.0
+			"rubber":
+				value += 5.0 * int(e.get("rails", 0))
+			"tithed":
+				money += mini(5, remaining.size())
+			"catalytic":
+				out.recharge += 1
+			"chalked":
+				out.chalk_gain += 1
+			"excited":
+				if int(out.get("first_contact", -1)) == n:
+					out.heat_gain += 1
+			"polarized":
+				x *= 3.0 if (k == hot or all_hot) else 0.5
+			"isolated":
+				if facts.last_solid or facts.last_stripe:
+					x *= 2.5
 			"gold":
 				money += 1 + mini(int(imbue_level.get(n, imbue_level.get(str(n), 0))), 4)
 				out.gilded_sunk.append(n)
@@ -427,6 +457,15 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		snap = [value, x, pre_chain]
 		# Exotic balls.
 		match kind:
+			"piggy":
+				money += mini(6, int(ctx.get("shots_taken", 0)))
+			"jackpot":
+				if rng != null:
+					money += 10 if rng.randf() < 1.0 / 6.0 else 1
+			"pinball":
+				value += 10.0 * int(e.get("rails", 0))
+			"fuse":
+				out.heat_gain += idx
 			"gold":
 				money += int(e.get("rails", 0))
 			"glass":
@@ -466,8 +505,8 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 					out.lost_balls.append(victim)
 		if void_shot and kind != "void":
 			x *= 2.0
-		if kind != "" and perks.has("goldrush"):
-			x *= 2.0
+		if kind != "" and kind != "numeral" and perks.has("goldrush"):
+			x *= 1.5
 		_step(steps, Catalog.BALL_TYPES[kind].name if kind != "" else ("Void" if void_shot else "Special"), "ball", snap, value, x, pre_chain)
 		snap = [value, x, pre_chain]
 		if ctx.get("loan", false):
@@ -550,10 +589,6 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		if hm != 1.0:
 			steps.append({"op": "×", "v": hm, "src": "heat", "label": "Heat"})
 		var pts := value * chain * hm * x
-		if idx == 0 and perks.has("echo"):
-			pts *= 2.0
-			tags.append("Double Take")
-			steps.append({"op": "×", "v": 2.0, "src": "perk:echo", "label": "Double Take"})
 		var pays := int(floor(pts))
 		total += pays
 		out.lines.append({
