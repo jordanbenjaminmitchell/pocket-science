@@ -212,9 +212,7 @@ func _go() -> void:
 	en.advance_table()
 	check(en.current().boss and en.current().anomaly != "", "every second endless table is a boss")
 	check(en.target() > tgs[0], "targets keep climbing")
-	var c_now := en.max_chalk()
-	en.table_index += 8
-	check(en.max_chalk() < c_now and en.max_chalk() >= 2, "endless wears chalk down to a floor of 2 (%d)" % en.max_chalk())
+	check(en.max_chalk() == RunState.MAX_CHALK and en.start_chalk() == RunState.BASE_CHALK, "Chalk: start with 6, hold at most 12")
 	for i in 30:
 		en.advance_table()
 		en.begin_table()

@@ -5,6 +5,9 @@ extends RefCounted
 
 const MAX_PERKS := 6
 const BASE_CHALK := 6
+## Chalk now travels with you from table to table: you start with BASE_CHALK,
+## each cleared table adds one, and you can never hold more than MAX_CHALK.
+const MAX_CHALK := 12
 
 var seed_value := 0
 var cue := "maple"
@@ -34,6 +37,7 @@ var hot_pocket := 0
 var racks_cleared := 0
 var bounty := ""
 var bounty_done := false
+var bet_cap := 0   # this table's stake, capped at what you could afford when it was dealt (0: not capped)
 var bet_state := "offer"         # offer, taken, passed, won (the stake is lost if a taken bet is never won)
 var bet_peeked := false
 var element_mix: Array = []   # (old Element Table; kept so old saves load)
@@ -169,7 +173,8 @@ func begin_table() -> void:
 	clock_pos = 0
 	clock_streak = 0
 	forgiven = false
-	chalk = max_chalk()
+	if table_index == 0:
+		chalk = start_chalk()   # Chalk carries over; only a new run starts fresh
 	pockets_used = []
 	shrink_steps = 0
 	insured_used = 0
@@ -198,6 +203,12 @@ func begin_table() -> void:
 	while hot_pocket < 0 and (bounty == "hot" or bounty == "hot2"):   # no hot pocket here to aim at
 		bounty = keys[rng.randi_range(0, keys.size() - 1)]
 	bounty_done = false
+	# Never deal a bet you can't afford: the stake is capped at your money, and
+	# with less than the smallest stake ($2) there is no side bet this table.
+	var full_stake := int(Catalog.BET_STAKES[mini(table_index, Catalog.BET_STAKES.size() - 1)])
+	bet_cap = mini(full_stake, money)
+	if bet_cap < MIN_BET:
+		bounty = ""   # bet_open() is false with no bounty
 	bet_state = "offer"
 	bet_peeked = false
 	if perks.has("tinkerer") and not tools.is_empty():
@@ -205,20 +216,26 @@ func begin_table() -> void:
 		tool_charges[lucky] = int(tool_charges.get(lucky, 0)) + 1   # one extra use this table
 
 
+## The most Chalk you can hold.
 func max_chalk() -> int:
-	var c := BASE_CHALK + (1 if perks.has("chalk") else 0)
-	c += int(Catalog.CUES.get(cue, Catalog.CUES.maple).chalk)
+	return MAX_CHALK
+
+
+## What a new run starts with: 6, less one for some cues and for the Short Chalk handicap.
+func start_chalk() -> int:
+	var c := BASE_CHALK + int(Catalog.CUES.get(cue, Catalog.CUES.maple).chalk)
 	if handicap >= 2:
 		c -= 1
-	# Endless wears you down: one less Chalk every four tables past the last.
-	if table_index >= plan.size():
-		c -= int((table_index - plan.size() + 1) / 4)
 		return maxi(c, 2)
 	return maxi(c, 1)
 
 
+const MIN_BET := 2
+
+
 func bet_stake() -> int:
-	return int(Catalog.BET_STAKES[mini(table_index, Catalog.BET_STAKES.size() - 1)])
+	var full := int(Catalog.BET_STAKES[mini(table_index, Catalog.BET_STAKES.size() - 1)])
+	return mini(full, bet_cap) if bet_cap > 0 else full
 
 
 ## Winnings as a multiple of the stake: 1x/2x/3x by tier, +0.5x every three tables.
@@ -234,7 +251,7 @@ func bounty_reward() -> int:
 
 
 func bet_open() -> bool:
-	return bet_state == "offer" and shots_taken == 0
+	return bounty != "" and bet_state == "offer" and shots_taken == 0
 
 
 func peek_bet() -> bool:
@@ -647,7 +664,7 @@ func use_state_item(id: String) -> bool:
 		"slip":
 			if not last_chalk_lost:
 				return false
-			chalk += 1
+			chalk = mini(MAX_CHALK, chalk + 1)
 			last_chalk_lost = false
 		_:
 			return false
@@ -696,6 +713,8 @@ func payout() -> Array:
 
 
 func advance_table() -> void:
+	# Each cleared table adds a Chalk (Calcium Chalk adds one more).
+	chalk = mini(MAX_CHALK, chalk + 1 + (1 if perks.has("chalk") else 0))
 	table_index += 1
 	if table_index >= plan.size():
 		endless = true
@@ -885,6 +904,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 	next_all_hot = false
 	next_magnet = false
 	var out := {"cleared": false, "over": false, "rack_cleared": false, "ball_in_hand": not cue_on_table, "chalk_lost": false}
+	var chalk_cost := 0
 	if res.scored:
 		var hot_before := hot_pocket
 		if not bounty_done and bounty_met(res, hot_before):
@@ -910,7 +930,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 			frost_shield = true
 		if res.get("heart", false) and not heart_used:
 			heart_used = true
-			chalk += 1
+			chalk = mini(MAX_CHALK, chalk + 1)
 			out["heart"] = true
 		for n in res.get("lost_balls", []):
 			remove_ball(int(n))
@@ -937,10 +957,11 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 			out["forgiven"] = true
 		if not free_break and not soft and insured:
 			insured_used += 1
-		if not free_break and not soft and not insured and not excused and not res.get("safe", false):
-			chalk -= 2 if perks.has("glasscannon") else 1
-			last_chalk_lost = true
-			out.chalk_lost = true
+		if not free_break and not soft and not insured and not excused:
+			# A miss costs 1 Chalk; a scratch, or the 8 going in early, costs 2.
+			chalk_cost = 2 if res.foul == "Scratch" or res.foul == "The 8 went early" else 1
+			if perks.has("glasscannon"):
+				chalk_cost += 1   # Astatine Edge: every foul costs one more
 		if frost_shield:
 			frost_shield = false   # Frost: this miss keeps the Heat
 		else:
@@ -952,6 +973,14 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 			if imbues[n] == "heavy":
 				imbue_level.erase(n)   # Weighted drops back to ×3
 		element_mix = []
+	# The 8 going in early costs 2 Chalk even when the shot scored (Carbon Core makes it safe).
+	if res.get("eight_early", false) and not perks.has("eight"):
+		chalk_cost = maxi(chalk_cost, 2)
+	if chalk_cost > 0 and not res.get("safe", false):
+		chalk -= chalk_cost
+		last_chalk_lost = true
+		out.chalk_lost = true
+		out["chalk_cost"] = chalk_cost
 	score = maxi(0, score - int(res.get("penalty", 0)))
 	money = maxi(0, money - int(res.get("eight_fine", 0)))
 	if current().anomaly == "shrink":
@@ -968,7 +997,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		hot_pocket = int(res.new_hot)   # Ember chose it
 	if balls_left == 0:
 		racks_cleared += 1
-		chalk += 1
+		chalk = mini(MAX_CHALK, chalk + 1)
 		out.rack_cleared = true
 	return out
 
@@ -1178,7 +1207,7 @@ func to_dict() -> Dictionary:
 		d["table"] = {
 			"score": score, "chalk": chalk, "heat": heat, "shots_taken": shots_taken,
 			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "element_mix": element_mix, "clock_pos": clock_pos, "clock_streak": clock_streak,
-			"forgiven": forgiven, "bounty": bounty, "bounty_done": bounty_done, "bet_state": bet_state, "bet_peeked": bet_peeked,
+			"forgiven": forgiven, "bounty": bounty, "bounty_done": bounty_done, "bet_cap": bet_cap, "bet_state": bet_state, "bet_peeked": bet_peeked,
 			"pockets_used": pockets_used, "shrink_steps": shrink_steps, "insured_used": insured_used,
 				"solid_run": solid_run, "stripe_run": stripe_run, "mods": table_mods,
 				"frost": frost_shield, "heart_used": heart_used, "tool_charges": tool_charges, "chalk_lost": last_chalk_lost,
@@ -1326,8 +1355,9 @@ func load_dict(d: Dictionary) -> bool:
 		clock_streak = int(t.get("clock_streak", 0))
 		forgiven = bool(t.get("forgiven", false))
 		var b := str(t.get("bounty", bounty))
-		if Catalog.BOUNTIES.has(b):
+		if Catalog.BOUNTIES.has(b) or b == "":
 			bounty = b
+		bet_cap = int(t.get("bet_cap", 0))
 		bounty_done = bool(t.get("bounty_done", false))
 		bet_state = str(t.get("bet_state", "passed"))
 		bet_peeked = bool(t.get("bet_peeked", false))

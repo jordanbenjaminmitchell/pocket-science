@@ -19,7 +19,7 @@ const TERMS := {
 	"kick": {"title": "Kick shot", "text": "The cue ball hits a cushion before it touches any ball, often to get round a blocker."},
 	"clean": {"title": "Clean sink", "text": "A sink straight from the cue ball, with no cushions or other balls involved."},
 	"hot": {"title": "Hot pocket", "text": "The glowing pocket, which scores ×2 and moves after each shot."},
-	"chalk": {"title": "Chalk", "text": "Your lives on a table: a miss or scratch costs one, and at zero the run ends."},
+	"chalk": {"title": "Chalk", "text": "Your lives for the whole run: a miss costs 1, a scratch or early 8 costs 2, and clearing a table gives 1."},
 	"scratch": {"title": "Scratch", "text": "Knocking the cue ball into a pocket."},
 	"miss": {"title": "Miss", "text": "A shot that sinks nothing."},
 	"break": {"title": "Break", "text": "The first shot at a fresh rack."},

@@ -210,7 +210,9 @@ func sink(i: int, k: int) -> void:
 		return
 	b.sinking = true
 	var target: Vector2 = layout.pockets[k].pos
-	var tw := create_tween()
+	# The tween belongs to the ball, so it stops if the ball is freed mid-drop
+	# (a cleared rack is re-racked while its last ball is still falling).
+	var tw := b.create_tween()
 	tw.set_parallel(true)
 	tw.tween_method(func(p: Vector2): b.roll_to(p), b.position, target, 0.14)
 	tw.tween_property(b, "scale", Vector2(0.62, 0.62), 0.22)

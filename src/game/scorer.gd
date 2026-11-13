@@ -144,6 +144,7 @@ static func score(ctx: Dictionary) -> Dictionary:
 	var left_after := int(ctx.get("objects", 99)) - pots.size()
 	var eight_early: bool = pots.any(func(p): return p.a == 8) and left_after > 0 and not ctx.get("is_break", false) and anomaly != "cursed8"
 	if eight_early:
+		out["eight_early"] = true   # costs 2 Chalk in RunState unless Carbon Core makes it safe
 		_charge_eight(ctx, out)
 	if scratch and not (perks_of(ctx).has("followthru") and pots.size() >= 2):
 		out.foul = "Scratch"

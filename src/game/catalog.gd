@@ -28,7 +28,7 @@ const PERKS := {
 	"corner": {"name": "Curium Corner", "z": 96, "r": 0, "cost": 4, "fam": "pocket", "desc": "Corner pockets add +0.5 Chain as the ball sinks.", "fx": {"when": "corner", "chain": 0.5}},
 	"side": {"name": "Strontium Firework", "z": 38, "r": 0, "cost": 5, "fam": "pocket", "desc": "Side pockets score ×2.", "fx": {"when": "side", "x": 2.0}},
 	"lever": {"name": "Tungsten Core", "z": 74, "r": 0, "cost": 5, "fam": "stripe", "desc": "Stripes weigh 140% and lose no speed off cushions: they plough on through other balls."},
-	"chalk": {"name": "Calcium Chalk", "z": 20, "r": 0, "cost": 5, "fam": "utility", "desc": "+1 Chalk on every table."},
+	"chalk": {"name": "Calcium Chalk", "z": 20, "r": 0, "cost": 5, "fam": "utility", "desc": "Clearing a table gives +1 extra Chalk."},
 	"jaws": {"name": "Titanium Jaws", "z": 22, "r": 0, "cost": 6, "fam": "pocket", "desc": "Pockets are 12% wider."},
 	"lens": {"name": "Selenium Lens", "z": 34, "r": 0, "cost": 4, "fam": "utility", "desc": "Long sinks (the ball travels 450+) add +1 Chain.", "fx": {"when": "long", "chain": 1.0}},
 	"bank": {"name": "Platinum Rail", "z": 78, "r": 1, "cost": 6, "fam": "bank", "desc": "Bank sinks add +1 Chain per cushion."},
@@ -91,7 +91,7 @@ const PERKS := {
 	"hunter": {"name": "Scandium Hustle", "z": 21, "r": 0, "cost": 4, "fam": "money", "desc": "Side bets you win pay double."},
 	"coupon": {"name": "Cadmium Chill", "z": 48, "r": 0, "cost": 4, "fam": "heat", "desc": "At Heat 0, every sink scores ×2.", "fx": {"when": "cold", "x": 2.0}},
 	"overflow": {"name": "Neptunium Tide", "z": 93, "r": 1, "cost": 5, "fam": "money", "desc": "Points over a table's target carry into the next table (up to 25% of its target)."},
-	"glasscannon": {"name": "Astatine Edge", "z": 85, "r": 2, "cost": 8, "fam": "risk", "desc": "Every sink scores ×2, but misses and scratches cost 2 Chalk.", "fx": {"when": "any", "x": 2.0}},
+	"glasscannon": {"name": "Astatine Edge", "z": 85, "r": 2, "cost": 8, "fam": "risk", "desc": "Every sink scores ×2, but every miss and foul costs 1 more Chalk.", "fx": {"when": "any", "x": 2.0}},
 	"minimalist": {"name": "Iridium Flame", "z": 77, "r": 2, "cost": 8, "fam": "heat", "desc": "While On fire (Heat 5+), every sink scores ×2.", "fx": {"when": "on_fire", "x": 2.0}},
 	"echo": {"name": "Europium Double", "z": 63, "r": 2, "cost": 9, "fam": "risk", "desc": "The first sink of every shot scores twice."},
 	"featherweight": {"name": "Hydrogen Balloon", "z": 1, "r": 1, "cost": 6, "fam": "physics", "desc": "Object balls are 30% lighter: they float further when struck."},
@@ -236,7 +236,7 @@ static func ball_label(n: int) -> String:
 const CUES := {
 	"maple": {"name": "Classic Maple", "desc": "The all-rounder. $6 to start.", "money": 6, "perks": [], "chalk": 0,
 		"shaft": Color(0.86, 0.72, 0.5), "butt": Color(0.32, 0.14, 0.07), "accent": Color(0.9, 0.85, 0.7)},
-	"hotrod": {"name": "Hot Rod", "desc": "Starts with Magnesium Torch (hot pocket ×3), but every table has 1 less Chalk. $4.", "money": 4, "perks": ["heat"], "chalk": -1,
+	"hotrod": {"name": "Hot Rod", "desc": "Starts with Magnesium Torch (hot pocket ×3), but you start with 1 less Chalk. $4.", "money": 4, "perks": ["heat"], "chalk": -1,
 		"shaft": Color(0.85, 0.7, 0.5), "butt": Color(0.6, 0.12, 0.05), "accent": Color(1.0, 0.55, 0.1)},
 	"gilded": {"name": "Gilded Cue", "desc": "Starts rich: $12 and Palladium Vault.", "money": 12, "perks": ["venture"], "chalk": 0,
 		"shaft": Color(0.92, 0.82, 0.55), "butt": Color(0.45, 0.32, 0.08), "accent": Color(1.0, 0.85, 0.3)},
@@ -248,7 +248,7 @@ const CUES := {
 		"shaft": Color(0.3, 0.3, 0.32), "butt": Color(0.05, 0.05, 0.06), "accent": Color(0.82, 0.8, 0.98)},
 	"alchemist": {"name": "Alchemist's Cue", "desc": "Starts with a Gold ball in your set, and Ruthenium Nugget: special balls score ×2. $3.", "money": 3, "perks": ["goldrush"], "chalk": 0, "add": ["gold"],
 		"shaft": Color(0.95, 0.86, 0.6), "butt": Color(0.4, 0.2, 0.5), "accent": Color(1.0, 0.8, 0.3)},
-	"glass": {"name": "Glass Cue", "desc": "Starts with Astatine Edge (every sink ×2, misses cost 2 Chalk). 1 less Chalk. $4.", "money": 4, "perks": ["glasscannon"], "chalk": -1,
+	"glass": {"name": "Glass Cue", "desc": "Starts with Astatine Edge (every sink ×2, fouls cost 1 more Chalk). Start with 1 less Chalk. $4.", "money": 4, "perks": ["glasscannon"], "chalk": -1,
 		"shaft": Color(0.85, 0.92, 1.0), "butt": Color(0.55, 0.7, 0.9), "accent": Color(1.0, 0.35, 0.65)},
 	# Object cues: each carries one placeable object, 4 uses every table, and a Perk that plays with it.
 	"posts": {"name": "Post Cue", "desc": "Carries 4 Fixed Points every table, and starts with Potassium Kick: bounce the cue off a post first for ×2. $2.", "money": 2, "perks": ["kick"], "chalk": 0, "kit": "post",
@@ -317,7 +317,7 @@ const BOSSES := {
 	"lights": {"name": "Lights Out", "tier": 3, "lab": "current", "anomaly": "blind", "desc": "With the lights out, no pocket runs hot. Every sink scores ×1.5."},
 	"hustler": {"name": "The Hustler", "tier": 3, "lab": "magnetlab", "anomaly": "heavycue", "desc": "A heavy cue ball, and the house skims 15% of every sink."},
 	"elements": {"name": "The Clockwork Table", "tier": 9, "lab": "element", "anomaly": "elements", "desc": "The pockets are numbered 1 to 6, clockwise. Sink into the next one in order to tick the clock: ticks in a row score ×1.5, ×2, ×2.5 and on. Any other pocket stops the clock."},
-	"final": {"name": "The Grand Final", "tier": 9, "lab": "final", "anomaly": "cursed8", "desc": "The 8 goes last. Sink it early and lose a Chalk; sink it last for ×5."},
+	"final": {"name": "The Grand Final", "tier": 9, "lab": "final", "anomaly": "cursed8", "desc": "The 8 goes last. Sink it early and lose 2 Chalk; sink it last for ×5."},
 }
 
 ## Shaped tables: polygon corners in the 1000 x 500 frame, the six pockets in
@@ -374,7 +374,7 @@ const BET_STAKES := [4, 4, 8, 8, 12, 12, 16, 16, 20]
 const HANDICAPS := [
 	{"name": "Scratch Player", "desc": "The game as designed."},
 	{"name": "Worn Cloth", "desc": "Table targets are 15% higher."},
-	{"name": "Short Chalk", "desc": "1 less Chalk on every table."},
+	{"name": "Short Chalk", "desc": "Start with 1 less Chalk."},
 	{"name": "Dear Prices", "desc": "Everything in the Pro Shop costs $1 more."},
 	{"name": "Narrow Jaws", "desc": "Pockets are 5% narrower."},
 	{"name": "Hall of Fame", "desc": "Table targets are 30% higher again."},

@@ -53,6 +53,32 @@ func _initialize() -> void:
 	var hit := {"scored": true, "foul": "", "total": 30, "money": 1, "catalyst_gain": 0.0, "potted": [1], "shattered": [], "lines": []}
 	o = run.apply_shot(hit, false, 0, true)
 	check(o.rack_cleared and run.chalk == RunState.BASE_CHALK and run.heat == 1, "clearing the rack refunds chalk")
+	# Chalk carries over: a scratch costs 2, a cleared table gives 1 back, never above 12.
+	var ch := RunState.new()
+	ch.start(7)
+	ch.begin_table()
+	ch.forgiven = true
+	var c1 := ch.chalk
+	var o2 := ch.apply_shot({"scored": false, "foul": "Scratch", "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [], "shattered": []}, false, 9, false)
+	check(ch.chalk == c1 - 2 and int(o2.get("chalk_cost", 0)) == 2, "a scratch costs 2 Chalk")
+	var c2 := ch.chalk
+	ch.advance_table()
+	ch.begin_table()
+	check(ch.chalk == c2 + 1, "Chalk carries to the next table, plus 1 for clearing (%d)" % ch.chalk)
+	ch.chalk = 12
+	ch.advance_table()
+	check(ch.chalk == 12, "never more than 12")
+	var ca := RunState.new()
+	ca.start(7)
+	ca.perks.assign(["chalk"])
+	ca.begin_table()
+	var c3 := ca.chalk
+	ca.advance_table()
+	check(ca.chalk == c3 + 2, "Calcium Chalk: +1 extra for each clear")
+	var hr := RunState.new()
+	hr.start(7, "hotrod")
+	hr.begin_table()
+	check(hr.chalk == RunState.BASE_CHALK - 1, "Hot Rod starts with 1 less Chalk")
 	run.score = run.target() - 1
 	o = run.apply_shot(hit, false, 5, true)
 	check(o.cleared, "reaching the target clears the table")
@@ -88,6 +114,25 @@ func _initialize() -> void:
 	check(ob.has("bounty") and b.money == m0 + 4 + 8 and b.bet_state == "won", "a won Medium bet returns the stake plus 2× it ($12)")
 	ob = b.apply_shot(two, false, 3, true)
 	check(not ob.has("bounty") and b.money == m0 + 12, "and pays only once")
+	# Never a bet you can't afford.
+	var poor := RunState.new()
+	poor.start(3)
+	poor.money = 3
+	poor.begin_table()
+	check(poor.bounty != "" and poor.bet_stake() == 3, "with $3, the $4 stake is cut to $3")
+	check(poor.take_bet() and poor.money == 0, "and you can take it")
+	var broke := RunState.new()
+	broke.start(3)
+	broke.money = 1
+	broke.begin_table()
+	check(broke.bounty == "" and not broke.take_bet() and broke.bounty_met({"potted": [1, 2]}, -1) == false, "with $1 there is no side bet")
+	var saved := RunState.new()
+	saved.start(3)
+	saved.money = 3
+	saved.begin_table()
+	var copy := RunState.new()
+	copy.load_dict(saved.to_dict())
+	check(copy.bet_stake() == 3, "the capped stake survives a save")
 	var nb := RunState.new()
 	nb.start(3)
 	nb.begin_table()
@@ -98,6 +143,7 @@ func _initialize() -> void:
 	var lb := RunState.new()
 	lb.start(3)
 	lb.table_index = 6
+	lb.money = 50
 	lb.begin_table()
 	lb.bounty = "triple"
 	check(lb.bet_stake() == 16 and is_equal_approx(lb.bet_multiple(), 4.0), "a Hard bet on table 7 pays 4× a $16 stake")

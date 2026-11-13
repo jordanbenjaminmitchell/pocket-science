@@ -109,7 +109,7 @@ const TILES := {
 	"perk:tracer": {"sym": "Ra", "stat": "Cue rails +0.25 Chain", "letter": "trace"},
 	# Utility
 	"perk:lever": {"sym": "W", "stat": "Stripes 140%, keep speed", "letter": "core"},
-	"perk:chalk": {"sym": "Ca", "stat": "+1 Chalk a table", "letter": "chalky"},
+	"perk:chalk": {"sym": "Ca", "stat": "+1 Chalk a clear", "letter": "chalky"},
 	"perk:lens": {"sym": "Se", "stat": "Long sinks +1 Chain", "letter": "lens"},
 	"perk:insurance": {"sym": "Ar", "stat": "2 free misses a table", "letter": "shield"},
 	"perk:oracle": {"sym": "Te", "stat": "See a shot's score", "letter": "eye"},
@@ -122,7 +122,7 @@ const TILES := {
 	# Risk & scaling
 	"perk:catalyst": {"sym": "Be", "stat": "Every sink: all +0.75", "letter": "snowball"},
 	"perk:golden": {"sym": "Fe", "stat": "First sink ×2", "letter": "drip"},
-	"perk:glasscannon": {"sym": "At", "stat": "Sinks ×2, misses cost 2", "letter": "chips"},
+	"perk:glasscannon": {"sym": "At", "stat": "Sinks ×2, fouls cost +1", "letter": "chips"},
 	"perk:echo": {"sym": "Eu", "stat": "First sink counts twice", "letter": "double"},
 	# Clearing your set
 	"perk:thinrack": {"sym": "Tm", "stat": "Removed balls: all +12", "letter": "thin"},

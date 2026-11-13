@@ -217,6 +217,14 @@ func _go() -> void:
 	_tap(cue_scr + Vector2(0, -200), false)
 	await _frames(2)
 	check(g.state == g.S.AIM and not g.dragging, "lifting the finger does not shoot")
+	# A quick tap: the finger goes down and lifts within the same frame.
+	_tap(cue_scr + Vector2(-200, 0), true)
+	_tap(cue_scr + Vector2(-200, 0), false)
+	await _frames(2)
+	check(g.aim_dir.x < -0.9, "a quick tap aims the shot at the finger (%s)" % g.aim_dir)
+	_tap(cue_scr + Vector2(0, -200), true)
+	_tap(cue_scr + Vector2(0, -200), false)
+	await _frames(2)
 	var locked: Vector2 = g.aim_dir
 	_tap_move(cue_scr + Vector2(200, 0))
 	await _frames(2)

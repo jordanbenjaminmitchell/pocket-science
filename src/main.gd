@@ -91,6 +91,7 @@ var lbl_heat: Label
 var lbl_line: Label
 var lbl_money: Label
 var chalk_pips: ChalkPips
+const CHALK_TIP := "Chalk lasts the whole run: a miss costs 1, a scratch or sinking the 8 early costs 2. Each table you clear gives 1 back, up to 12."
 var spin_w: SpinWidget
 var power_w: PowerMeter
 var lbl_hint: Label
@@ -202,7 +203,16 @@ func _new_rack() -> void:
 ## Dealt face down each table. Bet the stake blind, peek for half the stake,
 ## or pass; the first shot closes the betting.
 func _refresh_bet() -> void:
-	if lbl_bounty == null or run.bounty == "":
+	if lbl_bounty == null:
+		return
+	if run.bounty == "":
+		# No side bet this table (you couldn't afford one): hide last table's card.
+		lbl_bounty.visible = false
+		for c in bet_row.get_children():
+			bet_row.remove_child(c)
+			c.queue_free()
+		bet_row.visible = false
+		_hide_bet_zoom()
 		return
 	var bt: Dictionary = Catalog.BOUNTIES[run.bounty]
 	# A bet you have taken is always shown: you need to know what you are playing for.
@@ -1576,6 +1586,18 @@ func _mouse_table() -> Vector2:
 	return (mouse_pos - view.base_position) / TABLE_SCALE
 
 
+## Touch, Point aim: turn the shot to face the finger on the table at once.
+func _point_at_finger() -> void:
+	if sim == null or settings.fine_drag or plan_lock or fine_aim or pad_active or not _mouse_over_table():
+		return
+	var ci := _cue_index()
+	var m := _mouse_table()
+	if m.distance_to(sim.pos[ci]) > 4.0:
+		aim_dir = (m - sim.pos[ci]).normalized()
+		guide_dirty = true
+		forecast_dirty = true
+
+
 var last_aim_mouse := Vector2.INF
 var aim_hold_t := 0.0
 const AIM_HOLD := 0.25
@@ -2170,6 +2192,8 @@ func _settled() -> void:
 		var msg: String = result.foul
 		if result.foul == Scorer.EIGHT_FOUL:
 			msg += " - lose %d points" % result.penalty if result.penalty > 0 else (" - pay $%d" % result.eight_fine if result.eight_fine > 0 else "")
+			if not run.perks.has("eight"):
+				msg += " and 2 chalk"
 		elif free_break:
 			msg = "Dry break - no penalty"
 		elif insured:
@@ -2177,7 +2201,8 @@ func _settled() -> void:
 		elif run.current().id == "local" and not run.forgiven and result.foul != "Wrong pocket" and result.foul != "Wrong ball first":
 			msg += " - the house lets this one go"
 		else:
-			msg += " - lose %d chalk" % (2 if run.perks.has("glasscannon") else 1)
+			var cost := (2 if result.foul == "Scratch" or result.foul == "The 8 went early" else 1) + (1 if run.perks.has("glasscannon") else 0)
+			msg += " - lose %d chalk" % cost
 		if result.foul != Scorer.EIGHT_FOUL and result.penalty > 0:
 			msg += ", and %d points for the 8" % result.penalty
 		lbl_line.text = msg
@@ -2622,6 +2647,9 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 		S.AIM:
 			if e.button_index == MOUSE_BUTTON_LEFT and settings.touch_mode:
 				touch_aiming = e.pressed and _mouse_over_table()
+				# A quick tap can press and lift within one frame, before the aim
+				# update sees the finger down, so point the shot right away.
+				_point_at_finger()
 			elif e.button_index == MOUSE_BUTTON_LEFT:
 				if e.pressed and _mouse_over_table() and settings.click_shoot:
 					_shoot(power)
@@ -3072,6 +3100,7 @@ func _build_ui() -> void:
 	_make_term(chalk_title, "chalk")
 	stats.add_child(chalk_title)
 	chalk_pips = ChalkPips.new()
+	chalk_pips.tooltip_text = CHALK_TIP
 	stats.add_child(chalk_pips)
 	stats.add_child(_label("MONEY", 13, Color(0.6, 0.7, 0.85)))
 	lbl_money = _label("$4", 22, Color(1.0, 0.85, 0.3), F_NUM)
@@ -3262,9 +3291,8 @@ func _refresh_hud() -> void:
 	lbl_rule.visible = true
 	lbl_boss.visible = false
 	lbl_target.text = str(run.target())
-	if run.bounty != "":
-		_refresh_bet()
-	chalk_pips.set_count(run.chalk, run.max_chalk())
+	_refresh_bet()
+	chalk_pips.set_count(run.chalk, maxi(run.chalk, run.start_chalk()))
 	if state != S.ROLL and state != S.TALLY:
 		_set_meters(1.0, run.heat)
 	lbl_money.text = "$%d" % run.money
@@ -3729,7 +3757,7 @@ The [color=#ff8a30]hot pocket[/color] scores ×2. The black 8 also scores ×2.
 [b]Pausing a shot:[/b] While the balls roll, press [b]P[/b] (or tap [b]Pause[/b] on a phone) and everything freezes. The prediction then shows exactly where every ball goes from that moment. While paused you can use mid-shot items from your bar: [b]Second Strike[/b] (aim with the mouse, set power with the wheel or Up/Down, click to hit), [b]Pop-up Wall[/b] (click where it starts, then where it ends), [b]Blink[/b] (click where the cue ball reappears), and more. Right-click or Esc cancels an item. Press [b]P[/b] again, Space, Enter or click the table to play on.
 [b]Planning a pause:[/b] Press [b]L[/b] (or [b]Plan a pause[/b]) to lock the prediction, move along the cue ball's line and click where the shot should stop by itself. Settings can also pause every shot the moment the cue ball first hits a ball.
 
-[b]Chalk:[/b] As in real pool, you keep shooting while you sink. A miss, a scratch or no contact costs 1 chalk. A dry break is free. Run out of chalk before reaching the target and the run is over. Clearing the whole rack gives +1 chalk and a fresh rack.
+[b]Chalk:[/b] Chalk lasts the whole run. As in real pool, you keep shooting while you sink. A miss or no contact costs 1 chalk; a scratch, or sinking the 8 while other balls are up, costs 2. A dry break is free. Clearing a rack or a table gives 1 back, up to 12. Run out of chalk and the run is over.
 
 [b]Between tables:[/b] Spend money in the Pro Shop on Elements (six slots, always active) and Isotopes (upgrade one ball for the rest of the run; you choose which, and each ball holds one). Clearing a table pays $4, plus $1 for every 10% you score over the target (up to $10) and $1 for every shot under 10 you needed (up to $5).
 
@@ -4467,7 +4495,7 @@ func _log_shot(was_break: bool, out: Dictionary) -> void:
 				tags.append("kick")
 		line = "+%d   %s" % [result.total, ", ".join(tags)]
 	else:
-		line = "%s%s" % [result.foul, "  -1 chalk" if out.chalk_lost else ""]
+		line = "%s%s" % [result.foul, ("  -%d chalk" % int(out.get("chalk_cost", 1))) if out.chalk_lost else ""]
 		if was_break and result.foul == "Miss":
 			line = "Dry break"
 	shot_log.push_front(line)
@@ -4584,8 +4612,8 @@ func _show_run_info() -> void:
 		"Bounces score nothing unless an Element, Isotope or table says so",
 		"Value: 10 + 2 × the ball's number (special balls have their own)",
 		"Hot pocket ×%d, then Elements; the 8 costs 15%% of the target if it sinks early" % hot_x,
-		"Miss / scratch / no contact: -1 chalk (dry break free)",
-		"Clear the rack: +1 chalk and a new rack",
+		"Miss or no contact: -1 chalk (dry break free). Scratch or early 8: -2",
+		"Clear the rack or the table: +1 chalk (up to 12). Chalk carries over",
 		"Clearing pays $4, +$1 per 10% over target, +$1 per shot under 10",
 	]
 	for r in rules:
