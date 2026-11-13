@@ -26,6 +26,7 @@ var ball_nodes := {}   # ball index -> BallNode
 
 # Aim / guideline state, fed by Main.
 var show_guide := false
+var forecast_authoritative := false # moving-obstacle tables use the physics path, not a geometric pot promise
 var guide := {}
 var forecast_paths: Array = []
 var forecast_text := ""        # Second Sight's preview of the whole shot
@@ -814,7 +815,8 @@ func _draw_overlay() -> void:
 			if path.get("end", false):
 				o.draw_arc(endp, R, 0, TAU, 24, Color(col, 0.85), 2.0)
 			elif path.get("potted", false):
-				o.draw_circle(endp, 5.0, Color(1.0, 0.85, 0.3, 0.9))
+				var pot_color := Color(1.0, 0.3, 0.25) if int(path.get("number", -1)) == 0 else _pot_color()
+				o.draw_arc(endp, R + 7.0, 0, TAU, 32, pot_color, 3.5)
 	if placing:
 		var col := Color(1, 1, 1, 0.55) if place_ok else Color(1, 0.3, 0.3, 0.6)
 		var prr := place_radius if place_radius > 0.0 else R
@@ -877,6 +879,8 @@ func _draw_overlay() -> void:
 		o.draw_rect(fr, Color(0.05, 0.05, 0.08, 0.85), true)
 		o.draw_rect(fr, Color(0.8, 0.7, 1.0, 0.9), false, 2.0)
 		_txt(o, fr.get_center(), forecast_text, Color(0.92, 0.86, 1.0), 20)
+	if forecast_authoritative:
+		return
 	var glow := Color(1, 1, 1, 0.12)
 	var line := Color(1, 1, 1, 0.92)
 	var aim: PackedVector2Array = guide.aim

@@ -110,6 +110,7 @@ var banner_t := 0.0
 var flags_label: Label
 var log_label: Label
 var left_panel: Control
+var desktop_ctrl: HBoxContainer
 var lbl_bounty: RichTextLabel
 var heat_fire: FireFx
 var heat_title: Label
@@ -208,7 +209,8 @@ func _refresh_bet() -> void:
 		return
 	if run.bounty == "":
 		# No side bet this table (you couldn't afford one): hide last table's card.
-		lbl_bounty.visible = false
+		lbl_bounty.text = "No side bet this table"
+		lbl_bounty.visible = true
 		for c in bet_row.get_children():
 			bet_row.remove_child(c)
 			c.queue_free()
@@ -216,27 +218,24 @@ func _refresh_bet() -> void:
 		_hide_bet_zoom()
 		return
 	var bt: Dictionary = Catalog.BOUNTIES[run.bounty]
+	var goal := BetCard.bet_text(run.bounty, run.target())
 	# A bet you have taken is always shown: you need to know what you are playing for.
 	var known: bool = run.bet_peeked or run.bet_state == "taken" or run.bet_state == "won" or run.bet_state == "passed" and run.shots_taken > 0
-	var what: String = bt.name if known else "face down"
+	var what: String = goal if known else "face down"
 	var line := ""
 	match run.bet_state:
 		"offer":
 			line = "Side bet (%s): stake $%d, a %s bet pays $%d" % [what, run.bet_stake(), Catalog.BET_TIERS[int(bt.tier)] if known else "hidden", run.bounty_reward()] if known else "Side bet, face down: stake $%d. Easy, Medium or Hard pays up to $%d." % [run.bet_stake(), run.bet_stake() + int(round(run.bet_stake() * (3.0 + 0.5 * mini(int(run.table_index / 3), 2))))]
 		"taken":
-			line = "Side bet: %s. $%d riding (%s), pays $%d" % [bt.name, run.bet_stake(), Catalog.BET_TIERS[int(bt.tier)], run.bounty_reward()]
+			line = "Side bet: %s. $%d riding (%s), pays $%d" % [goal, run.bet_stake(), Catalog.BET_TIERS[int(bt.tier)], run.bounty_reward()]
 		"won":
-			line = "Side bet WON: %s" % bt.name
+			line = "Side bet WON: %s" % goal
 		_:
-			line = "Side bet passed: it was \"%s\"" % bt.name if run.shots_taken > 0 else "Side bet passed"
-	var bb := Glossary.link(line)
-	if known:
-		for term in bt.terms:
-			bb += "\n[color=#9fb4c8]%s: %s[/color]" % [Glossary.title(term), Glossary.sentence(term)]
-	lbl_bounty.text = bb
+			line = "Side bet passed: it was \"%s\"" % goal if run.shots_taken > 0 else "Side bet passed"
 	lbl_bounty.add_theme_color_override("default_color", Color(0.5, 1.0, 0.6) if run.bet_state == "won" else Color(1.0, 0.85, 0.35))
-	# The bet is a playing card; its wording, stake and payout are all on it.
-	lbl_bounty.visible = false
+	# Keep the goal readable throughout the table, even when the card is small.
+	lbl_bounty.text = Glossary.link(line)
+	lbl_bounty.visible = true
 	for c in bet_row.get_children():
 		bet_row.remove_child(c)
 		c.queue_free()
@@ -290,7 +289,7 @@ func _refresh_bet() -> void:
 		col.add_child(b)
 
 
-const BET_CARD_SCALE := 0.5
+const BET_CARD_SCALE := 0.65
 var bet_zoom: Control
 
 
@@ -1329,6 +1328,9 @@ func _compute_forecast_from_here() -> void:
 	fc_paths = {}
 	fc_times = {}
 	fc_dirs = {}
+	if run.current().id == "elements":
+		fc_complete = false
+		view.forecast_paths = []
 	view.forecast_text = ""
 	view.sink_tags = []
 	_step_forecast()
@@ -1936,7 +1938,7 @@ var fc_limit := 12.0
 ## Paths are drawn with the all-balls option and on tables that bend a ball's
 ## path, since a straight guideline alone would mislead there.
 func _show_paths() -> bool:
-	return state == S.HOLD or plan_lock or settings.guide_lines == 1 or sim.tilt != Vector2.ZERO or sim.well_strength != 0.0
+	return state == S.HOLD or plan_lock or settings.guide_lines == 1 or sim.tilt != Vector2.ZERO or sim.well_strength != 0.0 or run.current().id == "elements"
 
 
 func _forecast_wanted() -> bool:
@@ -1949,10 +1951,13 @@ func _compute_forecast() -> void:
 	fc_sim.first_boost = run.first_boost(_current_power())
 	fc_sim.strike(aim_dir, _speed(_current_power()) * run.power_mult(is_break), _shot_follow(), _shot_side())
 	# Bent tables only need the opening curve; the full picture is the option or Perk.
-	fc_limit = 30.0 if settings.guide_lines == 1 or plan_lock or settings.score_preview else 2.5
+	fc_limit = 30.0 if settings.guide_lines == 1 or plan_lock or settings.score_preview or run.current().id == "elements" else 2.5
 	fc_paths = {}
 	fc_times = {}
 	fc_dirs = {}
+	if run.current().id == "elements":
+		fc_complete = false
+		view.forecast_paths = []
 	view.forecast_text = ""
 	view.sink_tags = []
 	_step_forecast()
@@ -1987,7 +1992,7 @@ func _step_forecast() -> void:
 			if done and fc_sim.alive[i] == 1:
 				fc_paths[i].append(fc_sim.pos[i])
 			var c := Color(1, 1, 1) if n == 0 else Catalog.ball_color(n)
-			out.append({"points": fc_paths[i], "color": c if n == 8 else c.lightened(0.25), "halo": Color(1, 1, 1) if n == 8 else Color(0, 0, 0),
+			out.append({"points": fc_paths[i], "number": n, "color": c if n == 8 else c.lightened(0.25), "halo": Color(1, 1, 1) if n == 8 else Color(0, 0, 0),
 				"end": done and fc_sim.alive[i] == 1, "potted": fc_sim.alive[i] == 0})
 	# The last finished prediction stays up while the next is worked out, so the
 	# lines never shrink back to stubs while you aim; partial ones show only at first.
@@ -3145,6 +3150,7 @@ func _sync_aim_btn() -> void:
 func _sync_touch_ui() -> void:
 	var t := settings.touch_mode
 	touch_box.visible = t
+	desktop_ctrl.visible = not t
 	log_title.visible = not t
 	log_label.visible = not t
 	lbl_hint.visible = not t
@@ -3201,15 +3207,18 @@ func _build_ui() -> void:
 	round_row.add_child(menu_btn)
 
 	var labbox := PanelContainer.new()
-	labbox.add_theme_stylebox_override("panel", _style(Color(0.12, 0.13, 0.15), Color(0.25, 0.3, 0.35), 1, 8))
+	labbox.add_theme_stylebox_override("panel", _style(Color(0.1, 0.17, 0.2), Color(0.45, 0.82, 0.88), 2, 8))
 	lv.add_child(labbox)
 	var labv := VBoxContainer.new()
+	labv.add_theme_constant_override("separation", 6)
 	labbox.add_child(labv)
-	lbl_lab = _label("Standard Felt", 20, Color(0.6, 1.0, 0.85))
+	labv.add_child(_label("TABLE DIFFERENCE", 15, Color(0.65, 0.95, 1.0), F_SEMI))
+	lbl_lab = _label("Standard Felt", 22, Color(0.85, 1.0, 0.92), F_SEMI)
 	labv.add_child(lbl_lab)
-	lbl_rule = _term_text("", 13, Color(0.75, 0.78, 0.8), 290.0)
+	lbl_rule = _term_text("", 16, Color(0.94, 0.97, 1.0), 290.0)
 	labv.add_child(lbl_rule)
-	lbl_bounty = _term_text("", 13, Color(1.0, 0.85, 0.35), 290.0)
+	labv.add_child(_label("SIDE BET", 15, Color(1.0, 0.85, 0.4), F_SEMI))
+	lbl_bounty = _term_text("", 15, Color(1.0, 0.91, 0.65), 290.0)
 	labv.add_child(lbl_bounty)
 	bet_row = HBoxContainer.new()
 	bet_row.add_theme_constant_override("separation", 6)
@@ -3253,10 +3262,19 @@ func _build_ui() -> void:
 	lbl_line.custom_minimum_size = Vector2(290, 32)
 	lv.add_child(lbl_line)
 
+	var detail_scroll := ScrollContainer.new()
+	detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	detail_scroll.custom_minimum_size = Vector2(0, 110)
+	lv.add_child(detail_scroll)
+	var details := VBoxContainer.new()
+	details.add_theme_constant_override("separation", 6)
+	details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	detail_scroll.add_child(details)
 	var stats := GridContainer.new()
 	stats.columns = 2
 	stats.add_theme_constant_override("h_separation", 10)
-	lv.add_child(stats)
+	details.add_child(stats)
 	var chalk_title := _label("CHALK", 13, Color(0.6, 0.7, 0.85))
 	_make_term(chalk_title, "chalk")
 	stats.add_child(chalk_title)
@@ -3276,18 +3294,18 @@ func _build_ui() -> void:
 	flags_label = _label("", 13, Color(0.5, 0.8, 1.0))
 	flags_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	flags_label.custom_minimum_size = Vector2(290, 0)
-	lv.add_child(flags_label)
+	details.add_child(flags_label)
 	tray = BallTray.new()
 	tray.font = F_NUM
-	lv.add_child(tray)
+	details.add_child(tray)
 	log_title = _label("RECENT SHOTS", 12, Color(0.5, 0.5, 0.55))
-	lv.add_child(log_title)
+	details.add_child(log_title)
 	log_label = _label("", 13, Color(0.8, 0.82, 0.85), F_REG)
 	log_label.custom_minimum_size = Vector2(290, 52)
-	lv.add_child(log_label)
-	_build_touch_controls(lv)
+	details.add_child(log_label)
 
 	var ctrl := HBoxContainer.new()
+	desktop_ctrl = ctrl
 	ctrl.alignment = BoxContainer.ALIGNMENT_CENTER
 	ctrl.add_theme_constant_override("separation", 14)
 	lv.add_child(ctrl)
@@ -3314,6 +3332,7 @@ func _build_ui() -> void:
 		pbox.add_child(pb)
 		if d > 0:
 			power_up_btn = pb
+	_build_touch_controls(lv)
 
 	var filler := Control.new()
 	filler.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -3450,6 +3469,7 @@ func _refresh_hud() -> void:
 	lbl_lab.text = Catalog.BOSSES[t.id].name
 	lbl_rule.text = Glossary.link(Catalog.BOSSES[t.id].desc)
 	lbl_rule.visible = true
+	view.forecast_authoritative = t.id == "elements"
 	lbl_boss.visible = false
 	lbl_target.text = str(run.target())
 	_refresh_bet()
