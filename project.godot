@@ -4,7 +4,7 @@ config_version=5
 [application]
 
 config/name="Pocket Science"
-config/version="1.41"
+config/version="1.42"
 config/description="A real-pool roguelite: pot balls, stack multipliers, clear the target."
 config/icon="res://assets/icon.png"
 run/main_scene="res://main.tscn"
