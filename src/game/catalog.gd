@@ -39,7 +39,7 @@ const PERKS := {
 	"heat": {"name": "Magnesium Torch", "z": 12, "r": 1, "cost": 6, "fam": "pocket", "desc": "The hot pocket scores ×3 instead of ×2."},
 	"power": {"name": "Uranium Reactor", "z": 92, "r": 1, "cost": 5, "fam": "cue", "desc": "At 85%+ power, the first ball the cue ball hits flies off 20% faster: a chain reaction."},
 	"finesse": {"name": "Indium Touch", "z": 49, "r": 1, "cost": 6, "fam": "cue", "desc": "Shots at 35% power or less score ×2.", "fx": {"when": "soft", "x": 2.0}},
-	"prime": {"name": "Promethium Prime", "z": 61, "r": 1, "cost": 6, "fam": "number", "desc": "Prime balls (2, 3, 5, 7, 11, 13 and up) score ×2. When no prime ball is left on the table, the next prime ball rolls on and joins your rack for good.", "fx": {"when": "prime", "x": 2.0}},
+	"prime": {"name": "Promethium Prime", "z": 61, "r": 1, "cost": 6, "fam": "number", "desc": "Prime balls (2, 3, 5, 7, 11, 13 and up) score ×2. With no prime on the table, the next prime joins your rack.", "fx": {"when": "prime", "x": 2.0}},
 	"eight": {"name": "Carbon Core", "z": 6, "r": 1, "cost": 6, "fam": "eight", "desc": "The 8 stops costing you points, scores like any other ball, and pays $3.", "fx": {"when": "eight", "money": 3}},
 	"darkhorse": {"name": "Oxygen Octet", "z": 8, "r": 2, "cost": 9, "fam": "eight", "desc": "The 8 scores ×8 when it sinks. You still lose points if it sinks early.", "fx": {"when": "eight", "x": 8.0}},
 	"hushmoney": {"name": "Silver Tongue", "z": 47, "r": 0, "cost": 4, "fam": "money", "desc": "Sinking the 8 early pays you $3 and costs no points. It is still a foul."},
@@ -163,6 +163,10 @@ const ITEMS := {
 
 const WHEN_NAMES := {"setup": "Set-up · while aiming", "pause": "While paused", "after": "Aftermath · after a shot", "any": "Aiming or paused"}
 const WHEN_COLORS := {"setup": Color(0.45, 0.7, 1.0), "pause": Color(0.45, 0.95, 0.75), "after": Color(1.0, 0.72, 0.35), "any": Color(0.85, 0.85, 0.9)}
+const CATALYST_COLOR := Color(0.65, 0.79, 0.88) # desaturated steel blue, distinct from the Elements' saturated spectrum
+const SIDE_BET_COLOR := Color(0.66, 0.39, 0.2) # warm brown on every side-bet card
+const ISOTOPE_FRAME_COLOR := Color(0.68, 0.7, 0.78) # neutral frame lets the ball's glow carry its identity
+const EXOTIC_FRAME_COLOR := Color(0.56, 0.6, 0.64) # neutral frame lets the Exotic ball carry its identity
 
 
 ## Imbues live on one numbered ball for the rest of the run.
@@ -507,3 +511,8 @@ static func rarity_name(r: int) -> String:
 
 static func rarity_color(r: int) -> Color:
 	return [Color(0.55, 0.75, 0.95), Color(0.45, 0.9, 0.55), Color(1.0, 0.55, 0.3)][r]
+
+
+## Atomic-number rainbow: 1 is red, 100 is violet, with no hue wrap back to red.
+static func element_color(z: int) -> Color:
+	return Color.from_hsv(0.76 * (clampi(z, 1, 100) - 1) / 99.0, 0.82, 0.96)

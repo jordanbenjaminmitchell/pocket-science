@@ -335,6 +335,7 @@ var hover_shown := false
 
 func _update_ball_hover() -> void:
 	var idx := -1
+	var n := -1
 	var touch_ok: bool = not settings.touch_mode or (finger_down and finger_still >= LONG_PRESS)
 	if touch_ok and sim != null and (state == S.AIM or state == S.PLACE or state == S.HOLD or state == S.PICK) and overlay.get_child_count() == 0 and not dragging:
 		var m := _mouse_table()
@@ -345,45 +346,65 @@ func _update_ball_hover() -> void:
 				if d < bd:
 					bd = d
 					idx = i
-	if idx == hover_ball:
-		return
+		if idx >= 0:
+			n = sim.num[idx]
+	# The rack on the left: every ball in it can be checked too, sunk or not.
+	if n < 0 and tray != null and tray.is_visible_in_tree() and run != null and overlay.get_child_count() == 0:
+		var tp := tray.get_local_mouse_position()
+		if Rect2(Vector2.ZERO, tray.size).has_point(tp):
+			n = tray.ball_at(tp)
 	hover_ball = idx
-	var info := _ball_info(sim.num[idx]) if idx >= 0 else []
-	if info.is_empty():
+	if n == hover_num:
+		return
+	hover_num = n
+	if n < 0:
 		if hover_shown:
 			term_tip.hide_tip()
 			hover_shown = false
 		return
+	var tip := _ball_tip(n)
 	# Above the finger on a touch screen, so the thumb does not cover it.
-	term_tip.show_text(info[0], info[1], mouse_pos - (Vector2(0, 70) if settings.touch_mode else Vector2.ZERO), TermTip.SHOW_TIME, info[2] if info.size() > 2 else "")
+	term_tip.show_ball(tip.title, tip.points, tip.points_color, tip.text, tip.adds, mouse_pos - (Vector2(0, 70) if settings.touch_mode else Vector2.ZERO))
 	hover_shown = true
 
 
-## [title, text] for a ball worth explaining, or [] for a plain one.
-func _ball_info(n: int) -> Array:
-	var parts: Array = []
+var hover_num := -1   # the ball number whose card is showing (table or rack)
+
+
+## Everything about one ball, for its pop-up: its points on top, a plain line,
+## and a coloured box for each Isotope or bonus saying what it adds.
+func _ball_tip(n: int) -> Dictionary:
+	var pay := _ball_pay(n)
+	var text: Array = []
+	var adds: Array = []
 	var k := Catalog.kind_of(n)
-	if k != "":
-		parts.append(Catalog.BALL_TYPES[k].desc)
+	if k != "" and k != "numeral":
+		var bt: Dictionary = Catalog.BALL_TYPES[k]
+		var bc: Color = bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent
+		var what := String(bt.desc)
 		if k == "dice" or k == "wild":
-			parts.append("Right now it counts as the %d." % int(Catalog.faces.get(n, 0)))
+			what += " Right now it counts as the %d." % int(Catalog.faces.get(n, 0))
+		adds.append({"color": bc, "title": "%s ball" % bt.name, "text": what})
 	var iso: String = run.imbues.get(n, "") if run != null else ""
 	if iso != "":
-		parts.append("Isotope with %s: %s" % [Catalog.IMBUES[iso].name, Catalog.IMBUES[iso].desc])
-	if n == 8:
-		parts.append(Glossary.sentence("eight"))
+		adds.append({"color": Catalog.IMBUES[iso].color, "title": "%s Isotope" % Catalog.IMBUES[iso].name, "text": Catalog.IMBUES[iso].desc})
 	if run != null and int(run.ball_bonus.get(n, 0)) > 0:
-		parts.append("Beryllium Avalanche: +%d for the rest of the run%s." % [int(run.ball_bonus[n]), "" if run.has_perk("catalyst") else " (switched off)"])
-	var pay := _ball_pay(n)
-	parts.push_front(pay[0])
-	return [Catalog.ball_label(n), " ".join(parts), pay[1]]
+		adds.append({"color": _perk_color("catalyst"), "title": "Bonus +%d" % int(run.ball_bonus[n]), "text": "Worth %d more for the rest of the run." % int(run.ball_bonus[n])})
+	if run != null and run.has_perk("lowball") and run.lithium_balls().has(n):
+		adds.append({"color": _perk_color("lowball"), "title": "Lithium Cell", "text": "Loses no speed off cushions, and pays $1 when it sinks."})
+	if n == 8:
+		text.append(Glossary.sentence("eight"))
+	if String(pay.note) != "":
+		text.append(pay.note)
+	return {"title": Catalog.ball_label(n), "points": pay.points, "points_color": pay.color, "text": " ".join(text), "adds": adds}
 
 
 ## What sinking this one ball on its own would pay right now: the plain points, and
 ## (in neon) what your Perks, Imbues and the hot pocket add on top.
-func _ball_pay(n: int) -> Array:
+func _ball_pay(n: int) -> Dictionary:
+	var none := {"points": "", "color": TermTip.NEON, "note": ""}
 	if run == null or sim == null:
-		return ["", ""]
+		return none
 	var ctx := _shot_ctx()
 	ctx["is_break"] = false
 	var hot := int(ctx.get("hot_pocket", -1))
@@ -402,20 +423,22 @@ func _ball_pay(n: int) -> Array:
 	ctx["events"] = ev.call(corner)
 	var full := Scorer.score(ctx)
 	if n == 8 and int(full.get("penalty", 0)) > 0:
-		return ["Sinking it now costs %d points." % int(full.penalty), ""]
-	var line := "Worth %d. Sunk on its own right now: %d points." % [Catalog.ball_points(n), int(plain.total)]
-	var extra: Array = []
+		return {"points": "−%d points" % int(full.penalty), "color": Color(1.0, 0.45, 0.4), "note": "That is what sinking it now would cost."}
+	var notes: Array = []
 	var gain := int(full.total) - int(plain.total)
+	notes.append("If sunk on its own right now. Base value %d." % Catalog.ball_points(n))
 	if gain > 0:
-		extra.append("+%d from your Elements and Isotopes (%d in all)" % [gain, int(full.total)])
+		notes.append("+%d of that is from your Elements and Isotopes." % gain)
 	if hot >= 0:
 		ctx["events"] = ev.call(hot)
 		var h := Scorer.score(ctx)
 		if int(h.total) > int(full.total):
-			extra.append("%d in the hot pocket" % int(h.total))
+			notes.append("%d in the hot pocket." % int(h.total))
+	var points := "+%d points" % int(full.total)
 	if int(full.get("money", 0)) > 0:
-		extra.append("+$%d" % int(full.money))
-	return [line, " · ".join(extra)]
+		points += "  +$%d" % int(full.money)
+	return {"points": points, "color": TermTip.NEON, "note": "
+".join(notes)}
 
 
 ## ================================================================ the Hustler's Kit
@@ -456,7 +479,7 @@ func _item_button(id: String, tool: bool) -> Control:
 		b.tooltip_text = "Empty Tool slot" if tool else "Empty Consumable slot"
 		return b
 	var it: Dictionary = Catalog.ITEMS[id]
-	var col: Color = Catalog.WHEN_COLORS[it.when]
+	var col: Color = Catalog.CATALYST_COLOR
 	var is_armed := armed.any(func(a): return a.id == id)
 	var charges := int(run.tool_charges.get(id, 0)) if tool else 1
 	b.add_theme_stylebox_override("normal", _style(Color(0.2, 0.17, 0.08) if is_armed else Color(0.1, 0.12, 0.16), Color(1.0, 0.85, 0.35) if is_armed else Color(col, 0.6), 3 if is_armed else 2, 6 if tool else 10))
@@ -3534,7 +3557,7 @@ func _card_shell(accent: Color, w: float, h: float) -> Array:
 
 func _perk_card(id: String, slot: int) -> Control:
 	var f: Dictionary = Catalog.PERKS[id]
-	var accent := Catalog.rarity_color(f.r)
+	var accent := Catalog.rarity_color(int(f.r))
 	var card: Vector2 = fit.card
 	var sh := _card_shell(accent, card.x, card.y)
 	var p: PanelContainer = sh[0]
@@ -3608,9 +3631,9 @@ func _perk_live(id: String) -> bool:
 var hover_perk := ""   # the Element card under the pointer
 
 
-## The colour an Element's range is drawn in: its group colour on the periodic table.
+## The colour an Element's range is drawn in follows its atomic number.
 func _perk_color(id: String) -> Color:
-	return TileArt.GROUP_COLORS[TileArt.element_group(int(Catalog.PERKS[id].z))]
+	return Catalog.element_color(int(Catalog.PERKS[id].z))
 
 
 ## Every frame: rings on the table that tie your Elements to it. Hover the cue
@@ -3945,19 +3968,31 @@ func _show_card_tip(kind: String, id: String, ball: int, near: Control) -> void:
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_theme_constant_override("separation", 6)
 	p.add_child(v)
-	v.add_child(TileArt.new().setup(kind, id, ball))
+	if kind == "ball" or kind == "imbue":
+		var picture := CenterContainer.new()
+		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if kind == "ball":
+			picture.add_child(ThumbArt.new().setup("ball", id, 112.0))
+		elif ball > 0:
+			picture.add_child(_ball_icon(ball, iso_color(id)))
+		else:
+			picture.add_child(ThumbArt.new().setup("imbue", id, 112.0))
+		v.add_child(picture)
+		v.add_child(_label(String(d.name), 17, Color.WHITE, F_SEMI))
+	else:
+		v.add_child(TileArt.new().setup(kind, id, ball))
 	var kind_name: String = {"perk": "Element", "item": "Catalyst", "ball": "Exotic ball", "imbue": "Isotope"}[kind]
 	v.add_child(_label(kind_name, 12, Color(1.0, 0.85, 0.4), F_SEMI))
 	var t := _label(String(d.desc), 13, Color(0.88, 0.9, 0.92), F_REG)
 	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	t.custom_minimum_size = Vector2(TileArt.SIZE.x, 0)
 	v.add_child(t)
-	add_child(p)
+	term_tip.add_child(p)
 	card_tip = p
 	p.reset_size()
-	var at := near.global_position + Vector2(near.size.x * 0.5 - 100.0, -p.size.y - 250.0)
+	var at := near.global_position + (Vector2(near.size.x + 12.0, 0.0) if near.size.x > 100.0 else Vector2(near.size.x * 0.5 - 100.0, -p.size.y - 250.0))
 	var screen := get_viewport_rect().size
-	p.global_position = Vector2(clampf(at.x, 8.0, screen.x - 216.0), maxf(8.0, near.global_position.y - 270.0))
+	p.global_position = Vector2(clampf(at.x, 8.0, screen.x - 216.0), clampf(at.y, 8.0, screen.y - p.size.y - 8.0))
 
 
 func _hide_card_tip() -> void:
@@ -4347,14 +4382,14 @@ func _offer_card(i: int) -> Control:
 	match item.type:
 		"perk":
 			var f: Dictionary = Catalog.PERKS[item.id]
-			accent = Catalog.rarity_color(f.r)
+			accent = Catalog.rarity_color(int(f.r))
 			title = f.name
 			desc = f.desc
 			kind = "%s · %s" % [Catalog.rarity_name(f.r), Catalog.family_name(item.id)]
 			syn = Catalog.synergies(item.id, run.perks).map(func(o): return Catalog.PERKS[o].name)
 		"imbue":
 			var iso: Dictionary = Catalog.IMBUES[item.id]
-			accent = iso.color
+			accent = Catalog.ISOTOPE_FRAME_COLOR
 			if item.has("ball"):
 				title = "%s %d-ball" % [iso.name, item.ball]
 				desc = iso.desc
@@ -4365,35 +4400,49 @@ func _offer_card(i: int) -> Control:
 				kind = "Isotope · choose a ball"
 		"ball":
 			var bt: Dictionary = Catalog.BALL_TYPES[item.id]
-			accent = bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent
+			accent = Catalog.EXOTIC_FRAME_COLOR
 			title = "%s ball" % bt.name
 			desc = bt.desc
 			kind = "New ball"
 		"item":
 			var itd: Dictionary = Catalog.ITEMS[item.id]
-			accent = Color(0.45, 0.85, 1.0)
 			title = itd.name
 			desc = itd.desc
 			kind = "Catalyst · %s" % Catalog.WHEN_NAMES[itd.when]
-			accent = Catalog.WHEN_COLORS[itd.when]
+			accent = Catalog.CATALYST_COLOR
 	var sh := _card_shell(accent, 196, 214)
 	var p: PanelContainer = sh[0]
 	var v: VBoxContainer = sh[1]
-	if TileArt.has_tile(item.type, item.id):
+	if item.type == "imbue" or item.type == "ball":
+		p.mouse_filter = Control.MOUSE_FILTER_STOP
+		p.mouse_default_cursor_shape = Control.CURSOR_HELP
+		var offer_kind: String = item.type
+		var offer_id: String = item.id
+		var offer_ball: int = int(item.get("ball", 0))
+		p.mouse_entered.connect(func(): _show_card_tip(offer_kind, offer_id, offer_ball, p))
+		p.mouse_exited.connect(_hide_card_tip)
+		p.tree_exiting.connect(_hide_card_tip)
+		p.gui_input.connect(func(e: InputEvent):
+			if e is InputEventScreenTouch and e.pressed:
+				_show_card_tip(offer_kind, offer_id, offer_ball, p))
+	if item.type in ["perk", "item"] and TileArt.has_tile(item.type, item.id):
 		# Card art: a periodic-table tile carries the symbol, name, headline effect and kind.
 		var tile := TileArt.new().setup(item.type, item.id, int(item.get("ball", 0)))
 		tile.tooltip_text = "%s\n%s" % [title, kind]
 		v.add_child(tile)
-		if item.type == "imbue" and not item.has("ball"):
-			var pick := _label("You choose the ball", 12, accent)
-			v.add_child(pick)
 	else:
 		if item.type == "imbue":
-			v.add_child(_ball_icon(int(item.get("ball", 0)), iso_color(item.id)))
+			if item.has("ball"):
+				v.add_child(_ball_icon(int(item.ball), iso_color(item.id)))
+			else:
+				var isotope_picture := CenterContainer.new()
+				isotope_picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				isotope_picture.add_child(ThumbArt.new().setup("imbue", item.id, 92.0))
+				v.add_child(isotope_picture)
 		else:
 			var ic := CenterContainer.new()
 			ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			ic.add_child(IconArt.new().setup(("ball_" + item.id) if item.type == "ball" else item.id, F_SEMI, 40))
+			ic.add_child(ThumbArt.new().setup("ball", item.id, 92.0) if item.type == "ball" else IconArt.new().setup(item.id, F_SEMI, 40))
 			v.add_child(ic)
 		var t := _label(title, 18, Color.WHITE)
 		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -4875,19 +4924,21 @@ func iso_color(id: String) -> Color:
 ## A small drawn pool ball with its number, used for imbue offers.
 func _ball_icon(n: int, ring: Color) -> Control:
 	var c := Control.new()
-	c.custom_minimum_size = Vector2(0, 52)
+	c.custom_minimum_size = Vector2(0, 90)
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	c.draw.connect(func():
-		var p := Vector2(c.size.x * 0.5, 26)
-		c.draw_circle(p, 25, Color(ring, 0.35))
-		c.draw_circle(p, 20, Catalog.ball_color(n) if not Catalog.is_stripe(n) else Color(0.95, 0.93, 0.88))
+		var p := Vector2(c.size.x * 0.5, 45)
+		for k in 3:
+			c.draw_circle(p, 42 - k * 4, Color(ring, 0.09 + k * 0.06))
+		c.draw_circle(p, 30, Catalog.ball_color(n) if not Catalog.is_stripe(n) else Color(0.95, 0.93, 0.88))
 		if Catalog.is_stripe(n):
-			c.draw_rect(Rect2(p + Vector2(-17, -10), Vector2(34, 20)), Catalog.ball_color(n))
-		c.draw_circle(p, 9, Color(0.97, 0.95, 0.9))
+			c.draw_rect(Rect2(p + Vector2(-25, -13), Vector2(50, 26)), Catalog.ball_color(n))
+		c.draw_arc(p, 32, 0, TAU, 36, ring, 3.0)
+		c.draw_circle(p, 13, Color(0.97, 0.95, 0.9))
 		var t := str(n)
-		var w := F_SEMI.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
-		c.draw_string(F_SEMI, p + Vector2(-w * 0.5, 5), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.05, 0.05, 0.05))
-		c.draw_circle(p + Vector2(-7, -8), 4, Color(1, 1, 1, 0.4)))
+		var w := F_SEMI.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
+		c.draw_string(F_SEMI, p + Vector2(-w * 0.5, 6), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(0.05, 0.05, 0.05))
+		c.draw_circle(p + Vector2(-10, -12), 5, Color(1, 1, 1, 0.4)))
 	return c
 
 
@@ -4972,7 +5023,7 @@ func _show_run_info() -> void:
 		c1.add_child(_label("None yet - buy them in the Pro Shop between tables.", 15, Color(0.6, 0.6, 0.65), F_REG))
 	for id in run.perks:
 		var fd: Dictionary = Catalog.PERKS[id]
-		c1.add_child(_term_text("%s  (%s)  -  %s" % [fd.name, Catalog.rarity_name(fd.r), Glossary.link(fd.desc)], 15, Catalog.rarity_color(fd.r).lerp(Color.WHITE, 0.5), 560.0))
+		c1.add_child(_term_text("%s  (%s)  -  %s" % [fd.name, Catalog.rarity_name(fd.r), Glossary.link(fd.desc)], 15, Catalog.element_color(int(fd.z)).lerp(Color.WHITE, 0.5), 560.0))
 	if run.has_perk("catalyst") and not run.ball_bonus.is_empty():
 		var bits: Array = []
 		var ks := run.ball_bonus.keys()

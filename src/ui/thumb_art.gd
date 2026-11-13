@@ -2,8 +2,8 @@ class_name ThumbArt
 extends Control
 ## Small square pictures for lists and the HUD, matching the card art:
 ##
-##   perk   the Element's tile in miniature: atomic number, its symbol in the
-##          element's own colour, framed in its periodic-table group colour
+##   perk   the Element's tile in miniature: rarity frame, atomic number in
+##          its place on the red-to-violet spectrum, and symbol
 ##   imbue  a ball glowing in the Isotope's colour, with its symbol
 ##   ball   the Exotic ball itself
 ##   cue    the starting cue, lying across, with the object it carries
@@ -63,9 +63,9 @@ func _text_c(txt: String, c: Vector2, fs: int, col: Color) -> void:
 func _draw_element() -> void:
 	var f: Dictionary = Catalog.PERKS[id]
 	var z := int(f.get("z", 0))
-	var tint: Color = IconArt.FAMILY_COLORS.get(f.get("fam", "utility"), Color.WHITE)
-	var group: Color = TileArt.GROUP_COLORS[TileArt.element_group(z)]
-	_box(tint.darkened(0.8), group, px * 0.16)
+	var tint: Color = Catalog.element_color(z)
+	var rarity: Color = Catalog.rarity_color(int(f.r))
+	_box(rarity.darkened(0.8), rarity, px * 0.16)
 	var look: Array = TileArt.ELEMENT_LOOK.get(z, [])
 	var light: Color = look[1] if look.size() > 1 else TileArt.PAPER
 	if z == 79:
@@ -80,7 +80,7 @@ func _draw_element() -> void:
 	_text_c(sym, c, fs, light.lerp(Color.WHITE, 0.35))
 	if px >= 30:
 		var zf := maxi(8, roundi(px * 0.22))
-		draw_string(F_SEMI, Vector2(px * 0.1, px * 0.1 + zf * 0.8), str(z), HORIZONTAL_ALIGNMENT_LEFT, -1, zf, group)
+		draw_string(F_SEMI, Vector2(px * 0.1, px * 0.1 + zf * 0.8), str(z), HORIZONTAL_ALIGNMENT_LEFT, -1, zf, tint)
 
 
 func _draw_isotope() -> void:

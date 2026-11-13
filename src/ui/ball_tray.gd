@@ -23,6 +23,19 @@ func set_state(rack: Array, down: Dictionary, iso: Dictionary) -> void:
 	queue_redraw()
 
 
+## Where ball k is drawn.
+func _spot(k: int) -> Vector2:
+	return Vector2(18 + (k % 8) * minf(36.0, (size.x - 36.0) / 7.0), 16 + (k / 8) * 26)
+
+
+## The ball number under a point in the tray's own space, or -1.
+func ball_at(p: Vector2) -> int:
+	for k in balls.size():
+		if _spot(k).distance_to(p) <= 14.0:
+			return int(balls[k])
+	return -1
+
+
 ## The middle slice of a circle, |y| <= h * r: a stripe's band.
 static func _band(c: Vector2, r: float, h: float) -> PackedVector2Array:
 	var pts := PackedVector2Array()

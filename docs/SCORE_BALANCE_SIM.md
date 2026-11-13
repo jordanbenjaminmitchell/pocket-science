@@ -30,18 +30,18 @@ Cards are granted before tables 2–7, bypassing shop chance and cost.
 |---|---|
 | plain | Starting 1–10 balls, no acquisitions |
 | scattered | Odd, Cushion, Chalk, Rhythm, Side, Highball; later a Feather ball and Gilded 3 |
-| value | Odd, Solids, Fibonacci, Moneyball, Thinning, Highball; removes 1 and 2 |
+| value | Odd, Solids, Prime, Moneyball, Stripes, Golden; removes 1 and 2 |
 | engine | Side, Heat, Even, Prime, Glass Cannon, Menagerie; removes 1 and 2, adds Iron and Anchor, imbues 5, 7, 9, and 10 |
 | engine_no_* | Same engine with one of the three ball upgrades omitted |
 
 The focused engine combines a pocket multiplier, Heat and Chain support, number multipliers, exotics, and imbues. It is a stress test for the intended endgame, not a recommended shop path.
 
-## Initial reading (300 seeds, current targets)
+## Reading after balance pass 2 (300 seeds, current targets)
 
 | Skill | Plain | Scattered | Value | Engine | No imbues | No exotics | No removals |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | hard | 0% | 0% | 0% | 0% | 0% | 0% | 0% |
 | middle | 0% | 0% | 0% | 1% | 0% | 0% | 0% |
-| strong | 0% | 5% | 1% | 20% | 11% | 14% | 16% |
+| strong | 0% | 5% | 10% | 20% | 11% | 14% | 16% |
 
-These numbers show that all three ball upgrades help the focused build under the stated assumptions. They do not yet establish that each is *required* in real play. Table 5 is the steepest cutoff for plain and scattered builds in this probe; later high-scoring tables are only reached by a selected group of surviving runs. Avoid increasing all targets uniformly based on this output alone. First calibrate the pot and scratch rates by table, then adjust individual targets and repeat the same seeded comparison.
+These numbers show that all three ball upgrades help the focused build under the stated assumptions. They do not establish that each is *required* in real play: the value build, with scoring Elements and two removals but no exotics or imbues, wins 10% of strong-skill simulations. Table 5 is the steepest cutoff for plain and scattered builds in this probe; later high-scoring tables are only reached by a selected group of surviving runs. Avoid increasing all targets uniformly based on this output alone. First calibrate the pot and scratch rates by table, then adjust individual targets and repeat the same seeded comparison.

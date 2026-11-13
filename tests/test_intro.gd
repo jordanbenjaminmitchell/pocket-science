@@ -118,7 +118,7 @@ func _go() -> void:
 	var i3: int = g.sim.index_of(3)
 	g.mouse_pos = g.view.base_position + g.sim.pos[i3] * g.TABLE_SCALE
 	await _frames(2)
-	check(g.term_tip.panel.visible and g.term_tip.heading.text == "3-ball" and g.term_tip.body.text.contains("Vein"), "hovering an Isotope ball explains its Isotope")
+	check(g.term_tip.panel.visible and g.term_tip.heading.text == "3-ball" and g.term_tip.boxes.visible and g.term_tip.boxes.get_child_count() == 1, "hovering an Isotope ball explains its Isotope")
 	var i8: int = g.sim.index_of(8)
 	g.mouse_pos = g.view.base_position + g.sim.pos[i8] * g.TABLE_SCALE
 	await _frames(2)
@@ -126,6 +126,6 @@ func _go() -> void:
 	var i5: int = g.sim.index_of(5)
 	g.mouse_pos = g.view.base_position + g.sim.pos[i5] * g.TABLE_SCALE
 	await _frames(2)
-	check(g.term_tip.panel.visible and g.term_tip.body.text.contains("points"), "a plain ball shows what it would score")
+	check(g.term_tip.panel.visible and g.term_tip.top.visible and g.term_tip.top.text.contains("points") and not g.term_tip.boxes.visible, "a plain ball shows what it would score")
 	print("intro tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

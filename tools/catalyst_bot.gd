@@ -12,7 +12,7 @@ const SUPPORTED := ["focal", "pocketcover", "polish", "ghostchalk", "leadweight"
 const PAUSE_TIME := 0.32
 
 
-static func choose(sim: PoolSim, run: RunState, dir: Vector2, power: float, is_break: bool) -> Dictionary:
+static func choose(sim: PoolSim, run: RunState, dir: Vector2, power: float, is_break: bool, stats: Dictionary = {}) -> Dictionary:
 	var available: Array = run.tools.duplicate()
 	if run.cue_kit() != "" and not available.has(run.cue_kit()):
 		available.append(run.cue_kit())
@@ -29,6 +29,7 @@ static func choose(sim: PoolSim, run: RunState, dir: Vector2, power: float, is_b
 	var obj := _target_ball(sim, run)
 	for id in available:
 		var plans: Array = []
+		var best_id_gain := -INF
 		match id:
 			"focal", "pocketcover", "tidal":
 				var pockets := [first_pot] if first_pot >= 0 else [run.hot_pocket, _nearest_pocket(sim, obj)]
@@ -38,6 +39,8 @@ static func choose(sim: PoolSim, run: RunState, dir: Vector2, power: float, is_b
 			"polish", "ghostchalk", "leadweight":
 				if obj >= 0:
 					plans.append({"id": id, "ball": obj})
+				if id == "polish":
+					plans.append({"id": id, "phase": "pause"})
 			"nudge", "goldenratio", "freezeframe", "newton", "reflection", "damping", "momentum", "absolutezero", "gravitypebble", "darkenergy", "blast", "blink":
 				plans.append({"id": id})
 			"secondstrike":
@@ -93,9 +96,18 @@ static func choose(sim: PoolSim, run: RunState, dir: Vector2, power: float, is_b
 		for plan in plans:
 			var trial := _trial(sim, run, shot, is_break, plan)
 			var gain: float = trial.value - base.value
+			best_id_gain = maxf(best_id_gain, gain)
 			if gain > best_gain:
 				best_gain = gain
 				best = plan
+		var seen: Dictionary = stats.get(id, {"available": 0, "tested": 0, "positive": 0, "actionable": 0, "gain_sum": 0.0})
+		seen.available += 1
+		if not plans.is_empty():
+			seen.tested += 1
+			seen.positive += int(best_id_gain > 0.0)
+			seen.actionable += int(best_id_gain > maxf(10.0, run.target() * 0.04))
+			seen.gain_sum += best_id_gain
+		stats[id] = seen
 	return best
 
 
@@ -233,7 +245,7 @@ static func _trial(sim: PoolSim, run: RunState, shot: Dictionary, is_break: bool
 
 
 static func is_pause(plan: Dictionary) -> bool:
-	return not plan.is_empty() and plan.id in ["nudge", "secondstrike", "goldenratio", "freezeframe", "tidal", "newton", "reflection", "damping", "momentum", "absolutezero", "gravitypebble", "darkenergy", "blast", "blink", "wall", "centremass", "englishdial"]
+	return not plan.is_empty() and (plan.get("phase", "") == "pause" or plan.id in ["nudge", "secondstrike", "goldenratio", "freezeframe", "tidal", "newton", "reflection", "damping", "momentum", "absolutezero", "gravitypebble", "darkenergy", "blast", "blink", "wall", "centremass", "englishdial"])
 
 
 static func advance_to_pause(sim: PoolSim) -> void:
@@ -255,7 +267,8 @@ static func apply_setup(sim: PoolSim, run: RunState, plan: Dictionary, commit: b
 			wide["temp"] = true
 			sim.layout.pockets.append(wide)
 		"polish":
-			sim.glide[int(plan.ball)] = 1
+			if plan.get("phase", "") != "pause":
+				sim.glide[int(plan.ball)] = 1
 		"ghostchalk":
 			sim.ghost = int(plan.ball)
 		"leadweight":
@@ -334,6 +347,9 @@ static func apply_pause(sim: PoolSim, plan: Dictionary) -> void:
 		"goldenratio":
 			if ball >= 0:
 				sim.vel[ball] *= 1.618
+		"polish":
+			if ball >= 0:
+				sim.glide[ball] = 1
 		"freezeframe":
 			if ball >= 0:
 				sim.vel[ball] = Vector2.ZERO

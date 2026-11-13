@@ -285,8 +285,9 @@ const TILES := {
 	"bet:money5": {"sym": "", "title": "$5 in one shot", "stat": "Wins 3× stake", "on": "Pay", "letter": "b_money5"},
 	"bet:back": {"sym": "", "title": "Side bet", "stat": "Bet, peek or pass", "on": "This table", "letter": "b_back"},
 }
-## Elements: each card's periodic-table group (shown as the colour of its
-## atomic-number chip) and what the element looks like, which colours its
+## Elements: periodic-table classification and what the material looks like. The
+## card uses its rarity colour, while the atomic-number chip uses the ordered
+## atomic-number rainbow. The material look gives the lettering its texture, which colours its
 ## lettering: [kind, light, dark]. Kinds: metal (polished, tinted to the real
 ## metal), gas (a glowing discharge tube), crystal (a sheen across), liquid
 ## (metal that drips), powder (chalky), radio (glows, and gives off particles),
@@ -427,9 +428,9 @@ const FAMILY_SHORT := {
 	"utility": "Utility",
 }
 
-## Side bet tiers: Easy, Medium, Hard. The face-down back has its own colour.
-const BET_COLORS := [Color(0.45, 0.9, 0.5), Color(1.0, 0.72, 0.3), Color(1.0, 0.42, 0.4)]
-const BET_BACK := Color(0.62, 0.66, 0.98)
+## Pips and wording distinguish the tiers; every side bet uses the same brown.
+const BET_COLORS := [Catalog.SIDE_BET_COLOR, Catalog.SIDE_BET_COLOR, Catalog.SIDE_BET_COLOR]
+const BET_BACK := Color(0.51, 0.3, 0.15)
 const WHEN_SHORT := {"setup": "While aiming", "pause": "While paused", "after": "After a shot", "any": "Aim or pause"}
 const PAPER := Color(0.97, 0.95, 0.9)
 
@@ -478,7 +479,7 @@ func setup(k: String, i: String, b := 0) -> TileArt:
 	data = TILES.get(k + ":" + i, {"sym": "?", "stat": ""})
 	match k:
 		"perk":
-			tint = IconArt.FAMILY_COLORS.get(Catalog.PERKS[i].get("fam", "utility"), Color.WHITE)
+			tint = Catalog.rarity_color(int(Catalog.PERKS[i].r))
 			motif = IconArt.motif_for(i)
 		"imbue":
 			tint = Catalog.IMBUES[i].color
@@ -487,7 +488,7 @@ func setup(k: String, i: String, b := 0) -> TileArt:
 			tint = bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent
 			motif = bt.motif
 		"item":
-			tint = Catalog.WHEN_COLORS[Catalog.ITEMS[i].when]
+			tint = Catalog.CATALYST_COLOR
 			motif = IconArt.motif_for(i)
 		"bet":
 			tint = BET_BACK if i == "back" else BET_COLORS[int(Catalog.BOUNTIES[i].tier)]
@@ -533,13 +534,13 @@ func _draw() -> void:
 	draw_rect(Rect2(2, 34, w - 4, 48), Color(tint, 0.07))
 	var light := tint.lerp(Color.WHITE, 0.55)
 	# Top left: card kind, then rarity / timing / duration. Elements lead
-	# with their atomic number, on a chip in their periodic-table group's colour.
+	# with their atomic number, on a chip in the same ordered spectrum.
 	var kx := 9.0
 	if kind == "perk":
 		var z := int(Catalog.PERKS[id].get("z", 0))
 		var zs := str(z)
 		var zw := F_SEMI.get_string_size(zs, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
-		var gc: Color = GROUP_COLORS[element_group(z)]
+		var gc: Color = Catalog.element_color(z)
 		var chip := StyleBoxFlat.new()
 		chip.bg_color = gc
 		chip.set_corner_radius_all(3)

@@ -198,6 +198,10 @@ func setup(id: String, f: Font, px: float) -> IconArt:
 	font = f
 	var fam: String = Catalog.PERKS[id].get("fam", "utility") if Catalog.PERKS.has(id) else ("item" if Catalog.ITEMS.has(id) else "reagent")
 	tint = FAMILY_COLORS.get(fam, Color.WHITE)
+	if Catalog.PERKS.has(id):
+		tint = Catalog.element_color(int(Catalog.PERKS[id].z))
+	elif Catalog.ITEMS.has(id):
+		tint = Catalog.CATALYST_COLOR
 	if id.begins_with("ball_"):
 		var bt: Dictionary = Catalog.BALL_TYPES[id.substr(5)]
 		tint = bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent

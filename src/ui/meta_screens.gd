@@ -62,19 +62,19 @@ func _rows() -> Array:
 				var f: Dictionary = Catalog.PERKS[id]
 				var locked: bool = g.meta.locked_perks().has(id)
 				rows.append({"icon": "perk:" + id, "title": f.name, "sub": "%s · %s · $%d" % [Catalog.rarity_name(f.r), Catalog.family_name(id), f.cost],
-					"desc": f.desc, "color": Catalog.rarity_color(f.r), "hint": g.meta.perk_hint(id) if locked else ""})
+					"desc": f.desc, "color": Catalog.rarity_color(int(f.r)), "hint": g.meta.perk_hint(id) if locked else ""})
 		"Items":
 			for id in Catalog.ITEMS:
 				var it: Dictionary = Catalog.ITEMS[id]
-				rows.append({"icon": id, "title": it.name, "sub": "Catalyst · %s · $%d" % [Catalog.WHEN_NAMES[it.when], it.cost], "desc": it.desc, "color": Catalog.WHEN_COLORS[it.when], "hint": ""})
+				rows.append({"icon": id, "title": it.name, "sub": "Catalyst · %s · $%d" % [Catalog.WHEN_NAMES[it.when], it.cost], "desc": it.desc, "color": Catalog.CATALYST_COLOR, "hint": ""})
 		"Balls":
 			for id in Catalog.BALL_TYPES.keys().filter(func(k): return not Catalog.BALL_TYPES[k].get("hidden", false)):
 				var bt: Dictionary = Catalog.BALL_TYPES[id]
-				rows.append({"icon": "ball_" + id, "title": bt.name + " ball", "sub": "Exotic ball · $%d" % bt.cost, "desc": bt.desc, "color": bt.color if (bt.color as Color).get_luminance() > 0.3 else bt.accent, "hint": ""})
+				rows.append({"icon": "ball_" + id, "title": bt.name + " ball", "sub": "Exotic ball · $%d" % bt.cost, "desc": bt.desc, "color": Catalog.EXOTIC_FRAME_COLOR, "hint": ""})
 		"Isotopes":
 			for id in Catalog.IMBUES:
 				var r: Dictionary = Catalog.IMBUES[id]
-				rows.append({"icon": "imbue:" + id, "title": r.name, "sub": "Ball Isotope · $%d" % r.cost, "desc": r.desc, "color": r.color, "hint": ""})
+				rows.append({"icon": "imbue:" + id, "title": r.name, "sub": "Ball Isotope · $%d" % r.cost, "desc": r.desc, "color": Catalog.ISOTOPE_FRAME_COLOR, "hint": ""})
 		"Cues":
 			for id in Catalog.CUES:
 				var r: Dictionary = Catalog.CUES[id]

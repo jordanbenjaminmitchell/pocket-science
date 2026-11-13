@@ -1,5 +1,7 @@
 # Pocket Science
 
+Current local visual work and its publication status: [card and ball visual pass](docs/CARD_VISUAL_PASS.md).
+
 **A real-pool roguelike. Sink balls, avoid the 8, stack multipliers, beat the target.**
 
 Pocket Science plays like real pool: six pockets, all 15 numbered balls, a cue stick and an exact prediction line. Most boards use a 2:1 table; four playable boards use triangle, hexagon, pentagon and L-shaped layouts. On top of that sits a roguelike run of nine boss tables, drawn from 26 boards, a Pro Shop of Elements and ball upgrades, and Chain and Heat scoring. Built in Godot 4.7.

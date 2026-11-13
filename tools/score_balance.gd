@@ -33,7 +33,7 @@ func _build(state: RunState, name: String, table: int) -> void:
 	# Guaranteed acquisitions at fixed milestones isolate scoring power from shop RNG.
 	# Scattered is deliberately incoherent but receives the same number of cards.
 	var random_cards := ["odd", "cushion", "chalk", "rhythm", "side", "highball"]
-	var value_cards := ["odd", "solids", "fibonacci", "moneyball", "thinrack", "highball"]
+	var value_cards := ["odd", "solids", "prime", "moneyball", "stripes", "golden"]
 	var engine_cards := ["side", "heat", "even", "prime", "glasscannon", "menagerie"]
 	var cards: Array = []
 	match name:

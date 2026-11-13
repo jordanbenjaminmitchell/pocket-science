@@ -189,6 +189,29 @@ func _go() -> void:
 			if scenario == "potfx":
 				game._shoot(0.6)
 				await _frames(75)
+		"balltip", "racktip":
+			# The ball pop-up: an Isotope ball on the table, or a ball in the rack on the left.
+			game._new_run()
+			await _frames(3)
+			game.run.imbues[3] = "ember"
+			game.run.imbues[5] = "recurring"
+			game.run.add_special("gold")
+			game.run.ball_bonus[3] = 8
+			game._refresh_hud()
+			var tn := 3
+			var at: Vector2 = game.view.base_position + game.sim.pos[game.sim.index_of(tn)] * game.TABLE_SCALE
+			if scenario == "racktip":
+				tn = 5
+				at = game.tray.global_position + game.tray._spot(game.tray.balls.find(5))
+			var tip: Dictionary = game._ball_tip(tn)
+			game.term_tip.show_ball(tip.title, tip.points, tip.points_color, tip.text, tip.adds, at, 99.0)
+			await _frames(6)
+		"cuetip":
+			game._show_cue_select()
+			await _frames(4)
+			var chips: Array = game.overlay.find_children("*", "PanelContainer", true, false).filter(func(c): return c.mouse_default_cursor_shape == Control.CURSOR_HELP)
+			game._show_card_tip("imbue", "ember", 1, chips[1])
+			await _frames(6)
 		"aim", "cut", "roll", "tally", "shop":
 			game._new_run()
 			await _frames(3)
