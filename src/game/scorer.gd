@@ -509,6 +509,9 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			x *= 1.5
 		_step(steps, Catalog.BALL_TYPES[kind].name if kind != "" else ("Void" if void_shot else "Special"), "ball", snap, value, x, pre_chain)
 		snap = [value, x, pre_chain]
+		if n == int(ctx.get("golden_ball", -1)):
+			x *= 1.618
+			tags.append("Golden Ratio")
 		if ctx.get("loan", false):
 			x *= 1.0 - BoardFeatures.SKIM   # the Loan Shark's cut
 			tags.append("Loan Shark")

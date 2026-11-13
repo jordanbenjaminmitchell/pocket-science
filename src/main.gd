@@ -515,16 +515,40 @@ func _use(id: String) -> void:
 		_flash_banner(why, Color(0.6, 0.85, 1.0), 1.1)
 		return
 	match id:
-		"ghostchalk", "polish", "leadweight", "swap", "freezeframe", "nudge", "newton", "reflection", "goldenratio", "damping", "momentum":
+		"ghostchalk", "leadweight", "swap", "freezeframe", "nudge", "newton", "reflection", "goldenratio", "momentum":
 			_begin_pick(id, "ball")
 		"focal", "tidal":
 			_begin_pick(id, "pocket")
 		"darkenergy", "blast":
 			_begin_pick(id, "spot")
+		"polish":
+			# Zero Friction: the whole cloth is slick for this shot.
+			run.next_slick = true
+			run.apply_physics(sim)
+			guide_dirty = true
+			forecast_dirty = true
+			_arm(id, func():
+				run.next_slick = false
+				run.apply_physics(sim))
+		"damping":
+			var dc := _cue_index()
+			sim.vel[dc] *= 0.25
+			sim.spin[dc] *= 0.25
+			_spend(id)
+			_hold(false)
 		"absolutezero":
 			for i in sim.count():
 				sim.vel[i] = Vector2.ZERO
 				sim.spin[i] = Vector2.ZERO
+			# Anything frozen on the lip of a pocket drops in.
+			for i in sim.count():
+				if sim.alive[i] == 1 and sim.num[i] != 0 and sim.num[i] != 8:
+					for k in sim.layout.pockets.size():
+						var pk: Dictionary = sim.layout.pockets[k]
+						if not pk.closed and sim.pos[i].distance_to(pk.pos) < float(pk.r) + 34.0:
+							sim._pot(i, k)
+							break
+			_consume_events()
 			view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(0.7, 0.9, 1.0), 30, 300)
 			_spend(id)
 			_hold(false)
@@ -968,11 +992,7 @@ func _picked_ball(id: String, b: int) -> void:
 			_end_pick()
 		"goldenratio":
 			sim.vel[b] *= 1.618
-			_spend(id)
-			_end_pick()
-		"damping":
-			sim.vel[b] *= 0.5
-			sim.spin[b] *= 0.5
+			run.golden_ball = sim.num[b]
 			_spend(id)
 			_end_pick()
 		"momentum":
@@ -1026,10 +1046,6 @@ func _picked_ball(id: String, b: int) -> void:
 			_end_pick()
 			_arm(id, func(): sim.ghost = -1)
 			view.ghost_ball = b
-		"polish":
-			sim.glide[b] = 1
-			_end_pick()
-			_arm(id, func(): sim.glide[b] = 0)
 		"leadweight":
 			sim.mass[b] *= 4.0
 			_end_pick()

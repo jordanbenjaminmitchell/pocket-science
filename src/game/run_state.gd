@@ -97,6 +97,8 @@ var intro := false              # a new player: items from the 2nd shop, Exotic 
 var next_boost := 1.0           # Double Down
 var next_all_hot := false       # Spotlight
 var next_magnet := false        # Magnet Charm
+var next_slick := false         # Zero Friction: the cloth is 70% slicker for this shot
+var golden_ball := -1           # Golden Ratio: this ball scores ×1.618 if it sinks this shot
 const ITEM_SLOTS := 0            # consumables
 const PAR_SHOTS := 10
 ## A set never holds more than 15 balls: a new Exotic ball takes the place of one
@@ -1001,6 +1003,8 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 	next_boost = 1.0   # one-shot items are spent whatever happened
 	next_all_hot = false
 	next_magnet = false
+	next_slick = false
+	golden_ball = -1
 	var out := {"cleared": false, "over": false, "rack_cleared": false, "ball_in_hand": not cue_on_table, "chalk_lost": false}
 	var chalk_cost := 0
 	if res.scored:
@@ -1261,6 +1265,9 @@ func apply_physics(s: PoolSim) -> void:
 		s.ball_e = 0.97
 	if next_magnet:
 		s.pocket_pull = 1.0
+	if next_slick:
+		s.roll_decel *= 0.3
+		s.drag *= 0.3
 	match t.anomaly:
 		"blackice":
 			s.roll_decel = 45.0
@@ -1363,7 +1370,7 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 				highest = n
 	var ci := s.index_of(0)
 	return {
-		"perks": live_perks(), "imbues": imbues, "hot_pocket": hot_pocket, "beacon": beacon_shot, "safe8": eight_safe(), "portal_chain": bool(cue_rule("portal_chain", false)), "coil": BoardFeatures.coil_on(board), "focus": _focus_pocket(), "ball_bonus": ball_bonus, "perk_used": perk_used, "item_shot": items_this_shot > 0, "boss": current().id, "lab": current().lab,
+		"perks": live_perks(), "imbues": imbues, "hot_pocket": hot_pocket, "golden_ball": golden_ball, "beacon": beacon_shot, "safe8": eight_safe(), "portal_chain": bool(cue_rule("portal_chain", false)), "coil": BoardFeatures.coil_on(board), "focus": _focus_pocket(), "ball_bonus": ball_bonus, "perk_used": perk_used, "item_shot": items_this_shot > 0, "boss": current().id, "lab": current().lab,
 		"anomaly": current().anomaly, "loan": BoardFeatures.loan_alive(board), "last_pocket": last_pocket, "lithium": lithium_balls() if has_perk("lowball") else [], "heat": heat, "power": power, "shots_taken": shots_taken,
 		"catalyst": catalyst, "is_break": is_break, "chalk": chalk, "objects": s.object_balls_left(),
 		"money": money, "empty_slots": perk_slots() - perks.size(), "pockets_used": pockets_used,

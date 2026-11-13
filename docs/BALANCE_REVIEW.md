@@ -269,7 +269,7 @@ Each recharges every table.
 | Superposition | `blink` | While paused | $6 | While a shot is paused, move the cue ball anywhere. It keeps its speed and direction. |  |  |
 | Quantum Tunnel | `ghostchalk` | Aiming or paused | $5 | Pick a ball: this shot it passes straight through other balls. |  |  |
 | Inertia | `freezeframe` | While paused | $5 | Stop a ball dead. It holds still like a post for the rest of the shot. |  |  |
-| Zero Friction | `polish` | Aiming or paused | $5 | Pick a ball: it glides with no cloth friction until it first hits something. |  |  |
+| Zero Friction | `polish` | Aiming or paused | $5 | For this shot the cloth has 70% less friction: every ball rolls much further. |  |  |
 | Gravity Well | `gravitypebble` | While paused | $6 | Place a small well that bends rolling balls for the rest of the shot. |  |  |
 | Wormhole | `portal` | Aiming or paused | $7 | Place two linked portals for this table. A ball rolling into one comes out of the other at the same speed. |  |  |
 | Force Field | `wall` | While paused | $5 | Raise a short wall for the rest of the shot. |  |  |
@@ -285,14 +285,14 @@ Each recharges every table.
 | Pythagorean Triple | `pythagoras` | Aiming or paused | $7 | Pick three balls: force-field walls join them into a triangle for the rest of the shot. |  |  |
 | Newton's Cradle | `newton` | While paused | $6 | Pick a ball: the cue ball stops dead and that ball takes all its momentum. |  |  |
 | Reflection | `reflection` | While paused | $5 | Pick a rolling ball: it turns round and heads straight back. |  |  |
-| Golden Ratio | `goldenratio` | While paused | $5 | Pick a rolling ball: its speed is multiplied by 1.618. |  |  |
+| Golden Ratio | `goldenratio` | While paused | $5 | Pick a rolling ball: its speed is multiplied by 1.618, and if it sinks this shot it scores ×1.618. |  |  |
 | Centre of Mass | `centremass` | While paused | $6 | Pick two to four balls: they all head for the point between them. |  |  |
 | Hooke's Law | `hookes` | Aiming or paused | $5 | Pick a cushion: for the rest of the shot, anything bouncing off it keeps all its speed. |  |  |
-| Damping | `damping` | While paused | $4 | Pick a rolling ball: it slows to half its speed. |  |  |
+| Damping | `damping` | While paused | $4 | The cue ball drops to a quarter of its speed, wherever it is heading. |  |  |
 | Momentum Exchange | `momentum` | While paused | $6 | Pick a ball: it and the cue ball swap speeds and directions. |  |  |
 | Dark Energy | `darkenergy` | While paused | $5 | Place a point that pushes rolling balls away for the rest of the shot. |  |  |
 | Supernova | `blast` | While paused | $6 | Place a blast: every ball near it is flung outwards. |  |  |
-| Absolute Zero | `absolutezero` | While paused | $5 | Every ball on the table stops dead, right where it is. |  |  |
+| Absolute Zero | `absolutezero` | While paused | $5 | Every ball stops dead. Any ball stopped at the lip of a pocket drops in (never the 8 or the cue ball). |  |  |
 | Focal Point | `focal` | Aiming or paused | $5 | Pick a pocket: it becomes the hot pocket. |  |  |
 | Tidal Pull | `tidal` | While paused | $5 | Pick a pocket: for the rest of the shot it pulls rolling balls towards it. |  |  |
 

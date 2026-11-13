@@ -119,6 +119,7 @@ All 100 Elements were also renamed "element + noun" (for example Hydrogen Balloo
 - **"Rack" is the word for the player's own balls** ("your rack"), in all text. Promethium's and Fermium's new balls join the rack for good.
 - **Cue select:** each cue lists its cards as chips; hovering or tapping one shows the full card (`_cue_cards`, `_card_chip`). Cue and card text carries no design notes or UI hints.
 - **Smoothness:** balls are drawn a fraction of a physics step ahead (`TableView.update_balls(sim, lead)`), so rolling is even at any refresh rate; the forecast line samples every 3 units and adds a point at each bounce; the number disc is antialiased. The score preview option is on by default.
+- **After 1.42 (not released): speed and friction Catalysts reworked** after the playtest report showed them unused. Zero Friction: the whole cloth has 70% less friction for the shot (`RunState.next_slick`). Golden Ratio: the boosted ball also scores ×1.618 if it sinks (`golden_ball`). Damping: the cue ball drops to a quarter speed, no pick. Absolute Zero: every ball stops, and balls on a pocket lip drop in. `tools/catalyst_bot.gd` (the playtest chat's bot) still models the old versions of these four.
 - **Another chat is running playtests in this folder** (`docs/playtests/balance_pass2/`, `tools/balance_pass_report.py`, `tools/plan_dump.gd`). Those files are that chat's to commit.
 
 ### Balance pass 2, 30 of each card type, new cues (2026-11-13, tested later, see above)
