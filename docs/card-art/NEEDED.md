@@ -84,9 +84,62 @@ All 100 Elements were also renamed "element + noun" (for example Hydrogen Balloo
   - Shaped boards fill their frame in the rail material's flat colour (`BoardArt.RAIL_BASE`).
   - Benzene Ring has chrome rails and Golden Pentagon has gilded ones.
 
+### Next job for the coding chat: Sharks and moving parts
+
+The art for every Shark and moving part is finished, in `BoardArt` ([src/view/board_art.gd](../../src/view/board_art.gd)), with sheets in [docs/table-art/](../table-art/). None of it is in the game yet, because the boards that use it don't exist. The user asked for this to go to you rather than being built in the art chat.
+
+**Rules to keep** (from [docs/TABLES_SCIENCE.md](../TABLES_SCIENCE.md)):
+- The prediction line tells the truth.
+- Moving things follow fixed patterns in shot time.
+- Sharks are solid.
+- Pausing freezes everything.
+
+**Suggested approach.** It keeps the prediction exact and reuses what's already there:
+
+1. **Sharks are bumpers that move between shots.**
+   - During a shot a Shark is a still, solid circle, like the round bumpers in `TableLayout.bumpers`. `PoolSim` already collides with those exactly (kind 4 in `step`), and `cast` already sees them, so the prediction stays exact for free.
+   - After each shot, move it to its next spot, using the run's seeded random numbers so it is deterministic.
+   - Give each bumper entry a `shark` field (its kind, health and state).
+   - Add the bumper's index `k` to the `"bumper"` event in `_resolve_bumper`, so the scorer and run state know which Shark was hit.
+2. **Damage.**
+   - Every ball that hits a Shark takes one point off its health (or only hits above some speed, if that plays better).
+   - At 0 the Shark is knocked out. Leave it on the table, drawn in the knocked-out state, but remove its bumper so it is no longer solid.
+   - Draw it with `BoardArt.draw_shark(ci, kind, pos, heading, size, state, t, health)`. The state is `"normal"`, `"hit"` (show this for about 0.3 s after a hit) or `"ko"`.
+3. **What each Shark does**, all after a shot unless noted:
+
+| Shark | Board | Behaviour |
+|---|---|---|
+| Pool Shark | Lotka–Volterra (rework of `smoke`) | Circles the nearest object ball. Every 3 shots it swallows that ball: it leaves the table and scores nothing. If it survives 4 shots, a second Pool Shark appears. 3 hits to knock out |
+| Card Sharp | Faraday Cage (rework of `cramped`) | Sits in the mouth of the best pocket (the hot pocket), inside a ring of posts, and blocks it. Knock it out (2 hits) to open the pocket |
+| Hammerhead | Foucault's Pendulum (new, `foucault`) | Between shots it charges along a straight line across the table, then turns. Solid while it waits |
+| Loan Shark | Apex Predator (rework of `final`) | Joins at the Great White's half health. Skims 15% of every sink while alive, which takes over The Hustler's rule |
+| Leech | Apex Predator | Joins at half health. Clamps onto a ball, making that ball 300% weight and unable to drop until the Leech is hit off (1 hit) |
+| Great White | Apex Predator (final boss) | 8 hits. Swallows a ball every 2 shots. Its health bar is part of the drawing |
+
+4. **Moving parts.** Pick per board:
+   - **Step between shots**, like Sharks. This is the simplest option and keeps the prediction exact. Use it for:
+     - **Clockwork Sweeper** (`elements`): a wall segment that turns one clock step per shot. Draw it with `draw_sweeper`.
+     - **Shuttle posts** (Harmonic Oscillator, rework of `posts`): the two bumpers slide one step along their slot each shot. Draw them with `draw_shuttle`.
+     - **Hammerhead** (above).
+   - **Fields during the shot.** These are forces in `_forces` on a fixed pattern, which the prediction clone already runs:
+     - **Coriolis turntable** (rework of `drift`): a tangential push inside a disc. Draw it with `draw_turntable`.
+     - **Gulf Stream conveyor** (new, `gulf`): a constant push inside a strip. Draw it with `draw_conveyor`.
+     - **Foucault pendulum bob:** a moving solid circle whose position is a function of `sim.time`. The bumper collision would need its position at time t, so this is the hardest one. It could start as a still bob that steps between shots.
+   - **Special geometry:**
+     - **Maxwell's Demon** (new, `maxwell`): a gate segment that lets only balls above a speed through, one way. Draw it with `draw_demon`.
+     - **The Lever** (new, `lever`): a see-saw segment that tips towards whichever end a ball hits, stepping between shots. Draw it with `draw_seesaw`.
+     - **Capacitor** (rework of `spring_st`): a marked rail segment. A hit charges the opposite rail, and the next ball off it gets a boost (use `seg_e`, as Hooke's Law does). Draw it with `draw_charged_rail`.
+5. **Saving.** Shark positions, health and step counters must go into the table save (`run.table_snapshot` and `table_mods`). Otherwise reloading mid-table resets them.
+6. **Renames.** When a board is reworked, give it its science name in `Catalog.BOSSES`. `BoardArt.same_board(id)` then switches on its decal, felt and rail automatically, because it compares names. The music files and `Sfx.TRACKS` entries already exist under the board ids listed above; rename them if you choose different ids.
+7. **Tests to add:**
+   - A Shark is solid in both `step` and `cast`.
+   - Hits lower its health, and at 0 it is knocked out and no longer solid.
+   - The swallow timing.
+   - Its state survives a save and load.
+   - The prediction matches the real shot on each moving-part board.
+
 ### Wiring still open (optional)
 
-- `BoardArt` Sharks, moving parts, felts and rail materials, for when those boards exist.
 - Cue tiles on the cue-select screen: `TileArt.new().setup("cue", id)`.
 
 ## Preview sheets (2× size)
