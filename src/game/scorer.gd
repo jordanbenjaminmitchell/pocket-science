@@ -54,14 +54,12 @@ static func chain_step(e: Dictionary, ctx: Dictionary, contacted: bool) -> float
 					add += 0.5
 				if perks.has("ricochet"):
 					add += 0.25
-				if boss == "frozen":
-					add += 0.5
 			elif contacted and perks.has("tracer"):
 				add += 0.25
 		"boost":
 			add += float(e.get("chain", 0.0))
 		"bumper":
-			if boss == "parlor" or boss == "posts":
+			if boss == "parlor" or boss == "posts" or boss == "foucault":
 				add += 1.0
 	return add
 
@@ -250,7 +248,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			"corner": not (k == 1 or k == 4), "side": k == 1 or k == 4, "hot": k == hot or all_hot, "eight": n == 8,
 			"bank": rails > 0, "combo": by != 0, "clean": rails == 0 and by == 0 and not kick,
 			"first": idx == 0, "extra": idx >= 1, "kick": kick, "triple": pots.size() >= 3,
-			"repeat_pocket": seen_pocket.has(k), "soft": float(ctx.get("power", 0.5)) <= 0.35,
+			"repeat_pocket": seen_pocket.has(k) or (seen_pocket.is_empty() and k == int(ctx.get("last_pocket", -1))), "soft": float(ctx.get("power", 0.5)) <= 0.35,
 			"prime": Catalog.PRIMES.has(n) or Catalog.PRIMES.has(face), "fib": [1, 2, 3, 5, 8, 13].has(n) or [1, 2, 3, 5, 8, 13].has(face),
 			"lowest": n == int(ctx.get("lowest", -1)), "highest": n == int(ctx.get("highest", -1)),
 			"heat3": heat >= 3, "on_fire": heat >= 5, "cold": heat == 0,
@@ -447,27 +445,26 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			x *= 2.0
 		_step(steps, Catalog.BALL_TYPES[kind].name if kind != "" else ("Void" if void_shot else "Special"), "ball", snap, value, x, pre_chain)
 		snap = [value, x, pre_chain]
+		if ctx.get("loan", false):
+			x *= 1.0 - BoardFeatures.SKIM   # the Loan Shark's cut
+			tags.append("Loan Shark")
 		# The table's own rule.
 		match boss:
 			"drift":
 				pre_chain += 1.0
+			"gulf":
+				pre_chain += 0.5
 			"blackice":
 				pre_chain += 0.5
-			"slate":
-				value += 25.0
-			"iron":
-				value += 30.0
 			"magnet":
 				value -= 10.0
-			"cramped", "smoke", "tilted", "lights":
+			"cramped", "smoke", "tilted":
 				x *= 1.5
 			"two":
 				x *= 2.0
-			"spring_st", "hump":
+			"spring_st":
 				if rails > 0:
 					x *= 2.0
-			"hustler":
-				x *= 0.85
 			"final":
 				if n == 8 and left_after == 0:
 					x *= 5.0
@@ -524,11 +521,16 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		out.heat_gain += 1
 	if perks.has("streak") and pots.size() >= 2:
 		out.heat_gain += 1
-	if boss == "nineball" or boss == "closing":
+	if boss == "closing":
 		out.heat_gain += 1
 	if perks.has("catalyst"):
 		out.catalyst_gain = 0.75 * pots.size()
 	out.chain = chain
+	# Lithium Cell: each charged ball pays $1.
+	var lith: Array = ctx.get("lithium", [])
+	for p in pots:
+		if lith.has(int(p.a)):
+			money += 1
 	out.money = money
 	out.total = int(total)
 	out.element_mix = mix

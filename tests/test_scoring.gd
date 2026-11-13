@@ -64,11 +64,9 @@ func _initialize() -> void:
 		if not fx.is_empty():
 			check(fx.has("when") and (fx.has("value") or fx.has("chain") or fx.has("x") or fx.has("money")), "%s fx is well formed" % id)
 	print("table rules")
-	check(run_case([hit(0, 5), rail5, pot(5, 0)], {"boss": "frozen"}).total == 30, "Frozen Lake pays for cushions")
 	check(run_case([hit(0, 5), {"type": "bumper", "a": 5}, pot(5, 0)], {"boss": "parlor"}).total == 40, "Pinball Parlor pays for bumpers")
 	check(run_case([hit(0, 5), pot(5, 0, 1)], {"boss": "spring_st"}).total == 40, "Spring Street pays for banks")
 	check(run_case(h5, {"boss": "drift"}).total == 40, "The Drift adds Chain on pots")
-	check(run_case(h5, {"boss": "hustler"}).total == 17, "The Hustler skims 15%")
 	var early := run_case([hit(0, 8), pot(8, 0)], {"boss": "final", "anomaly": "cursed8", "objects": 5})
 	check(not early.scored and early.foul == "The 8 went early", "the Final punishes an early 8")
 	check(run_case([hit(0, 8), pot(8, 0)], {"boss": "final", "anomaly": "cursed8", "objects": 1}).total == 130, "the last 8 pays ×5")

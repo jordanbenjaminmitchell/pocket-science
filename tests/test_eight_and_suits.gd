@@ -82,7 +82,15 @@ func _initialize() -> void:
 	var s12 := [hit(0, 12), pot(12)]
 	check(score(s5, {"perks": ["solids"]}).total == 55, "Solids +35")
 	check(score(s12, {"perks": ["stripes"]}).total == 51, "Stripes ×1.5")
-	check(score([hit(0, 2), pot(2)], {"perks": ["lowball"]}).total == 14, "Lithium Cell changes physics, not points")
+	check(score([hit(0, 2), pot(2)], {"perks": ["lowball"], "lithium": [1, 2, 3]}).money == 1, "Lithium Cell: a charged ball pays $1")
+	check(score([hit(0, 5), pot(5)], {"perks": ["lowball"], "lithium": [1, 2, 3]}).money == 0, "and others pay nothing")
+	var plain := score([hit(0, 5), pot(5, 2)]).total
+	check(score([hit(0, 5), pot(5, 2)], {"perks": ["fusion"], "last_pocket": 2}).total == plain * 2, "Helium Fusion: the same pocket as your last sink scores ×2")
+	check(score([hit(0, 5), pot(5, 2)], {"perks": ["fusion"], "last_pocket": 3}).total == plain, "but not another pocket")
+	var lr := RunState.new()
+	lr.start(4)
+	lr.ball_set.assign([3, 5, 7, 9, 12, 8])
+	check(lr.lithium_balls() == [3, 5, 7], "Lithium Cell picks your three lowest-value balls, never the 8")
 	check(score([hit(0, 14), pot(14)], {"perks": ["highball"]}).total == 95 and score(s12, {"perks": ["highball"]}).total == 34, "High Roller: balls 13-15 ×2.5, nothing else")
 	check(score(s5, {"perks": ["solidgold"]}).money == 1, "Solid Gold pays $1")
 	check(score(s5, {"perks": ["bedrock"]}).heat_gain == 1, "Bedrock: only solids adds Heat")

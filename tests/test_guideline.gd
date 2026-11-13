@@ -113,15 +113,7 @@ func _go() -> void:
 	check(g.view.forecast_paths.size() > 0, "a sloped table draws the real curved path")
 
 	await _load_table("smoke")
-	g.follow = 1.0
-	g.side = 0.5
-	await _aim_at(5)
-	check(g._shot_follow() == 0.0 and g._shot_side() == 0.0, "The Smoke Room allows no spin")
-	await _load_table("lights")
-	check(g.run.hot_pocket == -1, "Lights Out has no hot pocket")
-	for k in 40:
-		g.run.begin_table()
-		check(g.run.bounty != "hot" and g.run.bounty != "hot2", "no hot-pocket side bet without a hot pocket") if g.run.bounty == "hot" or g.run.bounty == "hot2" else null
+	check(not g.run.board.get("sharks", []).is_empty(), "Lotka-Volterra starts with a Pool Shark")
 
 	var fresh := GameSettings.new()
 	check(fresh.guide_lines == 1, "All balls is the default")

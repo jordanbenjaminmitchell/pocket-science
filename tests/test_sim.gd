@@ -177,7 +177,7 @@ func _test_boss_physics() -> void:
 	s3.add_ball(0, Vector2(300, 250))
 	s3.add_ball(4, Vector2(500, 250))
 	fw.apply_physics(s3)
-	check(is_equal_approx(s3.mass[1], 0.7) and is_equal_approx(s3.mass[0], 1.0), "Hydrogen Balloon lightens object balls only")
+	check(s3.cue_float and s3._rejects(0, 0) and not s3._rejects(1, 0), "Hydrogen Balloon: pockets turn the cue ball away, not object balls")
 	# The reworked Elements: physics instead of points.
 	var rw := _run_with("", ["laststripe", "lever", "racing", "collector", "domino"])
 	var rws4 := PoolSim.new(TableLayout.new().build())

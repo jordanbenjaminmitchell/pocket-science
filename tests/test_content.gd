@@ -30,7 +30,7 @@ func fresh(anomaly: String = "", lab: String = "standard") -> RunState:
 	r.plan[0].anomaly = anomaly
 	r.plan[0].boss = anomaly != ""
 	r.plan[0].lab = lab
-	r.plan[0].id = "frozen"
+	r.plan[0].id = "drift"
 	r.begin_table()
 	return r
 

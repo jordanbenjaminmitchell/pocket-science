@@ -154,6 +154,9 @@ func play_table(run: RunState) -> bool:
 		if OS.has_environment("BOTDEBUG"):
 			print("  shot brk=%s pw=%.2f foul=%s pots=%s total=%d chalk=%d" % [is_break, pw, res.foul, str(res.potted), res.total, run.chalk])
 		var out := run.apply_shot(res, is_break, sim.object_balls_left(), sim.alive[0] == 1)
+		if not run.board.is_empty():
+			run.board_turn(sim, sim.events)
+			sim.layout = run.build_layout()
 		is_break = false
 		if out.cleared:
 			return true

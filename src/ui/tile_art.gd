@@ -27,7 +27,7 @@ const SIZE := Vector2(172, 118)
 const TILES := {
 	# Physics
 	"perk:velvet": {"sym": "V", "stat": "Balls roll 30% further", "letter": "velvet"},
-	"perk:featherweight": {"sym": "H", "stat": "Object balls 30% lighter", "letter": "feather"},
+	"perk:featherweight": {"sym": "H", "stat": "Cue ball floats out", "letter": "feather"},
 	"perk:heavyhit": {"sym": "Os", "stat": "Cue ball 30% heavier", "letter": "heavy"},
 	"perk:liverails": {"sym": "N", "stat": "Bouncier cushions", "letter": "spring"},
 	"perk:slowcloth": {"sym": "Tl", "stat": "Balls stop 25% sooner", "letter": "brake"},
@@ -50,7 +50,7 @@ const TILES := {
 	"perk:chain": {"sym": "S", "stat": "Combinations ×2", "letter": "links"},
 	"perk:multi": {"sym": "B", "stat": "Extra sinks +1 Chain", "letter": "cluster"},
 	"perk:supernova": {"sym": "Ni", "stat": "3+ sinks: all ×2", "letter": "sweep"},
-	"perk:fusion": {"sym": "He", "stat": "Same pocket twice: ×3", "letter": "merge"},
+	"perk:fusion": {"sym": "He", "stat": "Same pocket again: ×2", "letter": "merge"},
 	"perk:domino": {"sym": "Dy", "stat": "Hits keep their speed", "letter": "topple"},
 	# Streaks
 	"perk:streak": {"sym": "P", "stat": "2+ sinks: +1 Heat", "letter": "stoke"},
@@ -83,7 +83,7 @@ const TILES := {
 	"perk:steadyrun": {"sym": "Y", "stat": "Solid streaks add value", "letter": "steps"},
 	"perk:solidsonly": {"sym": "Ta", "stat": "Solids ×3, stripes ×0.5", "letter": "only"},
 	"perk:lastsolid": {"sym": "Bi", "stat": "Last solid ×8", "letter": "spotlight"},
-	"perk:lowball": {"sym": "Li", "stat": "Balls 1–3 keep speed", "letter": "limbo"},
+	"perk:lowball": {"sym": "Li", "stat": "3 lowest: bouncy, $1", "letter": "limbo"},
 	# Stripes
 	"perk:stripes": {"sym": "Cr", "stat": "Stripes ×1.5", "letter": "band"},
 	"perk:racing": {"sym": "Rb", "stat": "Light, fast stripes", "letter": "racing"},
@@ -424,7 +424,6 @@ static func balls_for(k: String, i: String) -> Array:
 		"even": return [2, 4, 6, 8, 10, 12, 14]
 		"prime": return Catalog.PRIMES.duplicate()
 		"fibonacci": return [1, 2, 3, 5, 8, 13]
-		"lowball": return [1, 2, 3]
 		"highball": return [13, 14, 15]
 		"eight", "darkhorse", "hushmoney", "kissblack", "steerclear", "lastcall", "trouble", "laststripe": return [8]
 		"solids", "solidgold", "bedrock", "steadyrun", "solidsonly", "lastsolid": return [1, 2, 3, 4, 5, 6, 7]
@@ -433,7 +432,7 @@ static func balls_for(k: String, i: String) -> Array:
 
 
 ## Cards whose numbers are not obvious from the name show them on the tile.
-const FLOAT_NUMBERS := ["odd", "even", "prime", "fibonacci", "lowball", "highball"]
+const FLOAT_NUMBERS := ["odd", "even", "prime", "fibonacci", "highball"]
 
 
 static func has_tile(k: String, i: String) -> bool:

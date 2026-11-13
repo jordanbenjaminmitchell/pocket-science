@@ -45,6 +45,7 @@ var clock_pos := 0            # Clockwork Table: which pocket is next (index int
 var clock_streak := 0         # Clockwork Table: ticks in a row
 var forgiven := false         # The Local: the free miss has been used
 var pockets_used: Array = []
+var last_pocket := -1           # the pocket of your last sink (Helium Fusion)
 var shrink_steps := 0
 var flash_used := false   # Xenon Flash: used on this table
 var insured_used := 0
@@ -56,6 +57,7 @@ var called := {}                # Called Shot for the next shot: {ball, pocket}
 var last_chalk_lost := false    # the last shot cost Chalk (Insurance Slip)
 var ball_set: Array = []        # the balls this run racks; starts as 1-15
 var table_mods := {}            # this table only: placed bumpers and portals, wider pockets
+var board := {}                 # this table's Sharks and moving parts (BoardFeatures)
 var ball_kinds := {}            # special ball number (16+) -> type
 var seed_growth := {}           # Seed balls: times sunk, keyed by number as a string
 var lucky_mult := {}            # Lucky Imbue: ball number -> what its next win pays (2, 3, 4...)
@@ -182,6 +184,7 @@ func begin_table() -> void:
 	solid_run = 0
 	stripe_run = 0
 	table_mods = {"bumpers": [], "portals": [], "covered": []}
+	board = {}   # set once the hot pocket is known, below
 	frost_shield = false
 	heart_used = false
 	quick_used = false
@@ -198,6 +201,10 @@ func begin_table() -> void:
 	next_all_hot = false
 	next_magnet = false
 	roll_hot_pocket(-1)
+	if BoardFeatures.has_features(String(current().id)):
+		var brng := RandomNumberGenerator.new()
+		brng.seed = seed_value * 7 + table_index * 131 + 11
+		board = BoardFeatures.start(String(current().id), brng, hot_pocket)
 	var keys := Catalog.BOUNTIES.keys()
 	bounty = keys[rng.randi_range(0, keys.size() - 1)]
 	while hot_pocket < 0 and (bounty == "hot" or bounty == "hot2"):   # no hot pocket here to aim at
@@ -370,6 +377,9 @@ func closed_pockets() -> Array[int]:
 	var c: Array[int] = []
 	if current().anomaly == "sealed":
 		c.append_array([1, 4])
+	for k in BoardFeatures.closed(board):
+		if not c.has(k):
+			c.append(k)
 	return c
 
 
@@ -946,6 +956,9 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		for k in res.get("pocket_list", []):
 			if not pockets_used.has(k):
 				pockets_used.append(k)
+		var pl: Array = res.get("pocket_list", [])
+		if not pl.is_empty():
+			last_pocket = int(pl[pl.size() - 1])   # Helium Fusion remembers it
 	else:
 		var free_break: bool = was_break and res.foul == "Miss"
 		# Boss "soft fouls": the shot scores nothing and the heat resets, but no chalk is lost.
@@ -1021,7 +1034,16 @@ func build_layout() -> TableLayout:
 		layout.add_bumper(Vector2(bp[0], bp[1]), TableLayout.BUMPER_R)
 	for pt in table_mods.get("portals", []):
 		layout.portals.append({"a": Vector2(pt[0], pt[1]), "b": Vector2(pt[2], pt[3])})
-	if current().lab == "cyclotron":
+	# Sharks, posts and the pendulum bob (BoardFeatures), then the Sweeper's wall.
+	for bp: Dictionary in BoardFeatures.bumpers(board):
+		layout.bumpers.append(bp)
+	for w: Array in BoardFeatures.walls(board):
+		var a: Vector2 = w[0]
+		var b: Vector2 = w[1]
+		var n := (b - a).orthogonal().normalized()
+		layout.segments.append({"a": a, "b": b, "n": n})
+		layout.segments.append({"a": b, "b": a, "n": -n})
+	if current().lab == "cyclotron" and board.is_empty():
 		layout.add_bumper(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.27), 20.0)
 		layout.add_bumper(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.73), 20.0)
 	elif current().lab == "pinball":
@@ -1081,6 +1103,24 @@ func apply_physics(s: PoolSim) -> void:
 	if perks.has("hothand") and heat >= 3:
 		s.pocket_pull = maxf(s.pocket_pull, 0.7)   # Holmium Magnet
 	s.anchor8 = perks.has("laststripe")   # Lead Anchor
+	s.cue_float = perks.has("featherweight")   # Hydrogen Balloon
+	# The board's own fields: Coriolis's turning disc, the Gulf Stream's current,
+	# the Capacitor's charged rail and the Leech's victim.
+	s.spin_zone = []
+	s.flow_zone = []
+	s.charged_y = -1.0
+	s.no_drop = {}
+	match String(t.id):
+		"drift":
+			s.spin_zone = [Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), 130.0, 900.0]
+		"gulf":
+			s.flow_zone = [Rect2(0, TableLayout.H * 0.38, TableLayout.W, TableLayout.H * 0.24), Vector2(0, 0) + Vector2(320.0, 0)]
+		"spring_st":
+			if BoardFeatures.charged(board):
+				s.charged_y = TableLayout.H
+	var leech := BoardFeatures.leech_ball(board)
+	if leech > 0:
+		s.no_drop[leech] = true
 	s.cue_magnet = 1.0 if perks.has("elastic") else 0.0   # Neodymium Magnet
 	s.first_boost = 1.0   # Uranium Reactor sets this per shot, when the shot is struck
 	if perks.has("domino"):
@@ -1106,10 +1146,10 @@ func apply_physics(s: PoolSim) -> void:
 		else:
 			if t.anomaly == "lead":
 				m = 1.6
-			if perks.has("featherweight"):
-				m *= 0.7   # Hydrogen Balloon
 			if perks.has("laststripe") and s.num[i] == 8:
 				m *= 3.0   # Lead Anchor
+			if s.num[i] == BoardFeatures.leech_ball(board):
+				m *= 3.0   # the Leech weighs its ball down
 			if perks.has("lever") and Catalog.is_stripe(s.num[i]):
 				m *= 1.4   # Tungsten Core
 			if perks.has("racing") and Catalog.is_stripe(s.num[i]):
@@ -1129,7 +1169,7 @@ func apply_physics(s: PoolSim) -> void:
 		if i < s.pull.size():
 			var halo: bool = perks.has("lastcall") and s.num[i] == 8 and s.object_balls_left() == 1   # Polonium Halo
 			s.pull[i] = 1.0 if imbues.get(s.num[i], "") == "magnetic" or halo else 0.0
-			var charged: bool = perks.has("lowball") and s.num[i] >= 1 and s.num[i] <= 3   # Lithium Cell
+			var charged: bool = perks.has("lowball") and lithium_balls().has(s.num[i])   # Lithium Cell
 			s.bounce[i] = 1.0 if Catalog.kind_of(s.num[i]) == "star" or (perks.has("lever") and Catalog.is_stripe(s.num[i])) or charged else 0.0
 		s.mass[i] = m
 		if i < s.grip.size():
@@ -1142,6 +1182,25 @@ func apply_physics(s: PoolSim) -> void:
 
 
 ## Uranium Reactor: a full-power shot sends the first ball it hits off 20% faster.
+## Lithium Cell: your three lowest-value balls in play (never the 8).
+func lithium_balls() -> Array:
+	var set_now: Array = ball_set.filter(func(n): return int(n) != 8)
+	set_now.sort_custom(func(a, b): return Catalog.ball_points(int(a)) < Catalog.ball_points(int(b)) or (Catalog.ball_points(int(a)) == Catalog.ball_points(int(b)) and int(a) < int(b)))
+	return set_now.slice(0, 3)
+
+
+## Between shots on a board with Sharks or moving parts: they take their hits,
+## move, swallow and join, and the parts step on. Shared by the game and the bots.
+func board_turn(s: PoolSim, events: Array) -> Dictionary:
+	if board.is_empty():
+		return {}
+	var brng := RandomNumberGenerator.new()
+	brng.seed = seed_value * 7 + table_index * 131 + int(board.get("shots", 0)) * 17
+	var out := BoardFeatures.after_shot(board, s, events, brng)
+	money += int(out.get("money", 0))
+	return out
+
+
 func first_boost(power: float) -> float:
 	return 1.2 if perks.has("power") and power >= 0.85 else 1.0
 
@@ -1162,7 +1221,7 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 	var ci := s.index_of(0)
 	return {
 		"perks": perks, "imbues": imbues, "hot_pocket": hot_pocket, "boss": current().id, "lab": current().lab,
-		"anomaly": current().anomaly, "heat": heat, "power": power, "shots_taken": shots_taken,
+		"anomaly": current().anomaly, "loan": BoardFeatures.loan_alive(board), "last_pocket": last_pocket, "lithium": lithium_balls() if perks.has("lowball") else [], "heat": heat, "power": power, "shots_taken": shots_taken,
 		"catalyst": catalyst, "is_break": is_break, "chalk": chalk, "objects": s.object_balls_left(),
 		"money": money, "empty_slots": MAX_PERKS - perks.size(), "pockets_used": pockets_used,
 		"lowest": lowest, "highest": highest, "element_mix": element_mix, "clock_pos": clock_pos, "clock_streak": clock_streak,
@@ -1208,8 +1267,8 @@ func to_dict() -> Dictionary:
 			"score": score, "chalk": chalk, "heat": heat, "shots_taken": shots_taken,
 			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "element_mix": element_mix, "clock_pos": clock_pos, "clock_streak": clock_streak,
 			"forgiven": forgiven, "bounty": bounty, "bounty_done": bounty_done, "bet_cap": bet_cap, "bet_state": bet_state, "bet_peeked": bet_peeked,
-			"pockets_used": pockets_used, "shrink_steps": shrink_steps, "insured_used": insured_used,
-				"solid_run": solid_run, "stripe_run": stripe_run, "mods": table_mods,
+			"pockets_used": pockets_used, "last_pocket": last_pocket, "shrink_steps": shrink_steps, "insured_used": insured_used,
+				"solid_run": solid_run, "stripe_run": stripe_run, "mods": table_mods, "board": board,
 				"frost": frost_shield, "heart_used": heart_used, "tool_charges": tool_charges, "chalk_lost": last_chalk_lost,
 				"boost": next_boost, "all_hot": next_all_hot, "magnet": next_magnet,
 			"snapshot": table_snapshot,
@@ -1362,12 +1421,14 @@ func load_dict(d: Dictionary) -> bool:
 		bet_state = str(t.get("bet_state", "passed"))
 		bet_peeked = bool(t.get("bet_peeked", false))
 		pockets_used = (t.get("pockets_used", []) as Array).map(func(x): return int(x))
+		last_pocket = int(t.get("last_pocket", -1))
 		shrink_steps = int(t.get("shrink_steps", 0))
 		insured_used = int(t.get("insured_used", 0))
 		solid_run = int(t.get("solid_run", 0))
 		stripe_run = int(t.get("stripe_run", 0))
 		if typeof(t.get("mods")) == TYPE_DICTIONARY:
 			table_mods = t.mods
+		board = t.get("board", {}) if t.get("board", {}) is Dictionary else {}
 		next_boost = float(t.get("boost", 1.0))
 		next_all_hot = bool(t.get("all_hot", false))
 		next_magnet = bool(t.get("magnet", false))

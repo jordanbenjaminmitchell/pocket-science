@@ -6,6 +6,7 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/balance_doc.gd
 
 var lines: PackedStringArray = []
+var sections: Array = []   # for docs/balance_data.json: [{title, intro, cols, rows: [{key, cells}]}]
 
 
 func _initialize() -> void:
@@ -18,6 +19,17 @@ func _cell(v) -> String:
 
 
 func _table(title: String, intro: String, cols: Array, rows: Array) -> void:
+	var jrows: Array = []
+	for r: Array in rows:
+		var key := (title.to_lower().replace(" ", "-") + "-" + str(r[1] if r.size() > 1 and str(r[1]).begins_with("`") else r[0])).replace("`", "")
+		var clean := ""
+		for ch in key:
+			clean += ch if ch.is_valid_identifier() or ch in "0123456789-_" else "-"
+		var cells: Array = []
+		for v in r:
+			cells.append(str(v).replace("`", ""))
+		jrows.append({"key": clean.substr(0, 120), "cells": cells})
+	sections.append({"title": title, "intro": intro, "cols": cols, "rows": jrows})
 	lines.append("## " + title)
 	lines.append("")
 	if intro != "":
@@ -136,3 +148,6 @@ func _go() -> void:
 	f.store_string("\n".join(lines) + "\n")
 	f.close()
 	print("WROTE docs/BALANCE_REVIEW.md (%d lines)" % lines.size())
+	var j := FileAccess.open("res://docs/balance_data.json", FileAccess.WRITE)
+	j.store_string(JSON.stringify({"generated": Time.get_date_string_from_system(), "sections": sections}))
+	j.close()

@@ -55,7 +55,7 @@ Endless tables after the ninth raise the target ×1.6 each.
 | 6 | 510 | Any tier 2 board | $12 |  |  |
 | 7 | 650 | Any tier 3 board | $16 |  |  |
 | 8 | 840 | Any tier 3 board | $16 |  |  |
-| 9 | 1060 | The Grand Final | $20 |  |  |
+| 9 | 1060 | Apex Predator | $20 |  |  |
 
 ## Handicaps
 
@@ -81,27 +81,22 @@ Tier 0 is the first table, tier 9 the fixed boss tables.
 | Golden Pentagon | `pentagon` | 2 | standard | A pentagon in golden-ratio proportions: five corner pockets and one in the long bottom rail. |  |  |
 | The L-Shell | `lshell` | 2 | standard | An L-shaped table. The inside corner turns every bank into a new puzzle. |  |  |
 | The Local | `local` | 0 | standard | Your home table. The house forgives your first miss. |  |  |
-| Frozen Lake | `frozen` | 1 | cryo | Slick cloth, long rolls. On this table, every cushion a ball touches adds +0.5 Chain. |  |  |
-| Spring Street | `spring_st` | 1 | spring | Lively rails, side pockets boarded up. On this table, bank sinks score ×2. |  |  |
-| The Drift | `drift` | 1 | current | Rolling balls drift right. Every sink adds +1 Chain. |  |  |
-| Old Slate | `slate` | 1 | dense | Heavy cloth stops balls fast. Every ball is worth +25. |  |  |
-| The Back Room | `cramped` | 1 | standard | Pockets 12% narrower, but every sink scores ×1.5. |  |  |
+| Capacitor | `spring_st` | 1 | spring | Lively rails. A ball off the top rail charges the bottom one, and the next ball off the charged rail flies off faster. On this table, bank sinks score ×2. |  |  |
+| Coriolis | `drift` | 1 | standard | A turntable spins in the middle and curves every ball that rolls across it. Every sink adds +1 Chain. |  |  |
+| Faraday Cage | `cramped` | 1 | standard | A Card Sharp sits in a corner pocket, guarded by two posts, and blocks it. Hit it twice to knock it out and open the pocket. Every sink scores ×1.5. |  |  |
 | Pinball Parlor | `parlor` | 2 | pinball | Four bumpers. On this table, every bumper hit adds +1 Chain. |  |  |
-| Twin Posts | `posts` | 2 | cyclotron | Two bumpers guard the middle. On this table, every bumper hit adds +1 Chain. |  |  |
-| The Sinkhole | `sinkhole` | 2 | gravity | The centre pulls moving balls in. Chain starts at 2. |  |  |
-| The Hump | `hump` | 2 | repulsor | A rise in the cloth pushes balls away. On this table, bank sinks score ×2. |  |  |
-| Rotation Night | `nineball` | 2 | standard | Hit the lowest ball first or the shot scores nothing. Legal sinks add +1 Heat. |  |  |
-| The Magnet Room | `magnet` | 2 | magnetlab | Pockets pull balls in, but every ball is worth 10 less. |  |  |
-| The Smoke Room | `smoke` | 2 | dense | Stale air and a dead tip: the cue ball takes no spin here. Every sink scores ×1.5. |  |  |
-| Black Ice | `blackice` | 3 | cryo | Almost no friction and lively cushions. Every sink adds +0.5 Chain. |  |  |
-| The Tilted Table | `tilted` | 3 | standard | The table slopes, and a dotted line shows where balls will really roll. Every sink scores ×1.5. |  |  |
-| Two Pockets | `two` | 3 | spring | Only the hot pocket and its diagonal opposite score, and sinks there score ×2. |  |  |
-| Closing Time | `closing` | 3 | standard | Every pocket narrows after each shot. Heat builds twice as fast. |  |  |
-| The Iron Rack | `iron` | 3 | dense | Object balls are 60% heavier. Every ball is worth +30. |  |  |
-| Lights Out | `lights` | 3 | current | With the lights out, no pocket runs hot. Every sink scores ×1.5. |  |  |
-| The Hustler | `hustler` | 3 | magnetlab | A heavy cue ball, and the house skims 15% of every sink. |  |  |
-| The Clockwork Table | `elements` | 9 | element | The pockets are numbered 1 to 6, clockwise. Sink into the next one in order to tick the clock: ticks in a row score ×1.5, ×2, ×2.5 and on. Any other pocket stops the clock. |  |  |
-| The Grand Final | `final` | 9 | final | The 8 goes last. Sink it early and lose 2 Chalk; sink it last for ×5. |  |  |
+| Harmonic Oscillator | `posts` | 2 | cyclotron | Two posts on springs slide back and forth, one step after every shot. Every post hit adds +1 Chain. |  |  |
+| Event Horizon | `sinkhole` | 2 | gravity | A gravity well in the centre pulls moving balls in. Chain starts at 2. |  |  |
+| Kepler Orbit | `magnet` | 2 | magnetlab | Every pocket pulls passing balls into orbit and then in, but every ball is worth 10 less. |  |  |
+| Lotka–Volterra | `smoke` | 2 | standard | A Pool Shark circles the balls and swallows one every 3 shots. If it survives 4 shots, a second one arrives. Hit a Shark 3 times to knock it out. Every sink scores ×1.5. |  |  |
+| Superfluid | `blackice` | 3 | cryo | Almost no friction and lively cushions. Every sink adds +0.5 Chain. |  |  |
+| Snell's Law | `tilted` | 3 | standard | The table slopes and bends every ball's path, and a dotted line shows where balls will really roll. Every sink scores ×1.5. |  |  |
+| Quantum Pockets | `two` | 3 | spring | Only the hot pocket and its entangled twin, diagonally opposite, score, and sinks there score ×2. |  |  |
+| Radioactive Decay | `closing` | 3 | standard | The pockets decay: every pocket narrows after each shot. Heat builds twice as fast. |  |  |
+| Gulf Stream | `gulf` | 2 | standard | A current runs across the middle of the table and carries rolling balls to the right. Every sink adds +0.5 Chain. |  |  |
+| Foucault's Pendulum | `foucault` | 3 | standard | A heavy bob swings across the middle, and its swing turns a little every shot. A Hammerhead charges across the table between shots. Hitting the bob adds +1 Chain; knock the Hammerhead out with 3 hits. |  |  |
+| The Clockwork Table | `elements` | 9 | element | The pockets are numbered 1 to 6, clockwise. Sink into the next one in order to tick the clock: ticks in a row score ×1.5, ×2, ×2.5 and on. Any other pocket stops the clock. A Sweeper wall turns one hour round the middle after every shot. |  |  |
+| Apex Predator | `final` | 9 | final | The Great White swallows a ball every 2 shots; hit it 8 times to knock it out. At half health the Loan Shark (takes 15% of every sink) and the Leech (clamps onto a ball) join. The 8 goes last: early costs 2 Chalk, last scores ×5. |  |  |
 
 ## Elements
 
@@ -109,9 +104,9 @@ All 100, by atomic number. Rarity sets how often a card is offered.
 
 | Z | Element | Id | Rarity | Cost | Family | What it does | Your note | Done |
 |---|---|---|---|---|---|---|---|---|
-| 1 | Hydrogen Balloon | `featherweight` | Uncommon | $6 | Physics | Object balls are 30% lighter: they float further when struck. |  |  |
-| 2 | Helium Fusion | `fusion` | Rare | $8 | Combos & clusters | A second ball into the same pocket in one shot scores ×3. |  |  |
-| 3 | Lithium Cell | `lowball` | Common | $4 | Solids | Balls 1, 2 and 3 are charged: they lose no speed off cushions. |  |  |
+| 1 | Hydrogen Balloon | `featherweight` | Rare | $8 | Physics | The cue ball floats: if it would drop into a pocket, it bobs back out instead. No more pocket scratches. |  |  |
+| 2 | Helium Fusion | `fusion` | Uncommon | $6 | Combos & clusters | Sink a ball into the same pocket as your last sink (this shot or your last one) and it scores ×2. |  |  |
+| 3 | Lithium Cell | `lowball` | Common | $4 | Solids | Your 3 lowest-value balls are charged: they lose no speed off cushions, and each pays $1 when it sinks. |  |  |
 | 4 | Beryllium Avalanche | `catalyst` | Rare | $8 | Risk & scaling | Every ball you sink makes all balls worth +0.75 for the rest of the run. |  |  |
 | 5 | Boron Cluster | `multi` | Uncommon | $6 | Combos & clusters | Every ball after the first in a shot adds +1 Chain as it sinks. |  |  |
 | 6 | Carbon Core | `eight` | Uncommon | $6 | The 8-ball | The 8 stops costing you points, scores like any other ball, and pays $3. |  |  |

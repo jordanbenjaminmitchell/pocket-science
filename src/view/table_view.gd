@@ -44,7 +44,7 @@ var hot_pocket := -1
 var clock_on := false            # Clockwork Table: number the pockets and mark the next
 var clock_pos := 0
 var clock_streak := 0
-var second_pocket := -1   # Two Pockets boss: also scores, shown with a cooler ring
+var second_pocket := -1   # Quantum Pockets board: also scores, shown with a cooler ring
 var hot_mult := 2
 var preview_text := ""
 var preview_pocket := -1
@@ -66,6 +66,10 @@ var head_only := false
 var time := 0.0
 ## Ball numbers to ring with light: the balls a hovered Perk works on.
 var spotlight: Array = []
+## The board's Sharks and moving parts (RunState.board), drawn from BoardArt.
+var board := {}
+var board_id := ""
+var shark_flash := {}   # Shark index -> seconds of "hit" flash left
 var hover_pocket := -1
 var pocket_pick := false
 
@@ -203,6 +207,46 @@ func update_balls(sim: PoolSim) -> void:
 			b.visible = false
 
 
+## The board's fields, under the balls: Coriolis's turntable, the Gulf Stream's
+## current and the Capacitor's charged rail.
+func _draw_board_fields(c: CanvasItem) -> void:
+	match board_id:
+		"drift":
+			BoardArt.draw_turntable(c, Vector2(W * 0.5, H * 0.5), 130.0, time * 0.9)
+		"gulf":
+			BoardArt.draw_conveyor(c, Rect2(0, H * 0.38, W, H * 0.24), Vector2.RIGHT, time)
+		"spring_st":
+			BoardArt.draw_charged_rail(c, Vector2(40, 0), Vector2(W - 40, 0), 0.35, time)
+			if BoardFeatures.charged(board):
+				BoardArt.draw_charged_rail(c, Vector2(40, H), Vector2(W - 40, H), 1.0, time)
+
+
+## The board's Sharks, the pendulum bob, the Sweeper and the Leech, over the balls.
+func _draw_board_pieces(c: CanvasItem) -> void:
+	if board.is_empty():
+		return
+	var sharks: Array = board.get("sharks", [])
+	for i in sharks.size():
+		var sh: Dictionary = sharks[i]
+		var kind := String(sh.kind)
+		if kind == "leech":
+			if not sh.ko:
+				var n := int(board.get("leech_ball", -1))
+				for bi in ball_nodes:
+					var bn: BallNode = ball_nodes[bi]
+					if is_instance_valid(bn) and bn.number == n and bn.visible:
+						BoardArt.draw_shark(c, "leech", bn.position + Vector2(0, -bn.radius - 4), -0.4, 34.0, "normal", time)
+			continue
+		var state := "ko" if sh.ko else ("hit" if float(shark_flash.get(i, 0.0)) > 0.0 else "normal")
+		var r := float(BoardFeatures.SHARKS[kind].r)
+		BoardArt.draw_shark(c, kind, BoardFeatures.shark_pos(sh), float(sh.heading), r * 4.2, state, time, float(sh.hp) / maxf(1.0, float(sh.max)))
+	match board_id:
+		"elements":
+			BoardArt.draw_sweeper(c, Vector2(W * 0.5, H * 0.5), BoardFeatures.sweep_angle(board), BoardFeatures.SWEEP_LEN, time)
+		"foucault":
+			BoardArt.draw_pendulum(c, Vector2(W * 0.5, H * 0.5), BoardFeatures.bob_pos(board), BoardFeatures.BOB_R, time)
+
+
 ## Animate a ball dropping into pocket k.
 func sink(i: int, k: int) -> void:
 	var b: BallNode = ball_nodes.get(i)
@@ -246,6 +290,10 @@ func _process(delta: float) -> void:
 		p.life -= delta
 		p.pos.y -= delta * 38.0
 	popups = popups.filter(func(p): return p.life > 0.0)
+	for k in shark_flash.keys():
+		shark_flash[k] = float(shark_flash[k]) - delta
+		if float(shark_flash[k]) <= 0.0:
+			shark_flash.erase(k)
 	for r in rings:
 		r.life -= delta
 	rings = rings.filter(func(r): return r.life > 0.0)
@@ -504,9 +552,12 @@ func _draw_cushions() -> void:
 	c.draw_circle(Rack.HEAD, 2.5, Color(1, 1, 1, 0.35))
 	if head_only and placing:
 		c.draw_line(Vector2(Rack.HEAD.x, 0), Vector2(Rack.HEAD.x, H), Color(1, 1, 1, 0.18), 2.0)
+	_draw_board_fields(c)
 	for bp in layout.bumpers:
 		var p: Vector2 = bp.pos
 		var r: float = bp.r
+		if bp.has("shark") or bp.has("bob"):
+			continue   # drawn by _draw_board_pieces
 		c.draw_circle(p + Vector2(3, 5), r + 2, Color(0, 0, 0, 0.3))
 		c.draw_circle(p, r, Color(0.65, 0.5, 0.2))
 		c.draw_circle(p, r - 4, Color(0.25, 0.85, 0.85))
@@ -526,6 +577,7 @@ func _draw_cushions() -> void:
 ## ---------------------------------------------------------------- guideline
 func _draw_overlay() -> void:
 	var o := overlay
+	_draw_board_pieces(o)
 	if not spotlight.is_empty():
 		var beat := 0.5 + 0.5 * sin(time * 5.0)
 		for i in ball_nodes:

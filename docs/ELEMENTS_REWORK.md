@@ -8,9 +8,9 @@ Fourteen Elements were **reworked**, and one gained a physical effect, to change
 
 | Z | Name | Card id | What it does now |
 |---|---|---|---|
-| 1 | Hydrogen Balloon | `featherweight` | **Reworked.** Object balls are 30% lighter (was 25%), so they float further when struck. Now Hydrogen, swapped with Beryllium |
-| 2 | Helium Fusion | `fusion` | A second ball into the same pocket in one shot scores ×3 |
-| 3 | Lithium Cell | `lowball` | **Reworked.** Balls 1, 2 and 3 are charged: they lose no speed off cushions. Was balls 1–3 +45 |
+| 1 | Hydrogen Balloon | `featherweight` | **Reworked again (2026-11-13).** The cue ball floats: if it would drop into a pocket it bobs back out, so no pocket scratches. Was: object balls 30% lighter |
+| 2 | Helium Fusion | `fusion` | **Reworked (2026-11-13).** A sink into the same pocket as your last sink (this shot or your last one) scores ×2. Was: a second ball in the same pocket in one shot ×3 |
+| 3 | Lithium Cell | `lowball` | **Reworked again (2026-11-13).** Your 3 lowest-value balls are charged: they lose no speed off cushions, and each pays $1 when it sinks |
 | 4 | Beryllium Avalanche | `catalyst` | Every ball you sink makes all balls worth +0.75 for the rest of the run. Now Beryllium, swapped with Hydrogen |
 | 5 | Boron Cluster | `multi` | Every ball after the first in a shot adds +1 Chain |
 | 6 | Carbon Core | `eight` | The 8 costs nothing, scores like any ball and pays $3 |
@@ -158,3 +158,12 @@ Each idea below needs something new in the simulation, so none of them are built
 | Krypton Tally | The guide line also shows the 8's path after any hit | A guide-line feature, not physics |
 | Helium Fusion | Two balls that meet in a pocket's jaws both drop | Pocket capture by contact |
 | Silicon Wafer | Solids slide flat and ignore spin passed on by the cue ball | Per-ball spin transfer |
+
+## Balance fixes (2026-11-13)
+
+The user found three cards too hard to trigger:
+- Hydrogen was "not very useful". It now floats the cue ball out of pockets.
+- Helium was "too hard". It now remembers your last pocket across shots, at ×2.
+- Lithium now uses your 3 lowest-value balls and pays $1 each.
+
+The tables above show the new rules. Older notes below them describe earlier versions.

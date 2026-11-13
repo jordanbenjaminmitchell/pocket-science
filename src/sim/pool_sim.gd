@@ -43,7 +43,12 @@ var pull := PackedFloat64Array()        # per-ball pocket pull (Magnetic Imbue)
 var bounce := PackedFloat64Array()      # per-ball cushion liveliness; 0 = the table's own (Star balls)
 var cue_magnet := 0.0                   # Neodymium Magnet: the rolling cue ball tugs nearby object balls
 var first_boost := 1.0                  # Uranium Reactor: the first ball the cue hits leaves this much faster
-var anchor8 := false                    # Lead Anchor: the 8 rattles out of pockets while other balls remain
+var cue_float := false                  # Hydrogen Balloon: pockets turn the cue ball away
+var anchor8 := false
+var charged_y := -1.0                   # Capacitor: a charged rail along this y gives balls a kick
+var no_drop := {}                       # ball numbers pockets turn away (the Leech's victim)
+var spin_zone := []                     # Coriolis: [centre, radius, strength]: a disc that curves balls crossing it
+var flow_zone := []                     # Gulf Stream: [Rect2, velocity]: a current that carries balls along                    # Lead Anchor: the 8 rattles out of pockets while other balls remain
 var grip := PackedFloat64Array()        # per-ball cloth friction, 1 = the table's own (Rubidium Rush, Gallium Glide)
 const GLASS_BREAK := 700.0              # impact speed that shatters a Glass ball
 # One-shot effects from items, cleared by clear_shot_flags() after each shot.
@@ -90,6 +95,11 @@ func clone() -> PoolSim:
 	s.bounce = bounce.duplicate()
 	s.grip = grip.duplicate()
 	s.anchor8 = anchor8
+	s.cue_float = cue_float
+	s.no_drop = no_drop.duplicate()
+	s.charged_y = charged_y
+	s.spin_zone = spin_zone.duplicate()
+	s.flow_zone = flow_zone.duplicate()
 	s.cue_magnet = cue_magnet
 	s.first_boost = first_boost
 	s.ghost = ghost
@@ -394,7 +404,10 @@ func _resolve_wall(i: int, nrm: Vector2, _seg: int) -> void:
 		return
 	var tangent := Vector2(-nrm.y, nrm.x)
 	glide[i] = 0
-	vel[i] -= nrm * vn * (1.0 + float(seg_e.get(_seg, rail_e_of(i))))
+	var e_wall := float(seg_e.get(_seg, rail_e_of(i)))
+	if charged_y >= 0.0 and absf(pos[i].y - charged_y) < R + 6.0:
+		e_wall = 1.25   # Capacitor: the charged rail kicks the ball off faster than it came
+	vel[i] -= nrm * vn * (1.0 + e_wall)
 	vel[i] -= tangent * vel[i].dot(tangent) * 0.04
 	if side[i] != 0.0:
 		vel[i] += tangent * side[i] * -vn * 0.32 * side_power
@@ -412,7 +425,7 @@ func _resolve_bumper(i: int, k: int) -> void:
 	if vn >= 0.0:
 		return
 	vel[i] -= nrm * vn * (1.0 + bumper_e)
-	events.append({"t": time, "type": "bumper", "a": num[i], "speed": -vn})
+	events.append({"t": time, "type": "bumper", "a": num[i], "speed": -vn, "k": k})
 
 
 func _forces(dt: float) -> void:
@@ -452,6 +465,14 @@ func _forces(dt: float) -> void:
 				var ml := md.length()
 				if ml < MAGNET_REACH and ml > R * 2.0:
 					v += md / ml * 2600.0 * (1.0 - ml / MAGNET_REACH) * dt
+		if not spin_zone.is_empty():
+			# A turning disc: rolling across it pushes a ball sideways, as on a turntable.
+			var sc: Vector2 = spin_zone[0]
+			var off := pos[i] - sc
+			if off.length() < float(spin_zone[1]):
+				v += off.orthogonal().normalized() * float(spin_zone[2]) * dt
+		if not flow_zone.is_empty() and (flow_zone[0] as Rect2).has_point(pos[i]):
+			v += (flow_zone[1] as Vector2) * dt
 		if well_strength != 0.0:
 			var d := well_pos - pos[i]
 			var dist := maxf(d.length(), 40.0)
@@ -529,6 +550,10 @@ func _rejects(i: int, k: int) -> bool:
 	var kind := _kind(i)
 	var side_pocket := k == 1 or k == 4
 	if anchor8 and num[i] == 8 and object_balls_left() > 1:
+		return true
+	if cue_float and num[i] == 0:
+		return true
+	if no_drop.has(num[i]):
 		return true
 	return (kind == "moon" and not side_pocket) or (kind == "sun" and side_pocket)
 

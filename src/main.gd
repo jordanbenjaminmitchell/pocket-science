@@ -169,6 +169,7 @@ func _setup_table() -> void:
 	view.setup(layout, F_SEMI, F_NUM)
 	view.set_felt(Catalog.LABS[lab].felt)
 	view.set_lab(lab, String(t.get("id", "")))
+	_sync_board_view()
 	_new_rack()
 	shot_log.clear()
 	if log_label:
@@ -586,6 +587,7 @@ func _apply_temp_pockets() -> void:
 	view.setup(layout, F_SEMI, F_NUM)
 	view.set_felt(Catalog.LABS[run.current().lab].felt)
 	view.set_lab(run.current().lab, run.current().id)
+	_sync_board_view()
 	guide_dirty = true
 
 
@@ -671,6 +673,7 @@ func _rewind() -> void:
 	view.setup(layout, F_SEMI, F_NUM)
 	view.set_felt(Catalog.LABS[run.current().lab].felt)
 	view.set_lab(run.current().lab, run.current().id)
+	_sync_board_view()
 	_restore_snapshot(run.table_snapshot)
 	run.spend("rewind")
 	shown_score = run.score
@@ -2125,7 +2128,12 @@ func _consume_events() -> void:
 			"bumper":
 				sfx.play("bumper", 0.7)
 				var bi := sim.index_of(e.a)
-				view.burst(sim.pos[bi], Color(0.3, 1, 1), 10, 160)
+				var bk := int(e.get("k", -1))
+				if bk >= 0 and bk < layout.bumpers.size() and layout.bumpers[bk].has("shark"):
+					view.shark_flash[int(layout.bumpers[bk].shark)] = 0.35   # the Shark flinches
+					view.burst(sim.pos[bi], Color(1.0, 0.45, 0.4), 14, 200)
+				else:
+					view.burst(sim.pos[bi], Color(0.3, 1, 1), 10, 160)
 			"pocket":
 				if not demo and e.a != 0 and FireFx.level_for(run.heat) >= 3:
 					view.burst(e.at, Color(1.0, 0.55, 0.15) if run.heat < 7 else Color(0.75, 0.9, 1.0), 20, 240)
@@ -2323,6 +2331,7 @@ func _after_shot() -> void:
 	var was_break := is_break
 	is_break = false
 	var out := run.apply_shot(result, was_break, sim.object_balls_left(), sim.alive[_cue_index()] == 1)
+	_board_turn()
 	run.apply_physics(sim)   # one-shot items such as Magnet Charm wear off
 	for n in run.respot_echo(result, sim):
 		view.popup(Rack.FOOT + Vector2(0, -40), "Echo returns", Color(0.75, 0.6, 1.0), 20, 1.3)
@@ -2388,15 +2397,43 @@ func _after_shot() -> void:
 
 
 ## Shrinking Pockets: rebuild pocket geometry between shots, keeping the balls.
-func _rebuild_layout() -> void:
+func _rebuild_layout(quiet := false) -> void:
 	layout = run.build_layout()
 	sim.layout = layout
 	run.apply_physics(sim)
 	guide_dirty = true
+	forecast_dirty = true
 	view.setup(layout, F_SEMI, F_NUM)
 	view.set_felt(Catalog.LABS[run.current().lab].felt)
 	view.set_lab(run.current().lab, run.current().id)
-	view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(1, 0.5, 0.4), 12, 120)
+	_sync_board_view()
+	if not quiet:
+		view.burst(Vector2(TableLayout.W * 0.5, TableLayout.H * 0.5), Color(1, 0.5, 0.4), 12, 120)
+
+
+## Gives the table view this board's Sharks and moving parts to draw.
+func _sync_board_view() -> void:
+	view.board = run.board
+	view.board_id = String(run.current().id)
+
+
+## Between shots: the Sharks take their hits, move, swallow and join, and the
+## moving parts step on (RunState.board_turn); the table is rebuilt to match.
+func _board_turn() -> void:
+	if run.board.is_empty():
+		return
+	var bt := run.board_turn(sim, sim.events)
+	for kind in bt.get("ko", []):
+		_flash_banner("%s KNOCKED OUT  +$%d" % [String(BoardArt.SHARK_NAMES.get(kind, "SHARK")).to_upper(), BoardFeatures.KO_PAY], Color(0.5, 1.0, 0.7), 1.4)
+		sfx.play("coin", 0.9, 1.2)
+	for n in bt.get("swallowed", []):
+		_flash_banner("A SHARK SWALLOWED THE %d" % int(n), Color(1.0, 0.45, 0.4), 1.3)
+		sfx.play("bad", 0.6, 0.8)
+	for kind in bt.get("joined", []):
+		_flash_banner("%s JOINS THE TABLE" % String(BoardArt.SHARK_NAMES.get(kind, "A SHARK")).to_upper(), Color(1.0, 0.6, 0.4), 1.4)
+	if not bt.get("swallowed", []).is_empty():
+		view.update_balls(sim)
+	_rebuild_layout(true)
 
 
 var rebinding := ""
@@ -3375,7 +3412,7 @@ func _perk_card(id: String, slot: int) -> Control:
 	p.mouse_filter = Control.MOUSE_FILTER_STOP
 	p.set_meta("perk_id", id)
 	# Resting on a Perk rings the balls it works on with light.
-	p.mouse_entered.connect(func(): view.spotlight = TileArt.balls_for("perk", id))
+	p.mouse_entered.connect(func(): view.spotlight = run.lithium_balls() if id == "lowball" else TileArt.balls_for("perk", id))
 	p.mouse_exited.connect(func(): view.spotlight = [])
 	p.tree_exiting.connect(func():
 		if view != null and view.spotlight == TileArt.balls_for("perk", id):
@@ -3597,18 +3634,17 @@ func _show_cue_select() -> void:
 		var sh := _card_shell(c.accent, 150, 200)
 		var p: PanelContainer = sh[0]
 		var cv: VBoxContainer = sh[1]
+		# The cue as drawn on its card tile: butt, wrap, shaft and tip in its own
+		# colours, with the object an object cue carries.
 		var stick := Control.new()
-		stick.custom_minimum_size = Vector2(0, 40)
+		stick.custom_minimum_size = Vector2(0, 56)
+		stick.clip_contents = true
 		stick.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		stick.draw.connect(func():
-			var y := 20.0
-			var x0 := 6.0
-			var x1 := stick.size.x - 6.0
-			var mid := lerpf(x0, x1, 0.45)
-			stick.draw_colored_polygon(PackedVector2Array([Vector2(x0, y - 2), Vector2(mid, y - 3.5), Vector2(mid, y + 3.5), Vector2(x0, y + 2)]), c.shaft)
-			stick.draw_colored_polygon(PackedVector2Array([Vector2(mid, y - 3.5), Vector2(x1, y - 6), Vector2(x1, y + 6), Vector2(mid, y + 3.5)]), c.butt)
-			stick.draw_rect(Rect2(Vector2(mid - 2, y - 4), Vector2(4, 8)), c.accent)
-			stick.draw_rect(Rect2(Vector2(x0 - 3, y - 2), Vector2(4, 4)), Color(0.25, 0.5, 0.85)))
+		var pic := TileArt.CuePic.new(id)
+		pic.scale = Vector2.ONE * 0.74
+		pic.position = Vector2(-4, -22)
+		pic.size = TileArt.SIZE
+		stick.add_child(pic)
 		cv.add_child(stick)
 		var n := _label(c.name, 16, Color.WHITE)
 		n.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
