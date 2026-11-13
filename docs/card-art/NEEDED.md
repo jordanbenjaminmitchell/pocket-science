@@ -10,6 +10,12 @@ The Element names and the Elements whose rules changed are in [docs/ELEMENTS_REW
 
 ## For the coding chat: read this first (2026-11-12)
 
+**Status, 2026-11-13:**
+- Version 1.40 is released on GitHub with the Windows zip and the APK.
+- A full check on master passed: all 25 test suites, all six simulated players (`FULL=1 ./tools/ci.sh`) and both builds.
+- **Music is complete.** All 26 boards in the game and all 40 planned boards have a track. Every `Sfx.TRACKS` entry points to a file that exists (47 board tracks, plus the title, shop, endless and victory tracks). No new music is needed for the planned boards. If a board gets a different id from the one in `Sfx.TRACKS`, rename the entry.
+- **Your next job** is building the Sharks and moving parts. See "Next job for the coding chat" below. Their art is finished and waiting in `BoardArt`.
+
 The art chat also changed game code, and everything is merged on master: commits `8a39668` and `6473061`. All 25 test suites pass. **None of the rule changes have been played yet.** [docs/ELEMENTS_REWORK.md](../ELEMENTS_REWORK.md) lists every Element with its old and new rules.
 
 ### Rules that changed (Elements)
