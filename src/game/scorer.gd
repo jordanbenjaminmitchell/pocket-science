@@ -61,7 +61,7 @@ static func chain_step(e: Dictionary, ctx: Dictionary, contacted: bool) -> float
 		"bumper":
 			if boss == "parlor" or boss == "posts" or boss == "foucault":
 				add += 1.0
-			elif boss == "galton":
+			elif boss == "galton" or boss == "life":
 				add += 0.5
 			elif boss == "lattice":
 				add += 0.25
@@ -123,7 +123,7 @@ static func score(ctx: Dictionary) -> Dictionary:
 	var out := {
 		"lines": [], "total": 0, "money": 0, "chain": 1.0, "heat_gain": 0,
 		"potted": pots.map(func(p): return p.a), "scratch": scratch, "foul": "", "scored": false,
-		"first_contact": first_contact, "shattered": [], "catalyst_gain": 0.0, "perk_used": [], "recur": [], "echo_src": [], "recharge": 0, "chalk_gain": 0, "cleans": 0,
+		"first_contact": first_contact, "shattered": [], "catalyst_gain": 0.0, "perk_used": [], "recur": [], "echo_src": [], "recharge": 0, "chalk_gain": 0, "cleans": 0, "bumper_hits": 0, "portal_trips": 0,
 		"power": ctx.get("power", 0.5), "is_break": ctx.get("is_break", false),
 		"banks": 0, "max_rails": 0, "combos": 0, "kick": kick, "hot_pots": 0, "pocket_list": [],
 		"element_mix": ctx.get("element_mix", []),
@@ -172,6 +172,11 @@ static func score(ctx: Dictionary) -> Dictionary:
 		out.foul = "Wrong pocket" if anomaly == "onepocket" and not out.potted.is_empty() else "Miss"
 		return out
 
+	for e in events:
+		if e.type == "bumper":
+			out.bumper_hits += 1
+		elif e.type == "portal":
+			out.portal_trips += 1
 	return _pay(ctx, events, pots, toucher, kick, left_after, eight_early, out)
 
 
@@ -528,6 +533,10 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 					x *= 2.0
 			"membrane", "maxwell", "lever":
 				x *= 1.5
+			"cat":
+				if k == 5 - int(ctx.get("cat", -9)):
+					x *= 2.0
+					tags.append("Opposite the cat")
 			"parabolic", "spiral":
 				if k == int(ctx.get("focus", -1)):
 					x *= 2.0

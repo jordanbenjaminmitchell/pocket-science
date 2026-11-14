@@ -36,6 +36,11 @@ const SWEEP_LEN := 170.0
 const SHUTTLE_STEPS := 6     # Harmonic Oscillator: a full swing takes six shots
 const BOB_R := 22.0
 const HAMMER_ROUTE := [Vector2(220, 130), Vector2(780, 370), Vector2(780, 130), Vector2(220, 370)]
+const LIFE_COLS := 8
+const LIFE_ROWS := 6           # an even number of rows, so the break line runs between two of them
+const LIFE_GAP := 56.0
+const CAT_D := 46.0           # how far out of its pocket the cat lies
+const LIFE_R := 9.0
 const DEMON_SPEED := 520.0   # Maxwell's Demon: the speed that splits fast from slow
 const MEISSNER_POSTS := [Vector2(430, 140), Vector2(430, 360), Vector2(600, 110), Vector2(600, 390)]
 const ESCAPE_WELLS := [Vector2(370, 170), Vector2(650, 330)]
@@ -48,7 +53,7 @@ const RIDGE_SLIDE := 180.0
 
 static func has_features(id: String) -> bool:
 	return id in ["smoke", "cramped", "final", "foucault", "elements", "posts", "spring_st", "venturi", "erbridge",
-		"membrane", "galton", "sierpinski", "mobius", "maxwell", "spiral", "meissner", "tesla", "tectonic", "lattice", "lever"]
+		"membrane", "galton", "sierpinski", "mobius", "maxwell", "spiral", "meissner", "tesla", "tectonic", "lattice", "lever", "life", "cat"]
 
 
 static func start(id: String, rng: RandomNumberGenerator, hot: int) -> Dictionary:
@@ -80,6 +85,11 @@ static func start(id: String, rng: RandomNumberGenerator, hot: int) -> Dictionar
 			s["charged"] = false  # Capacitor: the bottom rail holds a charge
 		"tectonic":
 			s["slide"] = 0
+		"life":
+			# A glider and a blinker to start.
+			s["cells"] = [[1, 0], [2, 1], [0, 2], [1, 2], [2, 2], [5, 1], [5, 2], [5, 3]]
+		"cat":
+			s["cat"] = [0, 2, 3, 5][rng.randi_range(0, 3)]
 		"lever":
 			s["tilt"] = 1.0 if rng.randf() < 0.5 else -1.0
 	return s
@@ -142,6 +152,34 @@ static func bumpers(s: Dictionary) -> Array:
 					out.append({"pos": Vector2(380.0 + col * 70.0 + (35.0 if row % 2 == 1 else 0.0), y), "r": 8.0, "post": true, "atom": true})
 		"lever":
 			out.append({"pos": LEVER_PIVOT, "r": 9.0, "post": true, "fulcrum": true})
+		"life":
+			for c: Array in s.get("cells", []):
+				out.append({"pos": cell_pos(int(c[0]), int(c[1])), "r": LIFE_R, "post": true, "cell": true})
+		"cat":
+			out.append({"pos": _mouth(int(s.get("cat", 0)), CAT_D), "r": 22.0, "cat": true})
+	return out
+
+
+## Game of Life: where grid cell (cx, cy) sits on the table.
+static func cell_pos(cx: int, cy: int) -> Vector2:
+	return Vector2(W * 0.5 + (cx - (LIFE_COLS - 1) * 0.5) * LIFE_GAP, H * 0.5 + (cy - (LIFE_ROWS - 1) * 0.5) * LIFE_GAP)
+
+
+## Game of Life: the next generation by Conway's rules, on a grid with hard edges.
+static func next_cells(cells: Array) -> Array:
+	var live := {}
+	for c: Array in cells:
+		live[Vector2i(int(c[0]), int(c[1]))] = true
+	var out: Array = []
+	for y in LIFE_ROWS:
+		for x in LIFE_COLS:
+			var n := 0
+			for dy in [-1, 0, 1]:
+				for dx in [-1, 0, 1]:
+					if (dx != 0 or dy != 0) and live.has(Vector2i(x + dx, y + dy)):
+						n += 1
+			if n == 3 or (n == 2 and live.has(Vector2i(x, y))):
+				out.append([x, y])
 	return out
 
 
@@ -261,6 +299,8 @@ static func sweep_angle(s: Dictionary) -> float:
 ## Pockets closed by a Card Sharp sitting in them.
 static func closed(s: Dictionary) -> Array[int]:
 	var c: Array[int] = []
+	if String(s.get("id", "")) == "cat":
+		c.append(int(s.get("cat", 0)))
 	if String(s.get("id", "")) == "cramped":
 		for sh: Dictionary in s.get("sharks", []):
 			if sh.kind == "sharp" and not sh.ko:
@@ -403,7 +443,43 @@ static func after_shot(s: Dictionary, sim: PoolSim, events: Array, rng: RandomNu
 			out.moved = true
 		"tesla":
 			out.moved = true   # the coil's charge glow changes
+		"life":
+			var nxt: Array = next_cells(s.get("cells", []))
+			# A cell is not born on top of a ball.
+			nxt = nxt.filter(func(c): return _cell_free(sim, cell_pos(int(c[0]), int(c[1]))))
+			if nxt.is_empty():
+				nxt = [[1, 0], [2, 1], [0, 2], [1, 2], [2, 2]].filter(func(c): return _cell_free(sim, cell_pos(int(c[0]), int(c[1]))))   # a new glider
+			s.cells = nxt
+			out.moved = true
+		"cat":
+			var hit := false
+			for e: Dictionary in events:
+				if e.type == "bumper" and e.has("k") and int(e.k) < sim.layout.bumpers.size() and sim.layout.bumpers[int(e.k)].has("cat"):
+					hit = true
+			if hit or int(s.shots) % 3 == 0:
+				var others: Array = [0, 2, 3, 5].filter(func(k): return k != int(s.get("cat", 0)) and _clear_for_cat(sim, k))
+				if not others.is_empty():
+					s.cat = others[rng.randi_range(0, others.size() - 1)]
+					out["cat_moved"] = true
+				out.moved = true
+			out["cat_hit"] = hit
 	return out
+
+
+static func _cell_free(sim: PoolSim, p: Vector2) -> bool:
+	for i in sim.count():
+		if sim.alive[i] == 1 and sim.pos[i].distance_to(p) < R + LIFE_R + 4.0:
+			return false
+	return true
+
+
+## The cat only settles in a corner with no ball in its way.
+static func _clear_for_cat(sim: PoolSim, k: int) -> bool:
+	var p := _mouth(k, CAT_D)
+	for i in sim.count():
+		if sim.alive[i] == 1 and sim.pos[i].distance_to(p) < 22.0 + R + 4.0:
+			return false
+	return true
 
 
 ## No ball sits on the wall a-b.

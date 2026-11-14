@@ -58,6 +58,9 @@ var pinned := PackedByteArray()         # Freeze Frame: held still like a post
 var extra_wells: Array = []             # Gravity Pebbles: [position, strength]
 var rad := PackedFloat64Array()        # each ball's radius (Neodymium Boulder makes the cue ball bigger)
 var cue_i := -1                         # which cue ball a strike hits (Ytterbium Twin); -1 = the first
+var refract: Array = []                 # Snell's Law: [a, b, index]: a line between air and glass; balls bend as they cross
+var ref_side := {}                      # ball index -> which side of that line it was on last step
+var lorentz_suits := false              # Lorentz Field: solids curve one way, stripes the other, the rest not at all
 var board_wells: Array = []             # the board's own gravity wells: [position, strength] (Escape Velocity, Tesla Coil)
 var lorentz: Array = []                 # Lorentz Field: [Rect2, strength]: balls inside curve sideways, faster ones less
 var repel: Array = []                   # Meissner Effect: [[position, reach, strength]]: posts push balls away before contact
@@ -113,6 +116,9 @@ func clone() -> PoolSim:
 	s.pinned = pinned.duplicate()
 	s.extra_wells = extra_wells.duplicate(true)
 	s.board_wells = board_wells.duplicate(true)
+	s.refract = refract.duplicate()
+	s.ref_side = ref_side.duplicate()
+	s.lorentz_suits = lorentz_suits
 	s.rad = rad.duplicate()
 	s.cue_i = cue_i
 	s.lorentz = lorentz.duplicate()
@@ -523,7 +529,12 @@ func _forces(dt: float) -> void:
 			v += bd / bl * (float(w[1]) * 9000.0 / bl) * dt
 		if not lorentz.is_empty() and (lorentz[0] as Rect2).has_point(pos[i]):
 			# A sideways push of fixed size: a slow ball turns tightly, a fast one barely bends.
-			v += v.orthogonal().normalized() * float(lorentz[1]) * dt
+			var charge := 1.0
+			if lorentz_suits:
+				charge = 1.0 if (num[i] >= 1 and num[i] <= 7) else (-1.0 if (num[i] >= 9 and num[i] <= 15) else 0.0)
+			v += v.orthogonal().normalized() * float(lorentz[1]) * charge * dt
+		if not refract.is_empty():
+			v = _refract(i, v)
 		for rp in repel:
 			var rd: Vector2 = pos[i] - (rp[0] as Vector2)
 			var rl := rd.length()
@@ -760,3 +771,31 @@ static func _gate_open(seg: Dictionary, v: Vector2) -> bool:
 	if seg.has("slow"):
 		return v.length() < float(seg.slow)
 	return false
+
+
+## Snell's Law: when ball i crosses the line between air (index 1) and glass
+## (refract[2]), its direction bends as light does. Leaving the glass at a
+## shallow angle it reflects back inside instead (total internal reflection).
+func _refract(i: int, v: Vector2) -> Vector2:
+	var a: Vector2 = refract[0]
+	var b: Vector2 = refract[1]
+	var n := (b - a).orthogonal().normalized()   # points into the glass
+	var side := 1 if (pos[i] - a).dot(n) > 0.0 else -1
+	var was := int(ref_side.get(i, side))
+	ref_side[i] = side
+	if side == was or v == Vector2.ZERO:
+		return v
+	var index := float(refract[2])
+	var ratio := 1.0 / index if side > 0 else index   # n1 / n2 for the way it is travelling
+	var nn := n * float(side)                          # the normal along the direction of travel
+	var sp := v.length()
+	var d := v / sp
+	var cos1 := d.dot(nn)
+	var tang := (d - nn * cos1) * ratio
+	var s2 := tang.length_squared()
+	if s2 >= 1.0:
+		ref_side[i] = was   # it never got through
+		events.append({"t": time, "type": "rail", "a": num[i], "speed": sp * absf(cos1), "at": pos[i], "seg": -1})
+		rails[i] += 1
+		return v - nn * 2.0 * v.dot(nn)
+	return (tang + nn * sqrt(1.0 - s2)) * sp

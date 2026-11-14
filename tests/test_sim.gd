@@ -244,10 +244,18 @@ func _test_boss_physics() -> void:
 	s4.add_ball(0, Vector2(300, 250))
 	bi.apply_physics(s4)
 	check(s4.roll_decel <= 45.0 and s4.rail_e >= 0.9, "black ice is slippery and lively")
-	var tl := _run_with("tilt", [])
 	var s5 := PoolSim.new(TableLayout.new().build())
 	s5.add_ball(0, Vector2(300, 250))
-	tl.apply_physics(s5)
-	s5.strike(Vector2.RIGHT, 800.0, 0.0, 0.0)
+	s5.refract = [RunState.SNELL_A, RunState.SNELL_B, 1.5]
+	s5.strike(Vector2.RIGHT, 500.0, 0.0, 0.0)
 	s5.settle()
-	check(s5.tilt != Vector2.ZERO and absf(s5.pos[0].y - 250.0) > 30.0, "tilted table bends a straight roll (dy %.0f)" % (s5.pos[0].y - 250.0))
+	check(s5.pos[0].x > 520.0 and absf(s5.pos[0].y - 250.0) > 8.0, "Snell's Law bends a ball as it crosses into the glass (dy %.0f)" % (s5.pos[0].y - 250.0))
+	var sg6 := PoolSim.new(TableLayout.new().build())
+	sg6.add_ball(0, Vector2(700, 400))
+	sg6.refract = [RunState.SNELL_A, RunState.SNELL_B, 1.5]
+	sg6.strike(Vector2(-0.35, -1.0).normalized(), 500.0, 0.0, 0.0)
+	for k in 240:
+		sg6.step(PoolSim.STEP)
+	check((sg6.pos[0] - RunState.SNELL_A).dot((RunState.SNELL_B - RunState.SNELL_A).orthogonal().normalized()) > 0.0, "and a shallow shot from inside the glass reflects back in")
+	var lf: Array = BoardFeatures.next_cells([[1, 1], [2, 1], [3, 1]])
+	check(lf.size() == 3 and lf.has([2, 0]) and lf.has([2, 1]) and lf.has([2, 2]), "Game of Life: a blinker turns")

@@ -97,6 +97,8 @@ const BOARD_NAMES := {
 	"lattice": "Crystal Lattice",
 	"stellated": "Stellated Star",
 	"lever": "The Lever",
+	"life": "Game of Life",
+	"cat": "Schrödinger's Cat",
 	"escape": "Escape Velocity",
 }
 
@@ -528,6 +530,30 @@ static func draw_demon(ci: CanvasItem, gate: Vector2, open: float, t := 0.0) -> 
 	for i in 10:
 		tail.append(d + Vector2(-8 - i * 1.6, 6 + sin(i * 0.8 + t * 3.0) * 3.0))
 	ci.draw_polyline(tail, red.darkened(0.2), 1.6, true)
+
+
+## Schrödinger's Cat, asleep, seen from above: curled body, head, ears and a tail that twitches.
+static func draw_cat(ci: CanvasItem, p: Vector2, t := 0.0) -> void:
+	var fur := Color(0.93, 0.56, 0.2)   # a ginger cat, easy to see on any felt
+	var breathe := 1.0 + 0.04 * sin(t * 2.0)
+	ci.draw_circle(p + Vector2(3, 5), 22.0, Color(0, 0, 0, 0.3), true, -1.0, true)
+	ci.draw_circle(p, 21.0 * breathe, fur, true, -1.0, true)
+	ci.draw_arc(p, 14.0 * breathe, 0.4, PI * 1.6, 24, fur.lightened(0.12), 3.0, true)
+	var tail := PackedVector2Array()
+	for i in 12:
+		var a := PI * 0.2 + i * 0.16
+		tail.append(p + Vector2.from_angle(a) * (22.0 + sin(t * 3.0 + i * 0.5) * 1.5))
+	ci.draw_polyline(tail, fur.lightened(0.08), 5.0, true)
+	var h := p + Vector2(-11, -11)
+	ci.draw_circle(h, 10.0, fur.lightened(0.05), true, -1.0, true)
+	for sd in [-1.0, 1.0]:
+		var e := h + Vector2(sd * 6.0 - 2.0, -7.0)
+		ci.draw_colored_polygon(PackedVector2Array([e + Vector2(-4, 2), e + Vector2(0, -7), e + Vector2(4, 2)]), fur)
+		ci.draw_colored_polygon(PackedVector2Array([e + Vector2(-2, 1), e + Vector2(0, -4), e + Vector2(2, 1)]), Color(0.85, 0.55, 0.6))
+		ci.draw_arc(h + Vector2(sd * 3.5, 0), 2.2, 0.2, PI - 0.2, 8, Color(0.75, 0.9, 0.5), 1.2, true)   # closed eyes
+	for k in 2:
+		var z := p + Vector2(18 + k * 9, -24 - k * 10 - fmod(t * 6.0, 6.0))
+		ci.draw_polyline(PackedVector2Array([z, z + Vector2(6, 0), z + Vector2(0, 7), z + Vector2(6, 7)]), Color(1, 1, 1, 0.6 - k * 0.2), 1.4, true)
 
 
 ## The Lever: a see-saw rail tipped by tilt (radians) on its fulcrum.

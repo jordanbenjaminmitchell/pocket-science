@@ -102,6 +102,7 @@ func _initialize() -> void:
 	var b := RunState.new()
 	b.start(3)
 	b.begin_table()
+	b.discovery_done = true   # the board's Discovery pays separately; keep it out of the bet sums
 	b.bounty = "double"
 	b.money = 20
 	check(b.bet_stake() == 4 and b.bet_open(), "the first table offers a $4 bet")
@@ -136,6 +137,7 @@ func _initialize() -> void:
 	var nb := RunState.new()
 	nb.start(3)
 	nb.begin_table()
+	nb.discovery_done = true
 	nb.bounty = "double"
 	nb.money = 20
 	nb.apply_shot(two, false, 5, true)
@@ -239,5 +241,13 @@ func _initialize() -> void:
 	check(not RunState.new().load_save(), "unusable save is rejected, not crashed on")
 	RunState.clear_save()
 	check(not RunState.has_save(), "save cleared")
+	var dv := RunState.new()
+	dv.start(3)
+	dv.begin_table()
+	var dm := dv.money
+	var dout := dv.apply_shot({"scored": true, "foul": "", "total": 40, "money": 0, "catalyst_gain": 0.0, "potted": [1, 2], "shattered": [], "lines": []}, false, 5, true)
+	check(String(dout.get("discovery", "")) != "" and dv.money == dm + 3 and dv.discovery_done, "a board's Discovery pays once when made")
+	dv.apply_shot({"scored": true, "foul": "", "total": 40, "money": 0, "catalyst_gain": 0.0, "potted": [3, 4], "shattered": [], "lines": []}, false, 3, true)
+	check(dv.money == dm + 3, "and not a second time")
 	print("rules tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

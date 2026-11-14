@@ -4,6 +4,8 @@ extends RefCounted
 ## the table sequence and the shop.
 
 const MAX_PERKS := 6
+const SNELL_A := Vector2(430, 0)     # Snell's Law: the line between air (left) and glass (right)
+const SNELL_B := Vector2(570, 500)
 const BOULDER_R := 26.5   # the biggest cue ball that still drops through a pocket mouth
 const BASE_CHALK := 6
 ## Chalk now travels with you from table to table: you start with BASE_CHALK,
@@ -23,6 +25,8 @@ var ball_bonus := {}
 var perk_used := {}
 ## Catalysts spent since the last shot (Sulfur Reagent).
 var items_this_shot := 0
+var discovery_done := false     # this table's Discovery has been made
+var last_shot_scored := false   # the last shot sank a ball (for the cat's Discovery)
 var beacon_used := false        # Americium Beacon: spent this table
 var beacon_shot := false        # ... and this shot gets its bonus
 var temp_tools: Array = []      # Tellurium Supply: Catalysts that leave when the table ends
@@ -206,6 +210,7 @@ func begin_table() -> void:
 		chalk = start_chalk()   # Chalk carries over; only a new run starts fresh
 	pockets_used = []
 	perk_used = {}
+	discovery_done = false
 	beacon_used = false
 	beacon_shot = false
 	twin_spawned = false
@@ -993,6 +998,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 	if bet_state == "offer":
 		bet_state = "passed"   # the first shot closes the betting
 	shots_taken += 1
+	last_shot_scored = bool(res.get("scored", false))
 	called = {}
 	last_chalk_lost = false
 	if res.get("scored", false):
@@ -1042,6 +1048,8 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		money += res.money
 		catalyst += res.catalyst_gain
 		_avalanche(res.potted.size())
+		if not discovery_done and discovery_met(res):
+			out["discovery"] = _discover()
 		_fib_track(res.potted)
 		for n in res.get("recur", []):
 			ball_bonus[int(n)] = int(ball_bonus.get(int(n), 0)) + 4   # Recurring: +4 for the run
@@ -1228,6 +1236,9 @@ func apply_physics(s: PoolSim) -> void:
 	s.charged_y = -1.0
 	s.no_drop = {}
 	s.board_wells = []
+	s.refract = []
+	s.ref_side = {}
+	s.lorentz_suits = false
 	s.lorentz = []
 	s.repel = []
 	s.pot_pulse = 0.0
@@ -1235,7 +1246,10 @@ func apply_physics(s: PoolSim) -> void:
 		"venturi":
 			s.flow_zone = [Rect2(560, 205, 90, 90), Vector2(420.0, 0.0)]   # the throat speeds balls up
 		"lorentz":
-			s.lorentz = [BoardFeatures.LORENTZ_RECT, 520.0]
+			s.lorentz = [BoardFeatures.LORENTZ_RECT, 620.0]
+			s.lorentz_suits = true
+		"tilted":
+			s.refract = [SNELL_A, SNELL_B, 1.5]
 		"meissner":
 			for p: Vector2 in BoardFeatures.MEISSNER_POSTS:
 				s.repel.append([p, 72.0, 2600.0])
@@ -1273,8 +1287,6 @@ func apply_physics(s: PoolSim) -> void:
 			s.roll_decel = 45.0
 			s.drag = 0.03
 			s.rail_e = 0.9
-		"tilt":
-			s.tilt += Vector2(0, 90.0 if (seed_value + table_index) % 2 == 0 else -90.0)
 	for i in s.count():
 		var m := 1.0
 		if s.num[i] == 0:
@@ -1348,7 +1360,47 @@ func board_turn(s: PoolSim, events: Array) -> Dictionary:
 	brng.seed = seed_value * 7 + table_index * 131 + int(board.get("shots", 0)) * 17
 	var out := BoardFeatures.after_shot(board, s, events, brng)
 	money += int(out.get("money", 0))
+	var kind := String(Catalog.discovery(String(current().id)).kind)
+	if kind == "ko" and not (out.get("ko", []) as Array).is_empty():
+		out["discovery"] = _discover()
+	elif kind == "cathit" and out.get("cat_hit", false) and last_shot_scored:
+		out["discovery"] = _discover()
 	return out
+
+
+## Pays this board's Discovery, once per table. Returns its banner text ("" if already made).
+func _discover() -> String:
+	if discovery_done:
+		return ""
+	discovery_done = true
+	var d := Catalog.discovery(String(current().id))
+	money += int(d.money)
+	if int(d.chalk) > 0:
+		chalk = mini(MAX_CHALK, chalk + int(d.chalk))
+	return "DISCOVERY!  +$%d%s" % [int(d.money), "  +%d CHALK" % int(d.chalk) if int(d.chalk) > 0 else ""]
+
+
+## Did this scoring shot make the board's Discovery?
+func discovery_met(res: Dictionary) -> bool:
+	var pots: Array = res.get("potted", [])
+	match String(Catalog.discovery(String(current().id)).kind):
+		"bumpers3":
+			return int(res.get("bumper_hits", 0)) >= 3
+		"portal":
+			return int(res.get("portal_trips", 0)) >= 1
+		"focus":
+			return (res.get("pocket_list", []) as Array).has(_focus_pocket())
+		"bank":
+			return int(res.get("banks", 0)) > 0
+		"bank2":
+			return int(res.get("max_rails", 0)) >= 2
+		"double":
+			return pots.size() >= 2
+		"triple":
+			return pots.size() >= 3
+		"heat4":
+			return heat >= 4
+	return false
 
 
 func first_boost(power: float) -> float:
@@ -1370,7 +1422,7 @@ func shot_ctx(power: float, s: PoolSim, is_break: bool) -> Dictionary:
 				highest = n
 	var ci := s.index_of(0)
 	return {
-		"perks": live_perks(), "imbues": imbues, "hot_pocket": hot_pocket, "golden_ball": golden_ball, "beacon": beacon_shot, "safe8": eight_safe(), "portal_chain": bool(cue_rule("portal_chain", false)), "coil": BoardFeatures.coil_on(board), "focus": _focus_pocket(), "ball_bonus": ball_bonus, "perk_used": perk_used, "item_shot": items_this_shot > 0, "boss": current().id, "lab": current().lab,
+		"perks": live_perks(), "imbues": imbues, "hot_pocket": hot_pocket, "cat": int(board.get("cat", -9)), "golden_ball": golden_ball, "beacon": beacon_shot, "safe8": eight_safe(), "portal_chain": bool(cue_rule("portal_chain", false)), "coil": BoardFeatures.coil_on(board), "focus": _focus_pocket(), "ball_bonus": ball_bonus, "perk_used": perk_used, "item_shot": items_this_shot > 0, "boss": current().id, "lab": current().lab,
 		"anomaly": current().anomaly, "loan": BoardFeatures.loan_alive(board), "last_pocket": last_pocket, "lithium": lithium_balls() if has_perk("lowball") else [], "heat": heat, "power": power, "shots_taken": shots_taken,
 		"catalyst": catalyst, "is_break": is_break, "chalk": chalk, "objects": s.object_balls_left(),
 		"money": money, "empty_slots": perk_slots() - perks.size(), "pockets_used": pockets_used,
@@ -1417,7 +1469,7 @@ func to_dict() -> Dictionary:
 			"score": score, "chalk": chalk, "heat": heat, "shots_taken": shots_taken,
 			"hot_pocket": hot_pocket, "racks_cleared": racks_cleared, "element_mix": element_mix, "clock_pos": clock_pos, "clock_streak": clock_streak,
 			"forgiven": forgiven, "bounty": bounty, "bounty_done": bounty_done, "bet_cap": bet_cap, "bet_state": bet_state, "bet_peeked": bet_peeked,
-			"pockets_used": pockets_used, "last_pocket": last_pocket, "perk_used": perk_used.keys(), "beacon_used": beacon_used, "temp_tools": temp_tools, "echo_imbues": _str_keys(echo_imbues), "prime_spawned": prime_spawned, "temp_numerals": temp_numerals, "twin_spawned": twin_spawned, "chalked_used": chalked_used, "shrink_steps": shrink_steps, "insured_used": insured_used,
+			"pockets_used": pockets_used, "last_pocket": last_pocket, "perk_used": perk_used.keys(), "discovery_done": discovery_done, "beacon_used": beacon_used, "temp_tools": temp_tools, "echo_imbues": _str_keys(echo_imbues), "prime_spawned": prime_spawned, "temp_numerals": temp_numerals, "twin_spawned": twin_spawned, "chalked_used": chalked_used, "shrink_steps": shrink_steps, "insured_used": insured_used,
 				"solid_run": solid_run, "stripe_run": stripe_run, "mods": table_mods, "board": board,
 				"frost": frost_shield, "heart_used": heart_used, "tool_charges": tool_charges, "chalk_lost": last_chalk_lost,
 				"boost": next_boost, "all_hot": next_all_hot, "magnet": next_magnet,
@@ -1586,6 +1638,7 @@ func load_dict(d: Dictionary) -> bool:
 		for id in t.get("perk_used", []):
 			perk_used[String(id)] = true
 		beacon_used = bool(t.get("beacon_used", false))
+		discovery_done = bool(t.get("discovery_done", false))
 		temp_tools.assign(t.get("temp_tools", []))
 		echo_imbues.clear()
 		var ei: Dictionary = t.get("echo_imbues", {})

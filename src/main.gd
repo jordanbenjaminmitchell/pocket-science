@@ -83,6 +83,17 @@ var fc_times := {}              # forecast sample times per ball, for pause plan
 var walls_up := false
 var term_tip: TermTip
 var lbl_boss: Label
+var lbl_discovery: Label
+
+
+## The board's optional goal, under its rule: what to do and what it pays, ticked once made.
+func _refresh_discovery() -> void:
+	if lbl_discovery == null or run == null:
+		return
+	var d := Catalog.discovery(String(run.current().id))
+	var pay := "+$%d" % int(d.money) + (", +%d Chalk" % int(d.chalk) if int(d.chalk) > 0 else "")
+	lbl_discovery.text = ("✓ Discovery made: %s" % d.text) if run.discovery_done else "Discovery: %s (%s)" % [d.text, pay]
+	lbl_discovery.modulate = Color(1, 1, 1, 0.55) if run.discovery_done else Color(1, 1, 1, 1)
 var lbl_target: Label
 var lbl_score: Label
 var score_bar: ProgressBar
@@ -1961,7 +1972,7 @@ var fc_limit := 12.0
 ## Paths are drawn with the all-balls option and on tables that bend a ball's
 ## path, since a straight guideline alone would mislead there.
 func _show_paths() -> bool:
-	return state == S.HOLD or plan_lock or settings.guide_lines == 1 or sim.tilt != Vector2.ZERO or sim.well_strength != 0.0 or run.current().id == "elements"
+	return state == S.HOLD or plan_lock or settings.guide_lines == 1 or sim.tilt != Vector2.ZERO or not sim.refract.is_empty() or sim.well_strength != 0.0 or run.current().id == "elements"
 
 
 func _forecast_wanted() -> bool:
@@ -2489,6 +2500,10 @@ func _after_shot() -> void:
 		b.label_node.queue_redraw()   # Dice and Wild show their new numbers
 	_log_shot(was_break, out)
 	_announce_unlocks(meta.on_shot(result, run))
+	if String(out.get("discovery", "")) != "":
+		sfx.play("coin", 1.0, 1.3)
+		_flash_banner(out.discovery, Color(0.55, 0.95, 1.0), 1.4)
+		_refresh_discovery()
 	if out.has("bounty"):
 		sfx.play("coin", 1.0, 1.1)
 		_flash_banner("SIDE BET WON!  +$%d" % run.bounty_reward(), Color(1.0, 0.85, 0.35), 1.3)
@@ -2579,6 +2594,12 @@ func _board_turn() -> void:
 	for n in bt.get("swallowed", []):
 		_flash_banner("A SHARK SWALLOWED THE %d" % int(n), Color(1.0, 0.45, 0.4), 1.3)
 		sfx.play("bad", 0.6, 0.8)
+	if String(bt.get("discovery", "")) != "":
+		sfx.play("coin", 1.0, 1.3)
+		_flash_banner(bt.discovery, Color(0.55, 0.95, 1.0), 1.4)
+		_refresh_discovery()
+	if bt.get("cat_moved", false):
+		_flash_banner("THE CAT MOVES", Color(0.85, 0.85, 0.95), 1.0)
 	for kind in bt.get("joined", []):
 		_flash_banner("%s JOINS THE TABLE" % String(BoardArt.SHARK_NAMES.get(kind, "A SHARK")).to_upper(), Color(1.0, 0.6, 0.4), 1.4)
 	if not bt.get("swallowed", []).is_empty():
@@ -3246,6 +3267,10 @@ func _build_ui() -> void:
 	bet_row = HBoxContainer.new()
 	bet_row.add_theme_constant_override("separation", 6)
 	labv.add_child(bet_row)
+	lbl_discovery = _label("", 14, Color(0.55, 0.95, 1.0), F_SEMI)
+	lbl_discovery.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl_discovery.custom_minimum_size = Vector2(290, 0)
+	labv.add_child(lbl_discovery)
 	lbl_boss = _label("", 13, Color(1.0, 0.45, 0.4), F_REG)
 	lbl_boss.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl_boss.custom_minimum_size = Vector2(290, 0)
@@ -3491,6 +3516,7 @@ func _refresh_hud() -> void:
 		lbl_round.text = "%sTable %d / %d%s" % ["Daily · " if run.daily_key != "" else ("Handicap %d · " % run.handicap if run.handicap > 0 else ""), run.table_index + 1, total, ""]
 	lbl_lab.text = Catalog.BOSSES[t.id].name
 	lbl_rule.text = Glossary.link(Catalog.BOSSES[t.id].desc)
+	_refresh_discovery()
 	lbl_rule.visible = true
 	view.forecast_authoritative = t.id == "elements"
 	lbl_boss.visible = false

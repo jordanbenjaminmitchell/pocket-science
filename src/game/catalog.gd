@@ -338,7 +338,7 @@ const BOSSES := {
 	"magnet": {"name": "Kepler Orbit", "tier": 2, "lab": "magnetlab", "anomaly": "", "desc": "Every pocket pulls passing balls into orbit and then in, but every ball is worth 10 less."},
 	"smoke": {"name": "Lotka–Volterra", "tier": 2, "lab": "standard", "anomaly": "", "desc": "A Pool Shark circles the balls and swallows one every 3 shots. If it survives 4 shots, a second one arrives. Hit a Shark 3 times to knock it out. Every sink scores ×1.5."},
 	"blackice": {"name": "Superfluid", "tier": 3, "lab": "cryo", "anomaly": "blackice", "desc": "Almost no friction and lively cushions. Every sink adds +0.5 Chain."},
-	"tilted": {"name": "Snell's Law", "tier": 3, "lab": "standard", "anomaly": "tilt", "desc": "The table slopes and bends every ball's path, and a dotted line shows where balls will really roll. Every sink scores ×1.5."},
+	"tilted": {"name": "Snell's Law", "tier": 3, "lab": "standard", "anomaly": "", "desc": "Half the table is air and half is glass. A ball crossing the line bends like light, and leaving the glass at a shallow angle it bounces back inside. Every sink scores ×1.5."},
 	"two": {"name": "Quantum Pockets", "tier": 3, "lab": "spring", "anomaly": "onepocket", "desc": "Only the hot pocket and its entangled twin, diagonally opposite, score, and sinks there score ×2."},
 	"closing": {"name": "Radioactive Decay", "tier": 3, "lab": "standard", "anomaly": "shrink", "desc": "The pockets decay: every pocket narrows after each shot. Heat builds twice as fast."},
 	"gulf": {"name": "Gulf Stream", "tier": 2, "lab": "standard", "anomaly": "", "desc": "A current runs across the middle of the table and carries rolling balls to the right. Every sink adds +0.5 Chain."},
@@ -352,7 +352,7 @@ const BOSSES := {
 	"sierpinski": {"name": "Sierpinski Triangle", "tier": 2, "lab": "standard", "anomaly": "", "shape": "sierpinski", "desc": "A triangular table with three triangular islands to bank around. Bank sinks score ×2."},
 	"mobius": {"name": "Möbius Strip", "tier": 2, "lab": "standard", "anomaly": "", "desc": "Gaps in the left rail lead out of gaps in the right rail, upside down. Every trip through adds +1 Chain."},
 	"maxwell": {"name": "Maxwell's Demon", "tier": 2, "lab": "standard", "anomaly": "", "desc": "A wall splits the table. At its gate the Demon lets fast balls through left to right and slow balls back right to left. Every sink scores ×1.5."},
-	"lorentz": {"name": "Lorentz Field", "tier": 2, "lab": "standard", "anomaly": "", "desc": "Inside the marked field, rolling balls curve sideways; fast balls curve less. Every sink adds +0.5 Chain."},
+	"lorentz": {"name": "Lorentz Field", "tier": 2, "lab": "standard", "anomaly": "", "desc": "Inside the marked field, solids (+) curve one way and stripes (−) curve the other; the cue ball and the 8 roll straight. Every sink adds +0.5 Chain."},
 	"spiral": {"name": "Golden Spiral", "tier": 2, "lab": "standard", "anomaly": "", "shape": "spiral", "desc": "A spiral rail winds into a drain on the cloth; a ball caught on the arm rides it in. Sinks in the drain score ×2."},
 	"meissner": {"name": "Meissner Effect", "tier": 2, "lab": "standard", "anomaly": "", "desc": "Four superconducting posts push balls away before they touch, so balls curve round them. Clean sinks score ×2."},
 	"chain": {"name": "Chain Reaction", "tier": 3, "lab": "standard", "anomaly": "", "shape": "benzene", "desc": "Every sink sends a shock ring out of its pocket that shoves nearby balls away. Set off chains. Every sink adds +0.5 Chain."},
@@ -362,6 +362,8 @@ const BOSSES := {
 	"stellated": {"name": "Stellated Star", "tier": 3, "lab": "standard", "anomaly": "", "shape": "stellated", "desc": "A six-pointed star with a pocket at every point. The inner corners make wild banks. Bank sinks score ×2."},
 	"lever": {"name": "The Lever", "tier": 3, "lab": "standard", "anomaly": "", "shape": "lever", "desc": "A see-saw rail on a fulcrum tips towards whichever end a ball hit last shot. Every sink scores ×1.5."},
 	"escape": {"name": "Escape Velocity", "tier": 3, "lab": "standard", "anomaly": "", "shape": "escape", "desc": "Two gravity wells slingshot balls round them; get the speed right to escape or orbit in. Every sink adds +1 Chain."},
+	"life": {"name": "Game of Life", "tier": 2, "lab": "standard", "anomaly": "", "desc": "Live cells are posts. After every shot they follow Conway's rules: the faint marks show which cells are born and which die next. Every cell hit adds +0.5 Chain."},
+	"cat": {"name": "Schrödinger's Cat", "tier": 2, "lab": "standard", "anomaly": "", "desc": "A cat sleeps in a corner pocket and blocks it. Hit it and it moves to another corner; it also wanders every third shot. Sinks in the pocket opposite the cat score ×2."},
 	"elements": {"name": "The Clockwork Table", "tier": 9, "lab": "element", "anomaly": "elements", "desc": "The pockets are numbered 1 to 6, clockwise. Sink into the next one in order to tick the clock: ticks in a row score ×1.5, ×2, ×2.5 and on. Any other pocket stops the clock. A Sweeper wall turns one hour round the middle after every shot."},
 	"final": {"name": "Apex Predator", "tier": 9, "lab": "final", "anomaly": "cursed8", "desc": "The Great White swallows a ball every 2 shots; hit it 8 times to knock it out. At half health the Loan Shark (takes 15% of every sink) and the Leech (clamps onto a ball) join. The 8 goes last: early costs 2 Chalk, last scores ×5."},
 }
@@ -516,3 +518,33 @@ static func rarity_color(r: int) -> Color:
 ## Atomic-number rainbow: 1 is red, 100 is violet, with no hue wrap back to red.
 static func element_color(z: int) -> Color:
 	return Color.from_hsv(0.76 * (clampi(z, 1, 100) - 1) / 99.0, 0.82, 0.96)
+
+
+## Discoveries: one optional goal on every board, paid once per table.
+##   ko       knock out a Shark              bumpers3  3+ post hits in a scoring shot
+##   portal   sink after a portal trip       focus     sink in the pocket on the cloth
+##   bank     sink a bank shot               bank2     sink off 2+ cushions
+##   double   sink 2+ balls in one shot      triple    sink 3+ balls in one shot
+##   heat4    reach Heat 4                   cathit    hit the cat and sink in the same shot
+const DISCOVERY_KINDS := {
+	"ko": "Knock out a Shark", "bumpers3": "Hit 3 posts in a shot that sinks a ball", "portal": "Sink a ball in a shot that uses a portal",
+	"focus": "Sink a ball in the pocket out on the cloth", "bank": "Sink a bank shot", "bank2": "Sink a ball off 2 cushions",
+	"double": "Sink 2 balls in one shot", "triple": "Sink 3 balls in one shot", "heat4": "Reach Heat 4",
+	"cathit": "Hit the cat and sink a ball in the same shot",
+}
+const DISCOVERIES := {
+	"smoke": "ko", "cramped": "ko", "foucault": "ko", "final": "ko",
+	"erbridge": "portal", "mobius": "portal",
+	"parlor": "bumpers3", "posts": "bumpers3", "galton": "bumpers3", "lattice": "bumpers3", "life": "bumpers3", "meissner": "bumpers3",
+	"parabolic": "focus", "whisper": "focus", "spiral": "focus",
+	"spring_st": "bank", "venturi": "bank", "hypotenuse": "bank", "benzene": "bank", "pentagon": "bank", "lshell": "bank",
+	"sierpinski": "bank2", "stellated": "bank2", "tectonic": "bank2", "tilted": "bank",
+	"chain": "triple", "tesla": "triple", "closing": "heat4", "blackice": "heat4", "cat": "cathit",
+}
+
+
+## The board's Discovery: {kind, text, money, chalk}. Boards not listed ask for a double.
+static func discovery(board_id: String) -> Dictionary:
+	var kind: String = DISCOVERIES.get(board_id, "double")
+	var hard: bool = kind in ["ko", "triple", "bank2"]
+	return {"kind": kind, "text": DISCOVERY_KINDS[kind], "money": 4 if hard else 3, "chalk": 1 if board_id == "final" else 0}

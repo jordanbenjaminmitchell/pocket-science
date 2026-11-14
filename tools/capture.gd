@@ -67,6 +67,7 @@ func _go() -> void:
 			# Any board as the first table: PS_BOARD=hypotenuse and so on.
 			game._new_run()
 			game.run.plan[0] = game.run._table_entry(OS.get_environment("PS_BOARD"), 50)
+			game.run.begin_table()   # starts the board's Sharks, cells and other moving parts
 			game._setup_table()
 			game._enter_aim()
 			await _frames(40)

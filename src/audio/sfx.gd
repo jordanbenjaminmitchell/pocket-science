@@ -36,7 +36,7 @@ const TRACKS := {
 	"foucault": "boards/foucaults-pendulum.ogg", "galton": "boards/galton-board.ogg", "spiral": "boards/golden-spiral.ogg",
 	"tesla": "boards/tesla-coil.ogg", "gulf": "boards/gulf-stream.ogg", "meissner": "boards/meissner-effect.ogg",
 	"tectonic": "boards/tectonic-plates.ogg", "lattice": "boards/crystal-lattice.ogg", "stellated": "boards/stellated-star.ogg",
-	"lever": "boards/the-lever.ogg", "escape": "boards/escape-velocity.ogg",
+	"lever": "boards/the-lever.ogg", "life": "boards/rotation-night.ogg", "cat": "boards/lights-out.ogg", "escape": "boards/escape-velocity.ogg",
 }
 
 

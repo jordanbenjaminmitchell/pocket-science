@@ -259,6 +259,28 @@ func _draw_board_fields(c: CanvasItem) -> void:
 			BoardArt.draw_conveyor(c, Rect2(560, 205, 90, 90), Vector2.RIGHT, time * 1.6)
 		"lorentz":
 			_draw_lorentz(c)
+		"tilted":
+			# Snell's Law: the glass half, and the line a ball bends at.
+			var ga := RunState.SNELL_A
+			var gb := RunState.SNELL_B
+			c.draw_colored_polygon(PackedVector2Array([ga, Vector2(W, 0), Vector2(W, H), gb]), Color(0.55, 0.85, 1.0, 0.16))
+			for k in 6:
+				var o := Vector2(60.0 + k * 70.0, 0)
+				c.draw_line(ga + o + Vector2(20, 60), ga + o + Vector2(50, 170), Color(1, 1, 1, 0.07), 6.0, true)
+			c.draw_line(ga, gb, Color(0.75, 0.95, 1.0, 0.9), 3.0, true)
+			c.draw_line(ga + Vector2(4, 0), gb + Vector2(4, 0), Color(1, 1, 1, 0.25), 1.5, true)
+		"life":
+			# Next generation: a ring where a cell will be born, a cross where one will die.
+			var now: Array = board.get("cells", [])
+			var nxt: Array = BoardFeatures.next_cells(now)
+			for cl: Array in nxt:
+				if not now.has(cl):
+					c.draw_arc(BoardFeatures.cell_pos(int(cl[0]), int(cl[1])), BoardFeatures.LIFE_R, 0, TAU, 20, Color(0.5, 1.0, 0.6, 0.5 + 0.2 * sin(time * 4.0)), 1.6, true)
+			for cl: Array in now:
+				if not nxt.has(cl):
+					var cp := BoardFeatures.cell_pos(int(cl[0]), int(cl[1]))
+					c.draw_line(cp + Vector2(-13, -13), cp + Vector2(13, 13), Color(1.0, 0.4, 0.35, 0.55), 1.6, true)
+					c.draw_line(cp + Vector2(-13, 13), cp + Vector2(13, -13), Color(1.0, 0.4, 0.35, 0.55), 1.6, true)
 		"meissner":
 			for p: Vector2 in BoardFeatures.MEISSNER_POSTS:
 				for k in 3:
@@ -398,6 +420,17 @@ func _draw_coil(c: CanvasItem, p: Vector2, live: bool) -> void:
 
 ## The board's Sharks, the pendulum bob, the Sweeper and the Leech, over the balls.
 func _draw_board_pieces(c: CanvasItem) -> void:
+	if board_id == "lorentz":
+		# Each ball's charge: + on solids, − on stripes.
+		for bi in ball_nodes:
+			var bn: BallNode = ball_nodes[bi]
+			if is_instance_valid(bn) and bn.visible and not bn.sinking and bn.number >= 1 and bn.number <= 15 and bn.number != 8:
+				var plus: bool = bn.number <= 7
+				var mp := bn.position + Vector2(bn.radius * 0.9, -bn.radius * 0.9)
+				c.draw_circle(mp, 6.0, Color(0.9, 0.25, 0.2) if plus else Color(0.25, 0.45, 0.95), true, -1.0, true)
+				c.draw_line(mp + Vector2(-3.2, 0), mp + Vector2(3.2, 0), Color.WHITE, 1.6, true)
+				if plus:
+					c.draw_line(mp + Vector2(0, -3.2), mp + Vector2(0, 3.2), Color.WHITE, 1.6, true)
 	if board.is_empty():
 		return
 	var sharks: Array = board.get("sharks", [])
@@ -416,6 +449,8 @@ func _draw_board_pieces(c: CanvasItem) -> void:
 		var r := float(BoardFeatures.SHARKS[kind].r)
 		BoardArt.draw_shark(c, kind, BoardFeatures.shark_pos(sh), float(sh.heading), r * 4.2, state, time, float(sh.hp) / maxf(1.0, float(sh.max)), int(sh.max))
 	match board_id:
+		"cat":
+			BoardArt.draw_cat(c, BoardFeatures._mouth(int(board.get("cat", 0)), BoardFeatures.CAT_D), time)
 		"elements":
 			BoardArt.draw_sweeper(c, Vector2(W * 0.5, H * 0.5), BoardFeatures.sweep_angle(board), BoardFeatures.SWEEP_LEN, time)
 		"foucault":
@@ -734,7 +769,13 @@ func _draw_cushions() -> void:
 	for bp in layout.bumpers:
 		var p: Vector2 = bp.pos
 		var r: float = bp.r
-		if bp.has("shark") or bp.has("bob") or bp.has("fulcrum"):
+		if bp.has("cell"):
+			# A live cell: a bright green square post.
+			c.draw_rect(Rect2(p - Vector2(r, r) + Vector2(2, 3), Vector2(r, r) * 2.0), Color(0, 0, 0, 0.3))
+			c.draw_rect(Rect2(p - Vector2(r, r), Vector2(r, r) * 2.0), Color(0.35, 0.9, 0.5))
+			c.draw_rect(Rect2(p - Vector2(r, r), Vector2(r, r) * 2.0), Color(0.8, 1.0, 0.85), false, 1.5)
+			continue
+		if bp.has("shark") or bp.has("bob") or bp.has("fulcrum") or bp.has("cat"):
 			continue   # drawn by _draw_board_pieces / _draw_board_fields
 		c.draw_circle(p + Vector2(3, 5), r + 2, Color(0, 0, 0, 0.3))
 		c.draw_circle(p, r, Color(0.65, 0.5, 0.2))

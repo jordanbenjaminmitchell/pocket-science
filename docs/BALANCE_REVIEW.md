@@ -90,7 +90,7 @@ Tier 0 is the first table, tier 9 the fixed boss tables.
 | Kepler Orbit | `magnet` | 2 | magnetlab | Every pocket pulls passing balls into orbit and then in, but every ball is worth 10 less. |  |  |
 | Lotka–Volterra | `smoke` | 2 | standard | A Pool Shark circles the balls and swallows one every 3 shots. If it survives 4 shots, a second one arrives. Hit a Shark 3 times to knock it out. Every sink scores ×1.5. |  |  |
 | Superfluid | `blackice` | 3 | cryo | Almost no friction and lively cushions. Every sink adds +0.5 Chain. |  |  |
-| Snell's Law | `tilted` | 3 | standard | The table slopes and bends every ball's path, and a dotted line shows where balls will really roll. Every sink scores ×1.5. |  |  |
+| Snell's Law | `tilted` | 3 | standard | Half the table is air and half is glass. A ball crossing the line bends like light, and leaving the glass at a shallow angle it bounces back inside. Every sink scores ×1.5. |  |  |
 | Quantum Pockets | `two` | 3 | spring | Only the hot pocket and its entangled twin, diagonally opposite, score, and sinks there score ×2. |  |  |
 | Radioactive Decay | `closing` | 3 | standard | The pockets decay: every pocket narrows after each shot. Heat builds twice as fast. |  |  |
 | Gulf Stream | `gulf` | 2 | standard | A current runs across the middle of the table and carries rolling balls to the right. Every sink adds +0.5 Chain. |  |  |
@@ -104,7 +104,7 @@ Tier 0 is the first table, tier 9 the fixed boss tables.
 | Sierpinski Triangle | `sierpinski` | 2 | standard | A triangular table with three triangular islands to bank around. Bank sinks score ×2. |  |  |
 | Möbius Strip | `mobius` | 2 | standard | Gaps in the left rail lead out of gaps in the right rail, upside down. Every trip through adds +1 Chain. |  |  |
 | Maxwell's Demon | `maxwell` | 2 | standard | A wall splits the table. At its gate the Demon lets fast balls through left to right and slow balls back right to left. Every sink scores ×1.5. |  |  |
-| Lorentz Field | `lorentz` | 2 | standard | Inside the marked field, rolling balls curve sideways; fast balls curve less. Every sink adds +0.5 Chain. |  |  |
+| Lorentz Field | `lorentz` | 2 | standard | Inside the marked field, solids (+) curve one way and stripes (−) curve the other; the cue ball and the 8 roll straight. Every sink adds +0.5 Chain. |  |  |
 | Golden Spiral | `spiral` | 2 | standard | A spiral rail winds into a drain on the cloth; a ball caught on the arm rides it in. Sinks in the drain score ×2. |  |  |
 | Meissner Effect | `meissner` | 2 | standard | Four superconducting posts push balls away before they touch, so balls curve round them. Clean sinks score ×2. |  |  |
 | Chain Reaction | `chain` | 3 | standard | Every sink sends a shock ring out of its pocket that shoves nearby balls away. Set off chains. Every sink adds +0.5 Chain. |  |  |
@@ -114,6 +114,8 @@ Tier 0 is the first table, tier 9 the fixed boss tables.
 | Stellated Star | `stellated` | 3 | standard | A six-pointed star with a pocket at every point. The inner corners make wild banks. Bank sinks score ×2. |  |  |
 | The Lever | `lever` | 3 | standard | A see-saw rail on a fulcrum tips towards whichever end a ball hit last shot. Every sink scores ×1.5. |  |  |
 | Escape Velocity | `escape` | 3 | standard | Two gravity wells slingshot balls round them; get the speed right to escape or orbit in. Every sink adds +1 Chain. |  |  |
+| Game of Life | `life` | 2 | standard | Live cells are posts. After every shot they follow Conway's rules: the faint marks show which cells are born and which die next. Every cell hit adds +0.5 Chain. |  |  |
+| Schrödinger's Cat | `cat` | 2 | standard | A cat sleeps in a corner pocket and blocks it. Hit it and it moves to another corner; it also wanders every third shot. Sinks in the pocket opposite the cat score ×2. |  |  |
 | The Clockwork Table | `elements` | 9 | element | The pockets are numbered 1 to 6, clockwise. Sink into the next one in order to tick the clock: ticks in a row score ×1.5, ×2, ×2.5 and on. Any other pocket stops the clock. A Sweeper wall turns one hour round the middle after every shot. |  |  |
 | Apex Predator | `final` | 9 | final | The Great White swallows a ball every 2 shots; hit it 8 times to knock it out. At half health the Loan Shark (takes 15% of every sink) and the Leech (clamps onto a ball) join. The 8 goes last: early costs 2 Chalk, last scores ×5. |  |  |
 
@@ -183,7 +185,7 @@ All 100, by atomic number. Rarity sets how often a card is offered.
 | 58 | Cerium Flint | `thrift` | Common | $4 | Economy | Clear a table with 3+ Chalk left: +$5. |  |  |
 | 59 | Praseodymium Twin | `rotation` | Uncommon | $6 | Ball numbers | The lowest-numbered ball on the table scores as if it were the highest-numbered one. |  |  |
 | 60 | Neodymium Boulder | `elastic` | Uncommon | $6 | Physics | The cue ball is 90% bigger, just small enough to fit a pocket, and twice as heavy. |  |  |
-| 61 | Promethium Prime | `prime` | Uncommon | $6 | Ball numbers | Prime balls (2, 3, 5, 7, 11, 13 and up) score ×2. When no prime ball is left on the table, the next prime ball rolls on and joins your rack for good. |  |  |
+| 61 | Promethium Prime | `prime` | Uncommon | $6 | Ball numbers | Prime balls (2, 3, 5, 7, 11, 13 and up) score ×2. With no prime on the table, the next prime joins your rack. |  |  |
 | 62 | Samarium Simmer | `entropy` | Uncommon | $6 | Heat | Below Heat 3, shots start with +1 Chain. |  |  |
 | 63 | Europium Echo | `echo` | Rare | $9 | Isotopes | When a ball with an Isotope sinks, its Isotope echoes onto a random ball on the table that has none, until the table ends. |  |  |
 | 64 | Gadolinium Pull | `magnet` | Rare | $9 | Pockets | Pockets gently pull nearby moving balls in. |  |  |
