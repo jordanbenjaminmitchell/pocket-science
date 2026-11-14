@@ -2728,9 +2728,13 @@ func _table_cleared() -> void:
 		view.burst(layout.pockets[k].pos, Color(1, 0.85, 0.4), 30, 320)
 	view.confetti()
 	var final: bool = run.table_index == run.plan.size() - 1
+	var unlocked_handicap := -1
 	_announce_unlocks(meta.on_table_cleared(run))
 	if final and not run.endless:
+		var old_cap := meta.handicap_cap()
 		_announce_unlocks(meta.on_win(run.handicap))
+		if meta.handicap_cap() > old_cap:
+			unlocked_handicap = meta.handicap_cap()
 	var rows := run.payout()
 	_refresh_hud()
 	await get_tree().create_timer(1.6).timeout
@@ -2739,7 +2743,7 @@ func _table_cleared() -> void:
 	if state != S.CLEAR:
 		return
 	if final and not run.endless:
-		_show_victory(rows)
+		_show_victory(rows, unlocked_handicap)
 	else:
 		_show_shop(rows)
 
@@ -4095,6 +4099,9 @@ func _show_cue_select() -> void:
 	_clear_overlay()
 	_dim(0.6)
 	var v := _center_panel(1100, 480)
+	var cue_panel := v.get_parent() as PanelContainer
+	cue_panel.custom_minimum_size.y = 850
+	cue_panel.size.y = 850
 	v.add_child(_label("CHOOSE YOUR CUE", 30, Color(0.98, 0.8, 0.4), F_PIXB))
 	var seed_row := HBoxContainer.new()
 	seed_row.add_theme_constant_override("separation", 10)
@@ -4105,23 +4112,38 @@ func _show_cue_select() -> void:
 	seed_input.custom_minimum_size = Vector2(300, 34)
 	seed_input.name = "seed_input"
 	seed_row.add_child(seed_input)
-	if meta.handicap_cap() > 0:
-		chosen_handicap = mini(chosen_handicap, meta.handicap_cap())
-		var st: Dictionary = Catalog.HANDICAPS[chosen_handicap]
-		var down := _button("<", func():
-			chosen_handicap = maxi(0, chosen_handicap - 1)
-			_show_cue_select())
-		var up := _button(">", func():
-			chosen_handicap = mini(meta.handicap_cap(), chosen_handicap + 1)
-			_show_cue_select())
-		down.disabled = chosen_handicap == 0
-		up.disabled = chosen_handicap >= meta.handicap_cap()
-		seed_row.add_child(down)
-		seed_row.add_child(_label("Handicap %d: %s - %s" % [chosen_handicap, st.name, st.desc], 15, Color(1.0, 0.7, 0.45), F_SEMI))
-		seed_row.add_child(up)
+	chosen_handicap = mini(chosen_handicap, meta.handicap_cap())
+	var st: Dictionary = Catalog.HANDICAPS[chosen_handicap]
+	var handicap_row := HBoxContainer.new()
+	handicap_row.add_theme_constant_override("separation", 10)
+	v.add_child(handicap_row)
+	handicap_row.add_child(_label("HANDICAP", 17, Color(1.0, 0.8, 0.45), F_PIXB))
+	var down := _button("<", func(): _change_handicap(-1))
+	down.name = "handicap_down"
+	down.disabled = chosen_handicap == 0
+	handicap_row.add_child(down)
+	var handicap_text := "Level %d: %s - %s" % [chosen_handicap, st.name, st.desc]
+	if meta.handicap_cap() == 0:
+		handicap_text += " Win a run to unlock the next level."
+	var info := _label(handicap_text, 15, Color(1.0, 0.7, 0.45), F_SEMI)
+	info.name = "handicap_info"
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	handicap_row.add_child(info)
+	var up := _button(">", func(): _change_handicap(1))
+	up.name = "handicap_up"
+	up.disabled = chosen_handicap >= meta.handicap_cap()
+	handicap_row.add_child(up)
+	var cue_scroll := ScrollContainer.new()
+	cue_scroll.name = "cue_scroll"
+	cue_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	cue_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	v.add_child(cue_scroll)
+	var cue_body := VBoxContainer.new()
+	cue_body.add_theme_constant_override("separation", 12)
+	cue_scroll.add_child(cue_body)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
-	v.add_child(row)
+	cue_body.add_child(row)
 	for id in Catalog.CUES:
 		var c: Dictionary = Catalog.CUES[id]
 		var sh := _card_shell(c.accent, 150, 200)
@@ -4172,7 +4194,7 @@ func _show_cue_select() -> void:
 		if row.get_child_count() == 8:
 			row = HBoxContainer.new()
 			row.add_theme_constant_override("separation", 12)
-			v.add_child(row)
+			cue_body.add_child(row)
 		row.add_child(p)
 	var foot := HBoxContainer.new()
 	foot.add_theme_constant_override("separation", 14)
@@ -4193,6 +4215,13 @@ func _show_cue_select() -> void:
 		sfx.play("ui", 0.8)
 		_show_cue_select.call_deferred())
 	foot.add_child(dev)
+
+
+func _change_handicap(delta: int) -> void:
+	var entered_seed := seed_input.text
+	chosen_handicap = clampi(chosen_handicap + delta, 0, meta.handicap_cap())
+	_show_cue_select()
+	seed_input.text = entered_seed
 
 
 var meta := Meta.new()
@@ -5003,7 +5032,7 @@ func _show_game_over() -> void:
 	v.add_child(_label("EXPERIMENT FAILED", 36, Color(1, 0.45, 0.4), F_PIXB))
 	v.add_child(_label("Reached table %d. Score %d / %d" % [run.table_index + 1, run.score, run.target()], 18, Color(0.9, 0.9, 0.9), F_REG))
 	v.add_child(_label("Tables cleared: %d\nBalls sunk: %d\nBest shot: %d\nBest Heat: %d\nSeed: %d" % [run.tables_cleared, run.total_pots, run.best_shot, run.best_heat, run.seed_value], 17, Color(0.8, 0.82, 0.85), F_REG))
-	var b := _button("New Run", _new_run)
+	var b := _button("Choose Cue & Handicap", _show_cue_select)
 	b.custom_minimum_size = Vector2(0, 50)
 	v.add_child(b)
 	var again_seed := run.seed_value
@@ -5013,7 +5042,7 @@ func _show_game_over() -> void:
 	v.add_child(_button("Title", _show_title))
 
 
-func _show_victory(rows: Array) -> void:
+func _show_victory(rows: Array, unlocked_handicap: int = -1) -> void:
 	sfx.play_music("victory")
 	_record_best()
 	records.record(run, true)
@@ -5022,11 +5051,13 @@ func _show_victory(rows: Array) -> void:
 	var v := _center_panel(620, 470, Color(1.0, 0.85, 0.35))
 	v.add_child(_label("ALL TRIALS CLEARED!", 36, Color(1.0, 0.85, 0.4), F_PIXB))
 	v.add_child(_label("You beat all 9 tables of Pocket Science.", 18, Color(0.9, 0.9, 0.9), F_REG))
+	if unlocked_handicap > 0:
+		v.add_child(_label("UNLOCKED: Handicap %d - %s" % [unlocked_handicap, Catalog.HANDICAPS[unlocked_handicap].name], 19, Color(0.5, 0.95, 0.65), F_SEMI))
 	v.add_child(_label("Balls sunk: %d\nBest shot: %d\nBest Heat: %d" % [run.total_pots, run.best_shot, run.best_heat], 17, Color(0.8, 0.82, 0.85), F_REG))
 	var b := _button("Keep going (Endless)", func(): _show_shop(rows), Color(0.4, 0.9, 0.6))
 	b.custom_minimum_size = Vector2(0, 50)
 	v.add_child(b)
-	v.add_child(_button("New Run", _new_run))
+	v.add_child(_button("Choose Cue & Handicap", _show_cue_select))
 
 
 func iso_color(id: String) -> Color:

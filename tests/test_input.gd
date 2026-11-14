@@ -397,7 +397,7 @@ func _go() -> void:
 	var lb: Label = g._label("x", 13)
 	check(lb.get_theme_font_size("font_size") == 15, "larger text applies")
 	Engine.max_fps = 0
-	for name in ["settings", "controls", "title", "shop"]:
+	for name in ["settings", "controls", "title", "cue select", "shop"]:
 		match name:
 			"settings":
 				g._show_settings(g._show_title)
@@ -405,6 +405,8 @@ func _go() -> void:
 				g._show_controls()
 			"title":
 				g._show_title()
+			"cue select":
+				g._show_cue_select()
 			"shop":
 				g._new_run()
 				g._show_shop([["Table cleared", 3]])

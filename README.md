@@ -28,6 +28,8 @@ The APK is signed with a personal key from the build PC, so it is for your own d
    - **Removal:** take a ball out of your rack, never the 8.
 5. **Nine tables** make a run, including the Clockwork Table at table 5 and the Grand Final at table 9. After that, endless mode.
 
+Winning a run unlocks the next **Handicap**. Choose its level on the **Choose Your Cue** screen before starting another run; the `<` and `>` buttons step through unlocked levels. The victory screen links directly to that selection.
+
 ### Scoring
 
 Each ball scores as it sinks: **value × Chain × Heat**.

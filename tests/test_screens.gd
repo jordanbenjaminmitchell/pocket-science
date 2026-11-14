@@ -72,6 +72,26 @@ func _go() -> void:
 			var r: Rect2 = p.get_global_rect()
 			var inside := r.position.x >= 0 and r.position.y >= 0 and r.end.x <= 1600.5 and r.end.y <= 900.5
 			check(inside and r.size.y > 80, "%s panel on-screen %s" % [name, r])
+	g.meta.max_handicap = 1
+	g._show_victory([["Table cleared", 5]], 1)
+	await process_frame
+	var victory_labels: Array = g.overlay.find_children("*", "Label", true, false)
+	check(victory_labels.any(func(l): return l.text.contains("UNLOCKED: Handicap 1")), "victory announces the new handicap")
+	var choose_buttons: Array = g.overlay.find_children("*", "Button", true, false).filter(func(b): return b.text == "Choose Cue & Handicap")
+	check(choose_buttons.size() == 1, "victory links to cue and handicap selection")
+	choose_buttons[0].pressed.emit()
+	await process_frame
+	var handicap_info: Label = g.overlay.find_child("handicap_info", true, false)
+	check(handicap_info != null and handicap_info.text.contains("Level 0"), "cue screen shows the current handicap")
+	g.seed_input.text = "test seed"
+	var handicap_up: Button = g.overlay.find_child("handicap_up", true, false)
+	handicap_up.pressed.emit()
+	await process_frame
+	handicap_info = g.overlay.find_child("handicap_info", true, false)
+	check(handicap_info.text.contains("Level 1") and g.seed_input.text == "test seed", "the unlocked handicap can be selected without losing the seed")
+	check(g.overlay.find_child("cue_scroll", true, false) != null, "cue cards have a scroll area")
+	g._new_run()
+	check(g.run.handicap == 1, "the selected handicap applies to the next run")
 	check(FileAccess.get_file_as_string("res://licenses/chakrapetch-OFL.txt").contains("Open Font License"), "font licence text present")
 	# The HUD side panel must fit on screen with a full build (5 perks, streak, flags).
 	g._clear_overlay()
