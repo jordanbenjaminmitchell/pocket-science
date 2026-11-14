@@ -48,6 +48,8 @@ func _go() -> void:
 	var edge_badges := BallScoreOverlay.place(dense, Rect2(352, 0, 1248, 706), g.F_NUM)
 	check(edge_badges.size() == dense.size(), "crowded balls near the top edge keep every label")
 	for wide in [false, true]:
+		g.run.intro = true
+		g.run.table_index = 0
 		g.settings.screen_layout = 1 if wide else 0
 		g.debug_window = Vector2i(2400, 1080) if wide else Vector2i(1600, 900)
 		g._apply_screen_layout()
@@ -61,6 +63,8 @@ func _go() -> void:
 			continue
 		var go: Button = panel.find_child("next_table_button", true, false)
 		var scroll: ScrollContainer = panel.find_child("shop_scroll", true, false)
+		var remove_buttons: Array = panel.find_children("*", "Button", true, false).filter(func(b): return b.text.begins_with("Remove a ball"))
+		check(g.run.shop.size() == 9 and remove_buttons.size() == 1 and remove_buttons[0].visible, "%s shop shows nine offers and ball removal" % ("wide" if wide else "classic"))
 		check(panel.get_global_rect().end.y <= g.fit.view.y - 8 and go.get_global_rect().end.y <= g.fit.view.y - 8, "%s shop and Next table fit the canvas" % ("wide" if wide else "classic"))
 		var long_content := Control.new()
 		long_content.custom_minimum_size.y = 900

@@ -39,3 +39,9 @@ Implemented after the 1.44 release and published in the 1.45 APK:
 - Visual previews: `runtime/shop_layout_check.png` and `runtime/score_values_preview.png` (ignored by Git).
 
 Verification: `tests/test_shop_values.gd`, `tests/test_screens.gd`, `tests/test_layout.gd`, and `tests/test_scoring.gd` pass with 0 failures; `git diff --check` is clean. Headless tests may print resource-leak warnings on exit.
+
+## Shop assortment correction (2026-11-14)
+
+- Every shop, including the first introduction shop, rolls three Elements, two Catalysts, two loose Isotopes, one Exotic ball, and one 11–15 ball carrying an Isotope. The Remove a ball service is visible from the first shop, subject to its normal price and rack limits.
+- If the player already owns all five 11–15 balls, that slot offers an Isotope for an unimbued high ball. If all five already have Isotopes, it becomes a third loose Isotope so the shop still has nine offers.
+- `tests/test_intro.gd`, `tests/test_rules.gd`, and `tests/test_shop_values.gd` cover the assortment, late-rack fallback, and visible removal control in Classic and Wide layouts.

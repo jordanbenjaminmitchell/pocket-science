@@ -1,6 +1,6 @@
 extends SceneTree
-## New players meet the game a piece at a time; pauses can be planned on any
-## ball's line; Long Lens tags every predicted sink.
+## The full shop appears from table one; pauses can be planned on any ball's
+## line; Long Lens tags every predicted sink.
 
 var failures := 0
 var g: Node
@@ -39,13 +39,22 @@ func _shop_at(table: int, intro: bool) -> Array:
 
 
 func _go() -> void:
-	print("gradual introduction")
+	print("full shop from the first table")
 	var m := Meta.new()
 	check(m.is_intro(), "a new profile starts in the introduction")
-	check(not _shop_at(0, true).has("item") and not _shop_at(0, true).has("ball"), "the first shop is Elements and Isotopes only")
-	check(_shop_at(1, true).has("item") and not _shop_at(1, true).has("ball"), "items arrive in the second shop")
-	check(_shop_at(2, true).has("ball"), "Exotic balls arrive in the third")
-	check(_shop_at(0, false).has("item") and _shop_at(0, false).has("ball"), "after the introduction everything is there from the start")
+	for table in 3:
+		for intro in [true, false]:
+			var kinds := _shop_at(table, intro)
+			check(kinds.size() == 9 and kinds.count("perk") == 3 and kinds.count("item") == 2 and kinds.count("imbue") == 3 and kinds.count("ball") == 1, "table %d shop has all nine offers, intro %s" % [table + 1, intro])
+	var full_high := RunState.new()
+	full_high.start(11)
+	full_high.ball_set.append_array(range(11, 16))
+	full_high.roll_shop()
+	check(full_high.shop.size() == 9 and full_high.shop.any(func(it): return it.type == "imbue" and it.has("ball") and not it.get("adds", false)), "owned high balls get a preselected Isotope offer")
+	for n in range(11, 16):
+		full_high.imbues[n] = "spark"
+	full_high.roll_shop()
+	check(full_high.shop.size() == 9, "a fully Isotoped rack still gets nine offers")
 	m.lifetime_tables = Meta.INTRO_TABLES
 	check(not m.is_intro(), "clearing a few tables ends the introduction")
 	m.seen_tips = []

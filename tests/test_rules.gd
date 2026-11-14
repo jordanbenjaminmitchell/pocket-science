@@ -182,7 +182,7 @@ func _initialize() -> void:
 	sr.start(4)
 	sr.roll_shop()
 	var imb: Array = sr.shop.filter(func(it): return it.type == "imbue")
-	check(imb.any(func(it): return not it.has("ball")) and imb.any(func(it): return it.has("ball") and int(it.ball) >= 11), "the shop offers a loose Isotope and an Isotope 11-15 ball")
+	check(imb.filter(func(it): return not it.has("ball")).size() == 2 and imb.any(func(it): return it.has("ball") and int(it.ball) >= 11 and int(it.ball) <= 15), "the shop offers two loose Isotopes and an Isotope 11-15 ball")
 	print("persistence")
 	run.perks.assign(["golden", "bank"])
 	run.imbues[7] = "vein"

@@ -4468,7 +4468,6 @@ func _refresh_shop() -> void:
 	bar.add_child(rr)
 	var rm := _button("Remove a ball ($%d)" % run.removal_cost(), _show_remove_picker, Color(1.0, 0.55, 0.55))
 	rm.disabled = run.money < run.removal_cost() or run.ball_set.size() <= 2
-	rm.visible = not (run.intro and run.table_index < 2)
 	bar.add_child(rm)
 	_shop_intro_tip(body)
 	var spc2 := Control.new()

@@ -831,21 +831,32 @@ func _roll_shop_items() -> void:
 		if f != "":
 			shop.append({"type": "perk", "id": f, "cost": Catalog.PERKS[f].cost, "sold": false})
 	var keys := Catalog.IMBUES.keys()
-	# A loose Imbue: you choose the ball when you buy it.
-	var loose: String = keys[rng.randi_range(0, keys.size() - 1)]
-	shop.append({"type": "imbue", "id": loose, "cost": imbue_cost(loose), "sold": false})
+	# Two loose Isotopes: you choose the balls when you buy them.
+	var loose_keys: Array = keys.duplicate()
+	for i in 2:
+		var loose: String = loose_keys[rng.randi_range(0, loose_keys.size() - 1)]
+		loose_keys.erase(loose)
+		shop.append({"type": "imbue", "id": loose, "cost": imbue_cost(loose), "sold": false})
 	# A high ball, 11 to 15, that already carries a random Imbue.
 	var high: Array = range(11, 16).filter(func(n): return not ball_set.has(n))
 	if not high.is_empty():
 		var iso: String = keys[rng.randi_range(0, keys.size() - 1)]
 		shop.append({"type": "imbue", "id": iso, "ball": high[rng.randi_range(0, high.size() - 1)], "adds": true, "cost": imbue_cost(iso) + 2, "sold": false})
-	if not (intro and table_index < 2):
-		var types := Catalog.BALL_TYPES.keys().filter(func(k): return not Catalog.BALL_TYPES[k].get("hidden", false))
-		var bt: String = types[rng.randi_range(0, types.size() - 1)]
-		shop.append({"type": "ball", "id": bt, "cost": int(Catalog.BALL_TYPES[bt].cost), "sold": false})
+	else:
+		# Once all high balls are owned, keep the slot useful by offering an
+		# Isotope for one that does not already have one.
+		var bare_high: Array = range(11, 16).filter(func(n): return not imbues.has(n))
+		var iso: String = keys[rng.randi_range(0, keys.size() - 1)]
+		if not bare_high.is_empty():
+			shop.append({"type": "imbue", "id": iso, "ball": bare_high[rng.randi_range(0, bare_high.size() - 1)], "cost": imbue_cost(iso), "sold": false})
+		else:
+			shop.append({"type": "imbue", "id": iso, "cost": imbue_cost(iso), "sold": false})
+	var types := Catalog.BALL_TYPES.keys().filter(func(k): return not Catalog.BALL_TYPES[k].get("hidden", false))
+	var bt: String = types[rng.randi_range(0, types.size() - 1)]
+	shop.append({"type": "ball", "id": bt, "cost": int(Catalog.BALL_TYPES[bt].cost), "sold": false})
 	# Two Catalysts you don't have yet.
 	var free_tools: Array = Catalog.ITEMS.keys().filter(func(k): return not tools.has(k) and k != cue_kit())
-	for i in (0 if intro and table_index < 1 else 2):
+	for i in 2:
 		if free_tools.is_empty():
 			break
 		var tl: String = free_tools[rng.randi_range(0, free_tools.size() - 1)]
