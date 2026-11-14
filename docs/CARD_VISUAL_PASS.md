@@ -31,7 +31,7 @@ Released in 1.43. The shop was checked in a capture at game resolution: Element 
 
 ## Follow-up: shop fit and ball score toggle (2026-11-14)
 
-Implemented locally after the 1.44 release; these two changes are not yet in the APK:
+Implemented after the 1.44 release and published in the 1.45 APK:
 
 - `src/main.gd`: the Pro Shop uses a fixed 884-unit-high panel at Y=8, independent of the table's wide-screen vertical offset. The next-table description and offer cards scroll; the reroll/remove controls and **Next table** button stay visible at the bottom even with long descriptions. The score panel has a **1× VALUES / HIDE VALUES** toggle.
 - `src/main.gd` and `src/ui/ball_score_overlay.gd`: while aiming, placing, picking, or holding a shot, each live object ball gets its solo-sink point value. It uses `Scorer.score()` with current Heat, Elements, Isotopes, ball effects, and table rule, while excluding hot/focus pocket multipliers. The unsafe 8 shows its penalty. Badges avoid one another and the balls, with leader lines to displaced badges. Values refresh four times per second; positions follow balls each frame.
