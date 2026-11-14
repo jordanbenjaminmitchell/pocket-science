@@ -207,6 +207,11 @@ func _go() -> void:
 			var tip: Dictionary = game._ball_tip(tn)
 			game.term_tip.show_ball(tip.title, tip.points, tip.points_color, tip.text, tip.adds, at, 99.0)
 			await _frames(6)
+		"values":
+			game._new_run()
+			await _frames(5)
+			game._toggle_ball_values()
+			await _frames(6)
 		"cuetip":
 			game._show_cue_select()
 			await _frames(4)

@@ -97,6 +97,11 @@ func _refresh_discovery() -> void:
 var lbl_target: Label
 var lbl_score: Label
 var score_bar: ProgressBar
+var score_values_button: Button
+var score_values_layer: BallScoreOverlay
+var score_values_on := false
+var score_values_timer := 0.0
+var score_values_cache := {}
 var lbl_chain: Label
 var lbl_heat: Label
 var lbl_line: Label
@@ -450,6 +455,53 @@ func _ball_pay(n: int) -> Dictionary:
 		points += "  +$%d" % int(full.money)
 	return {"points": points, "color": TermTip.NEON, "note": "
 ".join(notes)}
+
+
+func _toggle_ball_values() -> void:
+	score_values_on = not score_values_on
+	score_values_button.text = "HIDE VALUES" if score_values_on else "1× VALUES"
+	score_values_timer = 0.0
+	if not score_values_on:
+		score_values_layer.visible = false
+
+
+## Solo sink at the current Heat, with the real Elements, Isotope, table rule,
+## and ball effects. The hypothetical pocket has no hot/focus multiplier.
+func _ball_one_x_value(n: int) -> int:
+	var ctx := _shot_ctx()
+	ctx["is_break"] = false
+	ctx["hot_pocket"] = -1
+	ctx["all_hot"] = false
+	ctx["focus"] = -1
+	ctx["events"] = [{"type": "ball", "a": 0, "b": n}, {"type": "pocket", "a": n, "pocket": 0, "rails": 0, "at": Vector2.ZERO}]
+	var result_now := Scorer.score(ctx)
+	return int(result_now.total) - int(result_now.penalty)
+
+
+func _update_ball_values(delta: float) -> void:
+	if score_values_layer == null:
+		return
+	var playing := state in [S.AIM, S.PLACE, S.PICK, S.HOLD]
+	if not score_values_on or not playing or sim == null or overlay.get_child_count() > 0 or paused:
+		score_values_layer.visible = false
+		return
+	score_values_timer -= delta
+	if score_values_timer <= 0.0:
+		score_values_cache.clear()
+		for i in sim.count():
+			if sim.alive[i] == 1 and sim.num[i] != 0:
+				score_values_cache[sim.num[i]] = _ball_one_x_value(int(sim.num[i]))
+		score_values_timer = 0.25
+	var entries: Array = []
+	for i in sim.count():
+		if sim.alive[i] != 1 or sim.num[i] == 0:
+			continue
+		var n: int = sim.num[i]
+		var amount: int = int(score_values_cache.get(n, 0))
+		entries.append({"anchor": view.to_global(sim.pos[i]), "number": n, "text": "%+d" % amount, "color": Color(1.0, 0.52, 0.5) if amount < 0 else Color(0.55, 1.0, 0.78)})
+	var bounds := Rect2(fit.table_zone.position + Vector2(12, 8), fit.table_zone.size - Vector2(24, 26))
+	score_values_layer.set_entries(entries, bounds)
+	score_values_layer.visible = true
 
 
 ## ================================================================ the Hustler's Kit
@@ -1617,6 +1669,7 @@ var paused := false
 
 func _process(delta: float) -> void:
 	_update_card_glow()
+	_update_ball_values(delta)
 	if paused:
 		return
 	match state:
@@ -3287,6 +3340,12 @@ func _build_ui() -> void:
 	var sp := Control.new()
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	th.add_child(sp)
+	score_values_button = _button("1× VALUES", _toggle_ball_values, Color(0.6, 0.85, 1.0))
+	score_values_button.name = "ball_values_button"
+	score_values_button.add_theme_font_size_override("font_size", 12)
+	score_values_button.custom_minimum_size = Vector2(88, 26)
+	score_values_button.tooltip_text = "Show what each ball would score if sunk alone in an ordinary 1× pocket now."
+	th.add_child(score_values_button)
 	lbl_target = _label("150", 22, Color(1.0, 0.85, 0.45), F_NUM)
 	th.add_child(lbl_target)
 	lbl_score = _label("0", 38, Color.WHITE, F_NUM)
@@ -3432,6 +3491,12 @@ func _build_ui() -> void:
 		if n >= 5 and not settings.reduced_motion:
 			view.punch(0.006))
 	root.add_child(score_eq)
+	score_values_layer = BallScoreOverlay.new()
+	score_values_layer.font = F_NUM
+	score_values_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	score_values_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	score_values_layer.visible = false
+	root.add_child(score_values_layer)
 	overlay = Control.new()
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -4332,7 +4397,18 @@ func _refresh_shop() -> void:
 	d.size = zone.size
 	d.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var v := _center_panel(1040, 600, Color(0.85, 0.65, 0.3), Vector2(450, 8) + fit.table_offset)
+	# The table's wide-screen offset has a Y component; applying it here pushed
+	# the shop footer off the bottom. Keep a fixed frame and scroll growing offers.
+	var panel := PanelContainer.new()
+	panel.name = "shop_panel"
+	panel.add_theme_stylebox_override("panel", _style(Color(0.08, 0.075, 0.08, 0.98), Color(0.85, 0.65, 0.3), 2, 16))
+	panel.position = Vector2(450 + fit.table_offset.x, 8)
+	panel.custom_minimum_size = Vector2(1080, 884)
+	panel.size = panel.custom_minimum_size
+	overlay.add_child(panel)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	panel.add_child(v)
 	var head := HBoxContainer.new()
 	v.add_child(head)
 	head.add_child(_label("PRO SHOP", 30, Color(0.98, 0.8, 0.4), F_PIXB))
@@ -4345,6 +4421,16 @@ func _refresh_shop() -> void:
 		for r in payout_rows:
 			parts.append("%s +$%d" % [r[0], r[1]])
 		v.add_child(_label("Payout:  " + "   ·   ".join(parts), 15, Color(0.8, 0.85, 0.7), F_REG))
+	var scroll := ScrollContainer.new()
+	scroll.name = "shop_scroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.custom_minimum_size.y = 80
+	v.add_child(scroll)
+	var body := VBoxContainer.new()
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 10)
+	scroll.add_child(body)
 	var nxt := run.table_index + 1
 	var np: Dictionary = run.plan[mini(nxt, run.plan.size() - 1)] if nxt < run.plan.size() else {}
 	if not np.is_empty():
@@ -4358,12 +4444,12 @@ func _refresh_shop() -> void:
 		next_row.add_theme_constant_override("separation", 12)
 		next_row.add_child(ThumbArt.new().setup("table", np.id, 46))   # the next board, seen from above
 		next_row.add_child(next_l)
-		v.add_child(next_row)
+		body.add_child(next_row)
 	var row := GridContainer.new()
 	row.columns = 5
 	row.add_theme_constant_override("h_separation", 12)
 	row.add_theme_constant_override("v_separation", 10)
-	v.add_child(row)
+	body.add_child(row)
 	for i in run.shop.size():
 		row.add_child(_offer_card(i))
 	var bar := HBoxContainer.new()
@@ -4384,11 +4470,12 @@ func _refresh_shop() -> void:
 	rm.disabled = run.money < run.removal_cost() or run.ball_set.size() <= 2
 	rm.visible = not (run.intro and run.table_index < 2)
 	bar.add_child(rm)
-	_shop_intro_tip(v)
+	_shop_intro_tip(body)
 	var spc2 := Control.new()
 	spc2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.add_child(spc2)
 	var go := _button("Next table  >", _next_table, Color(0.4, 0.9, 0.6))
+	go.name = "next_table_button"
 	go.custom_minimum_size = Vector2(220, 50)
 	go.add_theme_font_size_override("font_size", 22)
 	bar.add_child(go)
