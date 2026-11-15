@@ -4086,7 +4086,10 @@ func _show_card_tip(kind: String, id: String, ball: int, near: Control) -> void:
 		v.add_child(TileArt.new().setup(kind, id, ball))
 	var kind_name: String = {"perk": "Element", "item": "Catalyst", "ball": "Exotic ball", "imbue": "Isotope"}[kind]
 	v.add_child(_label(kind_name, 12, Color(1.0, 0.85, 0.4), F_SEMI))
-	var t := _label(String(d.desc), 13, Color(0.88, 0.9, 0.92), F_REG)
+	var tip_text := String(d.desc)
+	if kind == "imbue" and ball > 0:
+		tip_text = "The %d-ball, worth %d. %s" % [ball, Catalog.ball_points(ball), tip_text]
+	var t := _label(tip_text, 13, Color(0.88, 0.9, 0.92), F_REG)
 	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	t.custom_minimum_size = Vector2(TileArt.SIZE.x, 0)
 	v.add_child(t)
@@ -4541,7 +4544,7 @@ func _offer_card(i: int) -> Control:
 			accent = Catalog.ISOTOPE_FRAME_COLOR
 			if item.has("ball"):
 				title = "%s %d-ball" % [iso.name, item.ball]
-				desc = iso.desc
+				desc = "Worth %d. %s" % [Catalog.ball_points(int(item.ball)), iso.desc]
 				kind = "New ball · Isotope" if item.get("adds", false) else "Isotope ball"
 			else:
 				title = "%s Isotope" % iso.name

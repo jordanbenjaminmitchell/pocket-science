@@ -16,6 +16,18 @@ func has_type(node: Node, script: Script) -> bool:
 			return true
 	return false
 
+func _text_of(node: Node) -> String:
+	var t := ""
+	if node is Label:
+		t += (node as Label).text + "
+"
+	elif node is RichTextLabel:
+		t += (node as RichTextLabel).get_parsed_text() + "
+"
+	for child in node.get_children():
+		t += _text_of(child)
+	return t
+
 func _initialize() -> void:
 	call_deferred("_go")
 
@@ -50,5 +62,12 @@ func _go() -> void:
 	check(g.card_tip != null and not has_type(g.card_tip, TileArt), "Isotope hover opens ball detail without a tile card")
 	exotic.mouse_entered.emit()
 	check(g.card_tip != null and not has_type(g.card_tip, TileArt), "Exotic hover opens ball detail without a tile card")
+	g.run.shop.append({"type": "imbue", "id": "ember", "ball": 13, "adds": true, "cost": 6, "sold": false})
+	var numbered: Control = g._offer_card(2)
+	g.overlay.add_child(numbered)
+	check(_text_of(exotic).contains("Worth 45"), "an Exotic ball's card says what it is worth")
+	check(_text_of(numbered).contains("Worth %d" % Catalog.ball_points(13)), "a 13-ball with an Isotope says what it is worth")
+	numbered.mouse_entered.emit()
+	check(_text_of(g.card_tip).contains("worth %d" % Catalog.ball_points(13)), "and so does its pop-up")
 	print("card palette tests: %d failures" % failures)
 	quit(1 if failures else 0)

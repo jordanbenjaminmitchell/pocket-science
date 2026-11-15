@@ -48,6 +48,12 @@ func _initialize() -> void:
 		check(not looks.has(look), "%s looks unique" % id)
 		looks[look] = true
 		check(bt.motif != "" and int(bt.pattern) >= 0 and int(bt.pattern) <= 9, "%s has an emblem and finish" % id)
+		var says := String(bt.desc)
+		check(says.begins_with("Worth "), "%s says what it is worth" % id)
+		if id != "dice" and id != "wild":
+			check(says.begins_with("Worth %d" % int(bt.value)), "%s says its real value (%d)" % [id, int(bt.value)])
+		var v := int(bt.value)
+		check(v == 30 or id in ["gold", "phantom", "iron", "anchor", "void", "wild", "dice", "clock", "pinball", "jackpot", "piggy", "eraser"], "%s is on the base value of 30 unless its value is its trick" % id)
 	for id in Catalog.IMBUES:
 		check(BallNode.IMBUE_FX.has(id), "%s Isotope has its own particle effect" % id) if not BallNode.IMBUE_FX.has(id) else null
 	check(BallNode.IMBUE_FX.size() == Catalog.IMBUES.size(), "every Isotope has a particle effect")
@@ -110,7 +116,7 @@ func _initialize() -> void:
 	check(score([hit(0, 17), pot(17), pot(5, 2)]).total == 60, "Void doubles the rest of the shot")
 	check(score([hit(0, 18), pot(18)]).total == 30, "Echo pays once; it comes back instead")
 	check(score([hit(0, 19), pot(19)]).total == 60, "Star adds Chain")
-	check(score([hit(0, 20), pot(20, 1)]).total == 70, "Moon pays ×2 in a side pocket")
+	check(score([hit(0, 20), pot(20, 1)]).total == 60, "Moon pays ×2 in a side pocket")
 	check(score([hit(0, 23), pot(23)]).total == 34, "Dice is worth 10 plus twice the number it shows")
 	r = score([hit(0, 5), hit(5, 22), pot(22)])
 	check(r.money == 4 and (r.lost_balls as Array).has(22) and (r.lost_balls as Array).has(5), "Eraser takes itself and the last ball it touched out of the set")

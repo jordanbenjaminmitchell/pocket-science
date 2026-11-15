@@ -1,6 +1,6 @@
 # Balance review
 
-Every number in Pocket Science that a balance pass might change, read from the game's data on 2026-11-13.
+Every number in Pocket Science that a balance pass might change, read from the game's data on 2026-11-15.
 
 **How to use it:** write in the **Your note** column on any row, for example "cost 6 → 5", "too strong" or "cut". Leave the rest blank. Whoever makes the change ticks **Done** and notes what changed.
 
@@ -303,35 +303,35 @@ Each recharges every table.
 | Ball | Id | Cost | Value | What it does | Your note | Done |
 |---|---|---|---|---|---|---|
 | Gold ball | `gold` | $6 | 45 | Worth 45, and pays $1 for every cushion it touched before sinking. |  |  |
-| Void ball | `void` | $7 | 0 | Worth nothing itself, but every other ball in the same shot scores ×2. |  |  |
-| Glass ball | `glass` | $6 | 30 | Scores ×3 if it sinks, but anything that hits it hard shatters it, and it leaves your rack. |  |  |
-| Iron ball | `iron` | $5 | 70 | 200% weight. Worth 70. |  |  |
-| Feather ball | `feather` | $4 | 40 | 25% weight: it barely moves other balls, and adds +0.5 Chain as it sinks. |  |  |
-| Ember ball | `ember` | $5 | 35 | The pocket it sinks into becomes the hot pocket. |  |  |
-| Frost ball | `frost` | $5 | 35 | Any ball that touches it stops dead. |  |  |
-| Magnet ball | `magnet` | $5 | 30 | Pulls nearby rolling balls towards itself. |  |  |
-| Prism ball | `prism` | $5 | 35 | Counts as both a solid and a stripe. |  |  |
-| Wild ball | `wild` | $5 | 0 | Copies the number of the last ball you sank, and counts as that number. |  |  |
+| Void ball | `void` | $7 | 0 | Worth 0 itself, but every other ball in the same shot scores ×2. |  |  |
+| Glass ball | `glass` | $6 | 30 | Worth 30, and scores ×3 if it sinks, but anything that hits it hard shatters it, and it leaves your rack. |  |  |
+| Iron ball | `iron` | $5 | 70 | Worth 70, but 200% weight. |  |  |
+| Feather ball | `feather` | $4 | 30 | Worth 30. 25% weight: it barely moves other balls, and adds +0.5 Chain as it sinks. |  |  |
+| Ember ball | `ember` | $5 | 30 | Worth 30. The pocket it sinks into becomes the hot pocket. |  |  |
+| Frost ball | `frost` | $5 | 30 | Worth 30. Any ball that touches it stops dead. |  |  |
+| Magnet ball | `magnet` | $5 | 30 | Worth 30. Pulls nearby rolling balls towards itself. |  |  |
+| Prism ball | `prism` | $5 | 30 | Worth 30. Counts as both a solid and a stripe. |  |  |
+| Wild ball | `wild` | $5 | 0 | Worth 10 + 2 × the number it copies: the number of the last ball you sank. Counts as that number. |  |  |
 | Clock ball | `clock` | $5 | 15 | Worth 15, plus 9 for every shot already taken on this table. |  |  |
-| Coin ball | `coin` | $4 | 30 | Pays $1 every time the cue ball hits it in a scoring shot. |  |  |
-| Bomb ball | `bomb` | $6 | 30 | When it sinks, the nearest ball (never the 8) sinks with it. |  |  |
+| Coin ball | `coin` | $4 | 30 | Worth 30, and pays $1 every time the cue ball hits it in a scoring shot. |  |  |
+| Bomb ball | `bomb` | $6 | 30 | Worth 30. When it sinks, the nearest ball (never the 8) sinks with it. |  |  |
 | Seed ball | `seed` | $4 | 30 | Worth 30, and 15 more every time you sink it this run. |  |  |
-| Clover ball | `clover` | $5 | 30 | No shot it is part of can cost Chalk. |  |  |
-| Star ball | `star` | $5 | 30 | Comes off cushions with no loss of speed, and adds +1 Chain as it sinks. |  |  |
-| Heart ball | `heart` | $6 | 30 | If it is the only ball left on the table when you sink it, +1 Chalk. |  |  |
-| Dice ball | `dice` | $4 | 0 | Shows a new number from 1 to 15 every shot, and counts as that number. |  |  |
-| Moon ball | `moon` | $5 | 35 | Corner pockets reject it. Scores ×2 in a side pocket. |  |  |
-| Sun ball | `sun` | $5 | 35 | Side pockets reject it. Scores ×2 in a corner pocket. |  |  |
-| Anchor ball | `anchor` | $6 | 105 | Only the cue ball can move it: other balls bounce off it like a post. Worth 105. |  |  |
-| Eraser ball | `eraser` | $3 | 15 | When it sinks it pays $4, and both it and the last ball it touched leave your rack (never the 8). |  |  |
-| Echo ball | `echo` | $6 | 30 | The first time it sinks on a table, it comes back to the foot spot. |  |  |
-| Phantom ball | `phantom` | $5 | 40 | Other object balls pass straight through it: only the cue ball can hit it. Worth 40. |  |  |
-| Spring ball | `spring` | $5 | 30 | Balls bounce off it 50% faster than they hit it. |  |  |
+| Clover ball | `clover` | $5 | 30 | Worth 30. No shot it is part of can cost Chalk. |  |  |
+| Star ball | `star` | $5 | 30 | Worth 30. Comes off cushions with no loss of speed, and adds +1 Chain as it sinks. |  |  |
+| Heart ball | `heart` | $6 | 30 | Worth 30. If it is the only ball left on the table when you sink it, +1 Chalk. |  |  |
+| Dice ball | `dice` | $4 | 0 | Worth 10 + 2 × the number it shows: a new number from 1 to 15 every shot. Counts as that number. |  |  |
+| Moon ball | `moon` | $5 | 30 | Worth 30, ×2 in a side pocket. Corner pockets reject it. |  |  |
+| Sun ball | `sun` | $5 | 30 | Worth 30, ×2 in a corner pocket. Side pockets reject it. |  |  |
+| Anchor ball | `anchor` | $6 | 105 | Worth 105, but only the cue ball can move it: other balls bounce off it like a post. |  |  |
+| Eraser ball | `eraser` | $3 | 15 | Worth 15. When it sinks it pays $4, and both it and the last ball it touched leave your rack (never the 8). |  |  |
+| Echo ball | `echo` | $6 | 30 | Worth 30. The first time it sinks on a table, it comes back to the foot spot. |  |  |
+| Phantom ball | `phantom` | $5 | 40 | Worth 40, but other object balls pass straight through it: only the cue ball can hit it. |  |  |
+| Spring ball | `spring` | $5 | 30 | Worth 30. Balls bounce off it 50% faster than they hit it. |  |  |
 | Piggy Bank ball | `piggy` | $4 | 10 | Worth 10, and when it sinks it pays $1 for every shot already taken on this table (up to $6). |  |  |
-| Jackpot ball | `jackpot` | $5 | 20 | When it sinks, 1 in 6 chance to pay $10; otherwise it pays $1. |  |  |
+| Jackpot ball | `jackpot` | $5 | 20 | Worth 20. When it sinks, 1 in 6 chance to pay $10; otherwise it pays $1. |  |  |
 | Pinball ball | `pinball` | $5 | 20 | Worth 20, plus 10 for every cushion it touched before it sank. |  |  |
-| Fuse ball | `fuse` | $5 | 30 | When it sinks, +1 Heat for every ball that sank before it in the same shot. |  |  |
-| Comet ball | `comet` | $5 | 40 | Feels no cloth friction until it first hits a cushion. |  |  |
+| Fuse ball | `fuse` | $5 | 30 | Worth 30. When it sinks, +1 Heat for every ball that sank before it in the same shot. |  |  |
+| Comet ball | `comet` | $5 | 30 | Worth 30. Feels no cloth friction until it first hits a cushion. |  |  |
 
 ## Starting cues
 
