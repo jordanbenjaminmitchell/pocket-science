@@ -322,7 +322,7 @@ func pass_bet() -> void:
 
 func bounty_met(res: Dictionary, _hot: int) -> bool:
 	var pots: Array = res.potted
-	var heat_after: int = heat + 1 + int(res.get("heat_gain", 0))
+	var heat_after: int = heat + int(res.get("heat_gain", 0))
 	match bounty:
 		"bank":
 			return int(res.get("banks", 0)) > 0
@@ -341,11 +341,11 @@ func bounty_met(res: Dictionary, _hot: int) -> bool:
 		"triple":
 			return pots.size() >= 3
 		"heat3":
-			return heat_after >= 3
+			return heat_after >= 2
 		"heat4":
-			return heat_after >= 4
+			return heat_after >= 3
 		"heat5":
-			return heat_after >= 5
+			return heat_after >= 4
 		"corner":
 			return (res.get("pocket_list", []) as Array).any(func(k): return k in [0, 2, 3, 5])
 		"side":
@@ -1034,7 +1034,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 				out["bounty"] = bounty
 		score += res.total
 		total_score += res.total
-		heat += 1 + int(res.get("heat_gain", 0))
+		heat += int(res.get("heat_gain", 0))   # Scorer adds +1 for each ball after the first
 		best_heat = maxi(best_heat, heat)
 		if res.get("jinxed", false):
 			heat = int(heat / 2.0)   # Jinxed: the big pay costs half your Heat
@@ -1107,7 +1107,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		if frost_shield:
 			frost_shield = false   # Frost: this miss keeps the Heat
 		else:
-			if has_perk("migration") and heat >= 4:
+			if has_perk("migration") and heat >= Scorer.HEAT_FIRE:
 				heat -= 1   # Stay Hot: on fire, a miss only costs 1
 			else:
 				heat = 0 if res.get("kindled_live", false) else int(heat / 2.0)   # a miss halves Heat; Kindled on the table wipes it
@@ -1236,7 +1236,7 @@ func apply_physics(s: PoolSim) -> void:
 		s.pocket_pull = 1.0
 	if has_perk("stun"):
 		s.cue_damp = 0.4
-	if has_perk("hothand") and heat >= 3:
+	if has_perk("hothand") and heat >= Scorer.HEAT_STROKE:
 		s.pocket_pull = maxf(s.pocket_pull, 0.7)   # Holmium Magnet
 	s.anchor8 = has_perk("laststripe")   # Lead Anchor
 	s.cue_float = has_perk("featherweight")   # Hydrogen Balloon
@@ -1410,7 +1410,7 @@ func discovery_met(res: Dictionary) -> bool:
 		"triple":
 			return pots.size() >= 3
 		"heat4":
-			return heat >= 4
+			return heat >= Scorer.HEAT_FIRE
 	return false
 
 

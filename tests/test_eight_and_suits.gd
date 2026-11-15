@@ -91,7 +91,7 @@ func _initialize() -> void:
 	check(score([hit(0, 14), pot(14)], {"perks": ["highball"]}).total == 95 and score(s12, {"perks": ["highball"]}).total == 34, "High Roller: balls 13-15 ×2.5, nothing else")
 	check(score(s5, {"perks": ["solidgold"]}).money == 1, "Solid Gold pays $1")
 	check(score(s5, {"perks": ["bedrock"]}).heat_gain == 1, "Bedrock: only solids adds Heat")
-	check(score([hit(0, 5), pot(5), pot(12, 2)], {"perks": ["bedrock"]}).heat_gain == 0, "but not with a stripe in the shot")
+	check(score([hit(0, 5), pot(5), pot(12, 2)], {"perks": ["bedrock"]}).heat_gain == 1, "but not with a stripe in the shot (only the +1 for the second ball)")
 	check(score(s5, {"perks": ["steadyrun"], "solid_run": 3}).total == 56, "Steady Run builds value")
 	check(score([hit(0, 5), pot(5), pot(12, 2)], {"perks": ["steadyrun"], "solid_run": 3}).solid_run == 0, "a stripe resets it")
 	check(score(s5, {"perks": ["solidsonly"]}).total == 60 and score(s12, {"perks": ["solidsonly"]}).total == 17, "Solids Only ×3 and stripes ×0.5")

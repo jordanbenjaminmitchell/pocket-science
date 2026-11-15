@@ -69,6 +69,8 @@ func _go() -> void:
 		["Chalk cost: a scratch, or the 8 going in early", 2, "`RunState.apply_shot`"],
 		["Points lost for an early 8", "%d%% of the table's target" % int(Catalog.EIGHT_PENALTY * 100), "`Catalog.EIGHT_PENALTY`"],
 		["Heat multiplier", "×(1 + %.1f × Heat)" % Scorer.HEAT_STEP, "`Scorer.HEAT_STEP`"],
+		["Heat from a shot", "+1 for every ball after the first (a single sink adds 0)", "`Scorer.score`"],
+		["Heat tiers", "In stroke %d, On fire %d, Dead stroke %d" % [Scorer.HEAT_STROKE, Scorer.HEAT_FIRE, Scorer.HEAT_DEAD], "`Scorer.HEAT_FIRE`"],
 		["Chain added by each ball that sinks", "+%.1f" % Scorer.AFTER_POT, "`Scorer.AFTER_POT`"],
 		["Ball value", "10 + %d × its number" % Catalog.NUMBER_WEIGHT, "`Catalog.NUMBER_WEIGHT`"],
 		["Balls at the start of a run", "1 to %d" % RunState.START_BALLS, "`RunState.START_BALLS`"],

@@ -7,6 +7,11 @@ extends RefCounted
 ##     pot = value × Chain × Heat multiplier × any pot multipliers
 
 const HEAT_STEP := 0.5
+## Heat comes from ambitious shots: +1 for every ball after the first in a shot
+## (a single sink keeps your Heat but does not raise it). The tiers:
+const HEAT_STROKE := 2   # In stroke (Warm below it)
+const HEAT_FIRE := 3     # On fire
+const HEAT_DEAD := 5     # Dead stroke
 const AFTER_POT := 0.5   # each ball that drops lifts the next one in the same shot
 const EIGHT_FOUL := "The 8 sank"
 
@@ -21,7 +26,7 @@ static func start_chain(ctx: Dictionary) -> float:
 	var c := 1.0
 	if ctx.get("boss", "") == "sinkhole":
 		c = 2.0
-	if perks.has("entropy") and int(ctx.get("heat", 0)) < 3:
+	if perks.has("entropy") and int(ctx.get("heat", 0)) < HEAT_STROKE:
 		c += 1.0   # Simmer: a cool table still builds
 	if perks.has("venture"):
 		c += minf(1.5, 0.25 * int(int(ctx.get("money", 0)) / 5))
@@ -269,7 +274,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			"repeat_pocket": seen_pocket.has(k) or (seen_pocket.is_empty() and k == int(ctx.get("last_pocket", -1))), "soft": float(ctx.get("power", 0.5)) <= 0.35,
 			"prime": Catalog.PRIMES.has(n) or RunState._is_prime(face), "fib": [1, 2, 3, 5, 8, 13].has(n) or [1, 2, 3, 5, 8, 13].has(face),
 			"lowest": n == int(ctx.get("lowest", -1)), "highest": n == int(ctx.get("highest", -1)),
-			"heat3": heat >= 3, "on_fire": heat >= 5, "cold": heat == 0,
+			"heat3": heat >= HEAT_STROKE, "on_fire": heat >= HEAT_FIRE, "cold": heat == 0,
 			"low3": (n >= 1 and n <= 3) or (face >= 1 and face <= 3), "high3": (n >= 13 and n <= 15) or (face >= 13 and face <= 15), "last_chalk": int(ctx.get("chalk", 99)) == 1, "third": int(ctx.get("shots_taken", 0)) % 3 == 2,
 			"boomerang": boomerang, "long": _long_pot(ctx, n, e), "item_shot": ctx.get("item_shot", false), "kiss8": int(out.get("first_contact", -1)) == 8 and not ctx.get("is_break", false),
 			"follow_shot": float(ctx.get("follow", 0.0)) > 0.2, "draw_shot": float(ctx.get("follow", 0.0)) < -0.2,
@@ -617,12 +622,13 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		return out
 	out.solid_run = solid_run
 	out.stripe_run = stripe_run
+	out.heat_gain += maxi(0, idx - 1)   # +1 Heat for every ball after the first
 	if perks.has("bedrock") and idx > 0 and pots.all(func(p): return Catalog.is_solid(p.a)):
 		out.heat_gain += pots.size()   # Aluminium Ore: +1 Heat per solid
 	if perks.has("streak") and pots.size() >= 2:
 		out.heat_gain += 1
 	if boss == "closing":
-		out.heat_gain += 1
+		out.heat_gain += maxi(0, idx - 1)   # Radioactive Decay: Heat builds twice as fast
 	out.chain = chain
 	# Lithium Cell: each charged ball pays $1.
 	var lith: Array = ctx.get("lithium", [])

@@ -11,13 +11,13 @@ var level := 0
 var t := 0.0
 
 
-## Heat 1-2 Warm, 3-4 In stroke, 5-6 On fire, 7+ Dead stroke.
+## Heat 1 Warm, 2 In stroke, 3-4 On fire, 5+ Dead stroke.
 static func level_for(heat: int) -> int:
-	if heat >= 7:
+	if heat >= Scorer.HEAT_DEAD:
 		return 4
-	if heat >= 5:
+	if heat >= Scorer.HEAT_FIRE:
 		return 3
-	if heat >= 3:
+	if heat >= Scorer.HEAT_STROKE:
 		return 2
 	return 1 if heat >= 1 else 0
 

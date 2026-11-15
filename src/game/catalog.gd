@@ -59,7 +59,7 @@ const PERKS := {
 	"stripesonly": {"name": "Zirconium Gem", "z": 40, "r": 2, "cost": 9, "fam": "stripe", "desc": "Stripes score ×2, but solids score ×0.5."},
 	"laststripe": {"name": "Lead Anchor", "z": 82, "r": 1, "cost": 6, "fam": "eight", "desc": "The 8 weighs 300%, and it rattles out of the pockets until it is the last ball: no more early 8s."},
 	"gold": {"name": "Copper Penny", "z": 29, "r": 1, "cost": 7, "fam": "money", "desc": "Each sink pays $1 (max $3 per shot)."},
-	"entropy": {"name": "Samarium Simmer", "z": 62, "r": 1, "cost": 6, "fam": "heat", "desc": "Below Heat 3, shots start with +1 Chain."},
+	"entropy": {"name": "Samarium Simmer", "z": 62, "r": 1, "cost": 6, "fam": "heat", "desc": "Below Heat 2, shots start with +1 Chain."},
 	"catalyst": {"name": "Beryllium Avalanche", "z": 4, "r": 2, "cost": 8, "fam": "risk", "desc": "Every ball you sink gives 2 random balls in your rack +4 for the rest of the run."},
 	"golden": {"name": "Iron Fist", "z": 26, "r": 2, "cost": 8, "fam": "risk", "desc": "Once per table: your first sink scores ×3.", "fx": {"when": "first", "x": 3.0, "once": true}},
 	"supernova": {"name": "Nickel Supernova", "z": 28, "r": 2, "cost": 9, "fam": "combo", "desc": "Shots that sink 3 or more balls score ×2 on every sink.", "fx": {"when": "triple", "x": 2.0}},
@@ -77,10 +77,10 @@ const PERKS := {
 	"afterburner": {"name": "Berkelium Break", "z": 97, "r": 0, "cost": 5, "fam": "cue", "desc": "Place the cue ball anywhere on the table for the break."},
 	"domino": {"name": "Dysprosium Domino", "z": 66, "r": 1, "cost": 6, "fam": "physics", "desc": "Balls lose no speed when they hit each other, so a hit passes its full speed down a line of balls."},
 	"rhythm": {"name": "Rhodium Rhythm", "z": 45, "r": 0, "cost": 5, "fam": "streak", "desc": "Every third shot on a table scores ×2.", "fx": {"when": "third", "x": 2.0}},
-	"hothand": {"name": "Holmium Magnet", "z": 67, "r": 1, "cost": 6, "fam": "heat", "desc": "At Heat 3 or more, pockets pull nearby rolling balls in."},
+	"hothand": {"name": "Holmium Magnet", "z": 67, "r": 1, "cost": 6, "fam": "heat", "desc": "At Heat 2 or more, pockets pull nearby rolling balls in."},
 	"comeback": {"name": "Lanthanum Lantern", "z": 57, "r": 1, "cost": 6, "fam": "streak", "desc": "On your last Chalk, every sink scores ×2.", "fx": {"when": "last_chalk", "x": 2.0}},
 	"collector": {"name": "Gallium Glide", "z": 31, "r": 1, "cost": 6, "fam": "cue", "desc": "The cue ball rolls 50% further on the cloth."},
-	"migration": {"name": "Hafnium Rod", "z": 72, "r": 1, "cost": 6, "fam": "heat", "desc": "While Heat is 4 or more, a miss only costs 1 Heat instead of half."},
+	"migration": {"name": "Hafnium Rod", "z": 72, "r": 1, "cost": 6, "fam": "heat", "desc": "While On fire (Heat 3+), a miss only costs 1 Heat instead of half."},
 	"lowball": {"name": "Lithium Cell", "z": 3, "r": 0, "cost": 4, "fam": "solid", "desc": "Your 3 lowest-value balls are charged: they lose no speed off cushions, and each pays $1 when it sinks."},
 	"highball": {"name": "Actinium Ray", "z": 89, "r": 0, "cost": 4, "fam": "stripe", "needs_balls": [13, 14, 15], "desc": "Balls 13, 14 and 15 score ×2.5.", "fx": {"when": "high3", "x": 2.5}},
 	"fibonacci": {"name": "Fermium Spiral", "z": 100, "r": 1, "cost": 6, "fam": "number", "desc": "Sink every Fibonacci ball in your rack (1, 2, 3, 5, 8, then 13 and up) this run and the next Fibonacci ball joins your rack for good; then start again."},
@@ -92,7 +92,7 @@ const PERKS := {
 	"coupon": {"name": "Cadmium Chill", "z": 48, "r": 0, "cost": 4, "fam": "heat", "desc": "At Heat 0, every sink scores ×2.", "fx": {"when": "cold", "x": 2.0}},
 	"overflow": {"name": "Neptunium Tide", "z": 93, "r": 1, "cost": 5, "fam": "utility", "desc": "Points you score over a table's target carry into the next table's score (up to 25% of the next target)."},
 	"glasscannon": {"name": "Astatine Edge", "z": 85, "r": 2, "cost": 8, "fam": "risk", "desc": "Every sink scores ×2, but every miss and foul costs 1 more Chalk.", "fx": {"when": "any", "x": 2.0}},
-	"minimalist": {"name": "Iridium Flame", "z": 77, "r": 2, "cost": 8, "fam": "heat", "desc": "While On fire (Heat 5+), every sink scores ×2.", "fx": {"when": "on_fire", "x": 2.0}},
+	"minimalist": {"name": "Iridium Flame", "z": 77, "r": 2, "cost": 8, "fam": "heat", "desc": "While On fire (Heat 3+), every sink scores ×2.", "fx": {"when": "on_fire", "x": 2.0}},
 	"echo": {"name": "Europium Echo", "z": 63, "r": 2, "cost": 9, "fam": "imbue", "desc": "When a ball with an Isotope sinks, its Isotope echoes onto a random ball on the table that has none, until the table ends."},
 	"featherweight": {"name": "Hydrogen Balloon", "z": 1, "r": 2, "cost": 8, "fam": "physics", "desc": "The cue ball floats: if it would sink, it bobs back out of the pocket instead. No more pocket scratches."},
 	"heavyhit": {"name": "Osmium Cue", "z": 76, "r": 1, "cost": 6, "fam": "physics", "desc": "The cue ball is 30% heavier, so it drives balls further."},
@@ -415,17 +415,17 @@ const BOUNTIES := {
 	"breakpot": {"name": "Sink a ball on the break", "tier": 0, "terms": ["break"]},
 	"hard": {"name": "Sink a ball with a power shot (85%+)", "tier": 0, "terms": []},
 	"soft": {"name": "Sink a ball with a soft shot (35% or less)", "tier": 0, "terms": []},
-	"heat3": {"name": "Reach Heat 3", "tier": 0, "terms": ["heat"]},
+	"heat3": {"name": "Reach Heat 2", "tier": 0, "terms": ["heat"]},
 	"double": {"name": "Sink 2 or more balls in one shot", "tier": 1, "terms": []},
 	"bank": {"name": "Sink a bank shot", "tier": 1, "terms": ["bank"]},
 	"combo": {"name": "Sink a combination", "tier": 1, "terms": ["combination"]},
 	"kick": {"name": "Sink a ball off a kick shot", "tier": 1, "terms": ["kick"]},
-	"heat4": {"name": "Reach Heat 4", "tier": 1, "terms": ["heat"]},
+	"heat4": {"name": "Reach Heat 3", "tier": 1, "terms": ["heat"]},
 	"chain5": {"name": "Reach Chain 5 in one shot", "tier": 1, "terms": ["chain"]},
 	"quarter": {"name": "Score a quarter of this table's target in one shot", "tier": 1, "terms": ["target"]},
 	"triple": {"name": "Sink 3 or more balls in one shot", "tier": 2, "terms": []},
 	"bank2": {"name": "Sink a ball off 2 cushions", "tier": 2, "terms": ["bank"]},
-	"heat5": {"name": "Reach Heat 5", "tier": 2, "terms": ["heat"]},
+	"heat5": {"name": "Reach Heat 4", "tier": 2, "terms": ["heat"]},
 	"chain7": {"name": "Reach Chain 7 in one shot", "tier": 2, "terms": ["chain"]},
 	"half": {"name": "Score half of this table's target in one shot", "tier": 2, "terms": ["target"]},
 	"hot2": {"name": "Sink 2 balls into the hot pocket in one shot", "tier": 2, "terms": ["hot"]},
@@ -525,11 +525,11 @@ static func element_color(z: int) -> Color:
 ##   portal   sink after a portal trip       focus     sink in the pocket on the cloth
 ##   bank     sink a bank shot               bank2     sink off 2+ cushions
 ##   double   sink 2+ balls in one shot      triple    sink 3+ balls in one shot
-##   heat4    reach Heat 4                   cathit    hit the cat and sink in the same shot
+##   heat4    reach Heat 3                   cathit    hit the cat and sink in the same shot
 const DISCOVERY_KINDS := {
 	"ko": "Knock out a Shark", "bumpers3": "Hit 3 posts in a shot that sinks a ball", "portal": "Sink a ball in a shot that uses a portal",
 	"focus": "Sink a ball in the pocket out on the cloth", "bank": "Sink a bank shot", "bank2": "Sink a ball off 2 cushions",
-	"double": "Sink 2 balls in one shot", "triple": "Sink 3 balls in one shot", "heat4": "Reach Heat 4",
+	"double": "Sink 2 balls in one shot", "triple": "Sink 3 balls in one shot", "heat4": "Reach Heat 3",
 	"cathit": "Hit the cat and sink a ball in the same shot",
 }
 const DISCOVERIES := {

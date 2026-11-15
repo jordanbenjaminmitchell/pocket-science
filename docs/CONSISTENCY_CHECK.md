@@ -37,7 +37,7 @@ The main checks are now a test, `tests/test_wording.gd`, so new content can't dr
    - Aluminium Ore: uncommon, $8 (most are $6).
    - Tellurium Supply: rare, $10 (most are $8).
 
-   Jaws (every pocket 20% wider) and Supply (a free Catalyst every table) are strong enough to justify it. Aluminium Ore is the odd one, and $6 looks right for it.
+   Jaws (every pocket 20% wider) and Supply (a free Catalyst every table) are strong enough to justify it. Aluminium Ore looked like the odd one, but since 1.51 single sinks no longer build Heat and Aluminium Ore still lets single solid sinks build it, so $8 now fits.
 2. **The Accretion Disc board doesn't do what the science plan says.** `docs/TABLES_SCIENCE.md` describes a black hole that grows each shot and scores ×2 into it but costs Heat. The game has a fixed gravity well with "Chain starts at 2". Either update the board, or update the doc to match.
 3. **`docs/TABLES_SCIENCE.md` lists 40 boards; the game has 42.** Game of Life and Schrödinger's Cat are missing from the doc, and one row is still titled "Black Ice → Superfluid".
 4. **Price spread:** Catalysts mostly cost $5–6 (one $4, one $9), Isotopes $3–5, Exotic balls $4–6. That's sensible. The outliers are worth a look in the playtest, not a change by math alone.

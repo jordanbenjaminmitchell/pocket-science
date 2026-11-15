@@ -12,7 +12,7 @@ const MILESTONES := {
 	"bank": {"name": "Angles", "hint": "Sink a bank shot", "perks": ["precision", "boomerang", "stun", "afterburner"], "cue": ""},
 	"boss": {"name": "Boss Breaker", "hint": "Clear a table with a special rule", "perks": ["ricochet", "cushion", "geometry", "tracer"], "cue": "hotrod"},
 	"triple": {"name": "Hat Trick", "hint": "Sink 3 or more balls in one shot", "perks": ["supernova", "fusion", "domino"], "cue": ""},
-	"streak5": {"name": "On Fire", "hint": "Reach Heat 5", "perks": ["rhythm", "hothand", "comeback"], "cue": "gravity"},
+	"streak5": {"name": "On Fire", "hint": "Get On fire (Heat 3)", "perks": ["rhythm", "hothand", "comeback"], "cue": "gravity"},
 	"pots40": {"name": "Regular", "hint": "Sink 40 balls in total", "perks": ["lowball", "highball", "fibonacci", "rotation", "moneyball"], "cue": ""},
 	"table6": {"name": "Deep Run", "hint": "Clear table 6", "perks": ["venture", "hunter", "coupon", "overflow", "thrift"], "cue": "gilded"},
 	"big": {"name": "Big Number", "hint": "Score 1,000 or more in one shot", "perks": ["echo", "glasscannon", "minimalist"], "cue": ""},
@@ -131,7 +131,7 @@ func on_shot(res: Dictionary, run: RunState) -> Array:
 		got.append("bank")
 	if res.potted.size() >= 3:
 		got.append("triple")
-	if run.heat >= 5:
+	if run.heat >= Scorer.HEAT_FIRE:
 		got.append("streak5")
 	if lifetime_pots >= 40:
 		got.append("pots40")

@@ -36,7 +36,7 @@ Each ball scores as it sinks: **value × Chain × Heat**.
 
 - **Value:** 10 + 2 × the ball's number (the 1-ball is worth 12, the 15-ball 40).
 - **Chain:** starts at 1 every shot and rises as balls sink, so the last ball of a big shot scores most.
-- **Heat:** lasts the whole table, rises with every scoring shot and halves on a miss.
+- **Heat:** lasts the whole table and adds +0.5× per point. Every ball after the first in a shot adds 1 Heat (a single sink keeps your Heat, a double adds 1, a triple 2), and a miss halves it. On fire is Heat 3.
 - **Hot pocket:** the glowing pocket scores ×2.
 
 Bouncing off cushions or balls earns nothing by itself. Only an Element, an Isotope or a table's own rule makes contact count. Tap or hover any highlighted word in the game for a one-line definition.

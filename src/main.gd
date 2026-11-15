@@ -1951,7 +1951,7 @@ func _update_coach() -> void:
 	elif not coach_seen_pot:
 		view.coach_text = "Swing your aim until a line ends in a gold ring.\nThe white ring shows where the cue ball hits."
 	elif run.heat >= 1:
-		view.coach_text = "Heat is building! Every scoring shot raises it.\nThe glowing pocket scores ×2."
+		view.coach_text = "Heat is building! Every ball after the first in a shot raises it.\nThe glowing pocket scores ×2."
 	else:
 		view.coach_text = ""
 	view.coach_pos = cue + Vector2(0, 50 if cue.y < TableLayout.H * 0.6 else -110)
@@ -2252,11 +2252,11 @@ func _update_roll(delta: float) -> void:
 		_hold()
 		return
 	view.update_balls(sim, sim_accum if sim.moving() else 0.0)
-	if run.heat >= 3 and sim.alive[_cue_index()] == 1:
+	if run.heat >= Scorer.HEAT_STROKE and sim.alive[_cue_index()] == 1:
 		var cv := sim.vel[_cue_index()]
 		if cv.length() > 120.0:
-			var heat := clampf((run.heat - 2) / 5.0, 0.2, 1.0)
-			view.trail(sim.pos[_cue_index()], Color(1.0, 0.55 - heat * 0.3, 0.1).lerp(Color(0.78, 0.92, 1.0), 1.0 if run.heat >= 7 else 0.0), heat)
+			var heat := clampf((run.heat - 1) / 4.0, 0.2, 1.0)
+			view.trail(sim.pos[_cue_index()], Color(1.0, 0.55 - heat * 0.3, 0.1).lerp(Color(0.78, 0.92, 1.0), 1.0 if run.heat >= Scorer.HEAT_DEAD else 0.0), heat)
 	if not sim.moving() or sim.time > 30.0:
 		if sim.time > 30.0:
 			for i in sim.count():
@@ -2352,7 +2352,7 @@ func _consume_events() -> void:
 					view.burst(sim.pos[bi], Color(0.3, 1, 1), 10, 160)
 			"pocket":
 				if not demo and e.a != 0 and FireFx.level_for(run.heat) >= 3:
-					view.burst(e.at, Color(1.0, 0.55, 0.15) if run.heat < 7 else Color(0.75, 0.9, 1.0), 20, 240)
+					view.burst(e.at, Color(1.0, 0.55, 0.15) if run.heat < Scorer.HEAT_DEAD else Color(0.75, 0.9, 1.0), 20, 240)
 				var idx := sim.index_of(e.a)
 				view.update_balls(sim)
 				var b: BallNode = view.ball_nodes[idx]
@@ -3725,9 +3725,9 @@ func _perk_live(id: String) -> bool:
 		"finesse":
 			return power <= 0.35
 		"migration":
-			return run.heat >= 4
+			return run.heat >= Scorer.HEAT_FIRE
 		"hothand":
-			return run.heat >= 3
+			return run.heat >= Scorer.HEAT_STROKE
 	return false
 
 
@@ -3785,7 +3785,7 @@ func _update_table_marks() -> void:
 	var pull_id := ""
 	if run.has_perk("magnet") and (card == "magnet" or ball >= 0):
 		pull_id = "magnet"
-	elif run.has_perk("hothand") and run.heat >= 3 and (card == "hothand" or ball >= 0):
+	elif run.has_perk("hothand") and run.heat >= Scorer.HEAT_STROKE and (card == "hothand" or ball >= 0):
 		pull_id = "hothand"
 	elif run.has_perk("lastcall") and card == "lastcall":
 		pull_id = "lastcall"
@@ -3871,15 +3871,15 @@ func _perk_now(id: String) -> String:
 			var k := int(c.get("shots_taken", 0)) % 3
 			return "this shot scores ×2" if k == 2 else "×2 in %d shots" % (2 - k)
 		"hothand":
-			return "ON, pockets pull" if heat >= 3 else "off until Heat 3"
+			return "ON, pockets pull" if heat >= Scorer.HEAT_STROKE else "off until Heat %d" % Scorer.HEAT_STROKE
 		"minimalist":
-			return "ON, every sink ×2" if heat >= 5 else "off until Heat 5"
+			return "ON, every sink ×2" if heat >= Scorer.HEAT_FIRE else "off until Heat %d" % Scorer.HEAT_FIRE
 		"migration":
-			return "ON, a miss costs 1 Heat" if heat >= 5 else "off until Heat 5"
+			return "ON, a miss costs 1 Heat" if heat >= Scorer.HEAT_FIRE else "off until Heat %d" % Scorer.HEAT_FIRE
 		"coupon":
 			return "ON, every sink ×2" if heat == 0 else "off until Heat drops to 0"
 		"entropy":
-			return "ON, +1 Chain" if heat < 3 else "off at Heat 3+"
+			return "ON, +1 Chain" if heat < Scorer.HEAT_STROKE else "off at Heat %d+" % Scorer.HEAT_STROKE
 		"comeback":
 			return "ON, every sink ×2" if int(c.get("chalk", 9)) == 1 else "off until your last Chalk"
 		"insurance":

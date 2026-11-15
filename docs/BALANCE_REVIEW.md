@@ -20,6 +20,8 @@ The numbers every run uses.
 | Chalk cost: a scratch, or the 8 going in early | 2 | `RunState.apply_shot` |  |  |
 | Points lost for an early 8 | 15% of the table's target | `Catalog.EIGHT_PENALTY` |  |  |
 | Heat multiplier | ×(1 + 0.5 × Heat) | `Scorer.HEAT_STEP` |  |  |
+| Heat from a shot | +1 for every ball after the first (a single sink adds 0) | `Scorer.score` |  |  |
+| Heat tiers | In stroke 2, On fire 3, Dead stroke 5 | `Scorer.HEAT_FIRE` |  |  |
 | Chain added by each ball that sinks | +0.5 | `Scorer.AFTER_POT` |  |  |
 | Ball value | 10 + 2 × its number | `Catalog.NUMBER_WEIGHT` |  |  |
 | Balls at the start of a run | 1 to 10 | `RunState.START_BALLS` |  |  |
@@ -186,22 +188,22 @@ All 100, by atomic number. Rarity sets how often a card is offered.
 | 59 | Praseodymium Twin | `rotation` | Uncommon | $6 | Ball numbers | The lowest-numbered ball on the table scores as if it were the highest-numbered one. |  |  |
 | 60 | Neodymium Boulder | `elastic` | Uncommon | $6 | Physics | The cue ball is 90% bigger, just small enough to fit a pocket, and twice as heavy. |  |  |
 | 61 | Promethium Prime | `prime` | Uncommon | $6 | Ball numbers | Prime balls (2, 3, 5, 7, 11, 13 and up) score ×2. With no prime on the table, the next prime joins your rack. |  |  |
-| 62 | Samarium Simmer | `entropy` | Uncommon | $6 | Heat | Below Heat 3, shots start with +1 Chain. |  |  |
+| 62 | Samarium Simmer | `entropy` | Uncommon | $6 | Heat | Below Heat 2, shots start with +1 Chain. |  |  |
 | 63 | Europium Echo | `echo` | Rare | $9 | Isotopes | When a ball with an Isotope sinks, its Isotope echoes onto a random ball on the table that has none, until the table ends. |  |  |
 | 64 | Gadolinium Pull | `magnet` | Rare | $9 | Pockets | Pockets gently pull nearby moving balls in. |  |  |
 | 65 | Terbium Tiger | `tiger` | Uncommon | $7 | Stripes | Each stripe sunk in a row on this table adds +0.25 Chain to the next (max +2). A solid resets it. |  |  |
 | 66 | Dysprosium Domino | `domino` | Uncommon | $6 | Physics | Balls lose no speed when they hit each other, so a hit passes its full speed down a line of balls. |  |  |
-| 67 | Holmium Magnet | `hothand` | Uncommon | $6 | Heat | At Heat 3 or more, pockets pull nearby rolling balls in. |  |  |
+| 67 | Holmium Magnet | `hothand` | Uncommon | $6 | Heat | At Heat 2 or more, pockets pull nearby rolling balls in. |  |  |
 | 68 | Erbium Laser | `even` | Common | $4 | Ball numbers | Even-numbered balls add +0.75 Chain as they sink. |  |  |
 | 69 | Thulium Thinning | `thinrack` | Uncommon | $6 | Clearing your rack | Every ball removed from your rack makes all balls worth +1. |  |  |
 | 70 | Ytterbium Twin | `drawartist` | Uncommon | $6 | Cue control | After your first shot on each table, a second cue ball appears. Click a cue ball to choose which one you shoot. |  |  |
 | 71 | Lutetium Luck | `luckystripe` | Uncommon | $6 | Stripes | Each stripe you sink has a 1 in 3 chance to score ×3 and pay $2. |  |  |
-| 72 | Hafnium Rod | `migration` | Uncommon | $6 | Heat | While Heat is 4 or more, a miss only costs 1 Heat instead of half. |  |  |
+| 72 | Hafnium Rod | `migration` | Uncommon | $6 | Heat | While On fire (Heat 3+), a miss only costs 1 Heat instead of half. |  |  |
 | 73 | Tantalum Plate | `solidsonly` | Rare | $9 | Solids | Solids score ×3, but stripes score ×0.5. |  |  |
 | 74 | Tungsten Core | `lever` | Common | $5 | Stripes | Stripes weigh 140% and lose no speed off cushions: they plough on through other balls. |  |  |
 | 75 | Rhenium Ricochet | `ricochet` | Uncommon | $6 | Banks & cushions | Every cushion a ball touches adds +0.25 extra Chain. |  |  |
 | 76 | Osmium Cue | `heavyhit` | Uncommon | $6 | Physics | The cue ball is 30% heavier, so it drives balls further. |  |  |
-| 77 | Iridium Flame | `minimalist` | Rare | $8 | Heat | While On fire (Heat 5+), every sink scores ×2. |  |  |
+| 77 | Iridium Flame | `minimalist` | Rare | $8 | Heat | While On fire (Heat 3+), every sink scores ×2. |  |  |
 | 78 | Platinum Rail | `bank` | Uncommon | $6 | Banks & cushions | Bank sinks add +1 Chain per cushion. |  |  |
 | 79 | Gold Bar | `solidgold` | Uncommon | $6 | Solids | Each solid you sink pays $1. |  |  |
 | 80 | Mercury Messenger | `quickhands` | Common | $4 | Pausing | The first Catalyst you use on each table doesn't spend a use. |  |  |
@@ -366,17 +368,17 @@ Stakes are in the tables section above. The stake is capped at your money when t
 | Sink a ball on the break | `breakpot` | Easy | 1× (+0.5× every 3 tables, up to +1×) |  |  |
 | Sink a ball with a power shot (85%+) | `hard` | Easy | 1× (+0.5× every 3 tables, up to +1×) |  |  |
 | Sink a ball with a soft shot (35% or less) | `soft` | Easy | 1× (+0.5× every 3 tables, up to +1×) |  |  |
-| Reach Heat 3 | `heat3` | Easy | 1× (+0.5× every 3 tables, up to +1×) |  |  |
+| Reach Heat 2 | `heat3` | Easy | 1× (+0.5× every 3 tables, up to +1×) |  |  |
 | Sink 2 or more balls in one shot | `double` | Medium | 2× (+0.5× every 3 tables, up to +1×) |  |  |
 | Sink a bank shot | `bank` | Medium | 2× (+0.5× every 3 tables, up to +1×) |  |  |
 | Sink a combination | `combo` | Medium | 2× (+0.5× every 3 tables, up to +1×) |  |  |
 | Sink a ball off a kick shot | `kick` | Medium | 2× (+0.5× every 3 tables, up to +1×) |  |  |
-| Reach Heat 4 | `heat4` | Medium | 2× (+0.5× every 3 tables, up to +1×) |  |  |
+| Reach Heat 3 | `heat4` | Medium | 2× (+0.5× every 3 tables, up to +1×) |  |  |
 | Reach Chain 5 in one shot | `chain5` | Medium | 2× (+0.5× every 3 tables, up to +1×) |  |  |
 | Score a quarter of this table's target in one shot | `quarter` | Medium | 2× (+0.5× every 3 tables, up to +1×) |  |  |
 | Sink 3 or more balls in one shot | `triple` | Hard | 3× (+0.5× every 3 tables, up to +1×) |  |  |
 | Sink a ball off 2 cushions | `bank2` | Hard | 3× (+0.5× every 3 tables, up to +1×) |  |  |
-| Reach Heat 5 | `heat5` | Hard | 3× (+0.5× every 3 tables, up to +1×) |  |  |
+| Reach Heat 4 | `heat5` | Hard | 3× (+0.5× every 3 tables, up to +1×) |  |  |
 | Reach Chain 7 in one shot | `chain7` | Hard | 3× (+0.5× every 3 tables, up to +1×) |  |  |
 | Score half of this table's target in one shot | `half` | Hard | 3× (+0.5× every 3 tables, up to +1×) |  |  |
 | Sink 2 balls into the hot pocket in one shot | `hot2` | Hard | 3× (+0.5× every 3 tables, up to +1×) |  |  |

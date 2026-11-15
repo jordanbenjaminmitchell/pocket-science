@@ -52,7 +52,7 @@ func _initialize() -> void:
 	check(run.chalk == RunState.BASE_CHALK - 1 and o.chalk_lost, "miss costs chalk")
 	var hit := {"scored": true, "foul": "", "total": 30, "money": 1, "catalyst_gain": 0.0, "potted": [1], "shattered": [], "lines": []}
 	o = run.apply_shot(hit, false, 0, true)
-	check(o.rack_cleared and run.chalk == RunState.BASE_CHALK and run.heat == 1, "clearing the rack refunds chalk")
+	check(o.rack_cleared and run.chalk == RunState.BASE_CHALK and run.heat == 0, "clearing the rack refunds chalk, and a single sink keeps Heat where it was")
 	# Chalk carries over: a scratch costs 2, a cleared table gives 1 back, never above 12.
 	var ch := RunState.new()
 	ch.start(7)
