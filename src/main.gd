@@ -107,7 +107,7 @@ var lbl_heat: Label
 var lbl_line: Label
 var lbl_money: Label
 var chalk_pips: ChalkPips
-const CHALK_TIP := "Chalk lasts the whole run: a miss costs 1, a scratch or sinking the 8 early costs 2. Each table you clear gives 1 back, up to 12."
+const CHALK_TIP := "Chalk is your shots for the whole run: every shot after the break costs 1, and a scratch or sinking the 8 early costs 2. Clearing table N gives back 2N + 4 (6, 8, 10 ... 20), up to 40."
 var spin_w: SpinWidget
 var power_w: PowerMeter
 var lbl_hint: Label
@@ -2425,7 +2425,8 @@ func _settled() -> void:
 		elif run.current().id == "local" and not run.forgiven and result.foul != "Wrong pocket" and result.foul != "Wrong ball first":
 			msg += " - the house lets this one go"
 		else:
-			var cost := (2 if result.foul == "Scratch" or result.foul == "The 8 went early" else 1) + (1 if run.has_perk("glasscannon") else 0)
+			var soft_foul: bool = result.foul == "Wrong pocket" or result.foul == "Wrong ball first"
+			var cost := 1 if soft_foul else (2 if result.foul == "Scratch" or result.foul == "The 8 went early" else 1) + (1 if run.has_perk("glasscannon") else 0)
 			msg += " - lose %d chalk" % cost
 		if result.foul != Scorer.EIGHT_FOUL and result.penalty > 0:
 			msg += ", and %d points for the 8" % result.penalty
@@ -2745,6 +2746,8 @@ func _table_cleared() -> void:
 			unlocked_handicap = meta.handicap_cap()
 	var rows := run.payout()
 	_refresh_hud()
+	if not (final and not run.endless):
+		_flash_banner("+%d CHALK FOR THE NEXT TABLE" % run.table_refill(), Color(0.5, 0.78, 1.0), 1.6)
 	await get_tree().create_timer(1.6).timeout
 	while paused and state == S.CLEAR:
 		await get_tree().process_frame
@@ -3881,7 +3884,7 @@ func _perk_now(id: String) -> String:
 		"entropy":
 			return "ON, +1 Chain" if heat < Scorer.HEAT_STROKE else "off at Heat %d+" % Scorer.HEAT_STROKE
 		"comeback":
-			return "ON, every sink ×2" if int(c.get("chalk", 9)) == 1 else "off until your last Chalk"
+			return "ON, every sink ×2" if int(c.get("chalk", 9)) <= 3 else "off until 3 Chalk or less"
 		"insurance":
 			return "%d free miss%s left" % [maxi(0, 2 - run.insured_used), "" if 2 - run.insured_used == 1 else "es"]
 		"overflow":
@@ -4334,7 +4337,7 @@ The [color=#ff8a30]hot pocket[/color] scores ×2. The black 8 also scores ×2.
 [b]Pausing a shot:[/b] While the balls roll, press [b]P[/b] (or tap [b]Pause[/b] on a phone) and everything freezes. The prediction then shows exactly where every ball goes from that moment. While paused you can use mid-shot items from your bar: [b]Second Strike[/b] (aim with the mouse, set power with the wheel or Up/Down, click to hit), [b]Pop-up Wall[/b] (click where it starts, then where it ends), [b]Blink[/b] (click where the cue ball reappears), and more. Right-click or Esc cancels an item. Press [b]P[/b] again, Space, Enter or click the table to play on.
 [b]Planning a pause:[/b] Press [b]L[/b] (or [b]Plan a pause[/b]) to lock the prediction, move along the cue ball's line and click where the shot should stop by itself. Settings can also pause every shot the moment the cue ball first hits a ball.
 
-[b]Chalk:[/b] Chalk lasts the whole run. As in real pool, you keep shooting while you sink. A miss or no contact costs 1 chalk; a scratch, or sinking the 8 while other balls are up, costs 2. A dry break is free. Clearing a rack or a table gives 1 back, up to 12. Run out of chalk and the run is over.
+[b]Chalk:[/b] Chalk lasts the whole run. As in real pool, you keep shooting while you sink. Every shot after the break costs 1 chalk; a scratch or an early 8 costs 2. A cleared rack gives 1 back and table N gives 2N + 4, up to 40. Run out and the run is over.
 
 [b]Between tables:[/b] Spend money in the Pro Shop on Elements (six slots; switch any off and on between shots) and Isotopes (upgrade one ball for the rest of the run; you choose which, and each ball holds one). Clearing a table pays $4, plus $1 for every 10% you score over the target (up to $10) and $1 for every shot under 10 you needed (up to $5).
 
@@ -5209,6 +5212,8 @@ func _show_run_info() -> void:
 		var txt := "%sTable %d  ·  %s  ·  target %d" % [mark, i + 1, Catalog.BOSSES[t.id].name, t.target]
 		var col := Color(1.0, 0.85, 0.45) if i == run.table_index else (Color(0.5, 0.75, 0.55) if i < run.table_index else Color(0.8, 0.82, 0.85))
 		c2.add_child(_label(txt, 15, col, F_REG))
+		if i != run.table_index and i != run.table_index + 1:
+			continue   # full rules for this table and the next; the rest by name, so the panel always fits
 		var bl := _label(Catalog.BOSSES[t.id].desc, 13, Color(1.0, 0.7, 0.5), F_REG)
 		bl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		bl.custom_minimum_size = Vector2(400, 0)
@@ -5228,14 +5233,13 @@ func _show_run_info() -> void:
 	var hot_x := 3 if run.has_perk("heat") else 2
 	var rules := [
 		"Each sink = value × Chain × Heat",
-		"Value: 10 + ball number",
 		"Chain: starts at 1, +0.5 per ball sunk this shot",
-		"Heat: +1 per scoring shot, each point adds ×0.5, a miss halves it",
+		"Heat: +1 per extra ball, ×0.5 each, halved by a miss",
 		"Bounces score nothing unless an Element, Isotope or table says so",
 		"Value: 10 + 2 × the ball's number (Exotic balls have their own)",
 		"Hot pocket ×%d, then Elements; the 8 costs 15%% of the target if it sinks early" % hot_x,
-		"Miss or no contact: -1 chalk (dry break free). Scratch or early 8: -2",
-		"Clear the rack or the table: +1 chalk (up to 12). Chalk carries over",
+		"Each shot after the break -1 Chalk; scratch or early 8 -2",
+		"Clear a rack: +1 Chalk. Clear table N: +2N + 4 (max 40)",
 		"Clearing pays $4, +$1 per 10% over target, +$1 per shot under 10",
 	]
 	for r in rules:
@@ -5244,7 +5248,7 @@ func _show_run_info() -> void:
 		l.custom_minimum_size = Vector2(400, 0)
 		c3.add_child(l)
 	c3.add_child(_label("STATS", 16, Color(0.6, 0.8, 1.0)))
-	c3.add_child(_label("Tables cleared %d  ·  balls potted %d
+	c3.add_child(_label("Tables cleared %d  ·  balls sunk %d
 Best shot %d  ·  best streak %d" % [run.tables_cleared, run.total_pots, run.best_shot, run.best_heat], 14, Color(0.82, 0.84, 0.87), F_REG))
 	var close := _button("Close  [Tab / Esc]", _close_run_info, Color(0.5, 0.7, 0.9))
 	close.custom_minimum_size = Vector2(0, 46)

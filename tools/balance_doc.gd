@@ -63,9 +63,9 @@ func _go() -> void:
 	_table("Core rules", "The numbers every run uses.", ["Rule", "Now", "Where"], [
 		["Chalk at the start of a run", RunState.BASE_CHALK, "`RunState.BASE_CHALK`"],
 		["Most Chalk you can hold", RunState.MAX_CHALK, "`RunState.MAX_CHALK`"],
-		["Chalk back for clearing a table", 1, "`RunState.advance_table`"],
+		["Chalk back for clearing table N", "2N + 4 (6, 8, 10 ... 20)", "`RunState.table_refill`"],
 		["Chalk back for clearing a rack", 1, "`RunState.apply_shot`"],
-		["Chalk cost: a miss or no contact", 1, "`RunState.apply_shot`"],
+		["Chalk cost: every shot after the break", RunState.SHOT_FEE, "`RunState.SHOT_FEE`"],
 		["Chalk cost: a scratch, or the 8 going in early", 2, "`RunState.apply_shot`"],
 		["Points lost for an early 8", "%d%% of the table's target" % int(Catalog.EIGHT_PENALTY * 100), "`Catalog.EIGHT_PENALTY`"],
 		["Heat multiplier", "×(1 + %.1f × Heat)" % Scorer.HEAT_STEP, "`Scorer.HEAT_STEP`"],

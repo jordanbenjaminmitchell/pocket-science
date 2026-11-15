@@ -27,7 +27,7 @@ static func start_chain(ctx: Dictionary) -> float:
 	if ctx.get("boss", "") == "sinkhole":
 		c = 2.0
 	if perks.has("entropy") and int(ctx.get("heat", 0)) < HEAT_STROKE:
-		c += 1.0   # Simmer: a cool table still builds
+		c += 0.5   # Simmer: a cool table still builds
 	if perks.has("venture"):
 		c += minf(1.5, 0.25 * int(int(ctx.get("money", 0)) / 5))
 	if perks.has("menagerie"):
@@ -106,8 +106,6 @@ static func score(ctx: Dictionary) -> Dictionary:
 				for pair in [[e.a, e.b], [e.b, e.a]]:
 					spark_hits[pair[0]] = int(spark_hits.get(pair[0], 0)) + 1
 					last_hit[pair[0]] = pair[1]
-				if Catalog.kind_of(e.a) == "clover" or Catalog.kind_of(e.b) == "clover":
-					clover = true
 				if first_contact < 0 and (e.a == 0 or e.b == 0):
 					first_contact = e.b if e.a == 0 else e.a
 				if not toucher.has(e.a):
@@ -275,7 +273,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			"prime": Catalog.PRIMES.has(n) or RunState._is_prime(face), "fib": [1, 2, 3, 5, 8, 13].has(n) or [1, 2, 3, 5, 8, 13].has(face),
 			"lowest": n == int(ctx.get("lowest", -1)), "highest": n == int(ctx.get("highest", -1)),
 			"heat3": heat >= HEAT_STROKE, "on_fire": heat >= HEAT_FIRE, "cold": heat == 0,
-			"low3": (n >= 1 and n <= 3) or (face >= 1 and face <= 3), "high3": (n >= 13 and n <= 15) or (face >= 13 and face <= 15), "last_chalk": int(ctx.get("chalk", 99)) == 1, "third": int(ctx.get("shots_taken", 0)) % 3 == 2,
+			"low3": (n >= 1 and n <= 3) or (face >= 1 and face <= 3), "high3": (n >= 13 and n <= 15) or (face >= 13 and face <= 15), "last_chalk": int(ctx.get("chalk", 99)) <= 3, "third": int(ctx.get("shots_taken", 0)) % 3 == 2,
 			"boomerang": boomerang, "long": _long_pot(ctx, n, e), "item_shot": ctx.get("item_shot", false), "kiss8": int(out.get("first_contact", -1)) == 8 and not ctx.get("is_break", false),
 			"follow_shot": float(ctx.get("follow", 0.0)) > 0.2, "draw_shot": float(ctx.get("follow", 0.0)) < -0.2,
 			"last_eight": n == 8 and left_after == 0, "no_eight_touch": not toucher.has(8),
@@ -459,7 +457,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 				value += 45.0
 			"bounty":
 				money += heat
-				out.bounty_cash += 2
+				out.bounty_cash += 1
 			"starry":
 				bonus_after += 0.5
 		if imbues.has(n):

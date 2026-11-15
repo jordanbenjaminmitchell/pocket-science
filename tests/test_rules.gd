@@ -52,8 +52,24 @@ func _initialize() -> void:
 	check(run.chalk == RunState.BASE_CHALK - 1 and o.chalk_lost, "miss costs chalk")
 	var hit := {"scored": true, "foul": "", "total": 30, "money": 1, "catalyst_gain": 0.0, "potted": [1], "shattered": [], "lines": []}
 	o = run.apply_shot(hit, false, 0, true)
-	check(o.rack_cleared and run.chalk == RunState.BASE_CHALK and run.heat == 0, "clearing the rack refunds chalk, and a single sink keeps Heat where it was")
-	# Chalk carries over: a scratch costs 2, a cleared table gives 1 back, never above 12.
+	check(o.rack_cleared and run.chalk == RunState.BASE_CHALK - 1 and run.heat == 0, "a scoring shot spends its Chalk, clearing the rack gives 1 back, and a single sink keeps Heat")
+	var c_before := run.chalk
+	o = run.apply_shot(hit, false, 5, true)
+	check(run.chalk == c_before - RunState.SHOT_FEE and not o.chalk_lost and o.get("shot_fee", false), "every scoring shot after the break costs 1 Chalk, without counting as a loss")
+	c_before = run.chalk
+	run.apply_shot(hit, true, 5, true)
+	check(run.chalk == c_before, "a scoring break is free")
+	var clov := hit.duplicate()
+	clov["safe"] = true
+	c_before = run.chalk
+	run.apply_shot(clov, false, 5, true)
+	check(run.chalk == c_before, "a shot that sinks Clover is free")
+	var out_of := RunState.new()
+	out_of.start(5)
+	out_of.begin_table()
+	out_of.chalk = 1
+	check(out_of.apply_shot(hit, false, 5, true).over, "spending the last Chalk on a shot that does not clear the table ends the run")
+	# Chalk carries over: a scratch costs 2, a cleared table refills 2N + 4, never above MAX_CHALK.
 	var ch := RunState.new()
 	ch.start(7)
 	ch.begin_table()
@@ -62,23 +78,25 @@ func _initialize() -> void:
 	var o2 := ch.apply_shot({"scored": false, "foul": "Scratch", "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [], "shattered": []}, false, 9, false)
 	check(ch.chalk == c1 - 2 and int(o2.get("chalk_cost", 0)) == 2, "a scratch costs 2 Chalk")
 	var c2 := ch.chalk
+	check(ch.table_refill() == 6, "clearing the first table gives back 6 Chalk")
 	ch.advance_table()
 	ch.begin_table()
-	check(ch.chalk == c2 + 1, "Chalk carries to the next table, plus 1 for clearing (%d)" % ch.chalk)
-	ch.chalk = 12
+	check(ch.chalk == c2 + 6, "Chalk carries to the next table, plus the refill (%d)" % ch.chalk)
+	check(ch.table_refill() == 8, "and the second gives back 8")
+	ch.chalk = RunState.MAX_CHALK
 	ch.advance_table()
-	check(ch.chalk == 12, "never more than 12")
+	check(ch.chalk == RunState.MAX_CHALK, "never more than %d" % RunState.MAX_CHALK)
 	var ca := RunState.new()
 	ca.start(7)
 	ca.perks.assign(["chalk"])
 	ca.begin_table()
 	var c3 := ca.chalk
 	ca.advance_table()
-	check(ca.chalk == c3 + 2, "Calcium Chalk: +1 extra for each clear")
+	check(ca.chalk == c3 + 6 + 3, "Calcium Chalk: +3 extra for each clear")
 	var hr := RunState.new()
 	hr.start(7, "hotrod")
 	hr.begin_table()
-	check(hr.chalk == RunState.BASE_CHALK - 1, "Hot Rod starts with 1 less Chalk")
+	check(hr.chalk == RunState.BASE_CHALK - 2, "Hot Rod starts with 2 less Chalk")
 	run.score = run.target() - 1
 	o = run.apply_shot(hit, false, 5, true)
 	check(o.cleared, "reaching the target clears the table")
@@ -90,14 +108,14 @@ func _initialize() -> void:
 	var c0 := op.chalk
 	var hot_fixed := op.hot_pocket
 	var wp := op.apply_shot({"scored": false, "foul": "Wrong pocket", "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [4], "shattered": [], "lines": []}, false, 5, true)
-	check(op.chalk == c0 and not wp.chalk_lost and op.heat == 0, "one pocket: wrong pocket costs no chalk but breaks the streak")
+	check(op.chalk == c0 - RunState.SHOT_FEE and op.heat == 0, "one pocket: wrong pocket costs only the shot and breaks the streak")
 	var rot := RunState.new()
 	rot.start(3)
 	rot.plan[0].anomaly = "rotation"
 	rot.begin_table()
 	var rc0 := rot.chalk
 	rot.apply_shot({"scored": false, "foul": "Wrong ball first", "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [], "shattered": [], "lines": []}, false, 5, true)
-	check(rot.chalk == rc0, "rotation: wrong ball first costs no chalk")
+	check(rot.chalk == rc0 - RunState.SHOT_FEE, "rotation: wrong ball first costs only the shot")
 	print("side bets")
 	var b := RunState.new()
 	b.start(3)

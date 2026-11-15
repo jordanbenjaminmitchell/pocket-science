@@ -170,7 +170,7 @@ func _go() -> void:
 		q.roll_shop()
 		sk.append({"t": q.target(), "c": q.chalk, "p": q.pocket_scale(), "cost": q.shop[0].cost})
 	check(sk[1].t > sk[0].t and sk[1].c == sk[0].c, "handicap 1 raises targets only")
-	check(sk[2].c == sk[1].c - 1, "handicap 2 removes a chalk")
+	check(sk[2].c == sk[1].c - 3, "handicap 2 removes 3 Chalk")
 	check(sk[3].cost == sk[2].cost + 1, "handicap 3 raises prices")
 	check(sk[4].p < sk[3].p, "handicap 4 narrows pockets")
 	check(sk[5].t > sk[4].t, "handicap 5 raises targets again")

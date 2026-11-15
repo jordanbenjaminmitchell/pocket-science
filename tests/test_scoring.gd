@@ -50,13 +50,14 @@ func _initialize() -> void:
 	# Heat Perks: some only work on fire, some only when you are not.
 	check(run_case(h5, {"perks": ["minimalist"], "heat": 5}).total == run_case(h5, {"heat": 5}).total * 2, "Inferno doubles sinks On fire")
 	check(run_case(h5, {"perks": ["minimalist"], "heat": 2}).total == run_case(h5, {"heat": 2}).total, "but not below Heat 3")
+	check(run_case(h5, {"perks": ["comeback"], "chalk": 3}).total == 40 and run_case(h5, {"perks": ["comeback"], "chalk": 4}).total == 20, "Lanthanum Lantern: ×2 with 3 Chalk or less")
 	# Heat comes from ambitious shots: +1 for every ball after the first.
 	check(run_case([hit(0, 5), pot(5, 0)], {}).heat_gain == 0, "a single sink keeps Heat but does not raise it")
 	check(run_case([hit(0, 5), pot(5, 0), pot(3, 2)], {}).heat_gain == 1, "a double adds 1 Heat")
 	check(run_case([hit(0, 5), pot(5, 0), pot(3, 2), pot(9, 1)], {}).heat_gain == 2, "a triple adds 2")
 	check(FireFx.level_for(Scorer.HEAT_FIRE) == 3 and FireFx.level_for(Scorer.HEAT_FIRE - 1) == 2, "On fire starts at Heat %d" % Scorer.HEAT_FIRE)
-	check(run_case(h5, {"perks": ["coupon"]}).total == 40 and run_case(h5, {"perks": ["coupon"], "heat": 1}).total == run_case(h5, {"heat": 1}).total, "Cold Start doubles sinks only at Heat 0")
-	check(run_case(h5, {"perks": ["entropy"]}).total == 40 and run_case(h5, {"perks": ["entropy"], "heat": 3}).total == run_case(h5, {"heat": 3}).total, "Simmer adds Chain only below Heat 3")
+	check(run_case(h5, {"perks": ["coupon"]}).total == 30 and run_case(h5, {"perks": ["coupon"], "heat": 1}).total == run_case(h5, {"heat": 1}).total, "Cadmium Chill: sinks ×1.5 only at Heat 0")
+	check(run_case(h5, {"perks": ["entropy"]}).total == 30 and run_case(h5, {"perks": ["entropy"], "heat": 2}).total == run_case(h5, {"heat": 2}).total, "Simmer adds +0.5 Chain only below Heat 2")
 	var rot := [{"type": "ball", "a": 0, "b": 2}, {"type": "pocket", "a": 2, "pocket": 0, "rails": 0, "at": Vector2.ZERO}]
 	check(run_case(rot, {"perks": ["rotation"], "lowest": 2, "highest": 15}).total == 40, "Rotation: the lowest ball pays like the highest")
 	var bk := [{"type": "ball", "a": 0, "b": 5}, {"type": "pocket", "a": 5, "pocket": 0, "rails": 2, "at": Vector2.ZERO}]

@@ -7,10 +7,12 @@ const MAX_PERKS := 6
 const SNELL_A := Vector2(430, 0)     # Snell's Law: the line between air (left) and glass (right)
 const SNELL_B := Vector2(570, 500)
 const BOULDER_R := 26.5   # the biggest cue ball that still drops through a pocket mouth
-const BASE_CHALK := 6
-## Chalk now travels with you from table to table: you start with BASE_CHALK,
-## each cleared table adds one, and you can never hold more than MAX_CHALK.
-const MAX_CHALK := 12
+## Chalk is your shots for the whole run: every shot after the break costs 1
+## (a scratch or an early 8 costs 2). You start with BASE_CHALK, clearing table N
+## gives back 2N + 4 (6, 8, 10 ... 20), and you can never hold more than MAX_CHALK.
+const BASE_CHALK := 10
+const MAX_CHALK := 40
+const SHOT_FEE := 1
 
 var seed_value := 0
 var cue := "maple"
@@ -270,7 +272,7 @@ func max_chalk() -> int:
 func start_chalk() -> int:
 	var c := BASE_CHALK + int(Catalog.CUES.get(cue, Catalog.CUES.maple).chalk)
 	if handicap >= 2:
-		c -= 1
+		c -= 3   # Short Chalk
 		return maxi(c, 2)
 	return maxi(c, 1)
 
@@ -763,7 +765,7 @@ func payout() -> Array:
 	if quick > 0:
 		rows.append(["Quick clear: %d shot%s" % [shots_taken, "" if shots_taken == 1 else "s"], mini(quick, QUICK_MAX)])
 	if has_perk("thrift") and chalk >= 3:
-		rows.append(["Thrift", 5])
+		rows.append(["Thrift: %d Chalk left" % chalk, mini(5, int(chalk / 3.0))])
 	if has_perk("overflow"):
 		var nxt := table_index + 1
 		var next_target: int = plan[nxt].target if nxt < plan.size() else int(target() * 1.6)
@@ -785,9 +787,14 @@ func payout() -> Array:
 	return rows
 
 
+## Chalk back for clearing the current table: 2 for every table so far plus 4
+## (6 after the first, 20 after the ninth), and Calcium Chalk adds 3 more.
+func table_refill() -> int:
+	return 2 * (table_index + 1) + 4 + (3 if has_perk("chalk") else 0)
+
+
 func advance_table() -> void:
-	# Each cleared table adds a Chalk (Calcium Chalk adds one more).
-	chalk = mini(MAX_CHALK, chalk + 1 + (1 if has_perk("chalk") else 0))
+	chalk = mini(MAX_CHALK, chalk + table_refill())
 	table_index += 1
 	if table_index >= plan.size():
 		endless = true
@@ -1025,6 +1032,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 	var out := {"cleared": false, "over": false, "rack_cleared": false, "ball_in_hand": not cue_on_table, "chalk_lost": false}
 	var chalk_cost := 0
 	if res.scored:
+		chalk_cost = 0 if was_break else SHOT_FEE   # every shot after the break costs 1 Chalk
 		var hot_before := hot_pocket
 		if not bounty_done and bounty_met(res, hot_before):
 			bounty_done = true
@@ -1092,6 +1100,8 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		var free_break: bool = was_break and res.foul == "Miss"
 		# Boss "soft fouls": the shot scores nothing and the heat resets, but no chalk is lost.
 		var soft: bool = res.foul == "Wrong pocket" or res.foul == "Wrong ball first" or res.foul == Scorer.EIGHT_FOUL
+		if soft and not was_break:
+			chalk_cost = SHOT_FEE   # a boss soft foul costs only the shot
 		var insured: bool = has_perk("insurance") and insured_used < 2
 		var excused: bool = current().id == "local" and not forgiven and not free_break and not soft and not insured
 		if excused:
@@ -1118,11 +1128,15 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 	# The 8 going in early costs 2 Chalk even when the shot scored (Carbon Core makes it safe).
 	if res.get("eight_early", false) and not eight_safe():
 		chalk_cost = maxi(chalk_cost, 2)
-	if chalk_cost > 0 and not res.get("safe", false):
+	if res.get("safe", false):
+		chalk_cost = 0   # Clover sank: the shot is free
+	if chalk_cost > 0:
 		chalk -= chalk_cost
 		last_chalk_lost = true
-		out.chalk_lost = true
 		out["chalk_cost"] = chalk_cost
+		# Only a miss, a foul or an early 8 counts as losing Chalk; a scoring shot just spends its shot.
+		out.chalk_lost = not res.scored or res.get("eight_early", false)
+		out["shot_fee"] = res.scored and not out.chalk_lost
 	score = maxi(0, score - int(res.get("penalty", 0)))
 	money = maxi(0, money - int(res.get("eight_fine", 0)))
 	if current().anomaly == "shrink":

@@ -55,7 +55,7 @@ func _initialize() -> void:
 	safe8.begin_table()
 	var s0 := safe8.chalk
 	safe8.apply_shot({"scored": true, "foul": "", "total": 20, "money": 3, "catalyst_gain": 0.0, "potted": [8], "shattered": [], "lines": [], "eight_early": true}, false, 9, true)
-	check(safe8.chalk == s0, "Carbon Core: an early 8 costs no Chalk")
+	check(safe8.chalk == s0 - RunState.SHOT_FEE, "Carbon Core: an early 8 costs no extra Chalk, only the shot")
 	run.apply_shot({"scored": false, "foul": Scorer.EIGHT_FOUL, "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [8], "shattered": [], "lines": [], "penalty": 500}, false, 9, true)
 	check(run.score == 0, "the score never goes below zero")
 

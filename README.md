@@ -18,7 +18,7 @@ The APK is signed with a personal key from the build PC, so it is for your own d
 ## How a run works
 
 1. **Choose a cue.** Each cue starts the run differently. More unlock as you play.
-2. **Every table is a boss** with its own rule and a target score. As in real pool, you keep shooting while you sink. **Chalk** lasts the whole run: you start with 6, a miss costs 1, a scratch or an early 8 costs 2, and each table you clear gives 1 back (up to 12). When it runs out, the run ends.
+2. **Every table is a boss** with its own rule and a target score. As in real pool, you keep shooting while you sink. **Chalk** is your shots for the whole run: you start with 10, every shot after the break costs 1 (a scratch or an early 8 costs 2), clearing a rack gives 1 back, and clearing table N gives back 2N + 4 (6 after the first table, 20 after the ninth; you can hold up to 40). When it runs out, the run ends, so shots that sink several balls save Chalk.
 3. **Avoid the 8.** Sinking the 8 while other balls are still up costs 15% of the table's target and 2 Chalk, unless an Element changes that. Once it is the last ball it is safe.
 4. **The Pro Shop** opens between tables:
    - **Elements:** 100 passive rules for your six slots.
