@@ -73,6 +73,8 @@ func _ready() -> void:
 	roll_player = AudioStreamPlayer.new()
 	add_child(roll_player)
 	roll_player.stream = _rolling_loop(2.0)
+	_setup_buses()
+	_load_bank()
 	roll_player.volume_db = -80.0
 	streams["tick"] = _render(0.09, func(t): return sin(TAU * 880.0 * t) * exp(-t * 40.0) * 0.5)
 	streams["mult"] = _render(0.14, func(t): return (sin(TAU * 660.0 * t) + 0.5 * sin(TAU * 990.0 * t)) * exp(-t * 22.0) * 0.4)
@@ -140,9 +142,81 @@ func set_music_volume(v: float) -> void:
 
 
 var last_click_ms := 0
+## Sounds that happen on the table: they go through the room and pan with position.
+const TABLE_SOUNDS := ["click", "click_soft", "click_hard", "rail", "rail_soft", "rail_hard", "pocket", "pocket_side",
+	"cue", "cue_soft", "cue_hard", "break", "bumper", "portal", "wall"]
+const PANS := [-0.7, -0.35, 0.0, 0.35, 0.7]
 
 
-func play(id: String, vol: float = 1.0, pitch: float = 1.0) -> void:
+## The mix: Music, SFX (with a short pool-hall reverb) and UI under a limited Master,
+## plus five panned feeds into SFX so table sounds come from where they happen.
+func _setup_buses() -> void:
+	if AudioServer.get_bus_index("SFX") >= 0:
+		return
+	var master := AudioServer.get_bus_index("Master")
+	var lim := AudioEffectHardLimiter.new()
+	lim.ceiling_db = -0.5
+	AudioServer.add_bus_effect(master, lim)
+	for name in ["Music", "SFX", "UI"]:
+		AudioServer.add_bus()
+		var i := AudioServer.bus_count - 1
+		AudioServer.set_bus_name(i, name)
+		AudioServer.set_bus_send(i, "Master")
+	var room := AudioEffectReverb.new()
+	room.room_size = 0.32
+	room.damping = 0.65
+	room.spread = 0.6
+	room.dry = 1.0
+	room.wet = 0.11
+	AudioServer.add_bus_effect(AudioServer.get_bus_index("SFX"), room)
+	for k in PANS.size():
+		AudioServer.add_bus()
+		var i := AudioServer.bus_count - 1
+		AudioServer.set_bus_name(i, "SFX_P%d" % k)
+		AudioServer.set_bus_send(i, "SFX")
+		var pan := AudioEffectPanner.new()
+		pan.pan = PANS[k]
+		AudioServer.add_bus_effect(i, pan)
+	music_a.bus = "Music"
+	music_b.bus = "Music"
+	roll_player.bus = "SFX"
+
+
+## The physically modelled sounds from tools/compose_sfx.py replace the built-in ones.
+func _load_bank() -> void:
+	for id in SfxBank.FILES:
+		var pool: Array = []
+		for path in SfxBank.FILES[id]:
+			var st = load(path)
+			if st != null:
+				pool.append(st)
+		if pool.is_empty():
+			continue
+		if id == "roll":
+			(pool[0] as AudioStreamOggVorbis).loop = true
+			roll_player.stream = pool[0]
+			continue
+		variants[id] = pool
+		streams[id] = pool[0]
+
+
+## A strength picks the soft, normal or hard recording of a table sound.
+static func layered(id: String, vol: float) -> String:
+	if id in ["click", "click_soft"]:
+		return "click_hard" if vol > 0.7 else ("click" if vol > 0.25 else "click_soft")
+	if id == "rail":
+		return "rail_hard" if vol > 0.6 else ("rail" if vol > 0.2 else "rail_soft")
+	if id == "cue":
+		return "cue_hard" if vol > 0.85 else ("cue" if vol > 0.45 else "cue_soft")
+	return id
+
+
+func play(id: String, vol: float = 1.0, pitch: float = 1.0, pan: float = 0.0) -> void:
+	var layer := layered(id, vol)
+	if streams.has(layer):
+		if layer != id:
+			vol = lerpf(0.65, 1.0, clampf(vol, 0.0, 1.0))   # the recording already carries the strength
+		id = layer
 	if not streams.has(id) or volume <= 0.0:
 		return
 	# On a break dozens of clicks land at once; a few per moment sound better.
@@ -157,6 +231,10 @@ func play(id: String, vol: float = 1.0, pitch: float = 1.0) -> void:
 	p.stream = pool[randi() % pool.size()] if not pool.is_empty() else streams[id]
 	p.volume_db = linear_to_db(clampf(vol * volume, 0.001, 2.0))
 	p.pitch_scale = clampf(pitch, 0.25, 4.0)
+	if id in TABLE_SOUNDS:
+		p.bus = "SFX_P%d" % clampi(roundi((clampf(pan, -1.0, 1.0) + 1.0) * 0.5 * (PANS.size() - 1)), 0, PANS.size() - 1)
+	else:
+		p.bus = "UI"
 	p.play()
 
 

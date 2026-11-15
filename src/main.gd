@@ -2206,7 +2206,10 @@ func _begin_roll() -> void:
 	sim.strike(aim_dir, _speed(shot_power) * run.power_mult(is_break), _shot_follow(), _shot_side())
 	if run.shots_taken >= 1 and meta.first_time("pause"):
 		_flash_banner("TIP: PRESS P (OR PAUSE) TO FREEZE A SHOT", Color(0.55, 0.95, 0.85), 2.6)
-	sfx.play("cue", 0.4 + shot_power * 0.8, 0.9 + randf() * 0.2)
+	if is_break and shot_power > 0.6:
+		sfx.play("break", 1.0, 0.97 + randf() * 0.06, _pan_of(sim.pos[_cue_index()]))
+	else:
+		sfx.play("cue", 0.25 + shot_power * 0.75, 0.96 + randf() * 0.08, _pan_of(sim.pos[_cue_index()]))
 	if shot_power > 0.8:
 		view.add_shake(3.0 * shot_power)
 	ev_index = 0
@@ -2320,10 +2323,10 @@ func _consume_events() -> void:
 					var ia := sim.index_of(e.a)
 					var ib := sim.index_of(e.b)
 					view.spark((sim.pos[ia] + sim.pos[ib]) * 0.5, clampf(e.speed / 2000.0, 0.3, 1.0))
-				sfx.play("click" if v > 0.25 else "click_soft", v, 0.9 + randf() * 0.25)
+				sfx.play("click", v, 0.95 + randf() * 0.1, _pan_of((sim.pos[sim.index_of(e.a)] + sim.pos[sim.index_of(e.b)]) * 0.5))
 			"rail":
 				var v := clampf(e.speed / 1800.0, 0.03, 0.9) * (0.3 if demo else 1.0)
-				sfx.play("rail", v, 0.9 + randf() * 0.2)
+				sfx.play("rail", v, 0.94 + randf() * 0.12, _pan_of(e.get("at", Vector2(TableLayout.W * 0.5, 0))))
 				# A hard knock right at a pocket mouth is a rattle.
 				if not demo and e.has("at") and e.speed > 260.0:
 					for k in layout.pockets.size():
@@ -2358,7 +2361,7 @@ func _consume_events() -> void:
 				view.sink(idx, e.pocket)
 				_refresh_tray()
 				var pp: Vector2 = layout.pockets[e.pocket].pos
-				sfx.play("pocket", clampf(0.5 + e.speed / 2000.0, 0.4, 1.0), 0.95 + randf() * 0.1)
+				sfx.play("pocket_side" if layout.pockets[e.pocket].side else "pocket", clampf(0.6 + e.speed / 2000.0, 0.5, 1.0), 0.96 + randf() * 0.08, _pan_of(pp))
 				if demo:
 					continue
 				if e.a == 0:
@@ -2522,6 +2525,11 @@ func _eq_sources(pocket: int) -> Dictionary:
 		if c.has_meta("perk_id"):
 			d["perk:" + str(c.get_meta("perk_id"))] = _eq_point((c as Control).get_global_rect().get_center())
 	return d
+
+
+## Where on the table a sound happens, as a stereo pan from -1 (left) to 1 (right).
+func _pan_of(p: Vector2) -> float:
+	return clampf(p.x / TableLayout.W * 2.0 - 1.0, -1.0, 1.0)
 
 
 func _after_shot() -> void:
