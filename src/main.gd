@@ -539,7 +539,7 @@ func _item_button(id: String, tool: bool) -> Control:
 	if id == "":
 		b.disabled = true
 		b.add_theme_stylebox_override("disabled", _style(Color(0, 0, 0, 0.25), Color(1, 1, 1, 0.1 if not tool else 0.2), 1, 6 if tool else 10))
-		b.tooltip_text = "Empty Tool slot" if tool else "Empty Consumable slot"
+		b.tooltip_text = "Empty Catalyst slot"
 		return b
 	var it: Dictionary = Catalog.ITEMS[id]
 	var col: Color = Catalog.CATALYST_COLOR
@@ -558,9 +558,24 @@ func _item_button(id: String, tool: bool) -> Control:
 		b.add_child(pip)
 		if charges <= 0:
 			b.modulate = Color(1, 1, 1, 0.45)
-	b.tooltip_text = "%s (Catalyst, recharges every table)\n%s\n%s" % [it.name, Catalog.WHEN_NAMES[it.when], it.desc]
-	b.pressed.connect(func(): _use(id))
+	# What it does pops up beside the kit when the pointer or a thumb rests on it
+	# (a Godot tooltip never shows on a touch screen). A long press only reads
+	# the card; a tap uses the Catalyst.
+	b.set_meta("item_id", id)
+	b.mouse_entered.connect(func(): _show_card_tip("item", id, 0, b, true))
+	b.mouse_exited.connect(_hide_card_tip)
+	b.tree_exiting.connect(_hide_card_tip)
+	b.button_down.connect(func(): b.set_meta("down_at", Time.get_ticks_msec()))
+	b.pressed.connect(func():
+		if Time.get_ticks_msec() - int(b.get_meta("down_at", Time.get_ticks_msec())) >= KIT_HOLD_MS:
+			_show_card_tip("item", id, 0, b, true)
+			return
+		_use(id))
 	return b
+
+
+## Holding a Catalyst this long reads its card instead of using it.
+const KIT_HOLD_MS := 400
 
 
 ## Can this item be used right now?
@@ -4062,7 +4077,7 @@ func _card_chip(kind: String, id: String, ball := 0) -> Control:
 	return chip
 
 
-func _show_card_tip(kind: String, id: String, ball: int, near: Control) -> void:
+func _show_card_tip(kind: String, id: String, ball: int, near: Control, beside := false) -> void:
 	_hide_card_tip()
 	var data: Dictionary = {"perk": Catalog.PERKS, "item": Catalog.ITEMS, "ball": Catalog.BALL_TYPES, "imbue": Catalog.IMBUES}[kind]
 	var d: Dictionary = data[id]
@@ -4085,9 +4100,13 @@ func _show_card_tip(kind: String, id: String, ball: int, near: Control) -> void:
 			picture.add_child(ThumbArt.new().setup("imbue", id, 112.0))
 		v.add_child(picture)
 		v.add_child(_label(String(d.name), 17, Color.WHITE, F_SEMI))
-	else:
+	elif TileArt.has_tile(kind, id):
 		v.add_child(TileArt.new().setup(kind, id, ball))
+	else:
+		v.add_child(_label(String(d.name), 17, Color.WHITE, F_SEMI))
 	var kind_name: String = {"perk": "Element", "item": "Catalyst", "ball": "Exotic ball", "imbue": "Isotope"}[kind]
+	if kind == "item":
+		kind_name = "Catalyst · %s · recharges every table" % Catalog.WHEN_NAMES[d.when]
 	v.add_child(_label(kind_name, 12, Color(1.0, 0.85, 0.4), F_SEMI))
 	var tip_text := String(d.desc)
 	if kind == "imbue" and ball > 0:
@@ -4099,7 +4118,7 @@ func _show_card_tip(kind: String, id: String, ball: int, near: Control) -> void:
 	term_tip.add_child(p)
 	card_tip = p
 	p.reset_size()
-	var at := near.global_position + (Vector2(near.size.x + 12.0, 0.0) if near.size.x > 100.0 else Vector2(near.size.x * 0.5 - 100.0, -p.size.y - 250.0))
+	var at := near.global_position + (Vector2(near.size.x + 12.0, 0.0) if beside or near.size.x > 100.0 else Vector2(near.size.x * 0.5 - 100.0, -p.size.y - 250.0))
 	var screen := get_viewport_rect().size
 	p.global_position = Vector2(clampf(at.x, 8.0, screen.x - 216.0), clampf(at.y, 8.0, screen.y - p.size.y - 8.0))
 

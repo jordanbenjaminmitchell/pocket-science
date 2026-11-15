@@ -69,5 +69,26 @@ func _go() -> void:
 	check(_text_of(numbered).contains("Worth %d" % Catalog.ball_points(13)), "a 13-ball with an Isotope says what it is worth")
 	numbered.mouse_entered.emit()
 	check(_text_of(g.card_tip).contains("worth %d" % Catalog.ball_points(13)), "and so does its pop-up")
+	# Every Catalyst in the Hustler's Kit pops up what it does when a pointer or
+	# thumb rests on it (tooltips never show on a phone).
+	var missing: Array = []
+	for id in Catalog.ITEMS:
+		var kit: Control = g._item_button(id, true)
+		g.item_bar.add_child(kit)
+		g._hide_card_tip()
+		kit.mouse_entered.emit()
+		var said := _text_of(g.card_tip) if g.card_tip != null else ""
+		if not (said.contains(String(Catalog.ITEMS[id].desc)) and said.contains(String(Catalog.WHEN_NAMES[Catalog.ITEMS[id].when]))):
+			missing.append(id)
+		kit.queue_free()
+	check(missing.is_empty(), "every Catalyst in the kit shows what it does and when (%s)" % ", ".join(missing))
+	var first_id: String = Catalog.ITEMS.keys()[0]
+	g.run.tool_charges[first_id] = 1
+	var held: Button = g._item_button(first_id, true)
+	g.item_bar.add_child(held)
+	g._hide_card_tip()
+	held.set_meta("down_at", Time.get_ticks_msec() - 1000)
+	held.pressed.emit()
+	check(g.card_tip != null and int(g.run.tool_charges.get(first_id, 0)) == 1 and g.armed.is_empty(), "a long press on a Catalyst reads its card without using it")
 	print("card palette tests: %d failures" % failures)
 	quit(1 if failures else 0)
