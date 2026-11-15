@@ -49,7 +49,7 @@ From the other AI's proposal, these ideas are adopted here under science names: 
 | 25 | **Lorentz Field** | Rectangle | Inside a marked zone, moving balls curve sideways (faster balls curve less) | — |
 | 26 | **Quantum Pockets** | Rectangle | Pockets come in linked pairs; after each shot every pair swaps places | Swapping pockets |
 | 27 | **Foucault's Pendulum** | Octagon | A heavy bob swings across the table, and its swing turns a little each shot | **Hammerhead** charges between shots |
-| 28 | **Event Horizon** | Rectangle | A black hole in the centre pulls balls in and grows each shot; sinking into it scores ×2 but costs Heat | The Sinkhole |
+| 28 | **Accretion Disc** (was Event Horizon; renamed so it no longer shares a name with the Catalyst) | Rectangle | A black hole in the centre pulls balls in and grows each shot; sinking into it scores ×2 but costs Heat | The Sinkhole |
 
 ## Boss boards
 
@@ -106,7 +106,7 @@ Each board gets its own **felt colour**, **rail material** and a faint **decal**
 | 25 | Lorentz Field | Electric blue | Magnet red and grey | Field lines |
 | 26 | Quantum Pockets | Deep purple | Holographic | Ψ (psi) |
 | 27 | Foucault's Pendulum | Museum burgundy | Mahogany | Pendulum arcs |
-| 28 | Event Horizon | Pure black | Obsidian | Accretion disc |
+| 28 | Accretion Disc | Pure black | Obsidian | Accretion disc |
 | 29 | The Clockwork Table | Ivory | Brass gears | Clock face |
 | 30 | Apex Predator | Blood red | Shark-skin grey | Jaws |
 | 31 | Galton Board | Cream | Pine | Bell curve |
@@ -125,7 +125,7 @@ Each board gets its own **felt colour**, **rail material** and a faint **decal**
 ## What the existing 22 become
 
 - **Kept as they are:** The Local, Pinball Parlor, Clockwork.
-- **Reworked into a science board:** Black Ice (Superfluid), Twin Posts (Harmonic Oscillator), The Sinkhole (Event Horizon), The Magnet Room (Kepler Orbit), The Smoke Room (Lotka–Volterra), The Back Room (Faraday Cage), Spring Street (Capacitor), The Drift (Coriolis), The Tilted Table (Snell's Law), Two Pockets (Quantum Pockets), Closing Time (Radioactive Decay), The Grand Final (Apex Predator).
+- **Reworked into a science board:** Black Ice (Superfluid), Twin Posts (Harmonic Oscillator), The Sinkhole (Accretion Disc), The Magnet Room (Kepler Orbit), The Smoke Room (Lotka–Volterra), The Back Room (Faraday Cage), Spring Street (Capacitor), The Drift (Coriolis), The Tilted Table (Snell's Law), Two Pockets (Quantum Pockets), Closing Time (Radioactive Decay), The Grand Final (Apex Predator).
 - **Retired, their rule moving onto a science board** or into a side bet: Frozen Lake, Old Slate, The Hump, Rotation Night, The Iron Rack, Lights Out, The Hustler (the Loan Shark carries its skim).
 
 ## Build order (cheapest proof first)

@@ -1227,7 +1227,7 @@ func _show_remove_picker() -> void:
 func _shop_intro_tip(v: VBoxContainer) -> void:
 	var tip := ""
 	if run.shop.any(func(it): return it.type == "item") and meta.first_time("items"):
-		tip = "NEW: Items. Tools keep a charge every table; Consumables are used once. Blue ones work while aiming, green ones while a shot is paused (press P), amber ones after a shot."
+		tip = "NEW: Catalysts. Each one recharges every table. Blue ones work while aiming, green ones while a shot is paused (press P), amber ones after a shot, grey ones while aiming or paused."
 	elif run.shop.any(func(it): return it.type == "ball") and meta.first_time("balls"):
 		tip = "NEW: Exotic balls join your rack and rack with the rest. You can also pay to remove a ball from your rack (never the 8)."
 	if tip != "":
@@ -1401,8 +1401,8 @@ func _hold(count: bool = true) -> void:
 	hold_action = ""
 	view.strike_line = []
 	view.show_guide = false
-	view.hold_text = _words("PAUSED - use an item, plan a pause (L), or press P to play on")
-	_hint("Paused. Items in your bar work now. Click the table or press P to play on.")
+	view.hold_text = _words("PAUSED - use a Catalyst, plan a pause (L), or press P to play on")
+	_hint("Paused. Catalysts in your Hustler's Kit work now. Click the table or press P to play on.")
 	_compute_forecast_from_here()
 	_refresh_hud()
 
@@ -3225,7 +3225,7 @@ func _words(t: String) -> String:
 static func _touch_words(t: String) -> String:
 	var swaps := [
 		[" Right-click or Esc to cancel.", " Tap CANCEL to back out."],
-		["use an item, plan a pause (L), or press P to play on", "use an item, PLAN a pause, or tap PLAY ON"],
+		["use a Catalyst, plan a pause (L), or press P to play on", "use a Catalyst, PLAN a pause, or tap PLAY ON"],
 		["Click or press Space to fast-forward. P pauses.", "Tap the table to fast-forward, or PAUSE to stop the shot."],
 		["P (or the Pause button) pauses the shot. Click or Space to fast-forward.", "PAUSE stops the shot. Tap the table to fast-forward."],
 		["Click the table or press P to play on.", "Tap PLAY ON to carry on."],

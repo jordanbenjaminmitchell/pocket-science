@@ -86,7 +86,7 @@ Tier 0 is the first table, tier 9 the fixed boss tables.
 | Faraday Cage | `cramped` | 1 | standard | A Card Sharp sits in a corner pocket, guarded by two posts, and blocks it. Hit it twice to knock it out and open the pocket. Every sink scores ×1.5. |  |  |
 | Pinball Parlor | `parlor` | 2 | pinball | Four bumpers. On this table, every bumper hit adds +1 Chain. |  |  |
 | Harmonic Oscillator | `posts` | 2 | cyclotron | Two posts on springs slide back and forth, one step after every shot. Every post hit adds +1 Chain. |  |  |
-| Event Horizon | `sinkhole` | 2 | gravity | A gravity well in the centre pulls moving balls in. Chain starts at 2. |  |  |
+| Accretion Disc | `sinkhole` | 2 | gravity | A gravity well in the centre pulls moving balls in. Chain starts at 2. |  |  |
 | Kepler Orbit | `magnet` | 2 | magnetlab | Every pocket pulls passing balls into orbit and then in, but every ball is worth 10 less. |  |  |
 | Lotka–Volterra | `smoke` | 2 | standard | A Pool Shark circles the balls and swallows one every 3 shots. If it survives 4 shots, a second one arrives. Hit a Shark 3 times to knock it out. Every sink scores ×1.5. |  |  |
 | Superfluid | `blackice` | 3 | cryo | Almost no friction and lively cushions. Every sink adds +0.5 Chain. |  |  |
@@ -125,7 +125,7 @@ All 100, by atomic number. Rarity sets how often a card is offered.
 
 | Z | Element | Id | Rarity | Cost | Family | What it does | Your note | Done |
 |---|---|---|---|---|---|---|---|---|
-| 1 | Hydrogen Balloon | `featherweight` | Rare | $8 | Physics | The cue ball floats: if it would drop into a pocket, it bobs back out instead. No more pocket scratches. |  |  |
+| 1 | Hydrogen Balloon | `featherweight` | Rare | $8 | Physics | The cue ball floats: if it would sink, it bobs back out of the pocket instead. No more pocket scratches. |  |  |
 | 2 | Helium Fusion | `fusion` | Uncommon | $6 | Combos & clusters | Sink a ball into the same pocket as your last sink (this shot or your last one) and it scores ×2. |  |  |
 | 3 | Lithium Cell | `lowball` | Common | $4 | Solids | Your 3 lowest-value balls are charged: they lose no speed off cushions, and each pays $1 when it sinks. |  |  |
 | 4 | Beryllium Avalanche | `catalyst` | Rare | $8 | Risk & scaling | Every ball you sink gives 2 random balls in your rack +4 for the rest of the run. |  |  |
@@ -232,7 +232,7 @@ All 100, by atomic number. Rarity sets how often a card is offered.
 |---|---|---|---|---|---|
 | Spark | `spark` | $4 | +1 Chain every time it is struck. Struck 3 or more times in one shot, it overloads and arcs onto the last ball it hit. |  |  |
 | Gilded | `gold` | $4 | Pays $1 when sunk, plus $1 for every table in a row you have sunk it (up to $5). A table where it stays up resets the streak. |  |  |
-| Weighted | `heavy` | $3 | Worth 10 + 3 × its number, and the number counts one more time with every sink (×4, ×5...). Any miss drops it back to ×3. |  |  |
+| Weighted | `heavy` | $3 | Worth 10 + 3 × its number, and the number counts one more time with every sink (×4, ×5...). Any miss resets it to ×3. |  |  |
 | Hairline | `glass` | $5 | Scores ×3 when sunk, but the coating may crack off: 1 in 4 the first time, 2 in 4 the next, then 3 in 4. |  |  |
 | Kindled | `ember` | $5 | +2 Heat when sunk. But while it is still on the table, a miss wipes your Heat to 0 instead of halving it. |  |  |
 | Vein | `vein` | $5 | Worth +20 when sunk, and it spreads onto the ball that knocked it in (if that ball has no Isotope). |  |  |
@@ -290,11 +290,11 @@ Each recharges every table.
 | Golden Ratio | `goldenratio` | While paused | $5 | Pick a rolling ball: its speed is multiplied by 1.618, and if it sinks this shot it scores ×1.618. |  |  |
 | Centre of Mass | `centremass` | While paused | $6 | Pick two to four balls: they all head for the point between them. |  |  |
 | Hooke's Law | `hookes` | Aiming or paused | $5 | Pick a cushion: for the rest of the shot, anything bouncing off it keeps all its speed. |  |  |
-| Damping | `damping` | While paused | $4 | The cue ball drops to a quarter of its speed, wherever it is heading. |  |  |
+| Damping | `damping` | While paused | $4 | The cue ball slows to a quarter of its speed, wherever it is heading. |  |  |
 | Momentum Exchange | `momentum` | While paused | $6 | Pick a ball: it and the cue ball swap speeds and directions. |  |  |
 | Dark Energy | `darkenergy` | While paused | $5 | Place a point that pushes rolling balls away for the rest of the shot. |  |  |
 | Supernova | `blast` | While paused | $6 | Place a blast: every ball near it is flung outwards. |  |  |
-| Absolute Zero | `absolutezero` | While paused | $5 | Every ball stops dead. Any ball stopped at the lip of a pocket drops in (never the 8 or the cue ball). |  |  |
+| Absolute Zero | `absolutezero` | While paused | $5 | Every ball stops dead. Any ball stopped at the lip of a pocket sinks (never the 8 or the cue ball). |  |  |
 | Focal Point | `focal` | Aiming or paused | $5 | Pick a pocket: it becomes the hot pocket. |  |  |
 | Tidal Pull | `tidal` | While paused | $5 | Pick a pocket: for the rest of the shot it pulls rolling balls towards it. |  |  |
 

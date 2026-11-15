@@ -22,9 +22,9 @@ The APK is signed with a personal key from the build PC, so it is for your own d
 3. **Avoid the 8.** Sinking the 8 while other balls are still up costs 15% of the table's target and 2 Chalk, unless an Element changes that. Once it is the last ball it is safe.
 4. **The Pro Shop** opens between tables:
    - **Elements:** 100 passive rules for your six slots.
-   - **Isotopes:** 16 lasting upgrades for one ball.
-   - **Catalysts:** 23 reusable board-changing tools. Each normally has one charge per table and works while aiming or during a paused shot. Set-up effects appear in the prediction before you shoot.
-   - **Exotic balls:** 30 types to add to your rack.
+   - **Isotopes:** 30 lasting upgrades for one ball.
+   - **Catalysts:** 30 reusable board-changing tools, held in the Hustler's Kit. Each recharges every table and works while aiming or during a paused shot. Set-up effects appear in the prediction before you shoot.
+   - **Exotic balls:** 30 types to add to your rack, each saying what it is worth (most are worth 30).
    - **Removal:** take a ball out of your rack, never the 8.
 5. **Nine tables** make a run, including the Clockwork Table at table 5 and the Grand Final at table 9. After that, endless mode.
 
@@ -34,7 +34,7 @@ Winning a run unlocks the next **Handicap**. Choose its level on the **Choose Yo
 
 Each ball scores as it sinks: **value × Chain × Heat**.
 
-- **Value:** 10 plus the ball's number.
+- **Value:** 10 + 2 × the ball's number (the 1-ball is worth 12, the 15-ball 40).
 - **Chain:** starts at 1 every shot and rises as balls sink, so the last ball of a big shot scores most.
 - **Heat:** lasts the whole table, rises with every scoring shot and halves on a miss.
 - **Hot pocket:** the glowing pocket scores ×2.

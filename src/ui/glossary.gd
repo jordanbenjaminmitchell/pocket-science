@@ -28,7 +28,7 @@ const TERMS := {
 	"solid": {"title": "Solids", "text": "Balls 1 to 7, coloured all over."},
 	"stripe": {"title": "Stripes", "text": "Balls 9 to 15, with a coloured band around the middle."},
 	"eight": {"title": "The 8-ball", "text": "Avoid it: sinking the 8 while other balls remain costs 15% of the table's target."},
-	"perk": {"title": "Element", "text": "A passive item that sits in one of your six slots."},
+	"perk": {"title": "Element", "text": "A rule named for a real chemical element that stays with you all run, in one of your six slots."},
 	"imbue": {"title": "Isotope", "text": "An upgrade that stays on one ball all run; each ball holds one, and a loose Isotope lets you pick which."},
 	"side_bet": {"title": "Side bet", "text": "An optional goal on each table that pays extra money."},
 	"english": {"title": "English", "text": "Spin from hitting the cue ball left or right of centre."},
