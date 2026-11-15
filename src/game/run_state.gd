@@ -8,10 +8,13 @@ const SNELL_A := Vector2(430, 0)     # Snell's Law: the line between air (left) 
 const SNELL_B := Vector2(570, 500)
 const BOULDER_R := 26.5   # the biggest cue ball that still drops through a pocket mouth
 ## Chalk is your shots for the whole run: every shot after the break costs 1
-## (a scratch or an early 8 costs 2). You start with BASE_CHALK, clearing table N
-## gives back 2N + 4 (6, 8, 10 ... 20), and you can never hold more than MAX_CHALK.
-const BASE_CHALK := 10
-const MAX_CHALK := 40
+## (a scratch or an early 8 costs 2). You start with BASE_CHALK and clearing a
+## table gives back TABLE_REFILL, so a run of nine tables has about 21 shots:
+## each table has to be won in two or three, with shots that sink several balls
+## and a build that multiplies them.
+const BASE_CHALK := 5
+const TABLE_REFILL := 2
+const MAX_CHALK := 15
 const SHOT_FEE := 1
 
 var seed_value := 0
@@ -106,7 +109,7 @@ var next_magnet := false        # Magnet Charm
 var next_slick := false         # Zero Friction: the cloth is 70% slicker for this shot
 var golden_ball := -1           # Golden Ratio: this ball scores ×1.618 if it sinks this shot
 const ITEM_SLOTS := 0            # consumables
-const PAR_SHOTS := 10
+const PAR_SHOTS := 5
 ## A set never holds more than 15 balls: a new Exotic ball takes the place of one
 ## you choose, so every slot is a trade between a cheap ball and a better one.
 const MAX_SET := 15
@@ -272,7 +275,7 @@ func max_chalk() -> int:
 func start_chalk() -> int:
 	var c := BASE_CHALK + int(Catalog.CUES.get(cue, Catalog.CUES.maple).chalk)
 	if handicap >= 2:
-		c -= 3   # Short Chalk
+		c -= 1   # Short Chalk
 		return maxi(c, 2)
 	return maxi(c, 1)
 
@@ -764,8 +767,8 @@ func payout() -> Array:
 	var quick := PAR_SHOTS - shots_taken
 	if quick > 0:
 		rows.append(["Quick clear: %d shot%s" % [shots_taken, "" if shots_taken == 1 else "s"], mini(quick, QUICK_MAX)])
-	if has_perk("thrift") and chalk >= 3:
-		rows.append(["Thrift: %d Chalk left" % chalk, mini(5, int(chalk / 3.0))])
+	if has_perk("thrift") and chalk > 0:
+		rows.append(["Thrift: %d Chalk left" % chalk, mini(5, chalk)])
 	if has_perk("overflow"):
 		var nxt := table_index + 1
 		var next_target: int = plan[nxt].target if nxt < plan.size() else int(target() * 1.6)
@@ -787,10 +790,9 @@ func payout() -> Array:
 	return rows
 
 
-## Chalk back for clearing the current table: 2 for every table so far plus 4
-## (6 after the first, 20 after the ninth), and Calcium Chalk adds 3 more.
+## Chalk back for clearing a table: 2, and Calcium Chalk adds 1 more.
 func table_refill() -> int:
-	return 2 * (table_index + 1) + 4 + (3 if has_perk("chalk") else 0)
+	return TABLE_REFILL + (1 if has_perk("chalk") else 0)
 
 
 func advance_table() -> void:
@@ -1102,7 +1104,7 @@ func apply_shot(res: Dictionary, was_break: bool, balls_left: int, cue_on_table:
 		var soft: bool = res.foul == "Wrong pocket" or res.foul == "Wrong ball first" or res.foul == Scorer.EIGHT_FOUL
 		if soft and not was_break:
 			chalk_cost = SHOT_FEE   # a boss soft foul costs only the shot
-		var insured: bool = has_perk("insurance") and insured_used < 2
+		var insured: bool = has_perk("insurance") and insured_used < 1
 		var excused: bool = current().id == "local" and not forgiven and not free_break and not soft and not insured
 		if excused:
 			forgiven = true

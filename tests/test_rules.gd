@@ -78,11 +78,10 @@ func _initialize() -> void:
 	var o2 := ch.apply_shot({"scored": false, "foul": "Scratch", "total": 0, "money": 0, "catalyst_gain": 0.0, "potted": [], "shattered": []}, false, 9, false)
 	check(ch.chalk == c1 - 2 and int(o2.get("chalk_cost", 0)) == 2, "a scratch costs 2 Chalk")
 	var c2 := ch.chalk
-	check(ch.table_refill() == 6, "clearing the first table gives back 6 Chalk")
+	check(ch.table_refill() == 2, "clearing a table gives back 2 Chalk")
 	ch.advance_table()
 	ch.begin_table()
-	check(ch.chalk == c2 + 6, "Chalk carries to the next table, plus the refill (%d)" % ch.chalk)
-	check(ch.table_refill() == 8, "and the second gives back 8")
+	check(ch.chalk == c2 + 2, "Chalk carries to the next table, plus 2 for clearing (%d)" % ch.chalk)
 	ch.chalk = RunState.MAX_CHALK
 	ch.advance_table()
 	check(ch.chalk == RunState.MAX_CHALK, "never more than %d" % RunState.MAX_CHALK)
@@ -92,11 +91,11 @@ func _initialize() -> void:
 	ca.begin_table()
 	var c3 := ca.chalk
 	ca.advance_table()
-	check(ca.chalk == c3 + 6 + 3, "Calcium Chalk: +3 extra for each clear")
+	check(ca.chalk == c3 + 3, "Calcium Chalk: +1 extra for each clear")
 	var hr := RunState.new()
 	hr.start(7, "hotrod")
 	hr.begin_table()
-	check(hr.chalk == RunState.BASE_CHALK - 2, "Hot Rod starts with 2 less Chalk")
+	check(hr.chalk == RunState.BASE_CHALK - 1, "Hot Rod starts with 1 less Chalk")
 	run.score = run.target() - 1
 	o = run.apply_shot(hit, false, 5, true)
 	check(o.cleared, "reaching the target clears the table")
@@ -174,12 +173,12 @@ func _initialize() -> void:
 	pr.start(3)
 	pr.begin_table()
 	pr.score = int(pr.target() * 1.35)
-	pr.shots_taken = 6
+	pr.shots_taken = 2
 	var rows := pr.payout()
 	var by := {}
 	for row in rows:
 		by[str(row[0]).split(":")[0]] = int(row[1])
-	check(by.get("Table cleared", 0) == 4 and by.get("Overkill", 0) == 3 and by.get("Quick clear", 0) == 4, "clearing pays $4, $1 per 10%% over and $1 per shot under 10 (%s)" % str(by))
+	check(by.get("Table cleared", 0) == 4 and by.get("Overkill", 0) == 3 and by.get("Quick clear", 0) == 3, "clearing pays $4, $1 per 10%% over and $1 per shot under 5 (%s)" % str(by))
 	var slow := RunState.new()
 	slow.start(3)
 	slow.begin_table()

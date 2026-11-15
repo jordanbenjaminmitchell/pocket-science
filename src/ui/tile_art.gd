@@ -55,7 +55,7 @@ const TILES := {
 	# Streaks
 	"perk:streak": {"sym": "P", "stat": "2+ sinks: +1 Heat", "letter": "stoke"},
 	"perk:rhythm": {"sym": "Rh", "stat": "Every 3rd shot ×2", "letter": "beat"},
-	"perk:comeback": {"sym": "La", "stat": "Low Chalk: sinks ×2", "letter": "stub"},
+	"perk:comeback": {"sym": "La", "stat": "Last Chalk: sinks ×2", "letter": "stub"},
 	# Heat
 	"perk:entropy": {"sym": "Sm", "stat": "Low Heat: +0.5 Chain", "letter": "simmer"},
 	"perk:hothand": {"sym": "Ho", "stat": "Heat 2+: pockets pull", "letter": "pole"},
@@ -109,13 +109,13 @@ const TILES := {
 	"perk:tracer": {"sym": "Ra", "stat": "Cue cushions +0.25 Chain", "letter": "trace"},
 	# Utility
 	"perk:lever": {"sym": "W", "stat": "Stripes 140%, keep speed", "letter": "core"},
-	"perk:chalk": {"sym": "Ca", "stat": "+3 Chalk a clear", "letter": "chalky"},
+	"perk:chalk": {"sym": "Ca", "stat": "+1 Chalk a clear", "letter": "chalky"},
 	"perk:lens": {"sym": "Se", "stat": "1.1 m sinks +1 Chain", "letter": "lens"},
-	"perk:insurance": {"sym": "Ar", "stat": "2 free misses a table", "letter": "shield"},
+	"perk:insurance": {"sym": "Ar", "stat": "1 free miss a table", "letter": "shield"},
 	"perk:oracle": {"sym": "Te", "stat": "Free Catalyst each table", "letter": "supply"},
 	# Economy
 	"perk:gold": {"sym": "Cu", "stat": "$1 a sink, max $3", "letter": "rail"},
-	"perk:thrift": {"sym": "Ce", "stat": "$1 per 3 Chalk left", "letter": "tag"},
+	"perk:thrift": {"sym": "Ce", "stat": "$1 per Chalk left", "letter": "tag"},
 	"perk:venture": {"sym": "Pd", "stat": "Cash builds Chain", "letter": "deep"},
 	"perk:hunter": {"sym": "Sc", "stat": "Side bets pay double", "letter": "hustle"},
 	"perk:overflow": {"sym": "Np", "stat": "Spare points carry on", "letter": "beaker"},
@@ -177,7 +177,7 @@ const TILES := {
 	"ball:magnet": {"sym": "", "stat": "Pulls balls", "on": "Nearby balls", "letter": "pull"},
 	"ball:prism": {"sym": "", "stat": "Solid + stripe", "on": "Both sets", "letter": "prism"},
 	"ball:wild": {"sym": "", "stat": "Copies a number", "on": "Last sunk", "letter": "wild"},
-	"ball:clock": {"sym": "", "stat": "15, +9 a shot", "on": "Shots taken", "letter": "clock"},
+	"ball:clock": {"sym": "", "stat": "15, +20 a shot", "on": "Shots taken", "letter": "clock"},
 	"ball:coin": {"sym": "", "stat": "$1 a cue hit", "on": "Cue ball", "letter": "coin"},
 	"ball:bomb": {"sym": "", "stat": "Takes one down", "on": "Nearest ball", "letter": "bomb"},
 	"ball:seed": {"sym": "", "stat": "30, +15 a sink", "on": "Whole run", "letter": "sprout"},
@@ -271,7 +271,7 @@ const TILES := {
 	"item:tidal": {"sym": "TP", "stat": "Pocket pulls", "on": "One pocket", "letter": "tidal"},
 	"ball:phantom": {"sym": "", "stat": "40 pts", "on": "Only the cue hits it", "letter": "phantom"},
 	"ball:spring": {"sym": "", "stat": "Bounce +50%", "on": "Collisions", "letter": "springball"},
-	"ball:piggy": {"sym": "", "stat": "$1 a shot, max $6", "on": "This table", "letter": "piggy"},
+	"ball:piggy": {"sym": "", "stat": "$2 a shot, max $6", "on": "This table", "letter": "piggy"},
 	"ball:jackpot": {"sym": "", "stat": "1 in 6: $10", "on": "Luck", "letter": "jackpot"},
 	"ball:pinball": {"sym": "", "stat": "+10 a cushion", "on": "Cushions", "letter": "pinball"},
 	"ball:fuse": {"sym": "", "stat": "+Heat per sink", "on": "One shot", "letter": "fuse"},

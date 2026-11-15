@@ -12,9 +12,9 @@ The numbers every run uses.
 
 | Rule | Now | Where | Your note | Done |
 |---|---|---|---|---|
-| Chalk at the start of a run | 10 | `RunState.BASE_CHALK` |  |  |
-| Most Chalk you can hold | 40 | `RunState.MAX_CHALK` |  |  |
-| Chalk back for clearing table N | 2N + 4 (6, 8, 10 ... 20) | `RunState.table_refill` |  |  |
+| Chalk at the start of a run | 5 | `RunState.BASE_CHALK` |  |  |
+| Most Chalk you can hold | 15 | `RunState.MAX_CHALK` |  |  |
+| Chalk back for clearing a table | 2 | `RunState.TABLE_REFILL` |  |  |
 | Chalk back for clearing a rack | 1 | `RunState.apply_shot` |  |  |
 | Chalk cost: every shot after the break | 1 | `RunState.SHOT_FEE` |  |  |
 | Chalk cost: a scratch, or the 8 going in early | 2 | `RunState.apply_shot` |  |  |
@@ -38,7 +38,7 @@ What you earn and what the shop's services cost.
 |---|---|---|---|---|
 | Clearing a table | $4 | `RunState.payout` |  |  |
 | Overkill: per 10% over the target | $1, up to $10 | `RunState.OVERKILL_MAX` |  |  |
-| Quick clear: per shot under 10 | $1, up to $5 | `RunState.PAR_SHOTS`, `QUICK_MAX` |  |  |
+| Quick clear: per shot under 5 | $1, up to $5 | `RunState.PAR_SHOTS`, `QUICK_MAX` |  |  |
 | Reroll Elements | $2, then $1 more each reroll | `RunState.reroll_cost` |  |  |
 | Remove a ball | $3, then $1 more each removal | `RunState.removal_cost` |  |  |
 | Selling an Element | Half its cost (at least $1) | `RunState.sell_value` |  |  |
@@ -67,7 +67,7 @@ Each level includes every rule before it.
 |---|---|---|---|---|
 | 0 | Scratch Player | The game as designed. |  |  |
 | 1 | Worn Cloth | Table targets are 15% higher. |  |  |
-| 2 | Short Chalk | Start with 3 less Chalk. |  |  |
+| 2 | Short Chalk | Start with 1 less Chalk. |  |  |
 | 3 | Dear Prices | Everything in the Pro Shop costs $1 more. |  |  |
 | 4 | Narrow Jaws | Pockets are 5% narrower. |  |  |
 | 5 | Hall of Fame | Table targets are 30% higher again. |  |  |
@@ -144,9 +144,9 @@ All 100, by atomic number. Rarity sets how often a card is offered.
 | 15 | Phosphorus Match | `streak` | Uncommon | $7 | Streaks | Shots that sink 2+ balls add +1 extra Heat. |  |  |
 | 16 | Sulfur Reagent | `chain` | Uncommon | $7 | Gear | On a shot where you used a Catalyst, every sink is worth +10, and clearing the table on that shot pays $1 per table number. |  |  |
 | 17 | Chlorine Clean | `precision` | Uncommon | $6 | Cue control | Clean sinks (straight from the cue ball, no cushions) add +1 Chain. |  |  |
-| 18 | Argon Shield | `insurance` | Rare | $7 | Utility | The first 2 misses or scratches on each table cost no Chalk at all. |  |  |
+| 18 | Argon Shield | `insurance` | Rare | $7 | Utility | Your first miss or scratch on each table costs no Chalk. |  |  |
 | 19 | Potassium Kick | `kick` | Uncommon | $6 | Cue control | Once per table: the first kick shot (cue hits a cushion first) that sinks scores ×2 on every sink. |  |  |
-| 20 | Calcium Chalk | `chalk` | Common | $5 | Utility | Clearing a table gives +3 extra Chalk. |  |  |
+| 20 | Calcium Chalk | `chalk` | Uncommon | $6 | Utility | Clearing a table gives +1 extra Chalk. |  |  |
 | 21 | Scandium Hustle | `hunter` | Common | $4 | Economy | Side bets you win pay double. |  |  |
 | 22 | Titanium Jaws | `jaws` | Common | $6 | Pockets | Pockets are 20% wider. |  |  |
 | 23 | Vanadium Velvet | `velvet` | Common | $5 | Physics | 30% less cloth friction: balls roll further. |  |  |
@@ -183,8 +183,8 @@ All 100, by atomic number. Rarity sets how often a card is offered.
 | 54 | Xenon Flash | `stillness` | Uncommon | $6 | Pausing | Once a table, the first time you pause a shot, every rolling ball speeds up by 30%. |  |  |
 | 55 | Caesium Clock | `overclock` | Rare | $8 | Pausing | Your Catalysts get two uses on every table. |  |  |
 | 56 | Barium Spin | `backspin` | Uncommon | $6 | Physics | Draw and follow are twice as strong. |  |  |
-| 57 | Lanthanum Lantern | `comeback` | Uncommon | $6 | Streaks | With 3 Chalk or less, every sink scores ×2. |  |  |
-| 58 | Cerium Flint | `thrift` | Common | $4 | Economy | Clearing a table pays $1 per 3 Chalk left (up to $5). |  |  |
+| 57 | Lanthanum Lantern | `comeback` | Uncommon | $6 | Streaks | On your last Chalk, every sink scores ×2. |  |  |
+| 58 | Cerium Flint | `thrift` | Common | $4 | Economy | Clearing a table pays $1 for every Chalk you have left (up to $5). |  |  |
 | 59 | Praseodymium Twin | `rotation` | Uncommon | $6 | Ball numbers | The lowest-numbered ball on the table scores as if it were the highest-numbered one. |  |  |
 | 60 | Neodymium Boulder | `elastic` | Uncommon | $6 | Physics | The cue ball is 90% bigger, just small enough to fit a pocket, and twice as heavy. |  |  |
 | 61 | Promethium Prime | `prime` | Uncommon | $6 | Ball numbers | Prime balls (2, 3, 5, 7, 11, 13 and up) score ×2. With no prime on the table, the next prime joins your rack. |  |  |
@@ -314,7 +314,7 @@ Each recharges every table.
 | Magnet ball | `magnet` | $5 | 30 | Worth 30. Pulls nearby rolling balls towards itself. |  |  |
 | Prism ball | `prism` | $5 | 30 | Worth 30. Counts as both a solid and a stripe. |  |  |
 | Wild ball | `wild` | $5 | 0 | Worth 10 + 2 × the number it copies: the number of the last ball you sank. Counts as that number. |  |  |
-| Clock ball | `clock` | $5 | 15 | Worth 15, plus 9 for every shot already taken on this table. |  |  |
+| Clock ball | `clock` | $5 | 15 | Worth 15, plus 20 for every shot already taken on this table. |  |  |
 | Coin ball | `coin` | $4 | 30 | Worth 30, and pays $1 every time the cue ball hits it in a scoring shot. |  |  |
 | Bomb ball | `bomb` | $6 | 30 | Worth 30. When it sinks, the nearest ball (never the 8) sinks with it. |  |  |
 | Seed ball | `seed` | $4 | 30 | Worth 30, and 15 more every time you sink it this run. |  |  |
@@ -329,7 +329,7 @@ Each recharges every table.
 | Echo ball | `echo` | $6 | 30 | Worth 30. The first time it sinks on a table, it comes back to the foot spot. |  |  |
 | Phantom ball | `phantom` | $5 | 40 | Worth 40, but other object balls pass straight through it: only the cue ball can hit it. |  |  |
 | Spring ball | `spring` | $5 | 30 | Worth 30. Balls bounce off it 50% faster than they hit it. |  |  |
-| Piggy Bank ball | `piggy` | $4 | 10 | Worth 10, and when it sinks it pays $1 for every shot already taken on this table (up to $6). |  |  |
+| Piggy Bank ball | `piggy` | $4 | 10 | Worth 10, and when it sinks it pays $2 for every shot already taken on this table (up to $6). |  |  |
 | Jackpot ball | `jackpot` | $5 | 20 | Worth 20. When it sinks, 1 in 6 chance to pay $10; otherwise it pays $1. |  |  |
 | Pinball ball | `pinball` | $5 | 20 | Worth 20, plus 10 for every cushion it touched before it sank. |  |  |
 | Fuse ball | `fuse` | $5 | 30 | Worth 30. When it sinks, +1 Heat for every ball that sank before it in the same shot. |  |  |
@@ -340,7 +340,7 @@ Each recharges every table.
 | Cue | Id | Money | Chalk | Starts with | Description | Your note | Done |
 |---|---|---|---|---|---|---|---|
 | Classic Maple | `maple` | $7 | 0 |  | A plain cue. $7. |  |  |
-| Hot Rod | `hotrod` | $4 | -2 | Focal Point | Carries Focal Point, and your 1-ball is Kindled. 2 less Chalk. $4. |  |  |
+| Hot Rod | `hotrod` | $4 | -1 | Focal Point | Carries Focal Point, and your 1-ball is Kindled. 1 less Chalk. $4. |  |  |
 | Gilded Cue | `gilded` | $6 | 0 | Conservation | Carries Conservation, and your 3-ball is Gilded. $6. |  |  |
 | Gear Cue | `gearhead` | $3 | 0 | Golden Ratio | Carries Golden Ratio, and holds 2 extra Catalysts. $3. |  |  |
 | Lean Cue | `lean` | $4 | 0 | Quantum Tunnel | Carries Quantum Tunnel. Your rack starts without the 1 and 2. $4. |  |  |

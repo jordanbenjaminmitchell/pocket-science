@@ -273,7 +273,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 			"prime": Catalog.PRIMES.has(n) or RunState._is_prime(face), "fib": [1, 2, 3, 5, 8, 13].has(n) or [1, 2, 3, 5, 8, 13].has(face),
 			"lowest": n == int(ctx.get("lowest", -1)), "highest": n == int(ctx.get("highest", -1)),
 			"heat3": heat >= HEAT_STROKE, "on_fire": heat >= HEAT_FIRE, "cold": heat == 0,
-			"low3": (n >= 1 and n <= 3) or (face >= 1 and face <= 3), "high3": (n >= 13 and n <= 15) or (face >= 13 and face <= 15), "last_chalk": int(ctx.get("chalk", 99)) <= 3, "third": int(ctx.get("shots_taken", 0)) % 3 == 2,
+			"low3": (n >= 1 and n <= 3) or (face >= 1 and face <= 3), "high3": (n >= 13 and n <= 15) or (face >= 13 and face <= 15), "last_chalk": int(ctx.get("chalk", 99)) == 1, "third": int(ctx.get("shots_taken", 0)) % 3 == 2,
 			"boomerang": boomerang, "long": _long_pot(ctx, n, e), "item_shot": ctx.get("item_shot", false), "kiss8": int(out.get("first_contact", -1)) == 8 and not ctx.get("is_break", false),
 			"follow_shot": float(ctx.get("follow", 0.0)) > 0.2, "draw_shot": float(ctx.get("follow", 0.0)) < -0.2,
 			"last_eight": n == 8 and left_after == 0, "no_eight_touch": not toucher.has(8),
@@ -466,7 +466,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 		# Exotic balls.
 		match kind:
 			"piggy":
-				money += mini(6, int(ctx.get("shots_taken", 0)))
+				money += mini(6, 2 * int(ctx.get("shots_taken", 0)))
 			"jackpot":
 				if rng != null:
 					money += 10 if rng.randf() < 1.0 / 6.0 else 1
@@ -484,7 +484,7 @@ static func _pay(ctx: Dictionary, events: Array, pots: Array, toucher: Dictionar
 				out.new_hot = k
 				tags.append("New hot pocket")
 			"clock":
-				value += 9.0 * int(ctx.get("shots_taken", 0))
+				value += 20.0 * int(ctx.get("shots_taken", 0))
 			"coin":
 				money += int(coin_hits.get(n, 0))
 			"seed":

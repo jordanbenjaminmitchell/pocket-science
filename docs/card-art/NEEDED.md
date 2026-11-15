@@ -99,13 +99,14 @@ All 100 Elements were also renamed "element + noun" (for example Hydrogen Balloo
 - **Side bets:**
   - The stake is capped at your money when the bet is dealt (`RunState.bet_cap`, which is saved).
   - With less than $2 (`RunState.MIN_BET`) there is no side bet that table: `bounty` is `""`, `bet_open()` is false and the panel hides.
-- **Chalk is your shots for the whole run** (1.52, the user's design):
-  - Start with 10 (`BASE_CHALK`). Hot Rod starts with 2 less, and the Short Chalk handicap with 3 less.
-  - Every shot after the break costs 1 (`SHOT_FEE`), whether it sinks or not. A scratch, or the 8 going in early, costs 2. Boss soft fouls (wrong pocket, wrong ball first) cost only the shot. The scorer flags an early 8 with `eight_early`, and Carbon Core removes its extra cost.
-  - Clearing table N gives back 2N + 4 (`table_refill`: 6, 8, 10 ... 20), +3 more with Calcium Chalk. +1 for a cleared rack.
-  - Never above 40 (`MAX_CHALK`).
-  - Free shots: the break, a shot that sinks Clover, The Local's first miss, and Argon Shield's first 2 misses or scratches a table. Astatine Edge adds 1 to every miss and foul.
-  - Lanthanum Lantern works at 3 Chalk or less (was: the last Chalk).
+- **Chalk is your shots for the whole run** (the user's design):
+  - Start with 5 (`BASE_CHALK`). Hot Rod and the Short Chalk handicap start with 1 less.
+  - Every shot after the break costs 1 (`SHOT_FEE`), whether it sinks or not. A scratch, or the 8 going in early, costs 2. Boss soft fouls (wrong pocket, wrong ball first) cost only the shot. Carbon Core removes the early 8's extra cost.
+  - Clearing a table gives back 2 (`TABLE_REFILL`), +1 more with Calcium Chalk (now uncommon, $6). A cleared rack gives 1. Never above 15 (`MAX_CHALK`).
+  - That is about 21 shots for nine tables (2.3 a table after the break), so a table is won in two or three big shots with a build that multiplies them.
+  - Free shots: the break, a shot that sinks Clover, The Local's first miss, and Argon Shield's first miss or scratch each table. Astatine Edge adds 1 to every miss and foul.
+  - Cards retuned for so few shots: Lanthanum Lantern (last Chalk), Cerium Flint ($1 per Chalk left), Clock ball (+20 a shot), Piggy Bank ($2 a shot), quick-clear money ($1 per shot under 5).
+  - The "Synergy" tag on shop cards was removed: it only meant "same family".
   - The Chalk pips show cubes up to 12, then one cube and a number.
   - The card, glossary, help and README text was updated.
   - **Interpretation to confirm with the user:** "use 1 on each shot" was read as each *missed* shot. Shots that sink still keep you shooting for free.

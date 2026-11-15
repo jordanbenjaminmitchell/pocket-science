@@ -107,7 +107,7 @@ var lbl_heat: Label
 var lbl_line: Label
 var lbl_money: Label
 var chalk_pips: ChalkPips
-const CHALK_TIP := "Chalk is your shots for the whole run: every shot after the break costs 1, and a scratch or sinking the 8 early costs 2. Clearing table N gives back 2N + 4 (6, 8, 10 ... 20), up to 40."
+const CHALK_TIP := "Chalk is your shots for the whole run: you start with 5, every shot after the break costs 1, and a scratch or sinking the 8 early costs 2. Clearing a table gives 2 back. Win each table in a few big shots."
 var spin_w: SpinWidget
 var power_w: PowerMeter
 var lbl_hint: Label
@@ -2412,7 +2412,7 @@ func _settled() -> void:
 	_hint("Click to skip the count.")
 	if not result.scored:
 		var free_break: bool = is_break and result.foul == "Miss"
-		var insured: bool = run.has_perk("insurance") and run.insured_used < 2
+		var insured: bool = run.has_perk("insurance") and run.insured_used < 1
 		var msg: String = result.foul
 		if result.foul == Scorer.EIGHT_FOUL:
 			msg += " - lose %d points" % result.penalty if result.penalty > 0 else (" - pay $%d" % result.eight_fine if result.eight_fine > 0 else (" - but +$%d" % -int(result.eight_fine) if result.eight_fine < 0 else ""))
@@ -3884,7 +3884,7 @@ func _perk_now(id: String) -> String:
 		"entropy":
 			return "ON, +1 Chain" if heat < Scorer.HEAT_STROKE else "off at Heat %d+" % Scorer.HEAT_STROKE
 		"comeback":
-			return "ON, every sink ×2" if int(c.get("chalk", 9)) <= 3 else "off until 3 Chalk or less"
+			return "ON, every sink ×2" if int(c.get("chalk", 9)) == 1 else "off until your last Chalk"
 		"insurance":
 			return "%d free miss%s left" % [maxi(0, 2 - run.insured_used), "" if 2 - run.insured_used == 1 else "es"]
 		"overflow":
@@ -4337,7 +4337,7 @@ The [color=#ff8a30]hot pocket[/color] scores ×2. The black 8 also scores ×2.
 [b]Pausing a shot:[/b] While the balls roll, press [b]P[/b] (or tap [b]Pause[/b] on a phone) and everything freezes. The prediction then shows exactly where every ball goes from that moment. While paused you can use mid-shot items from your bar: [b]Second Strike[/b] (aim with the mouse, set power with the wheel or Up/Down, click to hit), [b]Pop-up Wall[/b] (click where it starts, then where it ends), [b]Blink[/b] (click where the cue ball reappears), and more. Right-click or Esc cancels an item. Press [b]P[/b] again, Space, Enter or click the table to play on.
 [b]Planning a pause:[/b] Press [b]L[/b] (or [b]Plan a pause[/b]) to lock the prediction, move along the cue ball's line and click where the shot should stop by itself. Settings can also pause every shot the moment the cue ball first hits a ball.
 
-[b]Chalk:[/b] Chalk lasts the whole run. As in real pool, you keep shooting while you sink. Every shot after the break costs 1 chalk; a scratch or an early 8 costs 2. A cleared rack gives 1 back and table N gives 2N + 4, up to 40. Run out and the run is over.
+[b]Chalk:[/b] Chalk lasts the whole run. As in real pool, you keep shooting while you sink. You start with 5. Every shot after the break costs 1 chalk; a scratch or an early 8 costs 2. A cleared table gives 2 back, a cleared rack 1. Run out and the run is over.
 
 [b]Between tables:[/b] Spend money in the Pro Shop on Elements (six slots; switch any off and on between shots) and Isotopes (upgrade one ball for the rest of the run; you choose which, and each ball holds one). Clearing a table pays $4, plus $1 for every 10% you score over the target (up to $10) and $1 for every shot under 10 you needed (up to $5).
 
@@ -4523,7 +4523,7 @@ func _refresh_shop() -> void:
 	bar.add_child(go)
 	var tip := "Tip: you can sell an Element from the bar below for half its price."
 	if _load_best().tables == 0:
-		tip = "New here? Elements stay with you for the whole run. Cards glowing green work with Elements you own. Hover a greyed price if you can't afford it yet."
+		tip = "New here? Elements stay with you for the whole run. Hover a greyed price if you can't afford it yet."
 	v.add_child(_label(tip, 13, Color(0.55, 0.55, 0.6), F_REG))
 
 
@@ -4533,7 +4533,6 @@ func _offer_card(i: int) -> Control:
 	var title := ""
 	var desc := ""
 	var kind := ""
-	var syn: Array = []
 	match item.type:
 		"perk":
 			var f: Dictionary = Catalog.PERKS[item.id]
@@ -4541,7 +4540,6 @@ func _offer_card(i: int) -> Control:
 			title = f.name
 			desc = f.desc
 			kind = "%s · %s" % [Catalog.rarity_name(f.r), Catalog.family_name(item.id)]
-			syn = Catalog.synergies(item.id, run.perks).map(func(o): return Catalog.PERKS[o].name)
 		"imbue":
 			var iso: Dictionary = Catalog.IMBUES[item.id]
 			accent = Catalog.ISOTOPE_FRAME_COLOR
@@ -4609,12 +4607,6 @@ func _offer_card(i: int) -> Control:
 		v.add_child(kind_l)
 		if item.type == "imbue":
 			_make_term(kind_l, "imbue")   # the Imbue rules live in this tooltip, not on every card
-	if not syn.is_empty():
-		var sl := _label("+ Synergy: " + ", ".join(syn), 12, Color(0.5, 1.0, 0.6))
-		sl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		sl.custom_minimum_size = Vector2(172, 0)
-		v.add_child(sl)
-		p.add_theme_stylebox_override("panel", _style(Color(0.1, 0.16, 0.11), Color(0.5, 1.0, 0.6), 3, 10))
 	var d := _term_text(Glossary.link(desc), 13, Color(0.8, 0.82, 0.85), 172.0)
 	d.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(d)
@@ -5239,8 +5231,8 @@ func _show_run_info() -> void:
 		"Value: 10 + 2 × the ball's number (Exotic balls have their own)",
 		"Hot pocket ×%d, then Elements; the 8 costs 15%% of the target if it sinks early" % hot_x,
 		"Each shot after the break -1 Chalk; scratch or early 8 -2",
-		"Clear a rack: +1 Chalk. Clear table N: +2N + 4 (max 40)",
-		"Clearing pays $4, +$1 per 10% over target, +$1 per shot under 10",
+		"Clear a table: +2 Chalk. Clear a rack: +1",
+		"Clearing pays $4, +$1 per 10% over target, +$1 per shot under 5",
 	]
 	for r in rules:
 		var l := _label("•  " + r, 14, Color(0.82, 0.84, 0.87), F_REG)
